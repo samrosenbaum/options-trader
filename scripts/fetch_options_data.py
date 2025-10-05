@@ -3,6 +3,8 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 import json
+import time
+import random
 
 def get_options_chain(symbol):
     """Fetch real options chain data from Yahoo Finance"""
@@ -519,16 +521,33 @@ def calculate_news_impact_score(news_items):
     
     return min(20, total_impact), news_reasons
 
-def scan_symbols(symbols):
+def scan_symbols(symbols, max_attempts=50):
     """Scan multiple symbols for superior opportunities with advanced pattern recognition and news analysis"""
     all_opportunities = []
+    successful_scans = 0
+    failed_scans = 0
     
-    for symbol in symbols:
-        print(f"Scanning {symbol}...")
+    for i, symbol in enumerate(symbols):
+        if successful_scans >= max_attempts:
+            print(f"\nReached maximum successful scans ({max_attempts}). Stopping to avoid rate limits.")
+            break
+            
+        print(f"Scanning {symbol} ({i+1}/{len(symbols)}) - Success: {successful_scans}, Failed: {failed_scans}")
+        
+        # More aggressive rate limiting
+        if i > 0 and i % 5 == 0:
+            print(f"Rate limiting pause after {i} requests...")
+            time.sleep(10)  # 10 second pause every 5 requests
+        elif i > 0:
+            time.sleep(3)  # 3 seconds between requests
+        
         options_df = get_options_chain(symbol)
         
         if options_df is None or options_df.empty:
+            failed_scans += 1
             continue
+        
+        successful_scans += 1
         
         # Get current stock price for pattern analysis
         current_price = options_df['stockPrice'].iloc[0] if not options_df.empty else 0
@@ -615,34 +634,139 @@ def scan_symbols(symbols):
     return all_opportunities[:20]  # Top 20 superior opportunities
 
 if __name__ == "__main__":
-    # Enhanced watchlist focusing on high-volatility, high-potential stocks
+    # Priority watchlist (scanned first) - highest potential stocks
+    PRIORITY_WATCHLIST = [
+        # Your requested stocks
+        "COIN", "PLTR", "HOOD", "CVNA",
+        
+        # High volatility meme stocks
+        "GME", "AMC", "SPCE", "NKLA", "WKHS", "CLOV",
+        
+        # Crypto-related high volatility
+        "MSTR", "RIOT", "MARA", "HUT", "BITF",
+        
+        # EVs with high options activity
+        "TSLA", "RIVN", "LCID", "NIO", "XPEV",
+        
+        # Fintech disruptors
+        "SOFI", "UPST", "AFRM", "SQ", "PYPL",
+        
+        # High-beta tech
+        "NVDA", "AMD", "META", "NFLX", "ROKU"
+    ]
+    
+    # Comprehensive watchlist for maximum opportunity discovery
     WATCHLIST = [
         # Mega-cap tech with high options volume
-        "AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "TSLA", "META", "AMD", 
+        "AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "TSLA", "META", "AMD", "INTC", "CRM",
         
-        # High-beta momentum stocks
-        "NFLX", "PLTR", "SOFI", "RIVN", "COIN", "ROKU", "ZM", "DOCU",
+        # High-beta momentum stocks & growth
+        "NFLX", "PLTR", "SOFI", "RIVN", "ROKU", "ZM", "DOCU", "PTON", "PINS", "SNAP",
+        "SQ", "PYPL", "SHOP", "MELI", "SE", "BABA", "JD", "PDD", "BILI", "VIPS",
         
-        # ETFs for broad market moves
-        "SPY", "QQQ", "IWM", "TQQQ", "SPXL",
+        # Fintech & Crypto-related (high volatility)
+        "COIN", "MSTR", "RIOT", "MARA", "HUT", "BITF", "CAN", "EBON", "SOS", "BTBT",
+        "HOOD", "SOFI", "UPST", "LC", "AFRM", "OPEN", "COMP", "Z", "RKT", "UWMC",
+        
+        # EVs & Transportation
+        "RIVN", "LCID", "F", "GM", "FORD", "NIO", "XPEV", "LI", "BZ", "WKHS",
+        "RIDE", "NKLA", "HYLN", "GOEV", "FSR", "LEV", "VLTA", "CHPT", "BLNK", "EVGO",
         
         # Meme stocks and high-volatility plays
-        "GME", "AMC", "BB", "NOK", "WISH", "CLOV", "WEN",
+        "GME", "AMC", "BB", "NOK", "WISH", "CLOV", "WEN", "SPCE", "PLTR", "SOFI",
+        "HOOD", "RKT", "UWMC", "CLNE", "WKHS", "SNDL", "TLRY", "CGC", "ACB", "HEXO",
         
-        # Crypto-related stocks
-        "MSTR", "RIOT", "MARA", "COIN",
+        # Biotech & Pharma (high event risk)
+        "BNTX", "MRNA", "PFE", "JNJ", "ABBV", "LLY", "MRK", "UNH", "CVS", "WBA",
+        "GILD", "AMGN", "BIIB", "REGN", "VRTX", "ILMN", "MRNA", "NVAX", "OCGN", "VAXART",
         
-        # Biotech and pharma (high event risk)
-        "BNTX", "MRNA", "PFE", "JNJ",
+        # Software & Cloud
+        "CRM", "ADBE", "ORCL", "NOW", "WDAY", "SNOW", "DDOG", "NET", "CRWD", "ZS",
+        "OKTA", "SPLK", "TEAM", "MDB", "ESTC", "AYX", "TWLO", "ZM", "DOCU", "WORK",
+        
+        # Semiconductors & Hardware
+        "NVDA", "AMD", "INTC", "QCOM", "AVGO", "TXN", "MRVL", "ADI", "AMAT", "LRCX",
+        "KLAC", "MCHP", "NXPI", "SWKS", "QRVO", "TER", "SNPS", "CDNS", "ANSS", "KEYS",
+        
+        # ETFs for broad market moves
+        "SPY", "QQQ", "IWM", "TQQQ", "SPXL", "UPRO", "TMF", "TBT", "VIX", "UVXY",
+        "VXX", "SVXY", "SQQQ", "SPXS", "SPXU", "TZA", "TECS", "FAS", "FAZ", "ERX",
         
         # Financial sector
-        "JPM", "BAC", "WFC", "GS", "MS"
+        "JPM", "BAC", "WFC", "GS", "MS", "C", "USB", "PNC", "TFC", "COF",
+        "AXP", "V", "MA", "DFS", "FISV", "FIS", "GPN", "FLT", "WU", "PYPL",
+        
+        # Energy & Materials
+        "XOM", "CVX", "COP", "EOG", "PXD", "MPC", "VLO", "PSX", "KMI", "EPD",
+        "FCX", "NEM", "GOLD", "AA", "X", "CLF", "MT", "VALE", "RIO", "BHP",
+        
+        # Retail & Consumer
+        "WMT", "TGT", "HD", "LOW", "COST", "AMZN", "EBAY", "ETSY", "W", "CHWY",
+        "PTON", "NKE", "LULU", "ULTA", "TSCO", "AZO", "ORLY", "AAP", "KO", "PEP",
+        
+        # Healthcare & Medical
+        "JNJ", "PFE", "UNH", "ABBV", "MRK", "LLY", "TMO", "ABT", "DHR", "BMY",
+        "AMGN", "GILD", "BIIB", "REGN", "VRTX", "ILMN", "ISRG", "SYK", "MDT", "BSX",
+        
+        # Industrial & Aerospace
+        "BA", "CAT", "DE", "GE", "HON", "MMM", "UPS", "FDX", "LMT", "RTX",
+        "NOC", "GD", "TDG", "LHX", "TXT", "EMR", "ETN", "ITW", "PH", "CMI",
+        
+        # Real Estate & REITs
+        "AMT", "PLD", "CCI", "EQIX", "PSA", "EXR", "AVB", "EQR", "MAA", "UDR",
+        "WELL", "VTR", "PEAK", "OHI", "MPW", "STAG", "STWD", "BXMT", "TWO", "NYMT",
+        
+        # Small & Mid Cap Growth
+        "ARKK", "ARKQ", "ARKG", "ARKW", "ARKF", "TAN", "ICLN", "PBW", "QCLN", "SMH",
+        "SOXX", "XSD", "FTEC", "VGT", "XLK", "IYW", "IGM", "MGK", "VUG", "IWF",
+        
+        # Special Situations & Turnarounds
+        "TWTR", "SNAP", "PINS", "ROKU", "PTON", "ZM", "DOCU", "WORK", "SPOT", "UBER",
+        "LYFT", "ABNB", "DASH", "GRUB", "YELP", "TRIP", "BKNG", "EXPE", "MAR", "HLT",
+        "CVNA", "CHWY", "PTON", "ROKU", "ZM", "DOCU", "WORK", "SPOT", "UBER", "LYFT",
+        
+        # International & Emerging Markets
+        "BABA", "JD", "PDD", "BILI", "VIPS", "TME", "YMM", "NTES", "BIDU", "WB",
+        "NIO", "XPEV", "LI", "BZ", "TAL", "EDU", "VIPS", "WB", "MOMO", "YY",
+        
+        # SPACs & Recent IPOs (high volatility)
+        "SPCE", "NKLA", "HYLN", "GOEV", "WKHS", "RIDE", "FSR", "LEV", "VLTA", "CHPT",
+        "OPEN", "COMP", "Z", "RKT", "UWMC", "SOFI", "UPST", "LC", "AFRM", "HOOD",
+        
+        # Gaming & Entertainment
+        "ATVI", "EA", "TTWO", "NTDOY", "UBSFY", "NFLX", "DIS", "CMCSA", "VIAC", "PARA",
+        "ROKU", "SPOT", "TME", "YMM", "BILI", "HUYA", "DOYU", "WB", "MOMO", "YY",
+        
+        # Cannabis & Psychedelics
+        "TLRY", "CGC", "ACB", "HEXO", "CRON", "OGI", "CURLF", "GTBIF", "TCNNF", "VRNOF",
+        "SNDL", "CTXR", "MNMD", "CMPS", "ATAI", "COMPASS", "FTRP", "DRUG", "SEEL", "MYCO"
     ]
     
     print("Starting advanced options scan for superior opportunities...")
-    opportunities = scan_symbols(WATCHLIST)
+    print(f"Priority scan: {len(PRIORITY_WATCHLIST)} high-potential stocks")
+    print(f"Full scan: {len(WATCHLIST)} total stocks")
+    
+    # Randomize the priority list to avoid always scanning the same stocks first
+    import random
+    random.shuffle(PRIORITY_WATCHLIST)
+    print(f"Randomized priority order: {PRIORITY_WATCHLIST[:5]}...")
+    
+    # Scan priority stocks first for quick results (limited to avoid rate limits)
+    opportunities = scan_symbols(PRIORITY_WATCHLIST, max_attempts=25)
+    
+    # If we need more opportunities, scan additional stocks from full list
+    if len(opportunities) < 8:
+        print(f"\nExpanding scan to full watchlist...")
+        random.shuffle(WATCHLIST)
+        additional_opportunities = scan_symbols(WATCHLIST, max_attempts=25)
+        opportunities.extend(additional_opportunities)
+    
+    # Note: No sample data - only real market opportunities
+    if len(opportunities) == 0:
+        print(f"\nNo opportunities found due to rate limits. Try again later when market conditions improve.")
     
     print(f"\nFound {len(opportunities)} superior opportunities (score >= 70)")
     
     # Output as JSON
     print(json.dumps(opportunities, indent=2))
+

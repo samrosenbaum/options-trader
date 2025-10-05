@@ -48,12 +48,37 @@ interface Opportunity {
   }>
 }
 
+interface CryptoAlert {
+  symbol: string
+  name: string
+  current_price: number
+  market_cap: number
+  action: 'BUY' | 'SELL' | 'HOLD'
+  confidence: number
+  strategy: string
+  entry_price: number
+  target_price: number
+  stop_loss: number
+  position_size: {
+    recommended_size: number
+    position_amounts: Record<string, { amount: number; percentage: number }>
+    risk_level: string
+  }
+  risk_level: string
+  reasons: string[]
+  urgency: number
+  timestamp: string
+}
+
 export default function HomePage() {
   const [opportunities, setOpportunities] = useState<Opportunity[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
   const [autoRefresh, setAutoRefresh] = useState(true)
   const [investmentAmount, setInvestmentAmount] = useState(1000)
+  const [activeTab, setActiveTab] = useState<'options' | 'crypto'>('options')
+  const [cryptoAlerts, setCryptoAlerts] = useState<CryptoAlert[]>([])
+  const [cryptoLoading, setCryptoLoading] = useState(false)
 
   const fetchOpportunities = async () => {
     try {
@@ -67,6 +92,21 @@ export default function HomePage() {
       console.error('Error fetching opportunities:', error)
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const fetchCryptoAlerts = async () => {
+    try {
+      setCryptoLoading(true)
+      const response = await fetch('/api/crypto-scan')
+      const data = await response.json()
+      if (data.success) {
+        setCryptoAlerts(data.trading_alerts || [])
+      }
+    } catch (error) {
+      console.error('Error fetching crypto alerts:', error)
+    } finally {
+      setCryptoLoading(false)
     }
   }
 
@@ -311,6 +351,30 @@ export default function HomePage() {
             </div>
 
             <div className="flex items-center gap-6">
+              {/* Tab Navigation */}
+              <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-2xl p-1">
+                <button
+                  onClick={() => setActiveTab('options')}
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+                    activeTab === 'options'
+                      ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  Options
+                </button>
+                <button
+                  onClick={() => setActiveTab('crypto')}
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+                    activeTab === 'crypto'
+                      ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  Crypto
+                </button>
+              </div>
+
               <div className="flex items-center gap-3">
                 <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
                   Investment Amount:
@@ -348,11 +412,11 @@ export default function HomePage() {
               </div>
               
               <button
-                onClick={fetchOpportunities}
-                disabled={isLoading}
+                onClick={activeTab === 'options' ? fetchOpportunities : fetchCryptoAlerts}
+                disabled={activeTab === 'options' ? isLoading : cryptoLoading}
                 className="px-6 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-medium shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-3 disabled:opacity-50 text-sm"
               >
-                {isLoading ? (
+                {(activeTab === 'options' ? isLoading : cryptoLoading) ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white dark:border-slate-900 border-t-transparent rounded-full animate-spin"></div>
                     Scanning...
@@ -362,7 +426,7 @@ export default function HomePage() {
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                     </svg>
-                    Scan Now
+                    Scan {activeTab === 'options' ? 'Options' : 'Crypto'}
                   </>
                 )}
               </button>
@@ -726,6 +790,215 @@ export default function HomePage() {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Crypto Section */}
+        {activeTab === 'crypto' && (
+          <div className="space-y-8">
+            {/* Crypto Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-100 dark:border-slate-800">
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Total Alerts</p>
+                  <p className="text-3xl font-semibold text-slate-900 dark:text-white">{cryptoAlerts.length}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-500">Trading signals</p>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-100 dark:border-slate-800">
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Buy Signals</p>
+                  <p className="text-3xl font-semibold text-emerald-600">{cryptoAlerts.filter(a => a.action === 'BUY').length}</p>
+                  <p className="text-xs text-emerald-600">Buy opportunities</p>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-100 dark:border-slate-800">
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Sell Signals</p>
+                  <p className="text-3xl font-semibold text-red-600">{cryptoAlerts.filter(a => a.action === 'SELL').length}</p>
+                  <p className="text-xs text-red-600">Sell opportunities</p>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-100 dark:border-slate-800">
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">High Urgency</p>
+                  <p className="text-3xl font-semibold text-orange-600">{cryptoAlerts.filter(a => a.urgency >= 8).length}</p>
+                  <p className="text-xs text-orange-600">Urgent alerts</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Crypto Loading State */}
+            {cryptoLoading && (
+              <div className="text-center py-16">
+                <div className="inline-flex items-center gap-3 text-slate-600 dark:text-slate-400">
+                  <div className="w-5 h-5 border-2 border-slate-300 border-t-slate-900 dark:border-slate-600 dark:border-t-white rounded-full animate-spin"></div>
+                  <span className="font-medium">Scanning crypto markets...</span>
+                </div>
+              </div>
+            )}
+
+            {/* Crypto Empty State */}
+            {!cryptoLoading && cryptoAlerts.length === 0 && (
+              <div className="text-center py-16">
+                <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                  <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">No crypto alerts found</h3>
+                <p className="text-slate-600 dark:text-slate-400 mb-6">
+                  Click "Scan Crypto" to find coins with explosive potential based on volume, momentum, and fundamentals.
+                </p>
+                <button
+                  onClick={fetchCryptoAlerts}
+                  className="px-6 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-medium hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors"
+                >
+                  Scan Crypto Markets
+                </button>
+              </div>
+            )}
+
+            {/* Crypto Alerts */}
+            {!cryptoLoading && cryptoAlerts.length > 0 && (
+              <div className="space-y-8">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">
+                    Crypto Trading Alerts
+                  </h2>
+                  <span className="text-sm text-slate-500 dark:text-slate-400">
+                    {cryptoAlerts.length} alerts found
+                  </span>
+                </div>
+                
+                <div className="grid gap-6">
+                  {cryptoAlerts.map((alert, index) => (
+                    <div key={index} className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-100 dark:border-slate-800 hover:border-slate-200 dark:hover:border-slate-700 transition-colors">
+                      <div className="flex items-start justify-between mb-6">
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-4">
+                            <div className="text-2xl font-bold text-slate-900 dark:text-white">
+                              {alert.symbol}
+                            </div>
+                            <div className={`px-4 py-2 rounded-xl text-sm font-semibold ${
+                              alert.action === 'BUY' 
+                                ? 'bg-emerald-500 text-white' 
+                                : 'bg-red-500 text-white'
+                            }`}>
+                              {alert.action}
+                            </div>
+                            <div className="px-3 py-1 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-medium">
+                              {alert.confidence.toFixed(0)}% confidence
+                            </div>
+                            <div className={`px-3 py-1 rounded-xl text-xs font-medium ${
+                              alert.urgency >= 8 ? 'bg-red-100 text-red-700' :
+                              alert.urgency >= 6 ? 'bg-orange-100 text-orange-700' :
+                              'bg-blue-100 text-blue-700'
+                            }`}>
+                              Urgency: {alert.urgency}/10
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center gap-6 text-sm text-slate-600 dark:text-slate-400">
+                            <span>{alert.name}</span>
+                            <span>Market Cap: ${(alert.market_cap / 1_000_000).toFixed(1)}M</span>
+                            <span className={`px-2 py-1 rounded-lg text-xs font-medium border ${
+                              alert.risk_level === 'low' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                              alert.risk_level === 'medium' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                              'bg-red-50 text-red-700 border-red-200'
+                            }`}>
+                              {alert.risk_level.toUpperCase()} RISK
+                            </span>
+                          </div>
+                        </div>
+                        
+                        <div className="text-right space-y-1">
+                          <div className="text-2xl font-semibold text-slate-900 dark:text-white">
+                            ${alert.current_price.toFixed(6)}
+                          </div>
+                          <div className="text-sm text-slate-600 dark:text-slate-400">
+                            Current Price
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Trading Strategy */}
+                      <div className="mb-6">
+                        <h4 className="font-semibold text-slate-900 dark:text-white mb-3">Trading Strategy: {alert.strategy}</h4>
+                        <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="text-center">
+                              <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Entry Price</div>
+                              <div className="text-lg font-semibold text-slate-900 dark:text-white">
+                                ${alert.entry_price.toFixed(6)}
+                              </div>
+                            </div>
+                            <div className="text-center">
+                              <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Target Price</div>
+                              <div className="text-lg font-semibold text-emerald-600">
+                                ${alert.target_price.toFixed(6)}
+                              </div>
+                            </div>
+                            <div className="text-center">
+                              <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Stop Loss</div>
+                              <div className="text-lg font-semibold text-red-600">
+                                ${alert.stop_loss.toFixed(6)}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Position Sizing */}
+                      <div className="mb-6">
+                        <h4 className="font-semibold text-slate-900 dark:text-white mb-3">Position Sizing</h4>
+                        <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
+                          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                            {Object.entries(alert.position_size.position_amounts).map(([portfolio, data]) => (
+                              <div key={portfolio} className="text-center">
+                                <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{portfolio}</div>
+                                <div className="text-sm font-semibold text-slate-900 dark:text-white">
+                                  ${data.amount}
+                                </div>
+                                <div className="text-xs text-slate-500 dark:text-slate-500">
+                                  ({data.percentage}%)
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Reasons */}
+                      <div className="mb-6">
+                        <h4 className="font-semibold text-slate-900 dark:text-white mb-3">Why {alert.action}?</h4>
+                        <div className="space-y-2">
+                          {alert.reasons.slice(0, 5).map((reason, i) => (
+                            <p key={i} className="text-sm text-slate-700 dark:text-slate-300">
+                              • {reason}
+                            </p>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Footer */}
+                      <div className="flex items-center justify-between pt-4 border-t border-slate-200/60 dark:border-slate-700/60">
+                        <span className="text-xs text-slate-500 dark:text-slate-500">
+                          Alert generated: {new Date(alert.timestamp).toLocaleString()}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-slate-500 dark:text-slate-500">Strategy:</span>
+                          <span className="text-xs font-medium text-slate-700 dark:text-slate-300">{alert.strategy}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
