@@ -1,36 +1,99 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Options Trading Dashboard
 
-## Getting Started
+A comprehensive web-based options trading dashboard that analyzes derivative options and identifies trading opportunities with high potential returns.
 
-First, run the development server:
+## Features
 
-```bash
+- **Real-time Options Scanning**: Analyzes live options data using yfinance (no API keys required)
+- **AI-Powered Analysis**: Multi-factor scoring system evaluating IV rank, volume, liquidity, and Greeks
+- **Live News Feed**: Market sentiment analysis from real-time news
+- **Cost Calculator**: Calculate potential profits, losses, and breakeven points
+- **Data Visualizations**: Charts for price history, volume, portfolio performance, and IV
+
+## Setup
+
+### 1. Install Python Dependencies
+
+\`\`\`bash
+pip install -r requirements.txt
+\`\`\`
+
+### 2. Install Node Dependencies
+
+\`\`\`bash
+npm install
+\`\`\`
+
+### 3. Run Development Server
+
+\`\`\`bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+\`\`\`
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 4. Test Python Scripts Directly
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+\`\`\`bash
+# Scan for options opportunities
+python3 scripts/fetch_options_data.py
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+# Get market news
+python3 scripts/fetch_market_news.py
 
-## Learn More
+# Get stock quotes
+python3 scripts/get_stock_quotes.py AAPL,MSFT,NVDA
+\`\`\`
 
-To learn more about Next.js, take a look at the following resources:
+## How It Works
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Data Sources (100% Free)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **yfinance**: Real-time stock quotes, options chains, and news
+- **No API keys required**: All data is freely available
 
-## Deploy on Vercel
+### Opportunity Scoring Algorithm
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The scanner evaluates options based on:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. **Volume/Open Interest Ratio** (25 pts): Detects unusual options activity
+2. **IV Rank** (25 pts): Identifies volatility expansion/contraction opportunities
+3. **Moneyness** (15 pts): Optimal strike selection near ATM
+4. **Bid-Ask Spread** (15 pts): Ensures high liquidity
+5. **Open Interest** (10 pts): Confirms market depth
+6. **Delta Efficiency** (10 pts): Leverage analysis
+7. **Risk/Reward Ratio** (10 pts): Potential return vs cost
+
+**Minimum Score**: 60/100 to be displayed as an opportunity
+
+### Greeks Calculation
+
+Uses Black-Scholes approximations with scipy for:
+- **Delta**: Price sensitivity
+- **Gamma**: Delta change rate
+- **Theta**: Time decay
+- **Vega**: Volatility sensitivity
+
+## API Endpoints
+
+- `GET /api/scan-python`: Scan for high-potential options opportunities
+- `GET /api/news-python`: Fetch market news with sentiment analysis
+- `GET /api/quotes-python?symbols=AAPL,MSFT`: Get real-time stock quotes
+
+## Tech Stack
+
+- **Frontend**: Next.js 15, React, TypeScript, Tailwind CSS
+- **Backend**: Next.js API Routes (Node.js runtime)
+- **Data Analysis**: Python, yfinance, pandas, numpy, scipy
+- **Charts**: Recharts
+- **UI Components**: shadcn/ui
+
+## Deployment
+
+The dashboard can be deployed to Vercel with Python support:
+
+1. Click "Publish" in the v0 interface
+2. Python scripts will run in Vercel's Node.js runtime using child_process
+3. No additional configuration needed
+
+## Disclaimer
+
+This dashboard is for educational and informational purposes only. It is not financial advice. Always do your own research and consult with a licensed financial advisor before making investment decisions.
