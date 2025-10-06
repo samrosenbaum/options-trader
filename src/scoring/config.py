@@ -5,12 +5,14 @@ from typing import Dict
 DEFAULT_SCORER_CONFIG: Dict[str, object] = {
     "enabled": [
         "volume",
+        "iv_anomaly",
         "iv_rank",
         "liquidity",
         "risk_reward",
     ],
     "weights": {
         "volume": 1.0,
+        "iv_anomaly": 1.4,
         "iv_rank": 1.2,
         "liquidity": 0.8,
         "risk_reward": 1.5,

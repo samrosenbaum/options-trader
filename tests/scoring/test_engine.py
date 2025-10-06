@@ -33,6 +33,14 @@ def build_market_data() -> dict:
         "moneyness": 0.013,
         "iv_rank": 82.0,
         "gamma_squeeze": 10.0,
+        "iv_anomaly": {
+            "zscore": 2.4,
+            "percentile": 0.97,
+            "current_iv": 55.0,
+            "mean_iv": 32.0,
+            "realized_vol": 28.0,
+            "iv_rv_spread": 27.0,
+        },
         "projected_returns": {"10%": 6.2, "20%": 9.1, "30%": 12.4},
     }
 
