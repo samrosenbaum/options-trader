@@ -363,12 +363,14 @@ class CryptoScanner:
         
         print("Starting crypto scan for explosive opportunities...")
         
-        for i, coin_id in enumerate(self.crypto_watchlist):
-            print(f"Scanning {coin_id} ({i+1}/{len(self.crypto_watchlist)})...")
+        # FAST MODE: Scan only first 5 crypto coins for quick results
+        fast_watchlist = self.crypto_watchlist[:5]
+        for i, coin_id in enumerate(fast_watchlist):
+            print(f"Scanning {coin_id} ({i+1}/{len(fast_watchlist)})...")
             
             # Rate limiting - more aggressive for CoinGecko
-            if i > 0 and i % 5 == 0:
-                time.sleep(3)  # Pause every 5 requests for 3 seconds
+            if i > 0 and i % 2 == 0:
+                time.sleep(3)  # Pause every 2 requests for 3 seconds
             elif i > 0:
                 time.sleep(1)  # 1 second between each request
             
@@ -434,7 +436,7 @@ class CryptoScanner:
                 
                 opportunities.append(opportunity)
         
-        # Note: No sample data - only real market opportunities
+        # No sample data - only real market opportunities
         if rate_limit_hit or len(opportunities) == 0:
             print("Rate limit detected or no opportunities found. Try again later when API limits reset.")
         

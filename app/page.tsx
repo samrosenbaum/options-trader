@@ -1,6 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import ScanProgress from '../components/scan-progress'
+import RealTimeProgress from '../components/real-time-progress'
+import LiveTicker from '../components/live-ticker'
 
 interface Opportunity {
   symbol: string
@@ -8,6 +11,7 @@ interface Opportunity {
   strike: number
   expiration: string
   premium: number
+  stockPrice: number
   score: number
   confidence: number
   reasoning: string[]
@@ -453,7 +457,21 @@ export default function HomePage() {
                 </div>
               </div>
 
+      {/* Live Ticker */}
+      <div className="max-w-6xl mx-auto px-8">
+        <LiveTicker />
+      </div>
+
       <div className="max-w-6xl mx-auto px-8 py-12">
+        {/* Scan Progress */}
+        <RealTimeProgress 
+          isScanning={isLoading || cryptoLoading} 
+          scanType={activeTab}
+          onScanComplete={(results) => {
+            console.log('Scan completed with results:', results)
+          }}
+        />
+        
         {/* Stats Cards - Fabric-inspired minimal design */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-12">
           <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-100 dark:border-slate-800">

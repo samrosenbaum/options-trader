@@ -534,12 +534,12 @@ def scan_symbols(symbols, max_attempts=50):
             
         print(f"Scanning {symbol} ({i+1}/{len(symbols)}) - Success: {successful_scans}, Failed: {failed_scans}")
         
-        # More aggressive rate limiting
-        if i > 0 and i % 5 == 0:
+        # Fast mode rate limiting (reduced delays)
+        if i > 0 and i % 3 == 0:
             print(f"Rate limiting pause after {i} requests...")
-            time.sleep(10)  # 10 second pause every 5 requests
+            time.sleep(5)  # 5 second pause every 3 requests
         elif i > 0:
-            time.sleep(3)  # 3 seconds between requests
+            time.sleep(2)  # 2 seconds between requests
         
         options_df = get_options_chain(symbol)
         
@@ -751,17 +751,11 @@ if __name__ == "__main__":
     random.shuffle(PRIORITY_WATCHLIST)
     print(f"Randomized priority order: {PRIORITY_WATCHLIST[:5]}...")
     
-    # Scan priority stocks first for quick results (limited to avoid rate limits)
-    opportunities = scan_symbols(PRIORITY_WATCHLIST, max_attempts=25)
+    # FAST MODE: Scan only 5-8 priority stocks for quick results (under 60 seconds)
+    print(f"FAST MODE: Scanning top 8 priority stocks for quick results...")
+    opportunities = scan_symbols(PRIORITY_WATCHLIST[:8], max_attempts=8)
     
-    # If we need more opportunities, scan additional stocks from full list
-    if len(opportunities) < 8:
-        print(f"\nExpanding scan to full watchlist...")
-        random.shuffle(WATCHLIST)
-        additional_opportunities = scan_symbols(WATCHLIST, max_attempts=25)
-        opportunities.extend(additional_opportunities)
-    
-    # Note: No sample data - only real market opportunities
+    # No sample data - only real market opportunities
     if len(opportunities) == 0:
         print(f"\nNo opportunities found due to rate limits. Try again later when market conditions improve.")
     
