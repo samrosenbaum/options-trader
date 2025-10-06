@@ -5,37 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { TrendingUp, TrendingDown, RefreshCw, Zap, Target } from "lucide-react"
-
-interface OpportunityScore {
-  symbol: string
-  optionType: "call" | "put"
-  action: "buy" | "sell"
-  strike: number
-  expiration: string
-  premium: number
-  bid: number
-  ask: number
-  volume: number
-  openInterest: number
-  impliedVolatility: number
-  stockPrice: number
-  score: number
-  confidence: number
-  reasoning: string[]
-  catalysts: string[]
-  riskLevel: "low" | "medium" | "high"
-  potentialReturn: number
-  maxLoss: number
-  breakeven: number
-  ivRank: number
-  volumeRatio: number
-  greeks: {
-    delta: number
-    gamma: number
-    theta: number
-    vega: number
-  }
-}
+import type { OpportunityScore } from "@/lib/api/ai-analyzer"
 
 export function LiveScanner() {
   const [opportunities, setOpportunities] = useState<OpportunityScore[]>([])
@@ -48,7 +18,7 @@ export function LiveScanner() {
     try {
       setIsLoading(true)
       setError(false)
-      const response = await fetch("/api/scan-python")
+      const response = await fetch("/api/scan")
       if (!response.ok) throw new Error("Failed to fetch")
       const data = await response.json()
       setOpportunities(data.opportunities || [])
@@ -109,7 +79,7 @@ export function LiveScanner() {
         ) : error ? (
           <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-center">
             <p className="text-sm text-destructive">Failed to load opportunities. Please try again.</p>
-            <p className="mt-1 text-xs text-muted-foreground">Make sure Python dependencies are installed</p>
+            <p className="mt-1 text-xs text-muted-foreground">Ensure the FastAPI scoring service is running</p>
           </div>
         ) : opportunities.length === 0 ? (
           <div className="rounded-lg border border-muted bg-muted/10 p-8 text-center">

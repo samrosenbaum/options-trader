@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { getMultipleQuotes, getMarketNews } from "@/lib/api/market-data"
 import { scanForOpportunities, type MarketContext } from "@/lib/api/ai-analyzer"
 
-export const runtime = "edge"
+export const runtime = "nodejs"
 
 // Watchlist of popular stocks to scan
 const WATCHLIST = ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "TSLA", "META", "AMD", "NFLX", "SPY"]
@@ -52,6 +52,7 @@ export async function GET() {
     })
   } catch (error) {
     console.error("Error scanning for opportunities:", error)
-    return NextResponse.json({ success: false, error: "Failed to scan for opportunities" }, { status: 500 })
+    const message = error instanceof Error ? error.message : "Failed to scan for opportunities"
+    return NextResponse.json({ success: false, error: message }, { status: 502 })
   }
 }
