@@ -663,10 +663,6 @@ def evaluate_contract(
     }
     projected_returns = compute_projected_returns(contract)
     market_data["projected_returns"] = projected_returns
-    profit_probability = estimate_profit_probability(contract)
-    risk_metrics = summarize_risk_metrics(contract, projected_returns)
-    market_data["profit_probability"] = profit_probability
-    market_data["risk_metrics"] = risk_metrics
     if event_context:
         market_data["event_intel"] = event_context
 
