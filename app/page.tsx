@@ -4,6 +4,29 @@ import { useState, useEffect } from 'react'
 import RealTimeProgress from '../components/real-time-progress'
 import LiveTicker from '../components/live-ticker'
 
+interface MoveAnalysisFactor {
+  label: string
+  detail: string
+  weight: number | null
+}
+
+interface MoveAnalysisThreshold {
+  threshold: string
+  baseProbability: number | null
+  conviction: number | null
+  summary: string
+  factors: MoveAnalysisFactor[]
+  historicalSupport: { horizonDays: number | null; probability: number | null } | null
+}
+
+interface MoveAnalysis {
+  expectedMovePercent: number | null
+  impliedVol: number | null
+  daysToExpiration: number | null
+  thresholds: MoveAnalysisThreshold[]
+  drivers: string[]
+}
+
 interface Opportunity {
   symbol: string
   optionType: string
@@ -200,12 +223,20 @@ export default function HomePage() {
     }).format(amount)
   }
 
+  const formatPercent = (value: number | null | undefined, digits = 0) => {
+    if (value === null || value === undefined || Number.isNaN(value)) {
+      return '—'
+    }
+    return `${value.toFixed(digits)}%`
+  }
+
   const getTradeLogic = (opp: Opportunity) => {
     const isCall = opp.optionType === 'call'
     const daysToExp = opp.daysToExpiration
     const strikeVsPrice = opp.strike / opp.stockPrice
     const ivRank = opp.ivRank
-    
+    const eventIntel = opp.eventIntel || {}
+
     let logic = ""
     
     // Basic trade direction
@@ -250,7 +281,31 @@ export default function HomePage() {
     if (opp.unusualFlowScore && opp.unusualFlowScore > 0) {
       logic += `Unusual options activity indicates smart money positioning, potentially signaling an upcoming move. `
     }
-    
+
+    if (typeof eventIntel.earnings_in_days === 'number') {
+      if (eventIntel.earnings_in_days >= 0) {
+        logic += `Upcoming earnings in ${Math.round(eventIntel.earnings_in_days)} days could be a key catalyst for volatility. `
+      } else if (eventIntel.earnings_in_days < 0 && eventIntel.earnings_in_days > -7) {
+        logic += `The stock is still reacting to a fresh earnings release from ${Math.abs(Math.round(eventIntel.earnings_in_days))} days ago. `
+      }
+    }
+
+    if (typeof eventIntel.news_sentiment_label === 'string') {
+      const sentimentLabel = String(eventIntel.news_sentiment_label).replace('_', ' ')
+      if (['bullish', 'very bullish', 'bearish', 'very bearish'].includes(sentimentLabel.toLowerCase())) {
+        logic += `News flow is ${sentimentLabel.toLowerCase()}, reinforcing the directional bias behind this trade. `
+      }
+    }
+
+    const drivers = opp.moveAnalysis?.drivers?.length
+      ? opp.moveAnalysis.drivers
+      : Array.isArray(eventIntel.unique_drivers)
+        ? eventIntel.unique_drivers
+        : []
+    if (drivers.length > 0) {
+      logic += `Primary drivers include ${drivers.join(', ')}. `
+    }
+
     return logic
   }
 
@@ -774,20 +829,38 @@ export default function HomePage() {
                       </div>
                     )}
 
-                    <div className="mb-6">
-                      <h4 className="font-semibold text-slate-900 dark:text-white mb-3">Why This Trade Makes Sense</h4>
-                      <div className="space-y-4">
-                        <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
-                          <h5 className="font-medium text-slate-900 dark:text-white mb-2">Trade Logic</h5>
-                          <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">{getTradeLogic(opp)}</p>
-                        </div>
+                      {renderMoveThesis(opp)}
 
-                        <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
-                          <h5 className="font-medium text-slate-900 dark:text-white mb-2">What the Greeks Tell Us</h5>
-                          <div className="space-y-2">
-                            {getGreeksExplanation(opp).map((explanation, i) => (
-                              <p key={i} className="text-sm text-slate-700 dark:text-slate-300">• {explanation}</p>
-                            ))}
+                      {/* Risk Assessment */}
+                      <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
+                        <h5 className="font-medium text-slate-900 dark:text-white mb-2">Risk & Reward Profile</h5>
+                        <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                          {getRiskRewardExplanation(opp)}
+                        </p>
+                      </div>
+                      {opp.probabilityOfProfit !== null && (
+                        <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl p-4 border border-emerald-200 dark:border-emerald-800">
+                          <div className="flex items-center justify-between mb-3">
+                            <h5 className="font-medium text-emerald-900 dark:text-emerald-100">Likelihood of Profit</h5>
+                            <span className="text-lg font-semibold text-emerald-700 dark:text-emerald-200">
+                              {opp.probabilityOfProfit.toFixed(1)}%
+                            </span>
+                          </div>
+                          <div className="w-full h-2 bg-emerald-100 dark:bg-emerald-900/40 rounded-full overflow-hidden mb-2">
+                            <div
+                              className="h-full bg-emerald-500"
+                              style={{ width: `${Math.max(0, Math.min(opp.probabilityOfProfit, 100)).toFixed(1)}%` }}
+                            ></div>
+                          </div>
+                          <div className="flex items-center justify-between text-xs text-emerald-800 dark:text-emerald-200 mb-3">
+                            {opp.breakevenMovePercent !== null ? (
+                              <span>Needs {opp.breakevenMovePercent.toFixed(1)}% move to breakeven</span>
+                            ) : (
+                              <span>Breakeven move unavailable</span>
+                            )}
+                            {opp.breakevenPrice !== null && (
+                              <span>Breakeven ${opp.breakevenPrice.toFixed(2)}</span>
+                            )}
                           </div>
                         </div>
 
