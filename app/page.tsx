@@ -307,8 +307,17 @@ export default function HomePage() {
 
   const calculateInvestmentScenario = (opp: Opportunity, investmentAmount: number) => {
     const optionPrice = opp.premium
-    const contractsToBuy = Math.floor(investmentAmount / (optionPrice * 100))
-    const totalCost = contractsToBuy * optionPrice * 100
+    const contractCost = optionPrice * 100
+    
+    // Calculate how many contracts we can afford
+    let contractsToBuy = Math.floor(investmentAmount / contractCost)
+    let totalCost = contractsToBuy * contractCost
+    
+    // If we can't afford a full contract, show what we could buy with our full investment
+    if (contractsToBuy === 0 && investmentAmount > 0) {
+      contractsToBuy = 1 // Show 1 contract for demonstration
+      totalCost = investmentAmount // Use full investment amount
+    }
     
     const scenarios = [
       { move: '5%', return: opp.returnsAnalysis[0]?.return || 0 },
@@ -322,6 +331,7 @@ export default function HomePage() {
       contractsToBuy,
       totalCost,
       remainingCapital: investmentAmount - totalCost,
+      contractCost,
       scenarios: scenarios.map(scenario => ({
         ...scenario,
         profit: (totalCost * scenario.return / 100),
@@ -701,13 +711,21 @@ export default function HomePage() {
                               <div>
                                 <div className="text-sm font-medium text-slate-600 dark:text-slate-400">Your Investment</div>
                                 <div className="text-lg font-semibold text-slate-900 dark:text-white">
-                                  {formatCurrency(scenario.totalCost)} for {scenario.contractsToBuy} contracts
+                                  {formatCurrency(scenario.totalCost)} for {scenario.contractsToBuy} contract{scenario.contractsToBuy !== 1 ? 's' : ''}
                                 </div>
+                                {scenario.contractsToBuy === 1 && scenario.totalCost < scenario.contractCost && (
+                                  <div className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                                    Partial contract (need {formatCurrency(scenario.contractCost)} for full contract)
+                                  </div>
+                                )}
                               </div>
                               <div className="text-right">
                                 <div className="text-sm font-medium text-slate-600 dark:text-slate-400">Option Price</div>
                                 <div className="text-lg font-semibold text-slate-900 dark:text-white">
-                                  {formatCurrency(opp.premium)} per contract
+                                  {formatCurrency(opp.premium)} per share
+                                </div>
+                                <div className="text-sm text-slate-500 dark:text-slate-400">
+                                  {formatCurrency(scenario.contractCost)} per contract
                                 </div>
                               </div>
                             </div>
