@@ -317,8 +317,8 @@ export default function HomePage() {
     }
 
     // Risk/Reward ratio
-    const shortTermRatio = opp.shortTermRiskRewardRatio ?? (potentialReturn / Math.max(Math.abs(maxLossPercent), 1))
-    const asymmetryRatio = opp.riskRewardRatio ?? (maxReturn / Math.max(Math.abs(maxLossPercent), 1))
+    const shortTermRatio = opp.shortTermRiskRewardRatio ?? (potentialReturn / Math.max(Math.abs(maxLoss), 1))
+    const asymmetryRatio = opp.riskRewardRatio ?? (maxReturn / Math.max(Math.abs(maxLoss), 1))
     if (shortTermRatio > 5) {
       explanation += `This creates an excellent near-term risk/reward ratio of ${shortTermRatio.toFixed(1)}:1 on a 10% move, meaning you could make ${shortTermRatio.toFixed(1)}x more than you could lose. `
     } else if (shortTermRatio > 2) {
@@ -908,18 +908,20 @@ export default function HomePage() {
                           </div>
                         </div>
 
-                        {/* Risk Warning */}
-                        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
-                          <div className="flex items-start gap-3">
-                            <div className="w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center mt-0.5">
-                              <span className="text-xs text-white font-bold">!</span>
-                            </div>
-                            <div>
-                              <div className="font-medium text-amber-800 dark:text-amber-200 mb-1">Risk Warning</div>
-                              <div className="text-sm text-amber-700 dark:text-amber-300">
-                                Maximum loss: {formatCurrency(maxLossDisplay)} ({opp.maxLossPercent.toFixed(1)}% {isPerContractView ? 'per contract' : 'of deployed capital'}).
-                                Options can expire worthless, and you could lose your entire investment.
-                              </div>
+                            {/* Risk Warning */}
+                            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
+                              <div className="flex items-start gap-3">
+                                <div className="w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center mt-0.5">
+                                  <span className="text-xs text-white font-bold">!</span>
+                                </div>
+                                <div>
+                                  <div className="font-medium text-amber-800 dark:text-amber-200 mb-1">Risk Warning</div>
+                                  <div className="text-sm text-amber-700 dark:text-amber-300">
+                                    Maximum loss: {formatCurrency(opp.maxLossAmount)} ({opp.maxLossPercent.toFixed(1)}% of investment).
+                                    Options can expire worthless, and you could lose your entire investment.
+                  </div>
+                  </div>
+                </div>
                             </div>
                           </div>
                         </div>
@@ -932,23 +934,17 @@ export default function HomePage() {
                     <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
                       <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Potential Return</div>
                       <div className="text-lg font-semibold text-emerald-600">{opp.potentialReturn.toFixed(1)}%</div>
-                      <div className="text-xs text-slate-500 dark:text-slate-400">
-                        ≈ {formatCurrency(potentialReturnDisplay)} {isPerContractView ? 'per contract' : ''}
-                      </div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400">≈ {formatCurrency(opp.potentialReturnAmount)}</div>
                     </div>
                     <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
                       <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Max Return</div>
                       <div className="text-lg font-semibold text-emerald-600">{opp.maxReturn.toFixed(1)}%</div>
-                      <div className="text-xs text-slate-500 dark:text-slate-400">
-                        ≈ {formatCurrency(maxReturnDisplay)} {isPerContractView ? 'per contract' : ''}
-                      </div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400">≈ {formatCurrency(opp.maxReturnAmount)}</div>
                     </div>
                     <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
                       <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Max Loss</div>
                       <div className="text-lg font-semibold text-red-600">{opp.maxLossPercent.toFixed(1)}%</div>
-                      <div className="text-xs text-slate-500 dark:text-slate-400">
-                        ≈ {formatCurrency(maxLossDisplay)} {isPerContractView ? 'per contract' : ''}
-                      </div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400">≈ {formatCurrency(opp.maxLossAmount)}</div>
                       {opp.riskRewardRatio && opp.riskRewardRatio >= 3 && (
                         <div className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-emerald-600">
                           <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />

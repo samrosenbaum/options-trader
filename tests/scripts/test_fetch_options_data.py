@@ -69,7 +69,3 @@ def test_summarize_risk_metrics_produces_asymmetry_ratio():
     assert metrics["max_return_pct"] == 520.0
     assert metrics["max_loss_pct"] == 100.0
     assert metrics["reward_to_risk"] > 1.0
-    assert metrics["max_loss_amount"] == round(contract.last_price * 100, 2)
-    assert metrics["max_return_amount"] == round(metrics["max_return_pct"] / 100 * contract.last_price * 100, 2)
-    assert metrics["premium_per_contract"] == round(contract.last_price * 100, 2)
-    assert metrics["max_loss_pct"] == round(metrics["max_loss_amount"] / metrics["premium_per_contract"] * 100, 2)

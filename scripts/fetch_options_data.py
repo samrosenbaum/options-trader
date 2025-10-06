@@ -211,30 +211,13 @@ def summarize_risk_metrics(contract: OptionContract, projected_returns: Dict[str
     if projected_returns:
         max_return_pct = max(projected_returns.values()) * 100
     potential_return_pct = projected_returns.get("10%", 0.0) * 100 if projected_returns else 0.0
-
-    premium_per_share = max(contract.last_price, 0.0)
-    contract_cost = max(premium_per_share * 100, 0.0)
-    if contract_cost <= 0:
-        max_loss_amount = 0.0
-        max_loss_pct = 0.0
-    else:
-        max_loss_amount = contract_cost
-        max_loss_pct = (max_loss_amount / contract_cost) * 100
-
+    max_loss_pct = 100.0
     asymmetry = max_return_pct / max(max_loss_pct, 1e-6)
     short_term_ratio = potential_return_pct / max(max_loss_pct, 1e-6)
 
-    max_return_amount = (max_return_pct / 100) * contract_cost if contract_cost > 0 else 0.0
-    potential_return_amount = (potential_return_pct / 100) * contract_cost if contract_cost > 0 else 0.0
-
     return {
         "max_return_pct": round(max_return_pct, 2),
-        "max_return_amount": round(max_return_amount, 2),
         "max_loss_pct": round(max_loss_pct, 2),
-        "max_loss_amount": round(max_loss_amount, 2),
-        "premium_per_contract": round(contract_cost, 2),
-        "ten_pct_move_return_amount": round(potential_return_amount, 2),
-        "ten_pct_move_return_pct": round(potential_return_pct, 2),
         "reward_to_risk": round(asymmetry, 2),
         "ten_pct_move_reward_to_risk": round(short_term_ratio, 2),
     }
@@ -680,10 +663,6 @@ def evaluate_contract(
     }
     projected_returns = compute_projected_returns(contract)
     market_data["projected_returns"] = projected_returns
-    profit_probability = estimate_profit_probability(contract)
-    risk_metrics = summarize_risk_metrics(contract, projected_returns)
-    market_data["profit_probability"] = profit_probability
-    market_data["risk_metrics"] = risk_metrics
     if event_context:
         market_data["event_intel"] = event_context
 
