@@ -1,11 +1,31 @@
+import { requestSignals } from "./scoring-service"
+import {
+  MarketContext,
+  OptionContract,
+  OptionGreeks,
+  ScanRequest,
+  ScanResponse,
+  ScanTarget,
+  Signal,
+} from "./types"
+
+export type { MarketContext } from "./types"
+
 export interface OpportunityScore {
   symbol: string
   optionType: "call" | "put"
   action: "buy" | "sell"
   strike: number
   expiration: string
-  score: number // 0-100
-  confidence: number // 0-100
+  premium: number
+  bid: number
+  ask: number
+  volume: number
+  openInterest: number
+  impliedVolatility: number
+  stockPrice: number
+  score: number
+  confidence: number
   reasoning: string[]
   catalysts: string[]
   riskLevel: "low" | "medium" | "high"
@@ -15,159 +35,30 @@ export interface OpportunityScore {
   ivRank: number
   volumeRatio: number
   newsImpact: number
+  greeks: OptionGreeks
 }
 
-export interface MarketContext {
-  symbol: string
-  price: number
+interface SampleOption {
+  type: "call" | "put"
+  strike: number
+  premium: number
+  iv: number
   volume: number
-  volatility: number
-  news: Array<{ headline: string; sentiment: number }>
-  technicals: {
-    rsi?: number
-    macd?: number
-    trend: "bullish" | "bearish" | "neutral"
-  }
-}
-
-// Calculate opportunity score based on multiple factors
-export function calculateOpportunityScore(
-  context: MarketContext,
-  option: {
-    type: "call" | "put"
-    strike: number
-    premium: number
-    iv: number
-    volume: number
-    openInterest: number
-    delta: number
-  },
-): OpportunityScore {
-  let score = 0
-  const reasoning: string[] = []
-  const catalysts: string[] = []
-
-  // Factor 1: Implied Volatility Rank (0-30 points)
-  const ivRank = calculateIVRank(option.iv)
-  if (ivRank > 70) {
-    score += 25
-    reasoning.push(`High IV rank (${ivRank.toFixed(0)}%) suggests elevated option premiums`)
-  } else if (ivRank < 30) {
-    score += 20
-    reasoning.push(`Low IV rank (${ivRank.toFixed(0)}%) indicates potential for volatility expansion`)
-  } else {
-    score += 10
-  }
-
-  // Factor 2: Volume to Open Interest Ratio (0-25 points)
-  const volumeRatio = option.volume / Math.max(option.openInterest, 1)
-  if (volumeRatio > 2) {
-    score += 25
-    reasoning.push(`Unusual volume (${volumeRatio.toFixed(1)}x open interest) indicates strong interest`)
-    catalysts.push("Unusual Options Activity")
-  } else if (volumeRatio > 1) {
-    score += 15
-    reasoning.push(`Above-average volume suggests growing interest`)
-  } else {
-    score += 5
-  }
-
-  // Factor 3: News Sentiment (0-20 points)
-  const avgSentiment = context.news.reduce((sum, n) => sum + n.sentiment, 0) / Math.max(context.news.length, 1)
-  const sentimentAligned =
-    (option.type === "call" && avgSentiment > 0.3) || (option.type === "put" && avgSentiment < -0.3)
-  if (sentimentAligned) {
-    score += 20
-    reasoning.push(
-      `News sentiment strongly ${avgSentiment > 0 ? "bullish" : "bearish"}, aligned with ${option.type} position`,
-    )
-    catalysts.push("Positive News Catalyst")
-  } else if (Math.abs(avgSentiment) > 0.1) {
-    score += 10
-  } else {
-    score += 5
-  }
-
-  // Factor 4: Technical Setup (0-15 points)
-  const technicalAligned =
-    (option.type === "call" && context.technicals.trend === "bullish") ||
-    (option.type === "put" && context.technicals.trend === "bearish")
-  if (technicalAligned) {
-    score += 15
-    reasoning.push(`Technical indicators confirm ${context.technicals.trend} trend`)
-    catalysts.push("Technical Breakout")
-  } else {
-    score += 5
-  }
-
-  // Factor 5: Risk/Reward Ratio (0-10 points)
-  const moneyness = (context.price - option.strike) / context.price
-  const potentialReturn = calculatePotentialReturn(option.type, context.price, option.strike, option.premium)
-  const riskRewardRatio = potentialReturn / option.premium
-
-  if (riskRewardRatio > 3) {
-    score += 10
-    reasoning.push(`Excellent risk/reward ratio of ${riskRewardRatio.toFixed(1)}:1`)
-  } else if (riskRewardRatio > 2) {
-    score += 7
-  } else {
-    score += 3
-  }
-
-  // Factor 6: Delta efficiency (0-10 points)
-  const deltaEfficiency = Math.abs(option.delta) / option.premium
-  if (deltaEfficiency > 0.5) {
-    score += 10
-    reasoning.push(`High delta efficiency (${deltaEfficiency.toFixed(2)}) provides good leverage`)
-  } else {
-    score += 5
-  }
-
-  // Determine risk level
-  let riskLevel: "low" | "medium" | "high"
-  if (Math.abs(moneyness) < 0.05) {
-    riskLevel = "medium"
-  } else if (Math.abs(moneyness) > 0.15) {
-    riskLevel = "high"
-  } else {
-    riskLevel = "low"
-  }
-
-  // Calculate breakeven
-  const breakeven = option.type === "call" ? option.strike + option.premium : option.strike - option.premium
-
-  // Confidence based on number of aligned factors
-  const confidence = Math.min(95, score * 0.9 + 10)
-
-  return {
-    symbol: context.symbol,
-    optionType: option.type,
-    action: "buy", // Could be enhanced to suggest selling strategies
-    strike: option.strike,
-    expiration: getNextExpiration(),
-    score: Math.min(100, score),
-    confidence,
-    reasoning,
-    catalysts,
-    riskLevel,
-    potentialReturn,
-    maxLoss: option.premium,
-    breakeven,
-    ivRank,
-    volumeRatio,
-    newsImpact: avgSentiment,
-  }
+  openInterest: number
+  delta: number
 }
 
 function calculateIVRank(currentIV: number): number {
-  // Simplified IV rank calculation
-  // In production, would compare to 52-week IV range
   const typicalIVRange = { low: 20, high: 80 }
   return ((currentIV - typicalIVRange.low) / (typicalIVRange.high - typicalIVRange.low)) * 100
 }
 
-function calculatePotentialReturn(type: "call" | "put", currentPrice: number, strike: number, premium: number): number {
-  // Estimate potential return based on 10% move
+function calculatePotentialReturn(
+  type: "call" | "put",
+  currentPrice: number,
+  strike: number,
+  premium: number,
+): number {
   const targetPrice = type === "call" ? currentPrice * 1.1 : currentPrice * 0.9
   const intrinsicValue = type === "call" ? Math.max(0, targetPrice - strike) : Math.max(0, strike - targetPrice)
   return Math.max(0, intrinsicValue - premium)
@@ -177,67 +68,231 @@ function getNextExpiration(): string {
   const now = new Date()
   const daysToFriday = (5 - now.getDay() + 7) % 7 || 7
   const nextFriday = new Date(now.getTime() + daysToFriday * 24 * 60 * 60 * 1000)
-  nextFriday.setDate(nextFriday.getDate() + 7) // Next week's Friday
+  nextFriday.setDate(nextFriday.getDate() + 7)
   return nextFriday.toISOString().split("T")[0]
 }
 
-// Scan multiple symbols and return top opportunities
-export async function scanForOpportunities(symbols: string[], contexts: MarketContext[]): Promise<OpportunityScore[]> {
-  const opportunities: OpportunityScore[] = []
-
-  for (let i = 0; i < contexts.length; i++) {
-    const context = contexts[i]
-
-    // Generate sample options for analysis
-    // In production, would fetch real options chain data
-    const sampleOptions = generateSampleOptions(context.price)
-
-    for (const option of sampleOptions) {
-      const score = calculateOpportunityScore(context, option)
-      if (score.score > 60) {
-        // Only include high-scoring opportunities
-        opportunities.push(score)
-      }
-    }
+function computeGreeks(option: SampleOption): OptionGreeks {
+  const gamma = Math.max(0.01, Math.abs(option.delta) / Math.max(option.strike, 1) * 0.5)
+  const theta = -Math.abs(option.premium) * 0.05
+  const vega = option.iv * 0.1
+  return {
+    delta: option.delta,
+    gamma: Number(gamma.toFixed(4)),
+    theta: Number(theta.toFixed(4)),
+    vega: Number(vega.toFixed(4)),
   }
-
-  // Sort by score descending
-  return opportunities.sort((a, b) => b.score - a.score).slice(0, 10)
 }
 
-function generateSampleOptions(stockPrice: number) {
-  const options = []
+function buildOpportunity(
+  context: MarketContext,
+  option: SampleOption,
+): { target: ScanTarget; draft: OpportunityScore; key: string } {
+  const expiration = getNextExpiration()
+  const mid = Math.max(option.premium, 0.05)
+  const spread = Math.max(mid * 0.1, 0.05)
+  const bid = Math.max(mid - spread / 2, 0.01)
+  const ask = bid + spread
+  const greeks = computeGreeks(option)
+  const avgSentiment = context.news.reduce((sum, n) => sum + n.sentiment, 0) / Math.max(context.news.length, 1)
+  const volumeRatio = option.volume / Math.max(option.openInterest, 1)
+  const ivRank = calculateIVRank(option.iv)
+  const potentialReturn = calculatePotentialReturn(option.type, context.price, option.strike, mid)
+  const breakeven = option.type === "call" ? option.strike + mid : option.strike - mid
+  const moneyness = (context.price - option.strike) / Math.max(context.price, 1)
 
-  // Generate ATM, ITM, and OTM options
-  const strikes = [
-    stockPrice * 0.95, // ITM call / OTM put
-    stockPrice, // ATM
-    stockPrice * 1.05, // OTM call / ITM put
-  ]
+  const catalysts: string[] = []
+  const reasoning: string[] = []
+
+  if (volumeRatio > 2) {
+    catalysts.push("Unusual Options Activity")
+    reasoning.push(`Volume ratio ${volumeRatio.toFixed(1)}x open interest`)
+  } else if (volumeRatio > 1) {
+    reasoning.push("Healthy options volume relative to open interest")
+  }
+
+  if (Math.abs(avgSentiment) > 0.3) {
+    catalysts.push("News Catalyst")
+    reasoning.push(`News sentiment ${avgSentiment > 0 ? "bullish" : "bearish"}`)
+  }
+
+  if (option.type === "call" && context.technicals.trend === "bullish") {
+    catalysts.push("Technical Breakout")
+    reasoning.push("Technicals indicate bullish momentum")
+  } else if (option.type === "put" && context.technicals.trend === "bearish") {
+    catalysts.push("Technical Breakdown")
+    reasoning.push("Technicals indicate bearish momentum")
+  }
+
+  const riskLevel: "low" | "medium" | "high" = Math.abs(moneyness) > 0.15 ? "high" : Math.abs(moneyness) < 0.05 ? "medium" : "low"
+
+  const heuristicsScore = Math.min(
+    100,
+    40 + volumeRatio * 10 + Math.max(0, 50 * Math.abs(avgSentiment)) + (riskLevel === "low" ? 10 : 0),
+  )
+  const confidenceHint = Math.min(95, heuristicsScore * 0.9 + 10)
+
+  const contract: OptionContract = {
+    symbol: context.symbol,
+    type: option.type,
+    strike: Number(option.strike.toFixed(2)),
+    expiration,
+    lastPrice: Number(mid.toFixed(2)),
+    bid: Number(bid.toFixed(2)),
+    ask: Number(ask.toFixed(2)),
+    volume: Math.round(option.volume),
+    openInterest: Math.round(option.openInterest),
+    impliedVolatility: Number(option.iv.toFixed(4)),
+    stockPrice: Number(context.price.toFixed(2)),
+  }
+
+  const metadata = {
+    action: "buy" as const,
+    catalysts,
+    reasoning,
+    riskLevel,
+    potentialReturn: Number(potentialReturn.toFixed(2)),
+    maxLoss: Number(mid.toFixed(2)),
+    breakeven: Number(breakeven.toFixed(2)),
+    ivRank: Number(ivRank.toFixed(2)),
+    volumeRatio: Number(volumeRatio.toFixed(2)),
+    newsImpact: Number(avgSentiment.toFixed(2)),
+    heuristicsScore,
+    confidenceHint,
+  }
+
+  const target: ScanTarget = {
+    contract,
+    greeks,
+    market_data: {
+      price: context.price,
+      volatility: context.volatility,
+      volume: context.volume,
+      newsImpact: avgSentiment,
+      volumeRatio,
+    },
+    metadata,
+  }
+
+  const draft: OpportunityScore = {
+    symbol: context.symbol,
+    optionType: option.type,
+    action: "buy",
+    strike: contract.strike,
+    expiration,
+    premium: contract.lastPrice,
+    bid: contract.bid,
+    ask: contract.ask,
+    volume: contract.volume,
+    openInterest: contract.openInterest,
+    impliedVolatility: contract.impliedVolatility,
+    stockPrice: contract.stockPrice,
+    score: heuristicsScore,
+    confidence: confidenceHint,
+    reasoning,
+    catalysts,
+    riskLevel,
+    potentialReturn: metadata.potentialReturn,
+    maxLoss: metadata.maxLoss,
+    breakeven: metadata.breakeven,
+    ivRank: metadata.ivRank,
+    volumeRatio: metadata.volumeRatio,
+    newsImpact: metadata.newsImpact,
+    greeks,
+  }
+
+  const key = `${contract.symbol}|${contract.type}|${contract.strike}|${contract.expiration}`
+
+  return { target, draft, key }
+}
+
+function mergeSignalWithDraft(signal: Signal, draftMap: Map<string, OpportunityScore>): OpportunityScore {
+  const key = `${signal.contract.symbol}|${signal.contract.type}|${signal.contract.strike}|${signal.contract.expiration}`
+  const draft = draftMap.get(key)
+  const metadata = signal.metadata || {}
+
+  return {
+    symbol: signal.symbol,
+    optionType: signal.contract.type,
+    action: (metadata.action as "buy" | "sell") || draft?.action || "buy",
+    strike: signal.contract.strike,
+    expiration: signal.contract.expiration,
+    premium: signal.contract.lastPrice,
+    bid: signal.contract.bid,
+    ask: signal.contract.ask,
+    volume: signal.contract.volume,
+    openInterest: signal.contract.openInterest,
+    impliedVolatility: signal.contract.impliedVolatility,
+    stockPrice: signal.contract.stockPrice,
+    score: signal.score.total_score,
+    confidence: signal.confidence || (metadata.confidenceHint as number) || draft?.confidence || signal.score.total_score,
+    reasoning: signal.reasons.length ? signal.reasons : (metadata.reasoning as string[]) || draft?.reasoning || [],
+    catalysts: (metadata.catalysts as string[]) || draft?.catalysts || [],
+    riskLevel: (metadata.riskLevel as "low" | "medium" | "high") || draft?.riskLevel || "medium",
+    potentialReturn: Number(metadata.potentialReturn ?? draft?.potentialReturn ?? 0),
+    maxLoss: Number(metadata.maxLoss ?? draft?.maxLoss ?? signal.contract.lastPrice),
+    breakeven: Number(metadata.breakeven ?? draft?.breakeven ?? signal.contract.strike),
+    ivRank: Number(metadata.ivRank ?? draft?.ivRank ?? 0),
+    volumeRatio: Number(metadata.volumeRatio ?? draft?.volumeRatio ?? 0),
+    newsImpact: Number(metadata.newsImpact ?? draft?.newsImpact ?? 0),
+    greeks: signal.greeks,
+  }
+}
+
+function generateSampleOptions(stockPrice: number): SampleOption[] {
+  const options: SampleOption[] = []
+  const strikes = [stockPrice * 0.95, stockPrice, stockPrice * 1.05]
 
   for (const strike of strikes) {
-    // Call option
     options.push({
-      type: "call" as const,
+      type: "call",
       strike,
-      premium: Math.max(0.5, (stockPrice - strike) * 0.3 + Math.random() * 2),
-      iv: 30 + Math.random() * 40,
-      volume: Math.floor(Math.random() * 5000) + 100,
-      openInterest: Math.floor(Math.random() * 10000) + 500,
-      delta: strike < stockPrice ? 0.6 + Math.random() * 0.3 : 0.2 + Math.random() * 0.3,
+      premium: Math.max(0.5, (stockPrice - strike) * 0.3 + 1.5),
+      iv: 30 + (stockPrice % 20),
+      volume: Math.floor(stockPrice * 2 + strike) % 4000 + 500,
+      openInterest: Math.floor(stockPrice * 3 + strike) % 8000 + 500,
+      delta: strike < stockPrice ? 0.65 : 0.35,
     })
 
-    // Put option
     options.push({
-      type: "put" as const,
+      type: "put",
       strike,
-      premium: Math.max(0.5, (strike - stockPrice) * 0.3 + Math.random() * 2),
-      iv: 30 + Math.random() * 40,
-      volume: Math.floor(Math.random() * 5000) + 100,
-      openInterest: Math.floor(Math.random() * 10000) + 500,
-      delta: strike > stockPrice ? -0.6 - Math.random() * 0.3 : -0.2 - Math.random() * 0.3,
+      premium: Math.max(0.5, (strike - stockPrice) * 0.3 + 1.2),
+      iv: 28 + (stockPrice % 25),
+      volume: Math.floor(stockPrice * 1.5 + strike) % 4000 + 400,
+      openInterest: Math.floor(stockPrice * 2.2 + strike) % 8000 + 400,
+      delta: strike > stockPrice ? -0.65 : -0.35,
     })
   }
 
   return options
+}
+
+export async function scanForOpportunities(symbols: string[], contexts: MarketContext[]): Promise<OpportunityScore[]> {
+  const targets: ScanTarget[] = []
+  const draftMap = new Map<string, OpportunityScore>()
+
+  for (const context of contexts) {
+    const sampleOptions = generateSampleOptions(context.price)
+    for (const option of sampleOptions) {
+      const { target, draft, key } = buildOpportunity(context, option)
+      targets.push(target)
+      draftMap.set(key, draft)
+    }
+  }
+
+  if (targets.length === 0) {
+    return []
+  }
+
+  const requestPayload: ScanRequest = {
+    targets,
+    market_context: Object.fromEntries(contexts.map((ctx) => [ctx.symbol, ctx])),
+    scoring_config: {},
+  }
+
+  const response: ScanResponse = await requestSignals(requestPayload)
+  const opportunities = response.signals.map((signal) => mergeSignalWithDraft(signal, draftMap))
+
+  return opportunities.filter((opp) => opp.score >= 60).sort((a, b) => b.score - a.score).slice(0, 10)
 }

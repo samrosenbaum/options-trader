@@ -24,13 +24,19 @@ pip install -r requirements.txt
 npm install
 \`\`\`
 
-### 3. Run Development Server
+### 3. Start the FastAPI Scoring Service
 
-\`\`\`bash
+```bash
+uvicorn src.api.main:app --reload --port 8000
+```
+
+### 4. Run Development Server
+
+```bash
 npm run dev
-\`\`\`
+```
 
-### 4. Test Python Scripts Directly
+### 5. Test Python Scripts Directly
 
 \`\`\`bash
 # Scan for options opportunities
@@ -74,7 +80,8 @@ Uses Black-Scholes approximations with scipy for:
 
 ## API Endpoints
 
-- `GET /api/scan-python`: Scan for high-potential options opportunities
+- `POST /scan` (FastAPI service): Score option contracts and return structured trading signals
+- `GET /api/scan`: Next.js route that proxies to the FastAPI scoring engine
 - `GET /api/news-python`: Fetch market news with sentiment analysis
 - `GET /api/quotes-python?symbols=AAPL,MSFT`: Get real-time stock quotes
 
