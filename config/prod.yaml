@@ -1,0 +1,40 @@
+watchlists:
+  default:
+    - SPY
+    - QQQ
+    - DIA
+    - IWM
+    - GLD
+  momentum:
+    - NVDA
+    - TSLA
+    - META
+    - AMD
+    - GOOGL
+scoring:
+  enabled:
+    - volume
+    - iv_rank
+    - liquidity
+    - risk_reward
+  weights:
+    volume: 1.1
+    iv_rank: 1.3
+    liquidity: 0.9
+    risk_reward: 1.7
+  score_bounds:
+    min: 10.0
+    max: 100.0
+adapter:
+  provider: polygon
+  settings:
+    retries: 3
+cache:
+  ttl_seconds: 300
+storage:
+  backend: sqlite
+  sqlite:
+    path: data/prod-options.db
+    pragmas:
+      journal_mode: WAL
+      synchronous: FULL

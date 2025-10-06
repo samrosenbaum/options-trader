@@ -1,4 +1,4 @@
-"""Configuration helpers for Python scripts."""
+"""Configuration helpers for Python scripts and services."""
 
 from __future__ import annotations
 
@@ -6,7 +6,9 @@ import os
 from functools import lru_cache
 from typing import Optional
 
-from .adapters import OptionsDataAdapter, create_adapter
+from src.adapters import OptionsDataAdapter, create_adapter
+
+from .loader import AppSettings, get_settings, reset_settings_cache
 
 DEFAULT_OPTIONS_PROVIDER = "yfinance"
 
@@ -33,7 +35,10 @@ def reset_options_data_adapter_cache() -> None:
 
 
 __all__ = [
+    "AppSettings",
     "DEFAULT_OPTIONS_PROVIDER",
     "get_options_data_adapter",
+    "get_settings",
+    "reset_settings_cache",
     "reset_options_data_adapter_cache",
 ]
