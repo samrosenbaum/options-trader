@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timezone
-from math import sqrt
 from typing import Any, Dict, Iterable, List, Mapping, Sequence, Tuple
 from uuid import uuid4
 
@@ -212,30 +211,13 @@ def summarize_risk_metrics(contract: OptionContract, projected_returns: Dict[str
     if projected_returns:
         max_return_pct = max(projected_returns.values()) * 100
     potential_return_pct = projected_returns.get("10%", 0.0) * 100 if projected_returns else 0.0
-
-    premium_per_share = max(contract.last_price, 0.0)
-    contract_cost = max(premium_per_share * 100, 0.0)
-    if contract_cost <= 0:
-        max_loss_amount = 0.0
-        max_loss_pct = 0.0
-    else:
-        max_loss_amount = contract_cost
-        max_loss_pct = (max_loss_amount / contract_cost) * 100
-
+    max_loss_pct = 100.0
     asymmetry = max_return_pct / max(max_loss_pct, 1e-6)
     short_term_ratio = potential_return_pct / max(max_loss_pct, 1e-6)
 
-    max_return_amount = (max_return_pct / 100) * contract_cost if contract_cost > 0 else 0.0
-    potential_return_amount = (potential_return_pct / 100) * contract_cost if contract_cost > 0 else 0.0
-
     return {
         "max_return_pct": round(max_return_pct, 2),
-        "max_return_amount": round(max_return_amount, 2),
         "max_loss_pct": round(max_loss_pct, 2),
-        "max_loss_amount": round(max_loss_amount, 2),
-        "premium_per_contract": round(contract_cost, 2),
-        "ten_pct_move_return_amount": round(potential_return_amount, 2),
-        "ten_pct_move_return_pct": round(potential_return_pct, 2),
         "reward_to_risk": round(asymmetry, 2),
         "ten_pct_move_reward_to_risk": round(short_term_ratio, 2),
     }
@@ -478,35 +460,6 @@ def _build_volatility_context(ticker: yf.Ticker, symbol: str) -> Dict[str, objec
     return context
 
 
-def _build_historical_move_context(ticker: yf.Ticker) -> Dict[str, object]:
-    try:
-        history = ticker.history(period="1y")
-        closes = history["Close"].dropna()
-        if len(closes) < 10:
-            raise ValueError("insufficient price history")
-
-        context: Dict[str, object] = {}
-        stats: Dict[str, Dict[str, float]] = {}
-        for horizon in (3, 5, 10):
-            returns = closes.pct_change(periods=horizon).dropna()
-            if returns.empty:
-                continue
-            abs_returns = returns.abs()
-            stats[str(horizon)] = {
-                "samples": float(len(abs_returns)),
-                "avg_abs_move_pct": float(abs_returns.mean() * 100),
-                "p75_abs_move_pct": float(np.percentile(abs_returns, 75) * 100),
-                "prob_5pct": float((abs_returns >= 0.05).mean()),
-                "prob_10pct": float((abs_returns >= 0.10).mean()),
-            }
-
-        if stats:
-            context["historical_moves"] = stats
-        return context
-    except Exception:
-        return {}
-
-
 def collect_event_context(symbol: str) -> Dict[str, object]:
     ticker = yf.Ticker(symbol)
     context: Dict[str, object] = {"symbol": symbol}
@@ -522,10 +475,6 @@ def collect_event_context(symbol: str) -> Dict[str, object]:
     volatility_context = _build_volatility_context(ticker, symbol)
     if volatility_context:
         context.update(volatility_context)
-
-    historical_context = _build_historical_move_context(ticker)
-    if historical_context:
-        context.update(historical_context)
 
     unique_drivers = set(context.get("unique_drivers", []))
     if context.get("political_hits"):
@@ -544,206 +493,6 @@ def collect_event_context(symbol: str) -> Dict[str, object]:
         return {}
 
     return context
-
-
-def _nearest_historical_window(
-    historical_moves: Dict[str, Dict[str, float]],
-    target_days: int,
-) -> Tuple[int | None, Dict[str, float] | None]:
-    if not historical_moves:
-        return None, None
-
-    best_key: int | None = None
-    best_payload: Dict[str, float] | None = None
-    best_diff: int | None = None
-    for window_str, payload in historical_moves.items():
-        try:
-            window = int(window_str)
-        except (TypeError, ValueError):
-            continue
-        diff = abs(window - target_days)
-        if best_diff is None or diff < best_diff:
-            best_key = window
-            best_payload = payload
-            best_diff = diff
-    return best_key, best_payload
-
-
-def build_move_thesis(
-    contract: OptionContract,
-    event_context: Dict[str, object] | None,
-    gamma_signal: Dict[str, object] | None,
-    iv_anomaly: Dict[str, float] | None,
-) -> Dict[str, object]:
-    event_context = event_context or {}
-    gamma_signal = gamma_signal or {}
-    iv_anomaly = iv_anomaly or {}
-
-    sigma = float(contract.implied_volatility or 0.0)
-    if sigma <= 0:
-        sigma = 0.35
-
-    days_to_expiration = max(contract.days_to_expiration, 0)
-    time_fraction = sqrt(max(days_to_expiration, 1) / 365.0)
-    expected_move_pct = sigma * time_fraction * 100
-
-    thresholds: List[Dict[str, object]] = []
-    primary_drivers: set[str] = set(event_context.get("unique_drivers", []))
-
-    historical_moves = event_context.get("historical_moves", {})
-    nearest_days, nearest_stats = _nearest_historical_window(historical_moves, max(min(days_to_expiration, 10), 1))
-
-    news_label = (event_context.get("news_sentiment_label") or "").replace("_", " ")
-    news_score = event_context.get("news_sentiment_score")
-    earnings_days = event_context.get("earnings_in_days")
-    volatility_label = event_context.get("volatility_label")
-    gamma_level = (gamma_signal.get("risk_level") or "").upper()
-    iv_zscore = iv_anomaly.get("zscore")
-
-    def add_factor(
-        collection: List[Dict[str, object]],
-        label: str,
-        detail: str,
-        weight: float = 0.0,
-        driver: str | None = None,
-    ) -> float:
-        entry = {"label": label, "detail": detail}
-        if weight:
-            entry["weight"] = round(weight, 3)
-        collection.append(entry)
-        if driver:
-            primary_drivers.add(driver)
-        return max(weight, 0.0)
-
-    direction_phrase = "upside" if contract.option_type == "call" else "downside"
-
-    for threshold in (0.05, 0.10):
-        label = f"{int(threshold * 100)}%"
-        factors: List[Dict[str, object]] = []
-        support_bonus = 0.0
-
-        std_pct = sigma * time_fraction
-        if std_pct <= 0:
-            base_probability = 0.0
-        else:
-            z = threshold / std_pct
-            base_probability = 1 - norm.cdf(z)
-        base_probability = float(max(0.0, min(1.0, base_probability)))
-
-        implied_detail = (
-            f"Implied volatility at {sigma * 100:.1f}% prices a ±{expected_move_pct:.1f}% one-sigma move into expiration"
-        )
-        add_factor(factors, "Options Market", implied_detail)
-
-        summary_parts = [
-            f"Options pricing implies roughly a {base_probability * 100:.0f}% chance of a {label} {direction_phrase} move by expiration."
-        ]
-
-        if isinstance(earnings_days, (int, float)) and earnings_days >= 0 and earnings_days <= max(days_to_expiration, 1):
-            detail = (
-                f"Earnings in {int(earnings_days)} days can catalyze multi-day swings as guidance and beats reset expectations."
-            )
-            support_bonus += add_factor(factors, "Earnings Catalyst", detail, 0.12, "upcoming earnings")
-            summary_parts.append(detail)
-
-        if news_label and news_label.lower() in {"bullish", "very bullish", "bearish", "very bearish"}:
-            direction = "buying" if "bull" in news_label.lower() else "selling"
-            score_part = f" (sentiment {news_score:+.2f})" if isinstance(news_score, (int, float)) else ""
-            detail = f"Recent news flow is {news_label}{score_part}, indicating {direction} pressure in the tape."
-            support_bonus += add_factor(factors, "News Momentum", detail, 0.07, "news momentum")
-            summary_parts.append(detail)
-
-        if isinstance(iv_zscore, (int, float)):
-            if iv_zscore >= 1.5:
-                detail = (
-                    f"Option traders are bidding volatility {iv_zscore:.1f}σ above normal, signalling expectations for outsized moves."
-                )
-                support_bonus += add_factor(factors, "Volatility Bid", detail, 0.1, "volatility dislocation")
-                summary_parts.append(detail)
-            elif iv_zscore <= -1.5:
-                detail = (
-                    f"Volatility is {abs(iv_zscore):.1f}σ below average, hinting the market may be underpricing a breakout."
-                )
-                support_bonus += add_factor(factors, "Volatility Lull", detail, 0.05, "volatility compression")
-                summary_parts.append(detail)
-
-        if isinstance(earnings_days, (int, float)) and earnings_days < 0:
-            detail = "Post-earnings drift remains active, with traders reacting to the fresh report."
-            support_bonus += add_factor(factors, "Post-Earnings Momentum", detail, 0.05)
-            summary_parts.append(detail)
-
-        if volatility_label in {"elevated", "extreme"}:
-            detail = f"Realized volatility regime is {volatility_label}, so the stock has been swinging aggressively already."
-            support_bonus += add_factor(factors, "Realized Volatility", detail, 0.08, "high realized volatility")
-            summary_parts.append(detail)
-
-        if gamma_level in {"EXTREME", "HIGH"}:
-            detail = "Dealer positioning is short gamma, so directional moves can accelerate as hedges chase price."
-            support_bonus += add_factor(factors, "Dealer Positioning", detail, 0.1, "dealer positioning")
-            summary_parts.append(detail)
-        elif gamma_level in {"MODERATE", "LOW"} and gamma_signal.get("score", 0) > 0:
-            detail = "Gamma setup is building, offering fuel if price breaches key strikes."
-            support_bonus += add_factor(factors, "Dealer Positioning", detail, 0.05, "dealer positioning")
-            summary_parts.append(detail)
-
-        if nearest_days is not None and nearest_stats:
-            hist_prob_key = f"prob_{int(threshold * 100)}pct"
-            hist_prob = nearest_stats.get(hist_prob_key)
-            if isinstance(hist_prob, (int, float)) and hist_prob > 0:
-                detail = (
-                    f"Historically {hist_prob * 100:.0f}% of {nearest_days}-day windows cleared {label}, based on {int(nearest_stats.get('samples', 0))} samples."
-                )
-                support_bonus += add_factor(
-                    factors,
-                    "Historical Move Distribution",
-                    detail,
-                    min(0.1, hist_prob * 0.2),
-                    "historical move tendency",
-                )
-                summary_parts.append(detail)
-
-        if event_context.get("political_hits"):
-            detail = "Policy headlines are in play, which can spark re-rating moves when new information hits."
-            support_bonus += add_factor(factors, "Policy Drivers", detail, 0.05, "policy tailwinds")
-            summary_parts.append(detail)
-
-        if event_context.get("ai_infra_hits"):
-            detail = "AI infrastructure themes are active, attracting institutional flows into the name."
-            support_bonus += add_factor(factors, "AI Infrastructure", detail, 0.05, "AI infrastructure demand")
-            summary_parts.append(detail)
-
-        conviction = float(max(0.0, min(1.0, base_probability + min(support_bonus, 0.35))))
-
-        threshold_entry = {
-            "threshold": label,
-            "base_probability_pct": round(base_probability * 100, 1),
-            "conviction_pct": round(conviction * 100, 1),
-            "factors": factors,
-            "summary": " ".join(summary_parts),
-        }
-
-        if nearest_days is not None and nearest_stats:
-            hist_prob_key = f"prob_{int(threshold * 100)}pct"
-            hist_prob = nearest_stats.get(hist_prob_key)
-            if isinstance(hist_prob, (int, float)):
-                threshold_entry["historical_support"] = {
-                    "horizon_days": nearest_days,
-                    "probability_pct": round(hist_prob * 100, 1),
-                }
-
-        thresholds.append(threshold_entry)
-
-    analysis: Dict[str, object] = {
-        "expected_move_pct": round(expected_move_pct, 2),
-        "implied_vol": round(sigma * 100, 2),
-        "days_to_expiration": days_to_expiration,
-        "thresholds": thresholds,
-    }
-
-    if primary_drivers:
-        analysis["primary_drivers"] = sorted(primary_drivers)
-
-    return analysis
 
 
 def detect_gamma_squeeze(options_df: pd.DataFrame, symbol: str, current_price: float) -> Dict[str, object]:
@@ -914,12 +663,6 @@ def evaluate_contract(
     }
     projected_returns = compute_projected_returns(contract)
     market_data["projected_returns"] = projected_returns
-    profit_probability = estimate_profit_probability(contract)
-    risk_metrics = summarize_risk_metrics(contract, projected_returns)
-    move_rationale = build_move_thesis(contract, event_context, gamma_signal, iv_anomaly)
-    market_data["profit_probability"] = profit_probability
-    market_data["risk_metrics"] = risk_metrics
-    market_data["move_rationale"] = move_rationale
     if event_context:
         market_data["event_intel"] = event_context
 
@@ -934,7 +677,6 @@ def evaluate_contract(
             "volume_ratio": market_data["volume_ratio"],
             "profit_probability": profit_probability,
             "risk_metrics": risk_metrics,
-            "move_rationale": move_rationale,
         }
     )
     if event_context:

@@ -4,7 +4,6 @@ import pandas as pd
 
 from scripts.fetch_options_data import (
     calculate_greeks,
-    build_move_thesis,
     estimate_profit_probability,
     summarize_risk_metrics,
 )
@@ -70,35 +69,3 @@ def test_summarize_risk_metrics_produces_asymmetry_ratio():
     assert metrics["max_return_pct"] == 520.0
     assert metrics["max_loss_pct"] == 100.0
     assert metrics["reward_to_risk"] > 1.0
-    assert metrics["max_loss_amount"] == round(contract.last_price * 100, 2)
-    assert metrics["max_return_amount"] == round(metrics["max_return_pct"] / 100 * contract.last_price * 100, 2)
-    assert metrics["premium_per_contract"] == round(contract.last_price * 100, 2)
-    assert metrics["max_loss_pct"] == round(metrics["max_loss_amount"] / metrics["premium_per_contract"] * 100, 2)
-
-
-def test_build_move_thesis_blends_catalyst_inputs():
-    contract = build_sample_contract()
-    event_context = {
-        "earnings_in_days": 4,
-        "news_sentiment_label": "bullish",
-        "news_sentiment_score": 0.42,
-        "volatility_label": "elevated",
-        "historical_moves": {
-            "5": {"prob_5pct": 0.45, "prob_10pct": 0.18, "samples": 120},
-        },
-        "unique_drivers": ["positive news momentum"],
-    }
-    gamma_signal = {"risk_level": "HIGH", "score": 35}
-    iv_anomaly = {"zscore": 1.8}
-
-    thesis = build_move_thesis(contract, event_context, gamma_signal, iv_anomaly)
-
-    assert thesis["expected_move_pct"] > 0
-    assert thesis["implied_vol"] > 0
-    thresholds = thesis["thresholds"]
-    assert any(entry["threshold"] == "5%" for entry in thresholds)
-    five_threshold = next(entry for entry in thresholds if entry["threshold"] == "5%")
-    assert five_threshold["conviction_pct"] >= five_threshold["base_probability_pct"]
-    catalyst_details = " ".join(factor["detail"] for factor in five_threshold["factors"])
-    assert "earnings" in catalyst_details.lower()
-    assert "volatility" in catalyst_details.lower() or "gamma" in catalyst_details.lower()

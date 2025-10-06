@@ -56,8 +56,6 @@ interface Opportunity {
   breakevenPrice: number | null
   riskRewardRatio: number | null
   shortTermRiskRewardRatio: number | null
-  moveAnalysis: MoveAnalysis | null
-  eventIntel: Record<string, any> | null
   greeks: {
     delta: number
     gamma: number
@@ -374,8 +372,8 @@ export default function HomePage() {
     }
 
     // Risk/Reward ratio
-    const shortTermRatio = opp.shortTermRiskRewardRatio ?? (potentialReturn / Math.max(Math.abs(maxLossPercent), 1))
-    const asymmetryRatio = opp.riskRewardRatio ?? (maxReturn / Math.max(Math.abs(maxLossPercent), 1))
+    const shortTermRatio = opp.shortTermRiskRewardRatio ?? (potentialReturn / Math.max(Math.abs(maxLoss), 1))
+    const asymmetryRatio = opp.riskRewardRatio ?? (maxReturn / Math.max(Math.abs(maxLoss), 1))
     if (shortTermRatio > 5) {
       explanation += `This creates an excellent near-term risk/reward ratio of ${shortTermRatio.toFixed(1)}:1 on a 10% move, meaning you could make ${shortTermRatio.toFixed(1)}x more than you could lose. `
     } else if (shortTermRatio > 2) {
@@ -400,78 +398,6 @@ export default function HomePage() {
     }
     
     return explanation
-  }
-
-  const renderMoveThesis = (opp: Opportunity) => {
-    const analysis = opp.moveAnalysis
-    if (!analysis || !analysis.thresholds || analysis.thresholds.length === 0) {
-      return null
-    }
-
-    const horizon = analysis.daysToExpiration ?? opp.daysToExpiration
-
-    return (
-      <div className="bg-sky-50 dark:bg-sky-900/10 border border-sky-100 dark:border-sky-900/40 rounded-2xl p-4 space-y-3">
-        <div className="flex items-center justify-between">
-          <h5 className="font-medium text-slate-900 dark:text-slate-100">Move Thesis</h5>
-          <div className="text-xs text-sky-700 dark:text-sky-200 font-semibold">
-            {analysis.expectedMovePercent !== null ? `1σ ≈ ${analysis.expectedMovePercent.toFixed(1)}%` : 'IV outlook'}
-          </div>
-        </div>
-        <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-          {analysis.impliedVol !== null
-            ? `Implied volatility at ${analysis.impliedVol.toFixed(1)}%`
-            : 'Implied volatility data unavailable'}
-          {horizon ? ` over the next ${horizon} days` : ''} informs expected movement.
-        </p>
-        <div className="space-y-3">
-          {analysis.thresholds.map((threshold, idx) => (
-            <div key={idx} className="bg-white dark:bg-slate-800/60 rounded-xl border border-sky-100 dark:border-slate-700 p-3">
-              <div className="flex items-center justify-between mb-2">
-                <div>
-                  <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{threshold.threshold} target</div>
-                  <div className="text-xs text-slate-500 dark:text-slate-400">
-                    Base {formatPercent(threshold.baseProbability, 0)}
-                  </div>
-                </div>
-                {threshold.conviction !== null && (
-                  <span className="text-xs font-semibold text-sky-600 dark:text-sky-300">
-                    Conviction {formatPercent(threshold.conviction, 0)}
-                  </span>
-                )}
-              </div>
-              {threshold.summary && (
-                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed mb-2">{threshold.summary}</p>
-              )}
-              {threshold.factors.length > 0 && (
-                <ul className="text-xs text-slate-600 dark:text-slate-300 space-y-1">
-                  {threshold.factors.map((factor, factorIndex) => (
-                    <li key={factorIndex}>• {factor.detail}</li>
-                  ))}
-                </ul>
-              )}
-              {threshold.historicalSupport && threshold.historicalSupport.probability !== null && (
-                <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-2">
-                  Historical hit rate: {formatPercent(threshold.historicalSupport.probability, 0)} over {threshold.historicalSupport.horizonDays ?? '—'} days
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-        {analysis.drivers.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {analysis.drivers.map((driver, driverIndex) => (
-              <span
-                key={driverIndex}
-                className="px-2 py-1 bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-200 rounded-full text-xs font-medium"
-              >
-                {driver}
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
-    )
   }
 
   const calculateInvestmentScenario = (opp: Opportunity, amount: number): InvestmentScenario => {
@@ -1039,18 +965,20 @@ export default function HomePage() {
                           </div>
                         </div>
 
-                        {/* Risk Warning */}
-                        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
-                          <div className="flex items-start gap-3">
-                            <div className="w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center mt-0.5">
-                              <span className="text-xs text-white font-bold">!</span>
-                            </div>
-                            <div>
-                              <div className="font-medium text-amber-800 dark:text-amber-200 mb-1">Risk Warning</div>
-                              <div className="text-sm text-amber-700 dark:text-amber-300">
-                                Maximum loss: {formatCurrency(maxLossDisplay)} ({opp.maxLossPercent.toFixed(1)}% {isPerContractView ? 'per contract' : 'of deployed capital'}).
-                                Options can expire worthless, and you could lose your entire investment.
-                              </div>
+                            {/* Risk Warning */}
+                            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
+                              <div className="flex items-start gap-3">
+                                <div className="w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center mt-0.5">
+                                  <span className="text-xs text-white font-bold">!</span>
+                                </div>
+                                <div>
+                                  <div className="font-medium text-amber-800 dark:text-amber-200 mb-1">Risk Warning</div>
+                                  <div className="text-sm text-amber-700 dark:text-amber-300">
+                                    Maximum loss: {formatCurrency(opp.maxLossAmount)} ({opp.maxLossPercent.toFixed(1)}% of investment).
+                                    Options can expire worthless, and you could lose your entire investment.
+                  </div>
+                  </div>
+                </div>
                             </div>
                           </div>
                         </div>
@@ -1063,23 +991,17 @@ export default function HomePage() {
                     <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
                       <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Potential Return</div>
                       <div className="text-lg font-semibold text-emerald-600">{opp.potentialReturn.toFixed(1)}%</div>
-                      <div className="text-xs text-slate-500 dark:text-slate-400">
-                        ≈ {formatCurrency(potentialReturnDisplay)} {isPerContractView ? 'per contract' : ''}
-                      </div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400">≈ {formatCurrency(opp.potentialReturnAmount)}</div>
                     </div>
                     <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
                       <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Max Return</div>
                       <div className="text-lg font-semibold text-emerald-600">{opp.maxReturn.toFixed(1)}%</div>
-                      <div className="text-xs text-slate-500 dark:text-slate-400">
-                        ≈ {formatCurrency(maxReturnDisplay)} {isPerContractView ? 'per contract' : ''}
-                      </div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400">≈ {formatCurrency(opp.maxReturnAmount)}</div>
                     </div>
                     <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
                       <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Max Loss</div>
                       <div className="text-lg font-semibold text-red-600">{opp.maxLossPercent.toFixed(1)}%</div>
-                      <div className="text-xs text-slate-500 dark:text-slate-400">
-                        ≈ {formatCurrency(maxLossDisplay)} {isPerContractView ? 'per contract' : ''}
-                      </div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400">≈ {formatCurrency(opp.maxLossAmount)}</div>
                       {opp.riskRewardRatio && opp.riskRewardRatio >= 3 && (
                         <div className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-emerald-600">
                           <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
