@@ -61,12 +61,22 @@ export async function GET() {
             const rawOpportunities = JSON.parse(jsonString)
             
             // Transform the data to match frontend interface
-            const opportunities = rawOpportunities.map((opp: any) => ({
-              symbol: opp.symbol,
-              optionType: opp.contract?.option_type || 'call',
-              strike: opp.contract?.strike || 0,
-              expiration: opp.contract?.expiration || '',
-              premium: opp.contract?.last_price || 0,
+            const opportunities = rawOpportunities.map((opp: any) => {
+              const profitIntel = opp.metadata?.market_data?.profit_probability || opp.score?.metadata?.profit_probability || {}
+              const riskIntel = opp.metadata?.market_data?.risk_metrics || opp.score?.metadata?.risk_metrics || {}
+              const projectedReturns = opp.metadata?.market_data?.projected_returns || {}
+              const tenMoveReturn = projectedReturns['10%'] ?? 0
+              const maxReturnPct = projectedReturns['30%'] ?? 0
+              const breakevenMovePct = profitIntel?.required_move_pct
+              const probabilityPercent = typeof profitIntel?.probability === 'number' ? profitIntel.probability * 100 : null
+              const riskRewardRatio = typeof riskIntel?.reward_to_risk === 'number' ? riskIntel.reward_to_risk : null
+
+              return {
+                symbol: opp.symbol,
+                optionType: opp.contract?.option_type || 'call',
+                strike: opp.contract?.strike || 0,
+                expiration: opp.contract?.expiration || '',
+                premium: opp.contract?.last_price || 0,
               bid: opp.contract?.bid || 0,
               ask: opp.contract?.ask || 0,
               volume: opp.contract?.volume || 0,
@@ -79,20 +89,27 @@ export async function GET() {
               patterns: opp.tags || [],
               catalysts: ['Technical Analysis', 'Volume Analysis'],
               riskLevel: opp.tags?.includes('thin-market') ? 'high' : opp.tags?.includes('liquidity') ? 'low' : 'medium',
-              potentialReturn: opp.metadata?.market_data?.projected_returns?.['10%'] ? opp.metadata.market_data.projected_returns['10%'] * 100 : 0,
-              maxReturn: opp.metadata?.market_data?.projected_returns?.['30%'] ? opp.metadata.market_data.projected_returns['30%'] * 100 : 0,
-              maxLoss: opp.contract?.last_price || 0,
+              potentialReturn: tenMoveReturn ? tenMoveReturn * 100 : 0,
+              maxReturn: maxReturnPct ? maxReturnPct * 100 : 0,
+              maxLoss: typeof riskIntel?.max_loss_pct === 'number' ? riskIntel.max_loss_pct : 100,
               breakeven: opp.contract?.strike ? (opp.contract.option_type === 'call' ? opp.contract.strike + opp.contract.last_price : opp.contract.strike - opp.contract.last_price) : 0,
               ivRank: opp.iv_rank || 0,
               volumeRatio: opp.metadata?.market_data?.volume_ratio || 0,
               greeks: opp.greeks || { delta: 0, gamma: 0, theta: 0, vega: 0 },
               daysToExpiration: opp.contract?.expiration ? Math.ceil((new Date(opp.contract.expiration).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : 0,
               returnsAnalysis: [
-                { move: '10%', return: opp.metadata?.market_data?.projected_returns?.['10%'] ? opp.metadata.market_data.projected_returns['10%'] * 100 : 0 },
-                { move: '20%', return: opp.metadata?.market_data?.projected_returns?.['20%'] ? opp.metadata.market_data.projected_returns['20%'] * 100 : 0 },
-                { move: '30%', return: opp.metadata?.market_data?.projected_returns?.['30%'] ? opp.metadata.market_data.projected_returns['30%'] * 100 : 0 }
-              ]
-            }))
+                { move: '10%', return: tenMoveReturn ? tenMoveReturn * 100 : 0 },
+                { move: '20%', return: projectedReturns['20%'] ? projectedReturns['20%'] * 100 : 0 },
+                { move: '30%', return: maxReturnPct ? maxReturnPct * 100 : 0 }
+              ],
+              probabilityOfProfit: probabilityPercent,
+              profitProbabilityExplanation: typeof profitIntel?.explanation === 'string' ? profitIntel.explanation : '',
+              breakevenMovePercent: typeof breakevenMovePct === 'number' ? breakevenMovePct * 100 : null,
+              breakevenPrice: typeof profitIntel?.breakeven_price === 'number' ? profitIntel.breakeven_price : null,
+              riskRewardRatio: riskRewardRatio,
+              shortTermRiskRewardRatio: typeof riskIntel?.ten_pct_move_reward_to_risk === 'number' ? riskIntel.ten_pct_move_reward_to_risk : null,
+            }
+            })
             
             resolve(
               NextResponse.json({
