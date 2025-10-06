@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, Iterable, List, Mapping, Sequence, Tuple
 from uuid import uuid4
 
@@ -88,26 +88,38 @@ def get_options_chain(symbol: str) -> pd.DataFrame | None:
 def calculate_greeks(row: pd.Series) -> OptionGreeks:
     S = float(row.get("stockPrice", 0.0))
     K = float(row.get("strike", 0.0))
-    expiration = pd.to_datetime(row.get("expiration"))
-    T = max((expiration - datetime.utcnow()).days / 365.0, 0.0)
-    sigma = float(row.get("impliedVolatility", 0.3))
+    expiration_raw = row.get("expiration")
+    expiration_ts = pd.to_datetime(expiration_raw)
+    if pd.isna(expiration_ts):
+        return OptionGreeks()
+    if expiration_ts.tzinfo is None:
+        expiration_ts = expiration_ts.tz_localize("UTC")
+    else:
+        expiration_ts = expiration_ts.tz_convert("UTC")
+    now = datetime.now(timezone.utc)
+    T = max((expiration_ts - pd.Timestamp(now)).total_seconds() / (365.0 * 24 * 60 * 60), 0.0)
+
+    raw_sigma = row.get("impliedVolatility", 0.3)
+    sigma = float(raw_sigma if raw_sigma not in (None, 0, 0.0) else 0.3)
     r = 0.05
 
     if T <= 0 or sigma <= 0 or S <= 0 or K <= 0:
         return OptionGreeks()
 
-    d1 = (np.log(S / K) + (r + 0.5 * sigma**2) * T) / (sigma * np.sqrt(T))
-    d2 = d1 - sigma * np.sqrt(T)
+    sigma = max(sigma, 1e-6)
+    sqrt_T = np.sqrt(T)
+    d1 = (np.log(S / K) + (r + 0.5 * sigma**2) * T) / (sigma * sqrt_T)
+    d2 = d1 - sigma * sqrt_T
 
     if row.get("type") == "call":
         delta = norm.cdf(d1)
-        theta = -(S * norm.pdf(d1) * sigma) / (2 * np.sqrt(T)) - r * K * np.exp(-r * T) * norm.cdf(d2)
+        theta = -(S * norm.pdf(d1) * sigma) / (2 * sqrt_T) - r * K * np.exp(-r * T) * norm.cdf(d2)
     else:
         delta = -norm.cdf(-d1)
-        theta = -(S * norm.pdf(d1) * sigma) / (2 * np.sqrt(T)) + r * K * np.exp(-r * T) * norm.cdf(-d2)
+        theta = -(S * norm.pdf(d1) * sigma) / (2 * sqrt_T) + r * K * np.exp(-r * T) * norm.cdf(-d2)
 
-    gamma = norm.pdf(d1) / (S * sigma * np.sqrt(T))
-    vega = S * norm.pdf(d1) * np.sqrt(T) / 100
+    gamma = norm.pdf(d1) / (S * sigma * sqrt_T)
+    vega = S * norm.pdf(d1) * sqrt_T / 100
 
     return OptionGreeks(
         delta=round(float(delta), 4),
@@ -115,6 +127,100 @@ def calculate_greeks(row: pd.Series) -> OptionGreeks:
         theta=round(float(theta) / 365, 4),
         vega=round(float(vega), 4),
     )
+
+
+def estimate_profit_probability(contract: OptionContract) -> Dict[str, object]:
+    """Estimate probability of profiting by expiration and contextualize breakeven."""
+
+    try:
+        days_remaining = max(contract.days_to_expiration, 0)
+    except Exception:
+        days_remaining = 0
+
+    if contract.stock_price <= 0 or contract.strike <= 0:
+        return {
+            "probability": 0.0,
+            "required_move_pct": None,
+            "breakeven_price": None,
+            "explanation": "Insufficient price data to model profitability.",
+        }
+
+    sigma = float(contract.implied_volatility or 0.0)
+    if sigma <= 0:
+        sigma = 0.35
+
+    expiration = datetime.combine(contract.expiration, datetime.min.time(), tzinfo=timezone.utc)
+    now = datetime.now(timezone.utc)
+    T = max((expiration - now).total_seconds() / (365.0 * 24 * 60 * 60), 0.0)
+    if T <= 0:
+        return {
+            "probability": 0.0,
+            "required_move_pct": None,
+            "breakeven_price": contract.strike,
+            "explanation": "Option is at or past expiration so no profit probability could be estimated.",
+        }
+
+    if contract.option_type == "call":
+        breakeven_price = contract.strike + contract.last_price
+        required_move_pct = max(0.0, breakeven_price / max(contract.stock_price, 1e-6) - 1.0)
+        direction = "rise"
+        payoff_prob_fn = lambda z: 1 - norm.cdf(z)
+    else:
+        breakeven_price = max(contract.strike - contract.last_price, 0.01)
+        required_move_pct = max(0.0, 1.0 - breakeven_price / max(contract.stock_price, 1e-6))
+        direction = "fall"
+        payoff_prob_fn = norm.cdf
+
+    breakeven_price = max(breakeven_price, 0.01)
+    log_ratio = np.log(breakeven_price / max(contract.stock_price, 1e-6))
+    drift = (0.05 - 0.5 * sigma**2) * T
+    denom = sigma * np.sqrt(T)
+    if denom <= 0:
+        probability = 0.0
+    else:
+        z = (log_ratio - drift) / denom
+        probability = float(payoff_prob_fn(z))
+
+    probability = float(max(0.0, min(1.0, probability)))
+    move_pct = required_move_pct * 100 if required_move_pct is not None else None
+
+    explanation = (
+        f"{contract.symbol} needs to close above ${breakeven_price:.2f} "
+        f"({move_pct:.1f}% {direction}) by expiration to break even. "
+        if contract.option_type == "call"
+        else f"{contract.symbol} needs to finish below ${breakeven_price:.2f} "
+        f"({move_pct:.1f}% {direction}) by expiration to break even. "
+    )
+    explanation += (
+        f"Using the implied volatility of {sigma * 100:.1f}% over {days_remaining} days, "
+        f"the Black-Scholes model implies roughly a {probability * 100:.1f}% chance of finishing profitable."
+    )
+
+    return {
+        "probability": probability,
+        "required_move_pct": required_move_pct,
+        "breakeven_price": breakeven_price,
+        "days_to_expiration": days_remaining,
+        "implied_vol": sigma * 100,
+        "explanation": explanation,
+    }
+
+
+def summarize_risk_metrics(contract: OptionContract, projected_returns: Dict[str, float]) -> Dict[str, float]:
+    max_return_pct = 0.0
+    if projected_returns:
+        max_return_pct = max(projected_returns.values()) * 100
+    potential_return_pct = projected_returns.get("10%", 0.0) * 100 if projected_returns else 0.0
+    max_loss_pct = 100.0
+    asymmetry = max_return_pct / max(max_loss_pct, 1e-6)
+    short_term_ratio = potential_return_pct / max(max_loss_pct, 1e-6)
+
+    return {
+        "max_return_pct": round(max_return_pct, 2),
+        "max_loss_pct": round(max_loss_pct, 2),
+        "reward_to_risk": round(asymmetry, 2),
+        "ten_pct_move_reward_to_risk": round(short_term_ratio, 2),
+    }
 
 
 def calculate_iv_rank(symbol: str, current_iv: float) -> float:
@@ -545,6 +651,7 @@ def evaluate_contract(
 ) -> Signal:
     greeks = calculate_greeks(row)
     contract = build_contract(row)
+    contract = contract.copy(update={"greeks": greeks})
     market_data = {
         "volume_ratio": float(row.get("volume", 0.0)) / max(float(row.get("openInterest", 0.0)), 1.0),
         "spread_pct": (contract.ask - contract.bid) / max(contract.last_price, 0.01),
@@ -568,6 +675,8 @@ def evaluate_contract(
             "projected_returns": projected_returns,
             "gamma_reasons": gamma_signal.get("reasons", []),
             "volume_ratio": market_data["volume_ratio"],
+            "profit_probability": profit_probability,
+            "risk_metrics": risk_metrics,
         }
     )
     if event_context:
