@@ -5,6 +5,29 @@ import ScanProgress from '../components/scan-progress'
 import RealTimeProgress from '../components/real-time-progress'
 import LiveTicker from '../components/live-ticker'
 
+interface MoveAnalysisFactor {
+  label: string
+  detail: string
+  weight: number | null
+}
+
+interface MoveAnalysisThreshold {
+  threshold: string
+  baseProbability: number | null
+  conviction: number | null
+  summary: string
+  factors: MoveAnalysisFactor[]
+  historicalSupport: { horizonDays: number | null; probability: number | null } | null
+}
+
+interface MoveAnalysis {
+  expectedMovePercent: number | null
+  impliedVol: number | null
+  daysToExpiration: number | null
+  thresholds: MoveAnalysisThreshold[]
+  drivers: string[]
+}
+
 interface Opportunity {
   symbol: string
   optionType: string
@@ -19,11 +42,22 @@ interface Opportunity {
   catalysts: string[]
   riskLevel: string
   potentialReturn: number
+  potentialReturnAmount: number
   maxReturn: number
-  maxLoss: number
+  maxReturnAmount: number
+  maxLossPercent: number
+  maxLossAmount: number
   breakeven: number
   ivRank: number
   volumeRatio: number
+  probabilityOfProfit: number | null
+  profitProbabilityExplanation: string
+  breakevenMovePercent: number | null
+  breakevenPrice: number | null
+  riskRewardRatio: number | null
+  shortTermRiskRewardRatio: number | null
+  moveAnalysis: MoveAnalysis | null
+  eventIntel: Record<string, any> | null
   greeks: {
     delta: number
     gamma: number
@@ -72,6 +106,29 @@ interface CryptoAlert {
   reasons: string[]
   urgency: number
   timestamp: string
+}
+
+type InvestmentScenario = {
+  contractCost: number
+  contractsToBuy: number
+  totalCost: number
+  remainingCapital: number
+  requiredCapital: number
+  shortfall: number
+  displayCost: number
+  basis: 'position' | 'perContract'
+  potentialReturnAmount: number
+  potentialReturnAmountPerContract: number
+  maxReturnAmount: number
+  maxReturnAmountPerContract: number
+  maxLossAmount: number
+  maxLossAmountPerContract: number
+  scenarios: Array<{
+    move: string
+    return: number
+    profit: number
+    totalValue: number
+  }>
 }
 
 export default function HomePage() {
@@ -169,12 +226,20 @@ export default function HomePage() {
     }).format(amount)
   }
 
+  const formatPercent = (value: number | null | undefined, digits = 0) => {
+    if (value === null || value === undefined || Number.isNaN(value)) {
+      return '—'
+    }
+    return `${value.toFixed(digits)}%`
+  }
+
   const getTradeLogic = (opp: Opportunity) => {
     const isCall = opp.optionType === 'call'
     const daysToExp = opp.daysToExpiration
     const strikeVsPrice = opp.strike / opp.stockPrice
     const ivRank = opp.ivRank
-    
+    const eventIntel = opp.eventIntel || {}
+
     let logic = ""
     
     // Basic trade direction
@@ -219,7 +284,31 @@ export default function HomePage() {
     if (opp.unusualFlowScore && opp.unusualFlowScore > 0) {
       logic += `Unusual options activity indicates smart money positioning, potentially signaling an upcoming move. `
     }
-    
+
+    if (typeof eventIntel.earnings_in_days === 'number') {
+      if (eventIntel.earnings_in_days >= 0) {
+        logic += `Upcoming earnings in ${Math.round(eventIntel.earnings_in_days)} days could be a key catalyst for volatility. `
+      } else if (eventIntel.earnings_in_days < 0 && eventIntel.earnings_in_days > -7) {
+        logic += `The stock is still reacting to a fresh earnings release from ${Math.abs(Math.round(eventIntel.earnings_in_days))} days ago. `
+      }
+    }
+
+    if (typeof eventIntel.news_sentiment_label === 'string') {
+      const sentimentLabel = String(eventIntel.news_sentiment_label).replace('_', ' ')
+      if (['bullish', 'very bullish', 'bearish', 'very bearish'].includes(sentimentLabel.toLowerCase())) {
+        logic += `News flow is ${sentimentLabel.toLowerCase()}, reinforcing the directional bias behind this trade. `
+      }
+    }
+
+    const drivers = opp.moveAnalysis?.drivers?.length
+      ? opp.moveAnalysis.drivers
+      : Array.isArray(eventIntel.unique_drivers)
+        ? eventIntel.unique_drivers
+        : []
+    if (drivers.length > 0) {
+      logic += `Primary drivers include ${drivers.join(', ')}. `
+    }
+
     return logic
   }
 
@@ -270,27 +359,35 @@ export default function HomePage() {
 
   const getRiskRewardExplanation = (opp: Opportunity) => {
     const maxReturn = opp.maxReturn
-    const maxLoss = opp.maxLoss
+    const maxLossPercent = opp.maxLossPercent
+    const maxLossAmount = opp.maxLossAmount
     const potentialReturn = opp.potentialReturn
     const daysToExp = opp.daysToExpiration
-    
+
     let explanation = `This trade offers a potential return of ${potentialReturn.toFixed(1)}% on a 10% stock move, with a maximum possible return of ${maxReturn.toFixed(1)}%. `
-    
+
     // Risk assessment
-    if (maxLoss < 100) {
-      explanation += `Your maximum loss is limited to ${maxLoss.toFixed(1)}% of your investment. `
+    if (maxLossPercent < 100) {
+      explanation += `Your maximum loss is limited to ${maxLossPercent.toFixed(1)}% of your investment (${formatCurrency(maxLossAmount)} per contract). `
     } else {
-      explanation += `Your maximum loss is ${maxLoss.toFixed(1)}% of your investment. `
+      explanation += `Your maximum loss is ${maxLossPercent.toFixed(1)}% of your investment (${formatCurrency(maxLossAmount)} per contract). `
     }
-    
+
     // Risk/Reward ratio
-    const riskRewardRatio = potentialReturn / Math.abs(maxLoss)
-    if (riskRewardRatio > 5) {
-      explanation += `This creates an excellent risk/reward ratio of ${riskRewardRatio.toFixed(1)}:1, meaning you could make ${riskRewardRatio.toFixed(1)}x more than you could lose. `
-    } else if (riskRewardRatio > 2) {
-      explanation += `This creates a good risk/reward ratio of ${riskRewardRatio.toFixed(1)}:1, providing favorable odds. `
+    const shortTermRatio = opp.shortTermRiskRewardRatio ?? (potentialReturn / Math.max(Math.abs(maxLossPercent), 1))
+    const asymmetryRatio = opp.riskRewardRatio ?? (maxReturn / Math.max(Math.abs(maxLossPercent), 1))
+    if (shortTermRatio > 5) {
+      explanation += `This creates an excellent near-term risk/reward ratio of ${shortTermRatio.toFixed(1)}:1 on a 10% move, meaning you could make ${shortTermRatio.toFixed(1)}x more than you could lose. `
+    } else if (shortTermRatio > 2) {
+      explanation += `This creates a good risk/reward ratio of ${shortTermRatio.toFixed(1)}:1, providing favorable odds even on a modest move. `
     } else {
-      explanation += `This creates a risk/reward ratio of ${riskRewardRatio.toFixed(1)}:1. `
+      explanation += `This creates a risk/reward ratio of ${shortTermRatio.toFixed(1)}:1 on the first 10% move. `
+    }
+
+    if (asymmetryRatio >= 3) {
+      explanation += `The max payoff is ${asymmetryRatio.toFixed(1)}x larger than the capital at risk, giving this setup major asymmetric upside if the stock really runs. `
+    } else if (asymmetryRatio >= 1.5) {
+      explanation += `There's still ${asymmetryRatio.toFixed(1)}x more upside than downside if the bigger move plays out. `
     }
     
     // Time considerations
@@ -305,38 +402,154 @@ export default function HomePage() {
     return explanation
   }
 
-  const calculateInvestmentScenario = (opp: Opportunity, investmentAmount: number) => {
-    const optionPrice = opp.premium
-    const contractCost = optionPrice * 100
-    
-    // Calculate how many contracts we can afford
-    let contractsToBuy = Math.floor(investmentAmount / contractCost)
-    let totalCost = contractsToBuy * contractCost
-    
-    // If we can't afford a full contract, show what we could buy with our full investment
-    if (contractsToBuy === 0 && investmentAmount > 0) {
-      contractsToBuy = 1 // Show 1 contract for demonstration
-      totalCost = investmentAmount // Use full investment amount
+  const renderMoveThesis = (opp: Opportunity) => {
+    const analysis = opp.moveAnalysis
+    if (!analysis || !analysis.thresholds || analysis.thresholds.length === 0) {
+      return null
     }
-    
-    const scenarios = [
-      { move: '5%', return: opp.returnsAnalysis[0]?.return || 0 },
-      { move: '10%', return: opp.returnsAnalysis[0]?.return || 0 },
-      { move: '15%', return: opp.returnsAnalysis[1]?.return || 0 },
-      { move: '20%', return: opp.returnsAnalysis[1]?.return || 0 },
-      { move: '30%', return: opp.returnsAnalysis[2]?.return || 0 }
-    ]
-    
+
+    const horizon = analysis.daysToExpiration ?? opp.daysToExpiration
+
+    return (
+      <div className="bg-sky-50 dark:bg-sky-900/10 border border-sky-100 dark:border-sky-900/40 rounded-2xl p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <h5 className="font-medium text-slate-900 dark:text-slate-100">Move Thesis</h5>
+          <div className="text-xs text-sky-700 dark:text-sky-200 font-semibold">
+            {analysis.expectedMovePercent !== null ? `1σ ≈ ${analysis.expectedMovePercent.toFixed(1)}%` : 'IV outlook'}
+          </div>
+        </div>
+        <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+          {analysis.impliedVol !== null
+            ? `Implied volatility at ${analysis.impliedVol.toFixed(1)}%`
+            : 'Implied volatility data unavailable'}
+          {horizon ? ` over the next ${horizon} days` : ''} informs expected movement.
+        </p>
+        <div className="space-y-3">
+          {analysis.thresholds.map((threshold, idx) => (
+            <div key={idx} className="bg-white dark:bg-slate-800/60 rounded-xl border border-sky-100 dark:border-slate-700 p-3">
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{threshold.threshold} target</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400">
+                    Base {formatPercent(threshold.baseProbability, 0)}
+                  </div>
+                </div>
+                {threshold.conviction !== null && (
+                  <span className="text-xs font-semibold text-sky-600 dark:text-sky-300">
+                    Conviction {formatPercent(threshold.conviction, 0)}
+                  </span>
+                )}
+              </div>
+              {threshold.summary && (
+                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed mb-2">{threshold.summary}</p>
+              )}
+              {threshold.factors.length > 0 && (
+                <ul className="text-xs text-slate-600 dark:text-slate-300 space-y-1">
+                  {threshold.factors.map((factor, factorIndex) => (
+                    <li key={factorIndex}>• {factor.detail}</li>
+                  ))}
+                </ul>
+              )}
+              {threshold.historicalSupport && threshold.historicalSupport.probability !== null && (
+                <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-2">
+                  Historical hit rate: {formatPercent(threshold.historicalSupport.probability, 0)} over {threshold.historicalSupport.horizonDays ?? '—'} days
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+        {analysis.drivers.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {analysis.drivers.map((driver, driverIndex) => (
+              <span
+                key={driverIndex}
+                className="px-2 py-1 bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-200 rounded-full text-xs font-medium"
+              >
+                {driver}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  const calculateInvestmentScenario = (opp: Opportunity, amount: number): InvestmentScenario => {
+    const optionPrice = opp.premium || 0
+    const contractCost = Math.max(optionPrice * 100, 0)
+    const perContractPotentialReturn = opp.potentialReturnAmount || ((opp.potentialReturn / 100) * contractCost)
+    const perContractMaxReturn = opp.maxReturnAmount || ((opp.maxReturn / 100) * contractCost)
+    const perContractMaxLoss = opp.maxLossAmount || contractCost
+
+    if (contractCost <= 0) {
+      return {
+        contractCost: 0,
+        contractsToBuy: 0,
+        totalCost: 0,
+        remainingCapital: amount,
+        requiredCapital: 0,
+        shortfall: 0,
+        displayCost: 0,
+        basis: 'perContract',
+        potentialReturnAmount: 0,
+        potentialReturnAmountPerContract: 0,
+        maxReturnAmount: 0,
+        maxReturnAmountPerContract: 0,
+        maxLossAmount: 0,
+        maxLossAmountPerContract: 0,
+        scenarios: [],
+      }
+    }
+
+    const contractsToBuy = Math.max(Math.floor(amount / contractCost), 0)
+    const totalCost = contractsToBuy * contractCost
+    const remainingCapital = Math.max(amount - totalCost, 0)
+    const basis: InvestmentScenario['basis'] = contractsToBuy > 0 ? 'position' : 'perContract'
+    const displayCost = contractsToBuy > 0 ? totalCost : contractCost
+    const requiredCapital = contractCost
+    const shortfall = contractsToBuy > 0 ? 0 : Math.max(requiredCapital - amount, 0)
+
+    const potentialReturnAmount = basis === 'position'
+      ? perContractPotentialReturn * contractsToBuy
+      : perContractPotentialReturn
+
+    const maxReturnAmount = basis === 'position'
+      ? perContractMaxReturn * contractsToBuy
+      : perContractMaxReturn
+
+    const maxLossAmount = basis === 'position'
+      ? perContractMaxLoss * contractsToBuy
+      : perContractMaxLoss
+
+    const scenarioBase = basis === 'position' ? totalCost : contractCost
+
+    const scenarios = (opp.returnsAnalysis || []).map((scenario) => {
+      const percentReturn = scenario?.return || 0
+      const profit = scenarioBase * (percentReturn / 100)
+      return {
+        move: scenario?.move || '',
+        return: percentReturn,
+        profit,
+        totalValue: scenarioBase + profit,
+      }
+    })
+
     return {
+      contractCost,
       contractsToBuy,
       totalCost,
-      remainingCapital: investmentAmount - totalCost,
-      contractCost,
-      scenarios: scenarios.map(scenario => ({
-        ...scenario,
-        profit: (totalCost * scenario.return / 100),
-        totalValue: totalCost + (totalCost * scenario.return / 100)
-      }))
+      remainingCapital,
+      requiredCapital,
+      shortfall,
+      displayCost,
+      basis,
+      potentialReturnAmount,
+      potentialReturnAmountPerContract: perContractPotentialReturn,
+      maxReturnAmount,
+      maxReturnAmountPerContract: perContractMaxReturn,
+      maxLossAmount,
+      maxLossAmountPerContract: perContractMaxLoss,
+      scenarios,
     }
   }
 
@@ -569,8 +782,14 @@ export default function HomePage() {
             </div>
 
             <div className="grid gap-6">
-              {opportunities.map((opp, index) => (
-                <div key={index} className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-100 dark:border-slate-800 hover:border-slate-200 dark:hover:border-slate-700 transition-colors">
+              {opportunities.map((opp, index) => {
+                const scenario = calculateInvestmentScenario(opp, investmentAmount)
+                const isPerContractView = scenario.basis === 'perContract'
+                const potentialReturnDisplay = isPerContractView ? scenario.potentialReturnAmountPerContract : scenario.potentialReturnAmount
+                const maxReturnDisplay = isPerContractView ? scenario.maxReturnAmountPerContract : scenario.maxReturnAmount
+                const maxLossDisplay = isPerContractView ? scenario.maxLossAmountPerContract : scenario.maxLossAmount
+                return (
+                  <div key={index} className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-100 dark:border-slate-800 hover:border-slate-200 dark:hover:border-slate-700 transition-colors">
                   <div className="flex items-start justify-between mb-6">
                     <div className="space-y-3">
                       <div className="flex items-center gap-4">
@@ -596,8 +815,18 @@ export default function HomePage() {
                               NEWS: {opp.newsImpactScore}
                             </span>
                           )}
-                </div>
-              </div>
+                          {opp.riskRewardRatio && opp.riskRewardRatio >= 3 && (
+                            <span className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-xl text-xs font-semibold">
+                              ASYM EDGE {opp.riskRewardRatio.toFixed(1)}x
+                            </span>
+                          )}
+                          {opp.probabilityOfProfit !== null && opp.probabilityOfProfit >= 55 && (
+                            <span className="px-3 py-1 bg-sky-100 text-sky-700 rounded-xl text-xs font-semibold">
+                              WIN RATE {opp.probabilityOfProfit.toFixed(0)}%
+                            </span>
+                          )}
+                        </div>
+                      </div>
                       
                       <div className="flex items-center gap-6 text-sm text-slate-600 dark:text-slate-400">
                         <span>{opp.optionType.toUpperCase()} ${opp.strike}</span>
@@ -688,6 +917,8 @@ export default function HomePage() {
                         </div>
                       </div>
 
+                      {renderMoveThesis(opp)}
+
                       {/* Risk Assessment */}
                       <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
                         <h5 className="font-medium text-slate-900 dark:text-white mb-2">Risk & Reward Profile</h5>
@@ -695,6 +926,35 @@ export default function HomePage() {
                           {getRiskRewardExplanation(opp)}
                         </p>
                       </div>
+                      {opp.probabilityOfProfit !== null && (
+                        <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl p-4 border border-emerald-200 dark:border-emerald-800">
+                          <div className="flex items-center justify-between mb-3">
+                            <h5 className="font-medium text-emerald-900 dark:text-emerald-100">Likelihood of Profit</h5>
+                            <span className="text-lg font-semibold text-emerald-700 dark:text-emerald-200">
+                              {opp.probabilityOfProfit.toFixed(1)}%
+                            </span>
+                          </div>
+                          <div className="w-full h-2 bg-emerald-100 dark:bg-emerald-900/40 rounded-full overflow-hidden mb-2">
+                            <div
+                              className="h-full bg-emerald-500"
+                              style={{ width: `${Math.max(0, Math.min(opp.probabilityOfProfit, 100)).toFixed(1)}%` }}
+                            ></div>
+                          </div>
+                          <div className="flex items-center justify-between text-xs text-emerald-800 dark:text-emerald-200 mb-3">
+                            {opp.breakevenMovePercent !== null ? (
+                              <span>Needs {opp.breakevenMovePercent.toFixed(1)}% move to breakeven</span>
+                            ) : (
+                              <span>Breakeven move unavailable</span>
+                            )}
+                            {opp.breakevenPrice !== null && (
+                              <span>Breakeven ${opp.breakevenPrice.toFixed(2)}</span>
+                            )}
+                          </div>
+                          <p className="text-sm text-emerald-900 dark:text-emerald-100 leading-relaxed">
+                            {opp.profitProbabilityExplanation || 'Probability estimate unavailable for this contract.'}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -702,107 +962,152 @@ export default function HomePage() {
                   <div className="mb-6">
                     <h4 className="font-semibold text-slate-900 dark:text-white mb-3">Investment Calculator</h4>
                     <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-6">
-                      {(() => {
-                        const scenario = calculateInvestmentScenario(opp, investmentAmount)
-                        return (
-                          <div className="space-y-4">
-                            {/* Investment Summary */}
-                            <div className="flex items-center justify-between p-4 bg-white dark:bg-slate-700 rounded-xl">
-                              <div>
-                                <div className="text-sm font-medium text-slate-600 dark:text-slate-400">Your Investment</div>
-                                <div className="text-lg font-semibold text-slate-900 dark:text-white">
-                                  {formatCurrency(scenario.totalCost)} for {scenario.contractsToBuy} contract{scenario.contractsToBuy !== 1 ? 's' : ''}
-                                </div>
-                                {scenario.contractsToBuy === 1 && scenario.totalCost < scenario.contractCost && (
-                                  <div className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-                                    Partial contract (need {formatCurrency(scenario.contractCost)} for full contract)
-                                  </div>
-                                )}
-                              </div>
-                              <div className="text-right">
-                                <div className="text-sm font-medium text-slate-600 dark:text-slate-400">Option Price</div>
-                                <div className="text-lg font-semibold text-slate-900 dark:text-white">
-                                  {formatCurrency(opp.premium)} per share
-                                </div>
-                                <div className="text-sm text-slate-500 dark:text-slate-400">
-                                  {formatCurrency(scenario.contractCost)} per contract
-                                </div>
-                              </div>
+                      <div className="space-y-4">
+                        {/* Investment Summary */}
+                        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-4 bg-white dark:bg-slate-700 rounded-xl">
+                          <div>
+                            <div className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                              {scenario.basis === 'position' ? 'Your Position' : 'Per-Contract Preview'}
                             </div>
-
-                            {/* Profit Scenarios */}
-                            <div>
-                              <h5 className="font-medium text-slate-900 dark:text-white mb-3">Potential Profits</h5>
-                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                                {scenario.scenarios.map((scenarioItem, i) => (
-                                  <div key={i} className="bg-white dark:bg-slate-700 rounded-xl p-4">
-                                    <div className="flex items-center justify-between mb-2">
-                                      <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                                        {scenarioItem.move} Stock Move
-                                      </span>
-                                      <span className="text-xs font-semibold text-emerald-600">
-                                        +{scenarioItem.return.toFixed(1)}%
-                                      </span>
-                                    </div>
-                                    <div className="space-y-1">
-                                      <div className="flex justify-between text-sm">
-                                        <span className="text-slate-600 dark:text-slate-400">Profit:</span>
-                                        <span className="font-semibold text-emerald-600">
-                                          {formatCurrency(scenarioItem.profit)}
-                                        </span>
-                                      </div>
-                                      <div className="flex justify-between text-sm">
-                                        <span className="text-slate-600 dark:text-slate-400">Total Value:</span>
-                                        <span className="font-semibold text-slate-900 dark:text-white">
-                                          {formatCurrency(scenarioItem.totalValue)}
-                                        </span>
-                                      </div>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
+                            <div className="text-lg font-semibold text-slate-900 dark:text-white">
+                              {scenario.basis === 'position'
+                                ? `${formatCurrency(scenario.totalCost)} for ${scenario.contractsToBuy} contract${scenario.contractsToBuy !== 1 ? 's' : ''}`
+                                : `${formatCurrency(scenario.displayCost)} per contract`}
                             </div>
-
-                            {/* Risk Warning */}
-                            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
-                              <div className="flex items-start gap-3">
-                                <div className="w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center mt-0.5">
-                                  <span className="text-xs text-white font-bold">!</span>
-                                </div>
-                                <div>
-                                  <div className="font-medium text-amber-800 dark:text-amber-200 mb-1">Risk Warning</div>
-                                  <div className="text-sm text-amber-700 dark:text-amber-300">
-                                    Maximum loss: {formatCurrency(scenario.totalCost)} (100% of investment). 
-                                    Options can expire worthless, and you could lose your entire investment.
-                  </div>
-                  </div>
-                </div>
+                            {scenario.basis === 'position' ? (
+                              <div className="text-xs text-slate-500 dark:text-slate-300 mt-1">
+                                Remaining capital: {formatCurrency(scenario.remainingCapital)}
+                              </div>
+                            ) : scenario.requiredCapital > 0 ? (
+                              <div className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                                Add {formatCurrency(scenario.shortfall)} more to control one contract (requires {formatCurrency(scenario.requiredCapital)}).
+                              </div>
+                            ) : (
+                              <div className="text-xs text-slate-500 dark:text-slate-300 mt-1">
+                                Waiting for pricing data to size this trade.
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm font-medium text-slate-600 dark:text-slate-400">Option Price</div>
+                            <div className="text-lg font-semibold text-slate-900 dark:text-white">
+                              {formatCurrency(opp.premium)} per share
+                            </div>
+                            <div className="text-sm text-slate-500 dark:text-slate-400">
+                              {formatCurrency(scenario.contractCost)} per contract
                             </div>
                           </div>
-                        )
-                      })()}
+                        </div>
+
+                        {/* Profit Scenarios */}
+                        <div>
+                          <div className="flex items-center justify-between mb-3">
+                            <h5 className="font-medium text-slate-900 dark:text-white">Potential Profits</h5>
+                            {isPerContractView && (
+                              <span className="text-xs font-medium text-amber-600 dark:text-amber-300">
+                                Showing per-contract economics
+                              </span>
+                            )}
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {scenario.scenarios.map((scenarioItem, i) => (
+                              <div key={i} className="bg-white dark:bg-slate-700 rounded-xl p-4">
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                                    {scenarioItem.move || `${scenarioItem.return.toFixed(0)}%`} Stock Move
+                                  </span>
+                                  <span className="text-xs font-semibold text-emerald-600">
+                                    +{scenarioItem.return.toFixed(1)}%
+                                  </span>
+                                </div>
+                                <div className="space-y-1">
+                                  <div className="flex justify-between text-sm">
+                                    <span className="text-slate-600 dark:text-slate-400">Profit:</span>
+                                    <span className="font-semibold text-emerald-600">
+                                      {formatCurrency(scenarioItem.profit)}
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between text-sm">
+                                    <span className="text-slate-600 dark:text-slate-400">Total Value:</span>
+                                    <span className="font-semibold text-slate-900 dark:text-white">
+                                      {formatCurrency(scenarioItem.totalValue)}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Risk Warning */}
+                        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
+                          <div className="flex items-start gap-3">
+                            <div className="w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center mt-0.5">
+                              <span className="text-xs text-white font-bold">!</span>
+                            </div>
+                            <div>
+                              <div className="font-medium text-amber-800 dark:text-amber-200 mb-1">Risk Warning</div>
+                              <div className="text-sm text-amber-700 dark:text-amber-300">
+                                Maximum loss: {formatCurrency(maxLossDisplay)} ({opp.maxLossPercent.toFixed(1)}% {isPerContractView ? 'per contract' : 'of deployed capital'}).
+                                Options can expire worthless, and you could lose your entire investment.
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
                   {/* Key Metrics */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
                     <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
                       <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Potential Return</div>
                       <div className="text-lg font-semibold text-emerald-600">{opp.potentialReturn.toFixed(1)}%</div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400">
+                        ≈ {formatCurrency(potentialReturnDisplay)} {isPerContractView ? 'per contract' : ''}
+                      </div>
                     </div>
                     <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
                       <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Max Return</div>
                       <div className="text-lg font-semibold text-emerald-600">{opp.maxReturn.toFixed(1)}%</div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400">
+                        ≈ {formatCurrency(maxReturnDisplay)} {isPerContractView ? 'per contract' : ''}
+                      </div>
                     </div>
                     <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
                       <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Max Loss</div>
-                      <div className="text-lg font-semibold text-red-600">{opp.maxLoss.toFixed(1)}%</div>
+                      <div className="text-lg font-semibold text-red-600">{opp.maxLossPercent.toFixed(1)}%</div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400">
+                        ≈ {formatCurrency(maxLossDisplay)} {isPerContractView ? 'per contract' : ''}
+                      </div>
+                      {opp.riskRewardRatio && opp.riskRewardRatio >= 3 && (
+                        <div className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-emerald-600">
+                          <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                          {opp.riskRewardRatio.toFixed(1)}x upside vs risk
+                        </div>
+                      )}
                     </div>
                     <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
-                      <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Breakeven</div>
-                      <div className="text-lg font-semibold text-slate-900 dark:text-white">${opp.breakeven.toFixed(2)}</div>
-              </div>
-            </div>
+                      <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Profit Probability</div>
+                      <div className="text-lg font-semibold text-slate-900 dark:text-white">
+                        {opp.probabilityOfProfit !== null ? `${opp.probabilityOfProfit.toFixed(1)}%` : '—'}
+                      </div>
+                      {opp.breakevenMovePercent !== null && (
+                        <div className="text-xs text-slate-500 dark:text-slate-400">
+                          Needs {opp.breakevenMovePercent.toFixed(1)}% move
+                        </div>
+                      )}
+                    </div>
+                    <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
+                      <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Reward-to-Risk</div>
+                      <div className={`text-lg font-semibold ${opp.riskRewardRatio && opp.riskRewardRatio >= 3 ? 'text-emerald-600' : 'text-slate-900 dark:text-white'}`}>
+                        {opp.riskRewardRatio ? `${opp.riskRewardRatio.toFixed(1)}x` : '—'}
+                      </div>
+                      {opp.riskRewardRatio && opp.riskRewardRatio >= 3 && (
+                        <div className="text-xs text-emerald-600">Asymmetric payoff</div>
+                      )}
+                    </div>
+                  </div>
 
                   {/* Greeks */}
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -824,7 +1129,7 @@ export default function HomePage() {
                 </div>
                 </div>
                 </div>
-              ))}
+              )})}
             </div>
           </div>
         )}
