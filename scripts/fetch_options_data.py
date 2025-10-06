@@ -10,6 +10,7 @@ from uuid import uuid4
 import numpy as np
 import pandas as pd
 import yfinance as yf
+from scipy import stats
 from scipy.stats import norm
 
 from src.config import AppSettings, get_settings
@@ -93,6 +94,55 @@ def calculate_iv_rank(symbol: str, current_iv: float) -> float:
         return 50.0
 
 
+def calculate_iv_anomaly(symbol: str, current_iv: float) -> Dict[str, float]:
+    """Return IV z-score, percentile, and realized vol spread metrics."""
+
+    try:
+        ticker = yf.Ticker(symbol)
+        hist = ticker.history(period="1y")
+        closes = hist["Close"].dropna()
+        if closes.empty:
+            raise ValueError("no history")
+
+        returns = np.log(closes / closes.shift(1)).dropna()
+        realized = returns.rolling(window=30).std() * np.sqrt(252) * 100
+        realized = realized.dropna()
+        if realized.empty:
+            raise ValueError("insufficient realized volatility history")
+
+        mean_iv = float(realized.mean())
+        std_iv = float(realized.std(ddof=0))
+        if std_iv == 0:
+            raise ValueError("zero volatility dispersion")
+
+        zscore = (current_iv - mean_iv) / std_iv
+        percentile = stats.percentileofscore(realized, current_iv) / 100
+        latest_realized = float(realized.iloc[-1])
+        spread = current_iv - latest_realized
+
+        return {
+            "zscore": float(zscore),
+            "percentile": float(percentile),
+            "current_iv": float(current_iv),
+            "mean_iv": mean_iv,
+            "std_iv": std_iv,
+            "realized_vol": latest_realized,
+            "iv_rv_spread": float(spread),
+            "observations": int(len(realized)),
+        }
+    except Exception:
+        return {
+            "zscore": None,
+            "percentile": None,
+            "current_iv": float(current_iv),
+            "mean_iv": None,
+            "std_iv": None,
+            "realized_vol": None,
+            "iv_rv_spread": None,
+            "observations": 0,
+        }
+
+
 def detect_gamma_squeeze(options_df: pd.DataFrame, symbol: str, current_price: float) -> Dict[str, object]:
     try:
         calls = options_df[
@@ -166,6 +216,7 @@ def evaluate_contract(
     engine: CompositeScoringEngine,
     iv_rank: float,
     gamma_signal: Dict[str, object],
+    iv_anomaly: Dict[str, float],
 ) -> Signal:
     greeks = calculate_greeks(row)
     contract = build_contract(row)
@@ -176,6 +227,7 @@ def evaluate_contract(
         "moneyness": abs(contract.stock_price - contract.strike) / max(contract.stock_price, 0.01) if contract.stock_price else 0.0,
         "iv_rank": iv_rank,
         "gamma_squeeze": gamma_signal.get("score", 0.0),
+        "iv_anomaly": iv_anomaly,
     }
     projected_returns = compute_projected_returns(contract)
     market_data["projected_returns"] = projected_returns
@@ -184,6 +236,7 @@ def evaluate_contract(
     result.score.metadata.update(
         {
             "iv_rank": iv_rank,
+            "iv_anomaly": iv_anomaly,
             "projected_returns": projected_returns,
             "gamma_reasons": gamma_signal.get("reasons", []),
             "volume_ratio": market_data["volume_ratio"],
@@ -199,12 +252,14 @@ def rank_options_for_symbol(symbol: str, engine: CompositeScoringEngine) -> Tupl
 
     chain = chain.fillna(0)
     current_price = float(chain["stockPrice"].iloc[0]) if "stockPrice" in chain else 0.0
-    iv_rank = calculate_iv_rank(symbol, float(chain.get("impliedVolatility", pd.Series([0])).mean()) * 100)
+    avg_iv = float(chain.get("impliedVolatility", pd.Series([0])).mean()) * 100
+    iv_rank = calculate_iv_rank(symbol, avg_iv)
+    iv_anomaly = calculate_iv_anomaly(symbol, avg_iv)
     gamma_signal = detect_gamma_squeeze(chain, symbol, current_price)
 
     signals: List[Signal] = []
     for _, row in chain.iterrows():
-        signal = evaluate_contract(row, engine, iv_rank, gamma_signal)
+        signal = evaluate_contract(row, engine, iv_rank, gamma_signal, iv_anomaly)
         if signal.score.total_score >= 70:
             signals.append(signal)
     return sorted(signals, key=lambda s: s.score.total_score, reverse=True), chain
