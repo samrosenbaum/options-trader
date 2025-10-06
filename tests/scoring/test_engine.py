@@ -42,6 +42,15 @@ def build_market_data() -> dict:
             "iv_rv_spread": 27.0,
         },
         "projected_returns": {"10%": 6.2, "20%": 9.1, "30%": 12.4},
+        "event_intel": {
+            "earnings_in_days": 5,
+            "news_sentiment_score": 0.42,
+            "news_sentiment_label": "bullish",
+            "political_hits": ["congress"],
+            "ai_infra_hits": ["data center"],
+            "volatility_label": "elevated",
+            "unique_drivers": ["AI infrastructure demand", "positive news momentum"],
+        },
     }
 
 
