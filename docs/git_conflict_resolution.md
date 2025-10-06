@@ -39,6 +39,23 @@ markers that Git inserts:
 Manually decide which lines to keep, edit, or combine. Remove every conflict
 marker (`<<<<<<<`, `=======`, `>>>>>>>`) once you finish editing.
 
+### Choosing between “Accept Current”, “Accept Incoming”, or “Accept Both”
+
+Editors such as VS Code show buttons like **Accept Current Change**,
+**Accept Incoming Change**, and **Accept Both Changes** alongside each conflict:
+
+- **Accept Current Change** keeps the code that was already on *your* branch
+  (the lines between `<<<<<<< HEAD` and `=======`).
+- **Accept Incoming Change** keeps the code from the branch you are merging
+  (the lines between `=======` and `>>>>>>> origin/main`).
+- **Accept Both Changes** inserts both blocks in sequence. Use this when the
+  changes are complementary and should coexist, then edit further if needed.
+
+Only click these buttons after you understand which version is correct for the
+project. You can also ignore the buttons and edit the lines manually—what
+matters is that the final file contains the correct blended logic with no
+conflict markers.
+
 ## 3. Test the resolution
 
 After you have edited all conflicts, run the test suite to confirm nothing broke:
