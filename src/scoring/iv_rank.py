@@ -36,8 +36,13 @@ class IVRankScorer:
             score += 10
 
         squeeze_signal = context.market_data.get("gamma_squeeze", 0.0)
-        if squeeze_signal:
-            score += squeeze_signal
+        if isinstance(squeeze_signal, dict):
+            squeeze_score = float(squeeze_signal.get("score", 0.0))
+        else:
+            squeeze_score = float(squeeze_signal or 0.0)
+
+        if squeeze_score:
+            score += squeeze_score
             reasons.append("Gamma squeeze setup detected")
             tags.append("squeeze")
 
