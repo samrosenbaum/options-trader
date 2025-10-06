@@ -3,7 +3,6 @@
 Bulk Options Data Fetcher - Get options data from multiple sources efficiently
 """
 
-import yfinance as yf
 import pandas as pd
 import requests
 import json
@@ -12,12 +11,17 @@ import concurrent.futures
 from datetime import datetime, timedelta
 import numpy as np
 
+from src.adapters.base import AdapterError
+from src.config import get_options_data_adapter
+
 class BulkOptionsFetcher:
     def __init__(self):
         self.session = requests.Session()
         self.session.headers.update({
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
         })
+
+        self.adapter = get_options_data_adapter()
         
         # High-volume stocks that typically have good options liquidity
         self.priority_symbols = [
@@ -28,68 +32,48 @@ class BulkOptionsFetcher:
         
         # Alternative data sources
         self.data_sources = {
-            'yfinance': self.fetch_yfinance_options,
+            'adapter': self.fetch_options_via_adapter,
+            'yfinance': self.fetch_options_via_adapter,
             'polygon': self.fetch_polygon_options,  # If you have API key
             'alpha_vantage': self.fetch_alpha_vantage_options  # If you have API key
         }
-    
-    def fetch_yfinance_options(self, symbol, max_workers=5):
-        """Fetch options data using yfinance with threading"""
+
+    def fetch_options_via_adapter(self, symbol, max_expirations: int = 3):
+        """Fetch options data using the configured adapter."""
+
         try:
-            ticker = yf.Ticker(symbol)
-            
-            # Get current stock price
-            stock_info = ticker.info
-            current_price = stock_info.get('currentPrice', stock_info.get('regularMarketPrice', 0))
-            
-            # Get options chain
-            expirations = ticker.options
-            if not expirations:
-                return None
-            
-            # Get next 2-3 expirations
-            relevant_expirations = expirations[:3]
-            
-            all_options = []
-            for exp_date in relevant_expirations:
-                try:
-                    opt_chain = ticker.option_chain(exp_date)
-                    calls = opt_chain.calls
-                    puts = opt_chain.puts
-                    
-                    # Add metadata
-                    calls['symbol'] = symbol
-                    calls['expiration'] = exp_date
-                    calls['type'] = 'call'
-                    calls['stockPrice'] = current_price
-                    
-                    puts['symbol'] = symbol
-                    puts['expiration'] = exp_date
-                    puts['type'] = 'put'
-                    puts['stockPrice'] = current_price
-                    
-                    all_options.extend([
-                        calls[['symbol', 'strike', 'lastPrice', 'volume', 'openInterest', 
-                              'impliedVolatility', 'bid', 'ask', 'expiration', 'type', 'stockPrice']],
-                        puts[['symbol', 'strike', 'lastPrice', 'volume', 'openInterest', 
-                             'impliedVolatility', 'bid', 'ask', 'expiration', 'type', 'stockPrice']]
-                    ])
-                    
-                    # Small delay to avoid rate limits
-                    time.sleep(0.1)
-                    
-                except Exception as e:
-                    print(f"Error fetching {symbol} options for {exp_date}: {e}")
-                    continue
-            
-            if all_options:
-                combined_df = pd.concat(all_options, ignore_index=True)
-                return combined_df
-            
-        except Exception as e:
-            print(f"Error fetching {symbol} from yfinance: {e}")
+            expirations = self.adapter.get_expirations(symbol)
+        except AdapterError as exc:
+            print(f"Error loading expirations for {symbol}: {exc}")
             return None
-        
+        except NotImplementedError:
+            print("Configured adapter does not support expiration lookup.")
+            return None
+
+        if not expirations:
+            return None
+
+        all_options = []
+        for exp_date in expirations[:max_expirations]:
+            try:
+                chain = self.adapter.get_chain(symbol, exp_date)
+            except AdapterError as exc:
+                print(f"Error fetching {symbol} options for {exp_date}: {exc}")
+                continue
+            except Exception as exc:  # pragma: no cover - defensive branch
+                print(f"Unexpected error fetching {symbol} options: {exc}")
+                continue
+
+            options_df = chain.to_dataframe()
+            if not options_df.empty:
+                all_options.append(options_df)
+
+            # Small delay to avoid rate limits on subsequent requests
+            time.sleep(0.1)
+
+        if all_options:
+            return pd.concat(all_options, ignore_index=True)
+
         return None
     
     def fetch_polygon_options(self, symbol, api_key=None):
@@ -154,7 +138,7 @@ class BulkOptionsFetcher:
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
             # Submit all fetch tasks
             future_to_symbol = {
-                executor.submit(self.fetch_yfinance_options, symbol): symbol 
+                executor.submit(self.fetch_options_via_adapter, symbol): symbol
                 for symbol in symbols
             }
             

@@ -6,49 +6,45 @@ import json
 import time
 import random
 
+from src.adapters.base import AdapterError
+from src.config import get_options_data_adapter
+
+
+_OPTIONS_ADAPTER = get_options_data_adapter()
+
+
 def get_options_chain(symbol):
-    """Fetch real options chain data from Yahoo Finance"""
+    """Fetch options chain data through the configured adapter."""
+
     try:
-        ticker = yf.Ticker(symbol)
-        
-        # Get stock info
-        info = ticker.info
-        current_price = info.get('currentPrice', info.get('regularMarketPrice', 0))
-        
-        # Get available expiration dates
-        expirations = ticker.options
-        
-        if not expirations:
-            return None
-            
-        # Get options for next 2 expirations
-        all_options = []
-        
-        for exp_date in expirations[:2]:
-            opt_chain = ticker.option_chain(exp_date)
-            
-            # Process calls
-            calls = opt_chain.calls
-            calls['type'] = 'call'
-            calls['expiration'] = exp_date
-            
-            # Process puts
-            puts = opt_chain.puts
-            puts['type'] = 'put'
-            puts['expiration'] = exp_date
-            
-            # Combine
-            options = pd.concat([calls, puts])
-            options['symbol'] = symbol
-            options['stockPrice'] = current_price
-            
-            all_options.append(options)
-        
-        return pd.concat(all_options) if all_options else None
-        
-    except Exception as e:
-        print(f"Error fetching options for {symbol}: {e}")
+        expirations = _OPTIONS_ADAPTER.get_expirations(symbol)
+    except AdapterError as exc:
+        print(f"Error loading expirations for {symbol}: {exc}")
         return None
+    except NotImplementedError:
+        print("Configured adapter does not provide expiration lookups.")
+        return None
+
+    if not expirations:
+        return None
+
+    all_options = []
+
+    for exp_date in expirations[:2]:
+        try:
+            chain = _OPTIONS_ADAPTER.get_chain(symbol, exp_date)
+        except AdapterError as exc:
+            print(f"Error fetching options for {symbol} ({exp_date}): {exc}")
+            continue
+        except Exception as exc:  # pragma: no cover - defensive branch
+            print(f"Unexpected error fetching {symbol} options: {exc}")
+            continue
+
+        options_df = chain.to_dataframe()
+        if not options_df.empty:
+            all_options.append(options_df)
+
+    return pd.concat(all_options, ignore_index=True) if all_options else None
 
 def calculate_greeks_approximation(row):
     """Calculate approximate Greeks using Black-Scholes approximations"""
