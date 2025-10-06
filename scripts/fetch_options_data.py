@@ -4,16 +4,20 @@ from __future__ import annotations
 
 import json
 from datetime import datetime
-from typing import Dict, Iterable, List, Sequence
+from typing import Any, Dict, Iterable, List, Mapping, Sequence, Tuple
+from uuid import uuid4
 
 import numpy as np
 import pandas as pd
 import yfinance as yf
 from scipy.stats import norm
 
+from src.config import AppSettings, get_settings
 from src.models.option import OptionContract, OptionGreeks
 from src.models.signal import Signal
 from src.scoring import CompositeScoringEngine
+from src.storage import OptionSnapshot, RunMetadata, SignalSnapshot
+from src.storage.sqlite import SQLiteStorage
 
 
 def get_options_chain(symbol: str) -> pd.DataFrame | None:
@@ -188,10 +192,10 @@ def evaluate_contract(
     return Signal.from_scoring_result(result)
 
 
-def rank_options_for_symbol(symbol: str, engine: CompositeScoringEngine) -> List[Signal]:
+def rank_options_for_symbol(symbol: str, engine: CompositeScoringEngine) -> Tuple[List[Signal], pd.DataFrame | None]:
     chain = get_options_chain(symbol)
     if chain is None or chain.empty:
-        return []
+        return [], None
 
     chain = chain.fillna(0)
     current_price = float(chain["stockPrice"].iloc[0]) if "stockPrice" in chain else 0.0
@@ -203,24 +207,105 @@ def rank_options_for_symbol(symbol: str, engine: CompositeScoringEngine) -> List
         signal = evaluate_contract(row, engine, iv_rank, gamma_signal)
         if signal.score.total_score >= 70:
             signals.append(signal)
-    return sorted(signals, key=lambda s: s.score.total_score, reverse=True)
+    return sorted(signals, key=lambda s: s.score.total_score, reverse=True), chain
 
 
-def scan_symbols(symbols: Sequence[str], limit_per_symbol: int = 5) -> List[Signal]:
-    engine = CompositeScoringEngine()
+def scan_symbols(
+    symbols: Sequence[str],
+    limit_per_symbol: int = 5,
+    engine: CompositeScoringEngine | None = None,
+) -> Tuple[List[Signal], Dict[str, pd.DataFrame]]:
+    engine = engine or CompositeScoringEngine()
     aggregated: List[Signal] = []
+    chains: Dict[str, pd.DataFrame] = {}
     for symbol in symbols:
-        signals = rank_options_for_symbol(symbol, engine)[:limit_per_symbol]
-        aggregated.extend(signals)
-    return aggregated
+        ranked, chain = rank_options_for_symbol(symbol, engine)
+        if chain is not None:
+            chains[symbol] = chain
+        if ranked:
+            aggregated.extend(ranked[:limit_per_symbol])
+    return aggregated, chains
 
 
 def serialize_signals(signals: Iterable[Signal]) -> List[Dict[str, object]]:
     return [signal.dict() for signal in signals]
 
 
+def _build_option_snapshots(symbol: str, chain: pd.DataFrame) -> List[OptionSnapshot]:
+    snapshots: List[OptionSnapshot] = []
+    for record in chain.to_dict(orient="records"):
+        snapshots.append(
+            OptionSnapshot(
+                symbol=symbol,
+                option_type=str(record.get("type", "")).lower(),
+                expiration=str(record.get("expiration", "")),
+                strike=float(record.get("strike", 0.0)),
+                contract_symbol=record.get("contractSymbol"),
+                data=record,
+            )
+        )
+    return snapshots
+
+
+def _build_signal_snapshots(signals: Sequence[Signal]) -> List[SignalSnapshot]:
+    snapshots: List[SignalSnapshot] = []
+    for signal in signals:
+        contract_symbol = None
+        if signal.contract.raw:
+            contract_symbol = signal.contract.raw.get("contractSymbol")
+        snapshots.append(
+            SignalSnapshot(
+                symbol=signal.symbol,
+                option_type=signal.contract.option_type,
+                score=signal.score.total_score,
+                contract_symbol=contract_symbol,
+                data=signal.dict(by_alias=True),
+            )
+        )
+    return snapshots
+
+
+def _create_storage(settings: AppSettings) -> SQLiteStorage:
+    sqlite_settings = settings.storage.require_sqlite()
+    return SQLiteStorage(sqlite_settings.path, pragmas=sqlite_settings.pragmas)
+
+
+def _persist_scan_results(
+    settings: AppSettings,
+    watchlist_name: str,
+    watchlist: Sequence[str],
+    signals: List[Signal],
+    chains: Mapping[str, pd.DataFrame],
+) -> None:
+    if not chains and not signals:
+        return
+
+    storage = _create_storage(settings)
+    total_options = sum(len(df) for df in chains.values())
+    metadata = RunMetadata(
+        run_id=uuid4().hex,
+        run_at=datetime.utcnow(),
+        environment=settings.env,
+        watchlist=watchlist_name,
+        extra={
+            "symbols": list(watchlist),
+            "signal_count": len(signals),
+            "option_snapshot_count": total_options,
+        },
+    )
+    option_snapshots: List[OptionSnapshot] = []
+    for symbol, chain in chains.items():
+        option_snapshots.extend(_build_option_snapshots(symbol, chain))
+    signal_snapshots = _build_signal_snapshots(signals)
+    storage.save_run(metadata, option_snapshots, signal_snapshots)
+
+
 if __name__ == "__main__":
-    watchlist = ["AAPL", "MSFT", "NVDA", "TSLA", "SPY", "QQQ", "IWM", "AMD"]
-    signals = scan_symbols(watchlist, limit_per_symbol=3)
+    settings = get_settings()
+    watchlist_name = "default"
+    watchlist = settings.get_watchlist(watchlist_name)
+    engine = CompositeScoringEngine(settings.scoring_dict())
+    signals, chains = scan_symbols(watchlist, limit_per_symbol=3, engine=engine)
+    _persist_scan_results(settings, watchlist_name, watchlist, signals, chains)
     print(json.dumps(serialize_signals(signals), indent=2, default=str))
 
