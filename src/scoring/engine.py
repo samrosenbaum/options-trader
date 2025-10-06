@@ -6,6 +6,7 @@ from src.models.option import OptionContract, OptionGreeks, OptionScore, Scoring
 
 from .base import ScoreContext
 from .config import merge_config
+from .event_catalyst import EventCatalystScorer
 from .gamma_squeeze import GammaSqueezeScorer
 from .iv_anomaly import IVAnomalyScorer
 from .iv_rank import IVRankScorer
@@ -20,6 +21,7 @@ SCORER_REGISTRY = {
     IVRankScorer.key: IVRankScorer,
     LiquidityScorer.key: LiquidityScorer,
     RiskRewardScorer.key: RiskRewardScorer,
+    EventCatalystScorer.key: EventCatalystScorer,
 }
 
 
