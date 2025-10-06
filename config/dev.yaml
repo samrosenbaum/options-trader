@@ -1,0 +1,43 @@
+watchlists:
+  default:
+    - AAPL
+    - MSFT
+    - NVDA
+    - TSLA
+    - SPY
+    - QQQ
+    - IWM
+    - AMD
+  growth:
+    - SHOP
+    - SNOW
+    - PLTR
+    - CRWD
+    - MDB
+scoring:
+  enabled:
+    - volume
+    - iv_rank
+    - liquidity
+    - risk_reward
+  weights:
+    volume: 1.0
+    iv_rank: 1.2
+    liquidity: 0.8
+    risk_reward: 1.5
+  score_bounds:
+    min: 0.0
+    max: 100.0
+adapter:
+  provider: yfinance
+  settings:
+    timeout: 30
+cache:
+  ttl_seconds: 900
+storage:
+  backend: sqlite
+  sqlite:
+    path: data/dev-options.db
+    pragmas:
+      journal_mode: WAL
+      synchronous: NORMAL
