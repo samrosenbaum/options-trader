@@ -8,7 +8,12 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any, Dict, List, Mapping, MutableMapping, Optional
 
-import yaml
+try:  # pragma: no cover - exercised indirectly in environments with PyYAML
+    import yaml  # type: ignore
+
+    _safe_load = yaml.safe_load
+except ModuleNotFoundError:  # pragma: no cover - executed in minimal environments
+    from ._yaml_compat import safe_load as _safe_load
 from pydantic import BaseModel, Field, root_validator, validator
 
 from src.scoring.config import DEFAULT_SCORER_CONFIG
@@ -141,7 +146,7 @@ def _deep_merge(base: MutableMapping[str, Any], overrides: Mapping[str, Any]) ->
 
 def _load_yaml(path: Path) -> Dict[str, Any]:
     with path.open("r", encoding="utf-8") as handle:
-        data = yaml.safe_load(handle) or {}
+        data = _safe_load(handle.read()) or {}
         if not isinstance(data, dict):
             raise ValueError(f"Configuration file {path} must contain a mapping at the root.")
         return data

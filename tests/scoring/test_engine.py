@@ -32,7 +32,22 @@ def build_market_data() -> dict:
         "theta_ratio": 0.015,
         "moneyness": 0.013,
         "iv_rank": 82.0,
-        "gamma_squeeze": 10.0,
+        "gamma_squeeze": {
+            "score": 48.0,
+            "risk_level": "HIGH",
+            "max_short_gamma": -120_000,
+            "squeeze_strike": 150.0,
+            "call_volume_ratio": 2.3,
+            "reasons": ["Dealers heavily short gamma"],
+        },
+        "iv_anomaly": {
+            "zscore": 2.4,
+            "percentile": 0.97,
+            "current_iv": 55.0,
+            "mean_iv": 32.0,
+            "realized_vol": 28.0,
+            "iv_rv_spread": 27.0,
+        },
         "projected_returns": {"10%": 6.2, "20%": 9.1, "30%": 12.4},
     }
 
