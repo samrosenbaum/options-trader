@@ -19,11 +19,20 @@ interface Opportunity {
   catalysts: string[]
   riskLevel: string
   potentialReturn: number
+  potentialReturnAmount: number
   maxReturn: number
-  maxLoss: number
+  maxReturnAmount: number
+  maxLossPercent: number
+  maxLossAmount: number
   breakeven: number
   ivRank: number
   volumeRatio: number
+  probabilityOfProfit: number | null
+  profitProbabilityExplanation: string
+  breakevenMovePercent: number | null
+  breakevenPrice: number | null
+  riskRewardRatio: number | null
+  shortTermRiskRewardRatio: number | null
   greeks: {
     delta: number
     gamma: number
@@ -270,27 +279,35 @@ export default function HomePage() {
 
   const getRiskRewardExplanation = (opp: Opportunity) => {
     const maxReturn = opp.maxReturn
-    const maxLoss = opp.maxLoss
+    const maxLossPercent = opp.maxLossPercent
+    const maxLossAmount = opp.maxLossAmount
     const potentialReturn = opp.potentialReturn
     const daysToExp = opp.daysToExpiration
-    
+
     let explanation = `This trade offers a potential return of ${potentialReturn.toFixed(1)}% on a 10% stock move, with a maximum possible return of ${maxReturn.toFixed(1)}%. `
-    
+
     // Risk assessment
-    if (maxLoss < 100) {
-      explanation += `Your maximum loss is limited to ${maxLoss.toFixed(1)}% of your investment. `
+    if (maxLossPercent < 100) {
+      explanation += `Your maximum loss is limited to ${maxLossPercent.toFixed(1)}% of your investment (${formatCurrency(maxLossAmount)} per contract). `
     } else {
-      explanation += `Your maximum loss is ${maxLoss.toFixed(1)}% of your investment. `
+      explanation += `Your maximum loss is ${maxLossPercent.toFixed(1)}% of your investment (${formatCurrency(maxLossAmount)} per contract). `
     }
-    
+
     // Risk/Reward ratio
-    const riskRewardRatio = potentialReturn / Math.abs(maxLoss)
-    if (riskRewardRatio > 5) {
-      explanation += `This creates an excellent risk/reward ratio of ${riskRewardRatio.toFixed(1)}:1, meaning you could make ${riskRewardRatio.toFixed(1)}x more than you could lose. `
-    } else if (riskRewardRatio > 2) {
-      explanation += `This creates a good risk/reward ratio of ${riskRewardRatio.toFixed(1)}:1, providing favorable odds. `
+    const shortTermRatio = opp.shortTermRiskRewardRatio ?? (potentialReturn / Math.max(Math.abs(maxLossPercent), 1))
+    const asymmetryRatio = opp.riskRewardRatio ?? (maxReturn / Math.max(Math.abs(maxLossPercent), 1))
+    if (shortTermRatio > 5) {
+      explanation += `This creates an excellent near-term risk/reward ratio of ${shortTermRatio.toFixed(1)}:1 on a 10% move, meaning you could make ${shortTermRatio.toFixed(1)}x more than you could lose. `
+    } else if (shortTermRatio > 2) {
+      explanation += `This creates a good risk/reward ratio of ${shortTermRatio.toFixed(1)}:1, providing favorable odds even on a modest move. `
     } else {
-      explanation += `This creates a risk/reward ratio of ${riskRewardRatio.toFixed(1)}:1. `
+      explanation += `This creates a risk/reward ratio of ${shortTermRatio.toFixed(1)}:1 on the first 10% move. `
+    }
+
+    if (asymmetryRatio >= 3) {
+      explanation += `The max payoff is ${asymmetryRatio.toFixed(1)}x larger than the capital at risk, giving this setup major asymmetric upside if the stock really runs. `
+    } else if (asymmetryRatio >= 1.5) {
+      explanation += `There's still ${asymmetryRatio.toFixed(1)}x more upside than downside if the bigger move plays out. `
     }
     
     // Time considerations
@@ -596,8 +613,18 @@ export default function HomePage() {
                               NEWS: {opp.newsImpactScore}
                             </span>
                           )}
-                </div>
-              </div>
+                          {opp.riskRewardRatio && opp.riskRewardRatio >= 3 && (
+                            <span className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-xl text-xs font-semibold">
+                              ASYM EDGE {opp.riskRewardRatio.toFixed(1)}x
+                            </span>
+                          )}
+                          {opp.probabilityOfProfit !== null && opp.probabilityOfProfit >= 55 && (
+                            <span className="px-3 py-1 bg-sky-100 text-sky-700 rounded-xl text-xs font-semibold">
+                              WIN RATE {opp.probabilityOfProfit.toFixed(0)}%
+                            </span>
+                          )}
+                        </div>
+                      </div>
                       
                       <div className="flex items-center gap-6 text-sm text-slate-600 dark:text-slate-400">
                         <span>{opp.optionType.toUpperCase()} ${opp.strike}</span>
@@ -695,6 +722,35 @@ export default function HomePage() {
                           {getRiskRewardExplanation(opp)}
                         </p>
                       </div>
+                      {opp.probabilityOfProfit !== null && (
+                        <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl p-4 border border-emerald-200 dark:border-emerald-800">
+                          <div className="flex items-center justify-between mb-3">
+                            <h5 className="font-medium text-emerald-900 dark:text-emerald-100">Likelihood of Profit</h5>
+                            <span className="text-lg font-semibold text-emerald-700 dark:text-emerald-200">
+                              {opp.probabilityOfProfit.toFixed(1)}%
+                            </span>
+                          </div>
+                          <div className="w-full h-2 bg-emerald-100 dark:bg-emerald-900/40 rounded-full overflow-hidden mb-2">
+                            <div
+                              className="h-full bg-emerald-500"
+                              style={{ width: `${Math.max(0, Math.min(opp.probabilityOfProfit, 100)).toFixed(1)}%` }}
+                            ></div>
+                          </div>
+                          <div className="flex items-center justify-between text-xs text-emerald-800 dark:text-emerald-200 mb-3">
+                            {opp.breakevenMovePercent !== null ? (
+                              <span>Needs {opp.breakevenMovePercent.toFixed(1)}% move to breakeven</span>
+                            ) : (
+                              <span>Breakeven move unavailable</span>
+                            )}
+                            {opp.breakevenPrice !== null && (
+                              <span>Breakeven ${opp.breakevenPrice.toFixed(2)}</span>
+                            )}
+                          </div>
+                          <p className="text-sm text-emerald-900 dark:text-emerald-100 leading-relaxed">
+                            {opp.profitProbabilityExplanation || 'Probability estimate unavailable for this contract.'}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -772,7 +828,7 @@ export default function HomePage() {
                                 <div>
                                   <div className="font-medium text-amber-800 dark:text-amber-200 mb-1">Risk Warning</div>
                                   <div className="text-sm text-amber-700 dark:text-amber-300">
-                                    Maximum loss: {formatCurrency(scenario.totalCost)} (100% of investment). 
+                                    Maximum loss: {formatCurrency(opp.maxLossAmount)} ({opp.maxLossPercent.toFixed(1)}% of investment).
                                     Options can expire worthless, and you could lose your entire investment.
                   </div>
                   </div>
@@ -785,24 +841,49 @@ export default function HomePage() {
                   </div>
 
                   {/* Key Metrics */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
                     <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
                       <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Potential Return</div>
                       <div className="text-lg font-semibold text-emerald-600">{opp.potentialReturn.toFixed(1)}%</div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400">≈ {formatCurrency(opp.potentialReturnAmount)}</div>
                     </div>
                     <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
                       <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Max Return</div>
                       <div className="text-lg font-semibold text-emerald-600">{opp.maxReturn.toFixed(1)}%</div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400">≈ {formatCurrency(opp.maxReturnAmount)}</div>
                     </div>
                     <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
                       <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Max Loss</div>
-                      <div className="text-lg font-semibold text-red-600">{opp.maxLoss.toFixed(1)}%</div>
+                      <div className="text-lg font-semibold text-red-600">{opp.maxLossPercent.toFixed(1)}%</div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400">≈ {formatCurrency(opp.maxLossAmount)}</div>
+                      {opp.riskRewardRatio && opp.riskRewardRatio >= 3 && (
+                        <div className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-emerald-600">
+                          <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                          {opp.riskRewardRatio.toFixed(1)}x upside vs risk
+                        </div>
+                      )}
                     </div>
                     <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
-                      <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Breakeven</div>
-                      <div className="text-lg font-semibold text-slate-900 dark:text-white">${opp.breakeven.toFixed(2)}</div>
-              </div>
-            </div>
+                      <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Profit Probability</div>
+                      <div className="text-lg font-semibold text-slate-900 dark:text-white">
+                        {opp.probabilityOfProfit !== null ? `${opp.probabilityOfProfit.toFixed(1)}%` : '—'}
+                      </div>
+                      {opp.breakevenMovePercent !== null && (
+                        <div className="text-xs text-slate-500 dark:text-slate-400">
+                          Needs {opp.breakevenMovePercent.toFixed(1)}% move
+                        </div>
+                      )}
+                    </div>
+                    <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
+                      <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Reward-to-Risk</div>
+                      <div className={`text-lg font-semibold ${opp.riskRewardRatio && opp.riskRewardRatio >= 3 ? 'text-emerald-600' : 'text-slate-900 dark:text-white'}`}>
+                        {opp.riskRewardRatio ? `${opp.riskRewardRatio.toFixed(1)}x` : '—'}
+                      </div>
+                      {opp.riskRewardRatio && opp.riskRewardRatio >= 3 && (
+                        <div className="text-xs text-emerald-600">Asymmetric payoff</div>
+                      )}
+                    </div>
+                  </div>
 
                   {/* Greeks */}
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

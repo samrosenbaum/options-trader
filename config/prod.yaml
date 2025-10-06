@@ -5,23 +5,39 @@ watchlists:
     - DIA
     - IWM
     - GLD
+    - COIN
+    - HOOD
   momentum:
     - NVDA
     - TSLA
     - META
     - AMD
     - GOOGL
+  high_volatility:
+    - HOOD
+    - COIN
+    - PLTR
+    - SMCI
+    - MARA
+  ai_infrastructure:
+    - NVDA
+    - AVGO
+    - SMCI
+    - ASML
+    - PLTR
 scoring:
   enabled:
     - volume
     - iv_rank
     - liquidity
     - risk_reward
+    - event_catalyst
   weights:
     volume: 1.1
     iv_rank: 1.3
     liquidity: 0.9
     risk_reward: 1.7
+    event_catalyst: 1.1
   score_bounds:
     min: 10.0
     max: 100.0
