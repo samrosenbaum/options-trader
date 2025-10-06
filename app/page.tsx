@@ -19,8 +19,11 @@ interface Opportunity {
   catalysts: string[]
   riskLevel: string
   potentialReturn: number
+  potentialReturnAmount: number
   maxReturn: number
-  maxLoss: number
+  maxReturnAmount: number
+  maxLossPercent: number
+  maxLossAmount: number
   breakeven: number
   ivRank: number
   volumeRatio: number
@@ -276,19 +279,20 @@ export default function HomePage() {
 
   const getRiskRewardExplanation = (opp: Opportunity) => {
     const maxReturn = opp.maxReturn
-    const maxLoss = opp.maxLoss
+    const maxLossPercent = opp.maxLossPercent
+    const maxLossAmount = opp.maxLossAmount
     const potentialReturn = opp.potentialReturn
     const daysToExp = opp.daysToExpiration
-    
+
     let explanation = `This trade offers a potential return of ${potentialReturn.toFixed(1)}% on a 10% stock move, with a maximum possible return of ${maxReturn.toFixed(1)}%. `
-    
+
     // Risk assessment
-    if (maxLoss < 100) {
-      explanation += `Your maximum loss is limited to ${maxLoss.toFixed(1)}% of your investment. `
+    if (maxLossPercent < 100) {
+      explanation += `Your maximum loss is limited to ${maxLossPercent.toFixed(1)}% of your investment (${formatCurrency(maxLossAmount)} per contract). `
     } else {
-      explanation += `Your maximum loss is ${maxLoss.toFixed(1)}% of your investment. `
+      explanation += `Your maximum loss is ${maxLossPercent.toFixed(1)}% of your investment (${formatCurrency(maxLossAmount)} per contract). `
     }
-    
+
     // Risk/Reward ratio
     const shortTermRatio = opp.shortTermRiskRewardRatio ?? (potentialReturn / Math.max(Math.abs(maxLoss), 1))
     const asymmetryRatio = opp.riskRewardRatio ?? (maxReturn / Math.max(Math.abs(maxLoss), 1))
@@ -824,7 +828,7 @@ export default function HomePage() {
                                 <div>
                                   <div className="font-medium text-amber-800 dark:text-amber-200 mb-1">Risk Warning</div>
                                   <div className="text-sm text-amber-700 dark:text-amber-300">
-                                    Maximum loss: {formatCurrency(scenario.totalCost)} (100% of investment). 
+                                    Maximum loss: {formatCurrency(opp.maxLossAmount)} ({opp.maxLossPercent.toFixed(1)}% of investment).
                                     Options can expire worthless, and you could lose your entire investment.
                   </div>
                   </div>
@@ -841,14 +845,23 @@ export default function HomePage() {
                     <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
                       <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Potential Return</div>
                       <div className="text-lg font-semibold text-emerald-600">{opp.potentialReturn.toFixed(1)}%</div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400">≈ {formatCurrency(opp.potentialReturnAmount)}</div>
                     </div>
                     <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
                       <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Max Return</div>
                       <div className="text-lg font-semibold text-emerald-600">{opp.maxReturn.toFixed(1)}%</div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400">≈ {formatCurrency(opp.maxReturnAmount)}</div>
                     </div>
                     <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
                       <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Max Loss</div>
-                      <div className="text-lg font-semibold text-red-600">{opp.maxLoss.toFixed(1)}%</div>
+                      <div className="text-lg font-semibold text-red-600">{opp.maxLossPercent.toFixed(1)}%</div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400">≈ {formatCurrency(opp.maxLossAmount)}</div>
+                      {opp.riskRewardRatio && opp.riskRewardRatio >= 3 && (
+                        <div className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-emerald-600">
+                          <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                          {opp.riskRewardRatio.toFixed(1)}x upside vs risk
+                        </div>
+                      )}
                     </div>
                     <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
                       <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Profit Probability</div>
