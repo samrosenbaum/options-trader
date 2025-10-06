@@ -294,8 +294,8 @@ export default function HomePage() {
     }
 
     // Risk/Reward ratio
-    const shortTermRatio = opp.shortTermRiskRewardRatio ?? (potentialReturn / Math.max(Math.abs(maxLossPercent), 1))
-    const asymmetryRatio = opp.riskRewardRatio ?? (maxReturn / Math.max(Math.abs(maxLossPercent), 1))
+    const shortTermRatio = opp.shortTermRiskRewardRatio ?? (potentialReturn / Math.max(Math.abs(maxLoss), 1))
+    const asymmetryRatio = opp.riskRewardRatio ?? (maxReturn / Math.max(Math.abs(maxLoss), 1))
     if (shortTermRatio > 5) {
       explanation += `This creates an excellent near-term risk/reward ratio of ${shortTermRatio.toFixed(1)}:1 on a 10% move, meaning you could make ${shortTermRatio.toFixed(1)}x more than you could lose. `
     } else if (shortTermRatio > 2) {
