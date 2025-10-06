@@ -74,6 +74,16 @@ export async function GET() {
               const maxLossAmount = typeof riskIntel?.max_loss_amount === 'number'
                 ? riskIntel.max_loss_amount
                 : contractCost
+              const pythonMaxLossPct = typeof riskIntel?.max_loss_pct === 'number' ? riskIntel.max_loss_pct : null
+              const normalizedLossPct = contractCost > 0 && maxLossAmount > 0
+                ? (maxLossAmount / contractCost) * 100
+                : null
+              let maxLossPercent = pythonMaxLossPct ?? (normalizedLossPct ?? (contractCost > 0 ? 100 : 0))
+              if (normalizedLossPct !== null && Number.isFinite(normalizedLossPct)) {
+                if (!Number.isFinite(maxLossPercent) || Math.abs(maxLossPercent - normalizedLossPct) > 5) {
+                  maxLossPercent = normalizedLossPct
+                }
+              }
               const maxReturnPercent = typeof riskIntel?.max_return_pct === 'number'
                 ? riskIntel.max_return_pct
                 : maxReturnPct ? maxReturnPct * 100 : 0
@@ -109,8 +119,8 @@ export async function GET() {
                 potentialReturnAmount: tenPctReturnAmount,
                 maxReturn: maxReturnPercent,
                 maxReturnAmount,
-                maxLoss: typeof riskIntel?.max_loss_pct === 'number' ? riskIntel.max_loss_pct : maxLossAmount > 0 ? 100 : 0,
-                maxLossPercent: typeof riskIntel?.max_loss_pct === 'number' ? riskIntel.max_loss_pct : maxLossAmount > 0 ? 100 : 0,
+                maxLoss: maxLossPercent,
+                maxLossPercent,
                 maxLossAmount,
                 breakeven: opp.contract?.strike ? (opp.contract.option_type === 'call' ? opp.contract.strike + opp.contract.last_price : opp.contract.strike - opp.contract.last_price) : 0,
                 ivRank: opp.iv_rank || 0,
