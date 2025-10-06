@@ -5,6 +5,29 @@ import ScanProgress from '../components/scan-progress'
 import RealTimeProgress from '../components/real-time-progress'
 import LiveTicker from '../components/live-ticker'
 
+interface MoveAnalysisFactor {
+  label: string
+  detail: string
+  weight: number | null
+}
+
+interface MoveAnalysisThreshold {
+  threshold: string
+  baseProbability: number | null
+  conviction: number | null
+  summary: string
+  factors: MoveAnalysisFactor[]
+  historicalSupport: { horizonDays: number | null; probability: number | null } | null
+}
+
+interface MoveAnalysis {
+  expectedMovePercent: number | null
+  impliedVol: number | null
+  daysToExpiration: number | null
+  thresholds: MoveAnalysisThreshold[]
+  drivers: string[]
+}
+
 interface Opportunity {
   symbol: string
   optionType: string
@@ -201,12 +224,20 @@ export default function HomePage() {
     }).format(amount)
   }
 
+  const formatPercent = (value: number | null | undefined, digits = 0) => {
+    if (value === null || value === undefined || Number.isNaN(value)) {
+      return '—'
+    }
+    return `${value.toFixed(digits)}%`
+  }
+
   const getTradeLogic = (opp: Opportunity) => {
     const isCall = opp.optionType === 'call'
     const daysToExp = opp.daysToExpiration
     const strikeVsPrice = opp.strike / opp.stockPrice
     const ivRank = opp.ivRank
-    
+    const eventIntel = opp.eventIntel || {}
+
     let logic = ""
     
     // Basic trade direction
@@ -251,7 +282,31 @@ export default function HomePage() {
     if (opp.unusualFlowScore && opp.unusualFlowScore > 0) {
       logic += `Unusual options activity indicates smart money positioning, potentially signaling an upcoming move. `
     }
-    
+
+    if (typeof eventIntel.earnings_in_days === 'number') {
+      if (eventIntel.earnings_in_days >= 0) {
+        logic += `Upcoming earnings in ${Math.round(eventIntel.earnings_in_days)} days could be a key catalyst for volatility. `
+      } else if (eventIntel.earnings_in_days < 0 && eventIntel.earnings_in_days > -7) {
+        logic += `The stock is still reacting to a fresh earnings release from ${Math.abs(Math.round(eventIntel.earnings_in_days))} days ago. `
+      }
+    }
+
+    if (typeof eventIntel.news_sentiment_label === 'string') {
+      const sentimentLabel = String(eventIntel.news_sentiment_label).replace('_', ' ')
+      if (['bullish', 'very bullish', 'bearish', 'very bearish'].includes(sentimentLabel.toLowerCase())) {
+        logic += `News flow is ${sentimentLabel.toLowerCase()}, reinforcing the directional bias behind this trade. `
+      }
+    }
+
+    const drivers = opp.moveAnalysis?.drivers?.length
+      ? opp.moveAnalysis.drivers
+      : Array.isArray(eventIntel.unique_drivers)
+        ? eventIntel.unique_drivers
+        : []
+    if (drivers.length > 0) {
+      logic += `Primary drivers include ${drivers.join(', ')}. `
+    }
+
     return logic
   }
 
@@ -787,6 +842,8 @@ export default function HomePage() {
                           ))}
                         </div>
                       </div>
+
+                      {renderMoveThesis(opp)}
 
                       {/* Risk Assessment */}
                       <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
