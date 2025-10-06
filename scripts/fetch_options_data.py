@@ -13,6 +13,45 @@ import yfinance as yf
 from scipy import stats
 from scipy.stats import norm
 
+POLITICAL_KEYWORDS = {
+    "white house",
+    "congress",
+    "senate",
+    "house",
+    "regulation",
+    "regulatory",
+    "sec",
+    "federal reserve",
+    "treasury",
+    "policy",
+    "bill",
+    "legislation",
+    "tariff",
+    "sanction",
+    "subsidy",
+}
+
+AI_INFRA_KEYWORDS = {
+    "artificial intelligence",
+    "ai infrastructure",
+    "ai chip",
+    "data center",
+    "gpu",
+    "accelerator",
+    "inference",
+    "training cluster",
+    "cloud compute",
+}
+
+HIGH_VOLATILITY_FOCUS = {
+    "HOOD",
+    "COIN",
+    "PLTR",
+    "SMCI",
+    "AI",
+    "MARA",
+}
+
 from src.config import AppSettings, get_settings
 from src.models.option import OptionContract, OptionGreeks
 from src.models.signal import Signal
@@ -141,6 +180,213 @@ def calculate_iv_anomaly(symbol: str, current_iv: float) -> Dict[str, float]:
             "iv_rv_spread": None,
             "observations": 0,
         }
+
+
+def _headline_sentiment(text: str) -> float:
+    positive = [
+        "surge",
+        "rally",
+        "record",
+        "beat",
+        "accelerate",
+        "strong",
+        "growth",
+        "partnership",
+        "upgrade",
+        "expansion",
+    ]
+    negative = [
+        "plunge",
+        "selloff",
+        "downgrade",
+        "miss",
+        "weak",
+        "lawsuit",
+        "probe",
+        "delay",
+        "risk",
+        "cut",
+    ]
+    intensity = {"massive", "major", "unusual", "historic"}
+
+    content = text.lower()
+    score = 0.0
+    for word in positive:
+        if word in content:
+            score += 1.0
+    for word in negative:
+        if word in content:
+            score -= 1.0
+    if any(word in content for word in intensity):
+        score *= 1.2
+    return max(-1.0, min(1.0, score / 6.0))
+
+
+def _build_earnings_context(ticker: yf.Ticker) -> Dict[str, object]:
+    context: Dict[str, object] = {}
+    now = datetime.utcnow()
+    try:
+        earnings = ticker.get_earnings_dates(limit=6)
+    except Exception:
+        earnings = None
+
+    if earnings is None or earnings.empty:
+        return context
+
+    schedule = earnings.copy()
+    schedule.index = pd.to_datetime(schedule.index)
+    upcoming = schedule[schedule.index >= pd.Timestamp(now.date())]
+
+    if not upcoming.empty:
+        next_date = upcoming.index[0].to_pydatetime()
+        delta = (next_date - now).days
+        context["earnings_in_days"] = float(delta)
+        context["earnings_date"] = next_date.date().isoformat()
+    else:
+        last_date = schedule.index.sort_values(ascending=False)[0].to_pydatetime()
+        delta = (now - last_date).days
+        context["earnings_in_days"] = float(-delta)
+        context["earnings_date"] = last_date.date().isoformat()
+
+    return context
+
+
+def _build_news_context(ticker: yf.Ticker) -> Dict[str, object]:
+    context: Dict[str, object] = {}
+    try:
+        news_items = ticker.news or []
+    except Exception:
+        news_items = []
+
+    if not news_items:
+        return context
+
+    total_sentiment = 0.0
+    count = 0
+    sample_headlines: List[Dict[str, str]] = []
+    political_hits: set[str] = set()
+    ai_hits: set[str] = set()
+
+    for item in news_items[:8]:
+        title = item.get("title", "")
+        summary = item.get("summary", "")
+        text = f"{title} {summary}".strip()
+        if not text:
+            continue
+
+        sentiment = _headline_sentiment(text)
+        total_sentiment += sentiment
+        count += 1
+
+        lowered = text.lower()
+        for keyword in POLITICAL_KEYWORDS:
+            if keyword in lowered:
+                political_hits.add(keyword)
+        for keyword in AI_INFRA_KEYWORDS:
+            if keyword in lowered:
+                ai_hits.add(keyword)
+
+        if len(sample_headlines) < 3:
+            sample_headlines.append(
+                {
+                    "title": title,
+                    "url": item.get("link") or item.get("url", ""),
+                    "sentiment": round(sentiment, 2),
+                }
+            )
+
+    if count == 0:
+        return context
+
+    avg_sentiment = total_sentiment / count
+    if avg_sentiment > 0.35:
+        label = "very_bullish"
+    elif avg_sentiment > 0.15:
+        label = "bullish"
+    elif avg_sentiment < -0.35:
+        label = "very_bearish"
+    elif avg_sentiment < -0.15:
+        label = "bearish"
+    else:
+        label = "neutral"
+
+    context.update(
+        {
+            "news_sentiment_score": round(avg_sentiment, 3),
+            "news_sentiment_label": label,
+            "news_headlines": sample_headlines,
+            "political_hits": sorted(political_hits),
+            "ai_infra_hits": sorted(ai_hits),
+        }
+    )
+    return context
+
+
+def _build_volatility_context(ticker: yf.Ticker, symbol: str) -> Dict[str, object]:
+    context: Dict[str, object] = {}
+    try:
+        history = ticker.history(period="6mo")
+        closes = history["Close"].dropna()
+        if closes.empty:
+            raise ValueError("no closes")
+        returns = np.log(closes / closes.shift(1)).dropna()
+        if returns.empty:
+            raise ValueError("no returns")
+        realized = float(returns.std() * np.sqrt(252))
+    except Exception:
+        realized = None
+
+    if realized is not None:
+        if realized >= 1.0:
+            label = "extreme"
+        elif realized >= 0.6:
+            label = "elevated"
+        elif realized >= 0.35:
+            label = "above-average"
+        else:
+            label = "normal"
+        context["realized_volatility"] = round(realized, 3)
+        context["volatility_label"] = label
+
+    if symbol.upper() in HIGH_VOLATILITY_FOCUS:
+        context.setdefault("unique_drivers", []).append("focus-list-volatility")
+
+    return context
+
+
+def collect_event_context(symbol: str) -> Dict[str, object]:
+    ticker = yf.Ticker(symbol)
+    context: Dict[str, object] = {"symbol": symbol}
+
+    earnings_context = _build_earnings_context(ticker)
+    if earnings_context:
+        context.update(earnings_context)
+
+    news_context = _build_news_context(ticker)
+    if news_context:
+        context.update(news_context)
+
+    volatility_context = _build_volatility_context(ticker, symbol)
+    if volatility_context:
+        context.update(volatility_context)
+
+    unique_drivers = set(context.get("unique_drivers", []))
+    if context.get("political_hits"):
+        unique_drivers.add("policy tailwinds")
+    if context.get("ai_infra_hits"):
+        unique_drivers.add("AI infrastructure demand")
+    if context.get("news_sentiment_label") in {"bullish", "very_bullish"}:
+        unique_drivers.add("positive news momentum")
+    if context.get("volatility_label") in {"elevated", "extreme"}:
+        unique_drivers.add("high realized volatility")
+
+    if unique_drivers:
+        context["unique_drivers"] = sorted(unique_drivers)
+
+    if set(context.keys()) == {"symbol"}:
+        return {}
+
+    return context
 
 
 def detect_gamma_squeeze(options_df: pd.DataFrame, symbol: str, current_price: float) -> Dict[str, object]:
@@ -295,6 +541,7 @@ def evaluate_contract(
     iv_rank: float,
     gamma_signal: Dict[str, object],
     iv_anomaly: Dict[str, float],
+    event_context: Dict[str, object],
 ) -> Signal:
     greeks = calculate_greeks(row)
     contract = build_contract(row)
@@ -309,6 +556,8 @@ def evaluate_contract(
     }
     projected_returns = compute_projected_returns(contract)
     market_data["projected_returns"] = projected_returns
+    if event_context:
+        market_data["event_intel"] = event_context
 
     result = engine.score(contract, greeks, market_data)
     result.score.metadata.update(
@@ -321,6 +570,8 @@ def evaluate_contract(
             "volume_ratio": market_data["volume_ratio"],
         }
     )
+    if event_context:
+        result.score.metadata["event_intel"] = event_context
     return Signal.from_scoring_result(result)
 
 
@@ -335,10 +586,11 @@ def rank_options_for_symbol(symbol: str, engine: CompositeScoringEngine) -> Tupl
     iv_rank = calculate_iv_rank(symbol, avg_iv)
     iv_anomaly = calculate_iv_anomaly(symbol, avg_iv)
     gamma_signal = detect_gamma_squeeze(chain, symbol, current_price)
+    event_context = collect_event_context(symbol)
 
     signals: List[Signal] = []
     for _, row in chain.iterrows():
-        signal = evaluate_contract(row, engine, iv_rank, gamma_signal, iv_anomaly)
+        signal = evaluate_contract(row, engine, iv_rank, gamma_signal, iv_anomaly, event_context)
         if signal.score.total_score >= 70:
             signals.append(signal)
     return sorted(signals, key=lambda s: s.score.total_score, reverse=True), chain
