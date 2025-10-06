@@ -76,7 +76,7 @@ export interface Signal {
   reasons: string[]
   tags: string[]
   generated_at: string
-  metadata: Record<string, any>
+  metadata: Record<string, unknown>
 }
 
 export interface ScanError {

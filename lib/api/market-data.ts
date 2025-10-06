@@ -41,13 +41,19 @@ export interface NewsItem {
   }
 }
 
+interface FinnhubNewsItem {
+  id: number | string
+  headline: string
+  summary: string
+  source: string
+  url: string
+  datetime: number
+  related?: string
+}
+
 // Finnhub API (free tier: 60 calls/minute)
 const FINNHUB_API_KEY = process.env.FINNHUB_API_KEY || "demo"
 const FINNHUB_BASE_URL = "https://finnhub.io/api/v1"
-
-// Alpha Vantage API (free tier: 25 calls/day)
-const ALPHA_VANTAGE_API_KEY = process.env.ALPHA_VANTAGE_API_KEY || "demo"
-const ALPHA_VANTAGE_BASE_URL = "https://www.alphavantage.co/query"
 
 export async function getStockQuote(symbol: string): Promise<StockQuote> {
   try {
@@ -79,9 +85,9 @@ export async function getMultipleQuotes(symbols: string[]): Promise<StockQuote[]
 export async function getMarketNews(category = "general"): Promise<NewsItem[]> {
   try {
     const response = await fetch(`${FINNHUB_BASE_URL}/news?category=${category}&token=${FINNHUB_API_KEY}`)
-    const data = await response.json()
+    const data = (await response.json()) as FinnhubNewsItem[]
 
-    return data.slice(0, 20).map((item: any) => ({
+    return data.slice(0, 20).map((item) => ({
       id: item.id.toString(),
       headline: item.headline,
       summary: item.summary,
@@ -89,7 +95,7 @@ export async function getMarketNews(category = "general"): Promise<NewsItem[]> {
       url: item.url,
       datetime: item.datetime,
       related: item.related ? item.related.split(",") : [],
-      sentiment: analyzeSentiment(item.headline + " " + item.summary),
+      sentiment: analyzeSentiment(`${item.headline} ${item.summary}`),
     }))
   } catch (error) {
     console.error("Error fetching market news:", error)
@@ -102,9 +108,9 @@ export async function getCompanyNews(symbol: string, from: string, to: string): 
     const response = await fetch(
       `${FINNHUB_BASE_URL}/company-news?symbol=${symbol}&from=${from}&to=${to}&token=${FINNHUB_API_KEY}`,
     )
-    const data = await response.json()
+    const data = (await response.json()) as FinnhubNewsItem[]
 
-    return data.slice(0, 10).map((item: any) => ({
+    return data.slice(0, 10).map((item) => ({
       id: item.id.toString(),
       headline: item.headline,
       summary: item.summary,
@@ -112,7 +118,7 @@ export async function getCompanyNews(symbol: string, from: string, to: string): 
       url: item.url,
       datetime: item.datetime,
       related: [symbol],
-      sentiment: analyzeSentiment(item.headline + " " + item.summary),
+      sentiment: analyzeSentiment(`${item.headline} ${item.summary}`),
     }))
   } catch (error) {
     console.error(`Error fetching news for ${symbol}:`, error)
