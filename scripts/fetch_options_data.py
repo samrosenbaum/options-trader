@@ -144,42 +144,120 @@ def calculate_iv_anomaly(symbol: str, current_iv: float) -> Dict[str, float]:
 
 
 def detect_gamma_squeeze(options_df: pd.DataFrame, symbol: str, current_price: float) -> Dict[str, object]:
+    """Estimate dealer gamma positioning around the underlying price."""
+
     try:
-        calls = options_df[
-            (options_df["type"] == "call")
-            & (options_df["strike"] >= current_price * 0.98)
-            & (options_df["strike"] <= current_price * 1.05)
+        if options_df.empty:
+            return {"score": 0.0, "risk_level": "NONE", "reasons": []}
+
+        frame = options_df.copy()
+        frame["openInterest"] = frame["openInterest"].fillna(0).astype(float)
+        frame["volume"] = frame["volume"].fillna(0).astype(float)
+        frame["strike"] = frame["strike"].astype(float)
+
+        # Calculate option gamma for each row to approximate dealer exposure.
+        frame["gamma"] = frame.apply(lambda row: calculate_greeks(row).gamma, axis=1)
+
+        exposures: List[Dict[str, float]] = []
+        unique_strikes = sorted(frame["strike"].dropna().unique())
+
+        for strike in unique_strikes:
+            calls = frame[(frame["type"] == "call") & (frame["strike"] == strike)]
+            puts = frame[(frame["type"] == "put") & (frame["strike"] == strike)]
+
+            call_gamma = float((calls["gamma"] * calls["openInterest"]).sum())
+            put_gamma = float((puts["gamma"] * puts["openInterest"]).sum())
+
+            call_oi = float(calls["openInterest"].sum())
+            put_oi = float(puts["openInterest"].sum())
+            call_volume = float(calls["volume"].sum())
+
+            # Assume dealers are net short calls (negative gamma) and net long puts (positive gamma).
+            dealer_gamma = (-call_gamma * 100.0) + (put_gamma * 100.0)
+
+            exposures.append(
+                {
+                    "strike": float(strike),
+                    "net_gamma": dealer_gamma,
+                    "call_oi": call_oi,
+                    "put_oi": put_oi,
+                    "call_volume": call_volume,
+                }
+            )
+
+        if not exposures:
+            return {"score": 0.0, "risk_level": "NONE", "reasons": []}
+
+        exposures.sort(key=lambda item: item["strike"])
+
+        # Identify strikes near the spot price where negative gamma is concentrated.
+        nearby = [
+            exp
+            for exp in exposures
+            if current_price > 0 and 0.95 <= exp["strike"] / current_price <= 1.05
         ]
-        if calls.empty:
-            return {"score": 0.0, "reasons": []}
 
-        total_call_oi = float(calls["openInterest"].sum())
-        total_call_volume = float(calls["volume"].sum())
-        puts = options_df[
-            (options_df["type"] == "put")
-            & (options_df["strike"] >= current_price * 0.95)
-            & (options_df["strike"] <= current_price * 1.02)
+        if not nearby:
+            return {
+                "score": 5.0,
+                "risk_level": "LOW",
+                "reasons": ["No concentrated dealer short gamma near spot"],
+                "exposures": exposures[:10],
+            }
+
+        most_negative = min(nearby, key=lambda item: item["net_gamma"])
+        max_short_gamma = most_negative["net_gamma"]
+        max_strike = most_negative["strike"]
+
+        def find_gamma_flip(nodes: List[Dict[str, float]]) -> float | None:
+            for idx in range(len(nodes) - 1):
+                left = nodes[idx]["net_gamma"]
+                right = nodes[idx + 1]["net_gamma"]
+                if left <= 0 and right >= 0:
+                    return nodes[idx + 1]["strike"]
+            return None
+
+        gamma_flip = find_gamma_flip(exposures)
+
+        severity = abs(max_short_gamma)
+        if severity >= 150_000:
+            risk_level = "EXTREME"
+            base_score = 65.0
+        elif severity >= 80_000:
+            risk_level = "HIGH"
+            base_score = 50.0
+        elif severity >= 40_000:
+            risk_level = "MODERATE"
+            base_score = 35.0
+        elif severity >= 15_000:
+            risk_level = "LOW"
+            base_score = 20.0
+        else:
+            risk_level = "MINIMAL"
+            base_score = 10.0
+
+        volume_ratio = most_negative["call_volume"] / max(most_negative["call_oi"], 1.0)
+
+        reasons = [
+            f"Dealers short {abs(max_short_gamma):,.0f} gamma at ${max_strike:.2f}",
+            f"Call volume/OI ratio {volume_ratio:.1f} near squeeze strike",
         ]
-        put_call_ratio = 0.0
-        if not puts.empty:
-            total_put_oi = float(puts["openInterest"].sum())
-            put_call_ratio = total_put_oi / max(total_call_oi, 1.0)
 
-        score = 0.0
-        reasons: List[str] = []
-        if total_call_oi > 10_000:
-            score += 30
-            reasons.append(f"Massive call concentration ({total_call_oi:,.0f} OI)")
-        if put_call_ratio < 0.5:
-            score += 25
-            reasons.append(f"Low put/call ratio ({put_call_ratio:.2f})")
-        if total_call_volume > total_call_oi * 2:
-            score += 20
-            reasons.append(f"Extreme call volume ({total_call_volume:,.0f}) vs OI")
+        if gamma_flip is not None:
+            reasons.append(f"Gamma flip projected near ${gamma_flip:.2f}")
 
-        return {"score": score, "reasons": reasons}
+        return {
+            "score": base_score,
+            "risk_level": risk_level,
+            "max_short_gamma": max_short_gamma,
+            "squeeze_strike": max_strike,
+            "gamma_flip": gamma_flip,
+            "call_volume_ratio": volume_ratio,
+            "reasons": reasons,
+            "exposures": exposures[:10],
+        }
     except Exception:
-        return {"score": 0.0, "reasons": []}
+        return {"score": 0.0, "risk_level": "ERROR", "reasons": []}
 
 
 def compute_projected_returns(contract: OptionContract) -> Dict[str, float]:
@@ -226,7 +304,7 @@ def evaluate_contract(
         "theta_ratio": abs(greeks.theta) / max(contract.last_price, 0.01),
         "moneyness": abs(contract.stock_price - contract.strike) / max(contract.stock_price, 0.01) if contract.stock_price else 0.0,
         "iv_rank": iv_rank,
-        "gamma_squeeze": gamma_signal.get("score", 0.0),
+        "gamma_squeeze": gamma_signal,
         "iv_anomaly": iv_anomaly,
     }
     projected_returns = compute_projected_returns(contract)
@@ -237,6 +315,7 @@ def evaluate_contract(
         {
             "iv_rank": iv_rank,
             "iv_anomaly": iv_anomaly,
+            "gamma_signal": gamma_signal,
             "projected_returns": projected_returns,
             "gamma_reasons": gamma_signal.get("reasons", []),
             "volume_ratio": market_data["volume_ratio"],

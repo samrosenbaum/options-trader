@@ -5,6 +5,7 @@ from typing import Dict
 DEFAULT_SCORER_CONFIG: Dict[str, object] = {
     "enabled": [
         "volume",
+        "gamma_squeeze",
         "iv_anomaly",
         "iv_rank",
         "liquidity",
@@ -12,6 +13,7 @@ DEFAULT_SCORER_CONFIG: Dict[str, object] = {
     ],
     "weights": {
         "volume": 1.0,
+        "gamma_squeeze": 1.1,
         "iv_anomaly": 1.4,
         "iv_rank": 1.2,
         "liquidity": 0.8,
