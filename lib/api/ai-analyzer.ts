@@ -156,7 +156,7 @@ function computeGreeks(option: SampleOption, stockPrice: number): OptionGreeks {
   }
 }
 
-function buildOpportunity(
+export function buildOpportunity(
   context: MarketContext,
   option: SampleOption,
 ): { target: ScanTarget; draft: OpportunityScore; key: string } {
@@ -214,7 +214,7 @@ function buildOpportunity(
     ask: Number(ask.toFixed(2)),
     volume: Math.round(option.volume),
     openInterest: Math.round(option.openInterest),
-    impliedVolatility: Number(option.iv.toFixed(4)),
+    impliedVolatility: Number((option.iv / 100).toFixed(4)),
     stockPrice: Number(context.price.toFixed(2)),
   }
 
