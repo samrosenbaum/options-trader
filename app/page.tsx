@@ -464,8 +464,8 @@ export default function HomePage() {
     }
 
     const maxReturn = sanitizeNumber(opp.maxReturn, 0)
-    const maxLossPercent = sanitizeNumber(opp.maxLossPercent, 100)
-    const maxLossAmount = sanitizeNumber(opp.maxLossAmount, sanitizeNumber(opp.premium, 0) * 100)
+    const maxLossPercent = sanitizeNumber(opp.maxLossPercent || (opp.premium / opp.premium * 100), 100)
+    const maxLossAmount = sanitizeNumber(opp.maxLossAmount || sanitizeNumber(opp.premium, 0) * 100, sanitizeNumber(opp.premium, 0) * 100)
     const potentialReturn = sanitizeNumber(opp.potentialReturn, 0)
     const daysToExp = sanitizeNumber(opp.daysToExpiration, 0)
 
@@ -1066,7 +1066,7 @@ export default function HomePage() {
                               <div>
                                 <div className="font-medium text-amber-800 dark:text-amber-200 mb-1">Risk Warning</div>
                                 <div className="text-sm text-amber-700 dark:text-amber-300">
-                                  Maximum loss: {formatCurrency(opp.maxLossAmount)} ({opp.maxLossPercent.toFixed(1)}% of investment).
+                                  Maximum loss: {formatCurrency(opp.maxLossAmount || opp.premium * 100)} ({(opp.maxLossPercent || 100).toFixed(1)}% of investment).
                                   Options can expire worthless, and you could lose your entire investment.
                                 </div>
                               </div>
@@ -1089,7 +1089,7 @@ export default function HomePage() {
                       </div>
                       <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
                         <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Max Loss</div>
-                        <div className="text-lg font-semibold text-red-600">{opp.maxLossPercent.toFixed(1)}%</div>
+                        <div className="text-lg font-semibold text-red-600">{(opp.maxLossPercent || 100).toFixed(1)}%</div>
                         <div className="text-xs text-slate-500 dark:text-slate-400">≈ {formatCurrency(maxLossDisplay)}</div>
                         {opp.riskRewardRatio && opp.riskRewardRatio >= 3 && (
                           <div className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-emerald-600">

@@ -72,10 +72,41 @@ function getNextExpiration(): string {
   return nextFriday.toISOString().split("T")[0]
 }
 
-function computeGreeks(option: SampleOption): OptionGreeks {
-  const gamma = Math.max(0.01, Math.abs(option.delta) / Math.max(option.strike, 1) * 0.5)
-  const theta = -Math.abs(option.premium) * 0.05
-  const vega = option.iv * 0.1
+function computeGreeks(option: SampleOption, stockPrice: number): OptionGreeks {
+  // Simplified Greek calculations based on Black-Scholes approximations
+  // For more accurate values, use the Python scoring engine
+  
+  // Convert IV from percentage to decimal (e.g., 30 -> 0.30)
+  const sigma = option.iv / 100
+  
+  // Assume ~30 days to expiration for sample options
+  const T = 30 / 365
+  const sqrtT = Math.sqrt(T)
+  
+  // Risk-free rate assumption
+  const r = 0.05
+  
+  const S = stockPrice
+  const K = option.strike
+  
+  // Calculate d1 for Black-Scholes
+  const d1 = (Math.log(S / K) + (r + 0.5 * sigma * sigma) * T) / (sigma * sqrtT)
+  
+  // Standard normal PDF approximation at d1
+  const nd1 = Math.exp(-0.5 * d1 * d1) / Math.sqrt(2 * Math.PI)
+  
+  // Gamma: rate of change of delta with respect to stock price
+  // Gamma = N'(d1) / (S * σ * √T)
+  const gamma = nd1 / (S * sigma * sqrtT)
+  
+  // Vega: rate of change of option price with respect to 1% change in IV
+  // Vega = S * N'(d1) * √T / 100
+  const vega = (S * nd1 * sqrtT) / 100
+  
+  // Theta: rate of change of option price with respect to time (per day)
+  // Simplified approximation
+  const theta = -(S * nd1 * sigma) / (2 * sqrtT * 365)
+  
   return {
     delta: option.delta,
     gamma: Number(gamma.toFixed(4)),
@@ -93,7 +124,7 @@ function buildOpportunity(
   const spread = Math.max(mid * 0.1, 0.05)
   const bid = Math.max(mid - spread / 2, 0.01)
   const ask = bid + spread
-  const greeks = computeGreeks(option)
+  const greeks = computeGreeks(option, context.price)
   const avgSentiment = context.news.reduce((sum, n) => sum + n.sentiment, 0) / Math.max(context.news.length, 1)
   const volumeRatio = option.volume / Math.max(option.openInterest, 1)
   const ivRank = calculateIVRank(option.iv)
