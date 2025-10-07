@@ -183,10 +183,10 @@ class SmartOptionsScanner:
             if best_roi <= 0:
                 continue
 
-            high_asymmetry = best_roi >= 220
-            high_conviction = probability_score >= 28 and metrics["tenMoveRoiPercent"] >= 40
+            high_asymmetry = best_roi >= 300  # Raised from 220
+            high_conviction = probability_score >= 32 and metrics["tenMoveRoiPercent"] >= 50  # Raised thresholds
 
-            if score >= 75 and (high_asymmetry or high_conviction):
+            if score >= 85 and (high_asymmetry or high_conviction):  # Raised from 75 to 85
                 volume_ratio = float(option["volume"] / max(option["openInterest"], 1))
                 spread_pct = (option["ask"] - option["bid"]) / max(option["lastPrice"], 0.01)
                 probability_percent = self.estimate_probability_percent(probability_score)
@@ -209,9 +209,9 @@ class SmartOptionsScanner:
                 # Validate data quality before creating opportunity
                 quality_report = self.validator.validate_option(option.to_dict())
 
-                # Skip rejected quality options
-                if quality_report.quality == DataQuality.REJECTED:
-                    print(f"⚠️  Rejected {option['symbol']} {option['type']} ${option['strike']} - Quality issues: {quality_report.issues}", file=sys.stderr)
+                # Skip rejected AND low quality options - only HIGH/MEDIUM pass
+                if quality_report.quality in [DataQuality.REJECTED, DataQuality.LOW]:
+                    print(f"⚠️  Rejected {option['symbol']} {option['type']} ${option['strike']} - Quality: {quality_report.quality.value}, Issues: {quality_report.issues}, Warnings: {quality_report.warnings}", file=sys.stderr)
                     continue
 
                 opportunity = {
@@ -271,7 +271,15 @@ class SmartOptionsScanner:
                 }
                 opportunities.append(opportunity)
 
+        # Sort by score and limit to top 20 to prevent JSON overflow
         opportunities.sort(key=lambda item: item.get("score", 0), reverse=True)
+
+        # Limit to top 20 opportunities to keep JSON manageable
+        max_opportunities = 20
+        if len(opportunities) > max_opportunities:
+            print(f"📊 Limiting output to top {max_opportunities} of {len(opportunities)} opportunities", file=sys.stderr)
+            opportunities = opportunities[:max_opportunities]
+
         return opportunities
 
     def calculate_opportunity_score(self, option: pd.Series, metrics: Mapping[str, float], probability_score: float) -> float:

@@ -1,19 +1,19 @@
 {
-  "timestamp": "2025-10-06T10:28:48.302723",
-  "data_count": 5182,
+  "timestamp": "2025-10-07T15:52:04.815409",
+  "data_count": 1795,
   "symbols": [
-    "AAPL",
-    "QQQ",
+    "FVRR",
+    "AMC",
+    "BYND",
+    "RUN",
+    "GME",
     "SPY",
-    "GOOGL",
+    "QQQ",
+    "AAPL",
     "MSFT",
-    "AMZN",
-    "NVDA",
-    "TSLA",
-    "META",
-    "NFLX"
+    "GOOGL"
   ],
   "options": [
     {
-      "contractSymbol": "AAPL251010C00110000",
+      "contractSymbol": "FVRR251017C00015000",
       "lastTradeDate": 

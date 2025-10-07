@@ -41,6 +41,7 @@ class OptionsDataValidator:
         min_open_interest: int = 100,
         max_iv: float = 5.0,  # 500% IV
         max_otm_pct: float = 0.3,  # 30% out of the money
+        market_hours_aware: bool = True,  # Relax price freshness checks after hours
     ):
         """
         Initialize validator with quality thresholds.
@@ -54,6 +55,7 @@ class OptionsDataValidator:
             min_open_interest: Minimum open interest for acceptable quality
             max_iv: Maximum implied volatility before flagging as suspicious
             max_otm_pct: Maximum out-of-the-money percentage before warning
+            market_hours_aware: If True, relax price freshness after market hours
         """
         self.max_spread_pct = max_spread_pct
         self.warn_spread_pct = warn_spread_pct
@@ -63,6 +65,7 @@ class OptionsDataValidator:
         self.min_open_interest = min_open_interest
         self.max_iv = max_iv
         self.max_otm_pct = max_otm_pct
+        self.market_hours_aware = market_hours_aware
 
     def validate_option(self, option: Dict[str, Any]) -> QualityReport:
         """
@@ -121,14 +124,14 @@ class OptionsDataValidator:
         warnings.extend(moneyness_result.get("warnings", []))
         metadata["moneyness_pct"] = moneyness_result.get("moneyness_pct")
 
-        # Determine overall quality based on score
+        # Determine overall quality based on score (stricter thresholds)
         score = max(0.0, min(100.0, score))
 
         if score < 40 or len(issues) >= 3:
             quality = DataQuality.REJECTED
-        elif score < 60 or len(issues) >= 1:
+        elif score < 70 or len(issues) >= 1:  # Raised from 60 to 70 - be stricter
             quality = DataQuality.LOW
-        elif score < 80:
+        elif score < 85:  # Raised from 80 to 85
             quality = DataQuality.MEDIUM
         else:
             quality = DataQuality.HIGH
@@ -232,27 +235,61 @@ class OptionsDataValidator:
         price_source = option.get("_price_source", "")
         age_seconds = option.get("_price_age_seconds")
 
-        # Check if price is from previous close (stale)
+        # If market-hours-aware mode is enabled, relax validation after hours
+        if self.market_hours_aware and not self.is_market_hours():
+            # After hours: allow prices from previous close
+            # Accept prices up to 18 hours old (overnight), 72 hours on weekends
+            max_after_hours_age = 72 * 3600  # 72 hours (covers weekend)
+
+            if age_seconds is not None and age_seconds > max_after_hours_age:
+                hours_old = age_seconds / 3600
+                return {
+                    "penalty": 20,
+                    "warnings": [f"Stock price is {hours_old:.1f} hours old - from previous session"],
+                    "age_seconds": age_seconds,
+                }
+
+            # Accept previousClose prices without penalty during after-hours
+            if "previousClose" in price_source or "STALE" in price_source:
+                return {
+                    "penalty": 0,
+                    "warnings": ["Using previous close price (market closed)"],
+                    "age_seconds": age_seconds,
+                }
+
+            # Minimal penalty for older prices during after-hours
+            if age_seconds is not None and age_seconds > 900:  # 15+ minutes
+                hours_old = age_seconds / 3600
+                return {
+                    "penalty": 5,
+                    "warnings": [f"Stock price is {hours_old:.1f} hours old (market closed)"],
+                    "age_seconds": age_seconds,
+                }
+
+            return {"penalty": 0, "age_seconds": age_seconds}
+
+        # During market hours: strict validation (original behavior)
+        # Check if price is from previous close (stale) - MUCH stricter now
         if "previousClose" in price_source or "STALE" in price_source:
             return {
-                "penalty": 25,
-                "warnings": ["Stock price is from previous close - may be stale"],
+                "penalty": 40,  # Raised from 25 to 40
+                "issues": ["Stock price is from previous close - stale data"],  # Changed to issue
                 "age_seconds": age_seconds,
             }
 
-        # Check price age
+        # Check price age - stricter penalties
         if age_seconds is not None:
             if age_seconds > self.max_price_age_seconds:
                 minutes_old = age_seconds / 60
                 return {
-                    "penalty": 20,
-                    "warnings": [f"Stock price is {minutes_old:.1f} minutes old"],
+                    "penalty": 35,  # Raised from 20 to 35
+                    "issues": [f"Stock price is {minutes_old:.1f} minutes old - too stale"],  # Changed to issue
                     "age_seconds": age_seconds,
                 }
             elif age_seconds > self.warn_price_age_seconds:
                 minutes_old = age_seconds / 60
                 return {
-                    "penalty": 5,
+                    "penalty": 15,  # Raised from 5 to 15
                     "warnings": [f"Stock price is {minutes_old:.1f} minutes old"],
                     "age_seconds": age_seconds,
                 }
