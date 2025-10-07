@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
-"""
-Smart Options Scanner - Uses cached data and intelligent fetching
-"""
+"""Smart Options Scanner - Uses cached data and intelligent fetching"""
 
+import argparse
 import json
 import time
 from math import isfinite
@@ -11,9 +10,12 @@ import pandas as pd
 from datetime import datetime
 
 from bulk_options_fetcher import BulkOptionsFetcher
+from src.config import get_settings
 
 class SmartOptionsScanner:
-    def __init__(self):
+    def __init__(self, max_symbols: int | None = None):
+        settings = get_settings()
+        self.symbol_limit = max_symbols if max_symbols is not None else settings.fetcher.max_priority_symbols
         self.fetcher = BulkOptionsFetcher()
         self.cache_file = "options_cache.json"
         self.last_fetch_time = None
@@ -43,11 +45,11 @@ class SmartOptionsScanner:
         """Get current options data, using cache if appropriate"""
         if self.should_refresh_data():
             print("🔄 Market is open and data needs refresh - fetching fresh data...")
-            data = self.fetcher.get_fresh_options_data(use_cache=False)
+            data = self.fetcher.get_fresh_options_data(use_cache=False, max_symbols=self.symbol_limit)
             self.last_fetch_time = datetime.now()
         else:
             print("📂 Using cached data (market closed or recent fetch)")
-            data = self.fetcher.get_fresh_options_data(use_cache=True)
+            data = self.fetcher.get_fresh_options_data(use_cache=True, max_symbols=self.symbol_limit)
         
         return data
     
@@ -429,8 +431,32 @@ class SmartOptionsScanner:
         
         return opportunities
 
+def _parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Scan for high potential options setups")
+    parser.add_argument(
+        "--max-symbols",
+        type=int,
+        default=None,
+        help=(
+            "Limit the number of symbols fetched from the priority/watchlist universe. "
+            "Use 0 or omit the flag to scan the full list."
+        ),
+    )
+    return parser.parse_args()
+
+
+def _normalize_symbol_limit(raw_limit: int | None) -> int | None:
+    if raw_limit is None:
+        return None
+    if raw_limit <= 0:
+        return None
+    return raw_limit
+
+
 def main():
-    scanner = SmartOptionsScanner()
+    args = _parse_args()
+    symbol_limit = _normalize_symbol_limit(args.max_symbols)
+    scanner = SmartOptionsScanner(max_symbols=symbol_limit)
     opportunities = scanner.scan_for_opportunities()
     
     if opportunities:

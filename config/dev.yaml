@@ -30,6 +30,8 @@ watchlists:
     - ASML
     - PLTR
     - ANET
+fetcher:
+  max_priority_symbols: null
 scoring:
   enabled:
     - volume

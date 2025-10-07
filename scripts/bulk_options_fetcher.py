@@ -21,6 +21,8 @@ class BulkOptionsFetcher:
         })
 
         self.adapter = get_options_data_adapter()
+        self.settings = get_settings()
+        self.fetcher_settings = getattr(self.settings, "fetcher", None)
 
         # Maximum expirations to evaluate per symbol when fetching chains
         self.max_expirations = 6
@@ -33,7 +35,7 @@ class BulkOptionsFetcher:
             'SHOP', 'CRWD', 'SMCI', 'MARA', 'AI', 'AVGO', 'ASML', 'ANET', 'MDB',
         ]
 
-        self.priority_symbols = self._build_priority_symbols(base_symbols)
+        self.priority_symbols = self._build_priority_symbols(base_symbols, self.settings)
         
         # Alternative data sources
         self.data_sources = {
@@ -43,13 +45,13 @@ class BulkOptionsFetcher:
             'alpha_vantage': self.fetch_alpha_vantage_options  # If you have API key
         }
 
-    def _build_priority_symbols(self, base_symbols):
+    def _build_priority_symbols(self, base_symbols, settings=None):
         """Combine static high-liquidity names with configured watchlists."""
 
         symbols = list(base_symbols)
         try:
-            settings = get_settings()
-            for watchlist in settings.watchlists.values():
+            effective_settings = settings or get_settings()
+            for watchlist in effective_settings.watchlists.values():
                 symbols.extend(watchlist)
         except Exception as exc:  # pragma: no cover - defensive
             print(f"⚠️  Unable to load watchlist symbols from config: {exc}")
@@ -153,12 +155,20 @@ class BulkOptionsFetcher:
         
         return None
     
-    def fetch_bulk_options_parallel(self, symbols=None, max_workers=5, max_symbols: int | None = 30):
+    def _resolve_symbol_limit(self, requested_limit: int | None) -> int | None:
+        if requested_limit is not None:
+            return requested_limit
+        if self.fetcher_settings is not None:
+            return self.fetcher_settings.max_priority_symbols
+        return None
+
+    def fetch_bulk_options_parallel(self, symbols=None, max_workers=5, max_symbols: int | None = None):
         """Fetch options data for multiple symbols in parallel"""
+        symbol_limit = self._resolve_symbol_limit(max_symbols)
         if symbols is None:
             symbols = self.priority_symbols
-            if max_symbols is not None:
-                symbols = symbols[:max_symbols]
+            if symbol_limit is not None:
+                symbols = symbols[:symbol_limit]
         else:
             # Ensure we do not request duplicate symbols from callers
             cleaned_symbols = []
@@ -172,6 +182,8 @@ class BulkOptionsFetcher:
                 seen.add(normalized)
                 cleaned_symbols.append(normalized)
             symbols = cleaned_symbols
+            if symbol_limit is not None:
+                symbols = symbols[:symbol_limit]
         
         all_options_data = []
         successful_fetches = 0
@@ -253,15 +265,15 @@ class BulkOptionsFetcher:
             print(f"Error loading cache: {e}")
             return None
     
-    def get_fresh_options_data(self, use_cache=True):
+    def get_fresh_options_data(self, use_cache=True, max_symbols: int | None = None):
         """Get fresh options data, using cache if available"""
         if use_cache:
             cached_data = self.load_from_cache()
             if cached_data is not None:
                 return cached_data
-        
+
         # Fetch fresh data
-        fresh_data = self.fetch_bulk_options_parallel()
+        fresh_data = self.fetch_bulk_options_parallel(max_symbols=max_symbols)
         
         if fresh_data is not None:
             self.save_to_cache(fresh_data)

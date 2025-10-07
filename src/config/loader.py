@@ -27,6 +27,9 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
         "provider": "yfinance",
         "settings": {},
     },
+    "fetcher": {
+        "max_priority_symbols": None,
+    },
     "cache": {
         "ttl_seconds": 900,
     },
@@ -84,6 +87,10 @@ class AdapterSettings(BaseModel):
     settings: Dict[str, Any] = Field(default_factory=dict)
 
 
+class FetcherSettings(BaseModel):
+    max_priority_symbols: Optional[int] = None
+
+
 class CacheSettings(BaseModel):
     ttl_seconds: int = 900
 
@@ -110,6 +117,7 @@ class AppSettings(BaseModel):
     watchlists: Dict[str, List[str]]
     scoring: ScoringSettings
     adapter: AdapterSettings
+    fetcher: FetcherSettings = Field(default_factory=FetcherSettings)
     cache: CacheSettings
     storage: StorageSettings
 
