@@ -25,6 +25,8 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "scoring": copy.deepcopy(DEFAULT_SCORER_CONFIG),
     "scanner": {
         "limit_per_symbol": 3,
+        "batch_size": None,
+        "rotation_mode": "round_robin",
     },
     "adapter": {
         "provider": "yfinance",
@@ -100,6 +102,15 @@ class CacheSettings(BaseModel):
 
 class ScannerSettings(BaseModel):
     limit_per_symbol: int = 3
+    batch_size: Optional[int] = None
+    rotation_mode: str = "round_robin"
+
+    @validator("rotation_mode")
+    def _normalize_rotation_mode(cls, value: str) -> str:  # type: ignore[override]
+        resolved = (value or "round_robin").strip().lower()
+        if resolved not in {"round_robin", "random"}:
+            return "round_robin"
+        return resolved
 
 
 class SQLiteSettings(BaseModel):

@@ -30,8 +30,30 @@ watchlists:
     - ASML
     - PLTR
     - ANET
+  value:
+    - KO
+    - PG
+    - JNJ
+    - MCD
+    - PEP
+    - HD
+  small_caps:
+    - IWM
+    - PLUG
+    - RUN
+    - FVRR
+    - ROKU
+    - UPST
+  short_squeeze:
+    - GME
+    - AMC
+    - BYND
+    - BBBYQ
+    - APRN
 scanner:
   limit_per_symbol: 3
+  batch_size: 25
+  rotation_mode: round_robin
 fetcher:
   max_priority_symbols: null
 scoring:

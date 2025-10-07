@@ -3,6 +3,8 @@
 Bulk Options Data Fetcher - Get options data from multiple sources efficiently
 """
 
+from __future__ import annotations
+
 import pandas as pd
 import requests
 import json
@@ -14,14 +16,14 @@ from src.adapters.base import AdapterError
 from src.config import get_options_data_adapter, get_settings
 
 class BulkOptionsFetcher:
-    def __init__(self):
+    def __init__(self, settings: "AppSettings" | None = None):
         self.session = requests.Session()
         self.session.headers.update({
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
         })
 
+        self.settings = settings or get_settings()
         self.adapter = get_options_data_adapter()
-        self.settings = get_settings()
         self.fetcher_settings = getattr(self.settings, "fetcher", None)
 
         # Maximum expirations to evaluate per symbol when fetching chains
@@ -226,7 +228,7 @@ class BulkOptionsFetcher:
         try:
             # Convert DataFrame to JSON-serializable format
             data_dict = data.to_dict('records')
-            
+
             cache_data = {
                 'timestamp': datetime.now().isoformat(),
                 'data_count': len(data_dict),
@@ -242,16 +244,27 @@ class BulkOptionsFetcher:
         except Exception as e:
             print(f"Error saving cache: {e}")
     
-    def load_from_cache(self, filename="options_cache.json", max_age_minutes=15):
+    def load_from_cache(
+        self,
+        filename="options_cache.json",
+        max_age_minutes=15,
+        symbols: list[str] | None = None,
+    ):
         """Load options data from cache if it's recent enough"""
         try:
             with open(filename, 'r') as f:
                 cache_data = json.load(f)
-            
+
             cache_time = datetime.fromisoformat(cache_data['timestamp'])
             age_minutes = (datetime.now() - cache_time).total_seconds() / 60
-            
+
             if age_minutes <= max_age_minutes:
+                cached_symbols = [str(sym).upper() for sym in cache_data.get('symbols', [])]
+                if symbols is not None:
+                    requested = [str(sym).upper() for sym in symbols if sym]
+                    if sorted(requested) != sorted(cached_symbols):
+                        print("📂 Cache symbols mismatch, refreshing data")
+                        return None
                 print(f"📂 Using cached data ({age_minutes:.1f} minutes old)")
                 return pd.DataFrame(cache_data['options'])
             else:
@@ -265,19 +278,40 @@ class BulkOptionsFetcher:
             print(f"Error loading cache: {e}")
             return None
     
-    def get_fresh_options_data(self, use_cache=True, max_symbols: int | None = None):
+    def get_fresh_options_data(
+        self,
+        use_cache=True,
+        max_symbols: int | None = None,
+        symbols: list[str] | None = None,
+    ):
         """Get fresh options data, using cache if available"""
+        normalized_symbols: list[str] | None = None
+        if symbols is not None:
+            seen: set[str] = set()
+            normalized_symbols = []
+            for sym in symbols:
+                if not sym:
+                    continue
+                normal = str(sym).upper().strip()
+                if not normal or normal in seen:
+                    continue
+                seen.add(normal)
+                normalized_symbols.append(normal)
+
         if use_cache:
-            cached_data = self.load_from_cache()
+            cached_data = self.load_from_cache(symbols=normalized_symbols)
             if cached_data is not None:
                 return cached_data
 
         # Fetch fresh data
-        fresh_data = self.fetch_bulk_options_parallel(max_symbols=max_symbols)
-        
+        if normalized_symbols is not None:
+            fresh_data = self.fetch_bulk_options_parallel(symbols=normalized_symbols, max_symbols=max_symbols)
+        else:
+            fresh_data = self.fetch_bulk_options_parallel(max_symbols=max_symbols)
+
         if fresh_data is not None:
             self.save_to_cache(fresh_data)
-        
+
         return fresh_data
 
 def main():

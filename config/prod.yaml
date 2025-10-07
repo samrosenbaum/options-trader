@@ -25,8 +25,30 @@ watchlists:
     - SMCI
     - ASML
     - PLTR
+  value:
+    - KO
+    - PG
+    - JNJ
+    - MCD
+    - COST
+    - PEP
+  small_caps:
+    - IWM
+    - AFRM
+    - FVRR
+    - UPST
+    - RUN
+    - SOFI
+  short_squeeze:
+    - GME
+    - AMC
+    - BBBYQ
+    - BYND
+    - CVNA
 scanner:
   limit_per_symbol: 3
+  batch_size: 30
+  rotation_mode: random
 fetcher:
   max_priority_symbols: null
 scoring:

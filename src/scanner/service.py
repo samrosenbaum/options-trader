@@ -8,12 +8,13 @@ import sys
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from math import isfinite
-from typing import Any, Dict, List, Mapping, Optional, Sequence
+from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Tuple
 
 import pandas as pd
 
 from scripts.bulk_options_fetcher import BulkOptionsFetcher
-from src.config import get_settings
+from src.config import AppSettings, get_settings
+from src.scanner.universe import build_scan_universe
 
 
 @dataclass(slots=True)
@@ -34,15 +35,44 @@ class ScanResult:
         return json.dumps(self.to_dict(), indent=indent, default=str)
 
 
+UniverseBuilder = Callable[[AppSettings, int, Mapping[str, Any] | None], Tuple[List[str], Dict[str, Any]]]
+
+
 class SmartOptionsScanner:
     """Core implementation extracted from the legacy smart scanner script."""
 
-    def __init__(self, max_symbols: int | None = None):
+    def __init__(self, max_symbols: int | None = None, *, batch_builder: UniverseBuilder | None = None):
         settings = get_settings()
-        self.symbol_limit = max_symbols if max_symbols is not None else settings.fetcher.max_priority_symbols
-        self.fetcher = BulkOptionsFetcher()
+        self.settings = settings
+        configured_limit = settings.fetcher.max_priority_symbols
+        configured_batch = getattr(settings.scanner, "batch_size", None)
+        if configured_batch is not None and configured_batch <= 0:
+            configured_batch = None
+        self.symbol_limit = max_symbols if max_symbols is not None else configured_batch or configured_limit
+        if isinstance(self.symbol_limit, int) and self.symbol_limit <= 0:
+            self.symbol_limit = None
+        self.fetcher = BulkOptionsFetcher(settings)
+        self.universe_builder: UniverseBuilder = batch_builder or build_scan_universe
+        self.rotation_state: Dict[str, Any] | None = {"mode": settings.scanner.rotation_mode}
+        self.current_batch_symbols: List[str] = []
         self.cache_file = "options_cache.json"
         self.last_fetch_time: datetime | None = None
+
+    @property
+    def batch_size(self) -> int:
+        universe_size = len(self.fetcher.priority_symbols)
+        if universe_size == 0:
+            return 0
+        if self.symbol_limit is None:
+            return universe_size
+        return min(self.symbol_limit, universe_size)
+
+    def _next_symbol_batch(self) -> List[str]:
+        batch_size = self.batch_size
+        symbols, state = self.universe_builder(self.settings, batch_size, self.rotation_state)
+        self.rotation_state = dict(state)
+        self.current_batch_symbols = list(symbols)
+        return self.current_batch_symbols
 
     def is_market_hours(self) -> bool:
         """Check if market is currently open."""
@@ -64,16 +94,50 @@ class SmartOptionsScanner:
         time_since_fetch = (datetime.now() - self.last_fetch_time).total_seconds()
         return time_since_fetch > 300  # 5 minutes
 
-    def get_current_options_data(self) -> pd.DataFrame | None:
+    def get_current_options_data(
+        self,
+        symbols: Sequence[str],
+        *,
+        force_refresh: bool = False,
+    ) -> pd.DataFrame | None:
         """Get current options data, using cache if appropriate."""
+
+        if not symbols:
+            return None
+
+        normalized_symbols = [str(sym).upper().strip() for sym in symbols if sym]
+
+        if force_refresh:
+            data = self.fetcher.get_fresh_options_data(
+                use_cache=False,
+                max_symbols=self.symbol_limit,
+                symbols=normalized_symbols,
+            )
+            self.last_fetch_time = datetime.now()
+            return data
 
         if self.should_refresh_data():
             print("🔄 Market is open and data needs refresh - fetching fresh data...", file=sys.stderr)
-            data = self.fetcher.get_fresh_options_data(use_cache=False, max_symbols=self.symbol_limit)
+            data = self.fetcher.get_fresh_options_data(
+                use_cache=False,
+                max_symbols=self.symbol_limit,
+                symbols=normalized_symbols,
+            )
             self.last_fetch_time = datetime.now()
         else:
             print("📂 Using cached data (market closed or recent fetch)", file=sys.stderr)
-            data = self.fetcher.get_fresh_options_data(use_cache=True, max_symbols=self.symbol_limit)
+            data = self.fetcher.get_fresh_options_data(
+                use_cache=True,
+                max_symbols=self.symbol_limit,
+                symbols=normalized_symbols,
+            )
+            if data is None:
+                data = self.fetcher.get_fresh_options_data(
+                    use_cache=False,
+                    max_symbols=self.symbol_limit,
+                    symbols=normalized_symbols,
+                )
+                self.last_fetch_time = datetime.now()
 
         return data
 
@@ -489,11 +553,12 @@ class SmartOptionsScanner:
 
         return scenarios, metrics
 
-    def scan_for_opportunities(self) -> ScanResult:
+    def scan_for_opportunities(self, *, force_refresh: bool = False) -> ScanResult:
         """Execute the scan and package results for consumers."""
 
         print("🔍 Starting smart options scan...", file=sys.stderr)
-        options_data = self.get_current_options_data()
+        symbols = self._next_symbol_batch()
+        options_data = self.get_current_options_data(symbols, force_refresh=force_refresh)
 
         if options_data is None or options_data.empty:
             metadata = {
@@ -502,9 +567,11 @@ class SmartOptionsScanner:
                 "totalOptions": 0,
                 "totalEvaluated": 0,
                 "symbols": [],
+                "requestedSymbols": list(symbols),
                 "chainsBySymbol": {},
                 "source": "adapter",
                 "symbolLimit": self.symbol_limit,
+                "rotationState": dict(self.rotation_state or {}),
             }
             return ScanResult([], metadata)
 
@@ -522,10 +589,12 @@ class SmartOptionsScanner:
             "totalOptions": int(len(options_data)),
             "totalEvaluated": int(len(options_data)),
             "symbols": list(chains_by_symbol.keys()),
+            "requestedSymbols": list(symbols),
             "chainsBySymbol": chains_by_symbol,
             "source": "adapter",
             "symbolLimit": self.symbol_limit,
             "opportunityCount": len(opportunities),
+            "rotationState": dict(self.rotation_state or {}),
         }
         return ScanResult(opportunities, metadata)
 
@@ -558,9 +627,83 @@ def _normalize_symbol_limit(raw_limit: Optional[int]) -> Optional[int]:
     return raw_limit
 
 
-def run_scan(max_symbols: Optional[int] = None) -> ScanResult:
-    scanner = SmartOptionsScanner(max_symbols=max_symbols)
-    return scanner.scan_for_opportunities()
+def run_scan(
+    max_symbols: Optional[int] = None,
+    *,
+    force_refresh: bool = False,
+    batch_builder: UniverseBuilder | None = None,
+) -> ScanResult:
+    scanner = SmartOptionsScanner(max_symbols=max_symbols, batch_builder=batch_builder)
+    return scanner.scan_for_opportunities(force_refresh=force_refresh)
+
+
+def run_deep_scan(
+    batch_count: int,
+    max_symbols: Optional[int] = None,
+    *,
+    batch_builder: UniverseBuilder | None = None,
+) -> ScanResult:
+    if batch_count <= 1:
+        return run_scan(max_symbols, force_refresh=True, batch_builder=batch_builder)
+
+    settings = get_settings()
+    aggregated_opportunities: List[Dict[str, Any]] = []
+    aggregated_chains: Dict[str, List[Mapping[str, Any]]] = {}
+    batch_metadata: List[Mapping[str, Any]] = []
+
+    for index in range(batch_count):
+        result = run_scan(max_symbols, force_refresh=True, batch_builder=batch_builder)
+        aggregated_opportunities.extend(result.opportunities)
+        batch_metadata.append(
+            {
+                "batch": index + 1,
+                "requestedSymbols": result.metadata.get("requestedSymbols", []),
+                "symbols": result.metadata.get("symbols", []),
+                "opportunityCount": result.metadata.get("opportunityCount", 0),
+                "totalOptions": result.metadata.get("totalOptions", 0),
+            }
+        )
+        for symbol, chains in result.metadata.get("chainsBySymbol", {}).items():
+            bucket = aggregated_chains.setdefault(symbol, [])
+            bucket.extend(chains)
+
+    def _sort_key(opportunity: Mapping[str, Any]) -> Tuple[float, float]:
+        max_return = float(opportunity.get("maxReturn", 0) or 0)
+        score = float(opportunity.get("score", 0) or 0)
+        return max_return, score
+
+    aggregated_opportunities.sort(key=_sort_key, reverse=True)
+
+    unique_requested = []
+    seen_requested: set[str] = set()
+    for meta in batch_metadata:
+        for symbol in meta.get("requestedSymbols", []):
+            upper = str(symbol).upper()
+            if upper in seen_requested:
+                continue
+            seen_requested.add(upper)
+            unique_requested.append(upper)
+
+    metadata: Dict[str, Any] = {
+        "fetchedAt": datetime.now(timezone.utc).isoformat(),
+        "symbolCount": len(unique_requested),
+        "totalOptions": sum(meta.get("totalOptions", 0) for meta in batch_metadata),
+        "totalEvaluated": sum(meta.get("totalOptions", 0) for meta in batch_metadata),
+        "symbols": list(aggregated_chains.keys()),
+        "requestedSymbols": unique_requested,
+        "chainsBySymbol": aggregated_chains,
+        "source": "adapter",
+        "symbolLimit": max_symbols or settings.scanner.batch_size,
+        "opportunityCount": len(aggregated_opportunities),
+        "rotationState": {},
+        "deepScan": {
+            "batches": batch_count,
+            "metadata": batch_metadata,
+        },
+        "environment": settings.env,
+    }
+
+    return ScanResult(aggregated_opportunities, metadata)
 
 
 def cli(argv: Optional[Sequence[str]] = None) -> None:
