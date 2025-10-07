@@ -1,91 +1,119 @@
 import { NextResponse } from "next/server"
 import { resolvePythonExecutable } from "@/lib/server/python"
 import { ensureOptionGreeks } from "@/lib/math/greeks"
-import path from "path"
 
-interface ProbabilityIntel {
-  probability?: number
-  required_move_pct?: number
-  explanation?: string
-  breakeven_price?: number
-}
-
-interface RiskIntel {
-  max_loss_pct?: number
-  reward_to_risk?: number
-  ten_pct_move_reward_to_risk?: number
-}
-
-interface MarketDataIntel {
-  profit_probability?: ProbabilityIntel
-  risk_metrics?: RiskIntel
-  projected_returns?: Record<string, number>
-  volume_ratio?: number
-}
-
-interface RawOpportunity {
+interface ScannerOpportunity {
   symbol: string
-  contract?: {
-    option_type?: "call" | "put"
-    strike?: number
-    expiration?: string
-    last_price?: number
-    bid?: number
-    ask?: number
-    volume?: number
-    open_interest?: number
-    implied_volatility?: number
-    stock_price?: number
-  }
+  optionType: "call" | "put" | string
+  strike: number
+  expiration: string
+  premium: number
+  bid: number
+  ask: number
+  volume: number
+  openInterest: number
+  impliedVolatility: number
+  stockPrice: number
+  score: number
+  confidence: number
+  reasoning: string[]
+  catalysts: string[]
+  patterns: string[]
+  riskLevel: string
+  potentialReturn: number
+  potentialReturnAmount: number
+  maxReturn: number
+  maxReturnAmount: number
+  maxLoss: number
+  maxLossPercent: number
+  maxLossAmount: number
+  breakeven: number
+  breakevenPrice: number
+  breakevenMovePercent: number
+  ivRank: number
+  volumeRatio: number
+  probabilityOfProfit: number
+  profitProbabilityExplanation?: string
+  riskRewardRatio?: number | null
+  shortTermRiskRewardRatio?: number | null
   greeks?: {
     delta?: number
     gamma?: number
     theta?: number
     vega?: number
   }
-  score?: {
-    total_score?: number
-    metadata?: {
-      profit_probability?: ProbabilityIntel
-      risk_metrics?: RiskIntel
-      projected_returns?: Record<string, number>
-    }
-  }
-  metadata?: {
-    market_data?: MarketDataIntel
-  }
-  confidence?: number
-  reasons?: string[]
-  tags?: string[]
-  iv_rank?: number
+  daysToExpiration?: number
+  returnsAnalysis?: Array<{
+    move: string
+    return: number
+  }>
+}
+
+interface ScannerMetadata {
+  fetchedAt?: string
+  source?: string
+  totalEvaluated?: number
+  symbolLimit?: number
+  opportunityCount?: number
+  symbols?: string[]
+}
+
+interface ScannerResponse {
+  opportunities?: ScannerOpportunity[]
+  metadata?: ScannerMetadata & Record<string, unknown>
+  totalEvaluated?: number
 }
 
 export const runtime = "nodejs"
 export const maxDuration = 60
+
+const normalizePercent = (value: unknown): number | null => {
+  if (typeof value !== "number" || Number.isNaN(value)) {
+    return null
+  }
+
+  if (!Number.isFinite(value)) {
+    return null
+  }
+
+  if (Math.abs(value) > 1.5) {
+    return value
+  }
+
+  return value * 100
+}
+
+const sanitizeReturns = (returns: ScannerOpportunity["returnsAnalysis"]): ScannerOpportunity["returnsAnalysis"] => {
+  if (!Array.isArray(returns)) {
+    return []
+  }
+
+  return returns.map((entry) => ({
+    move: entry.move,
+    return: normalizePercent(entry.return) ?? 0,
+  }))
+}
 
 export async function GET() {
   try {
     // Execute Python script to scan for opportunities
     const { spawn } = await import("child_process")
     const pythonPath = await resolvePythonExecutable()
-    const scriptPath = path.join(process.cwd(), "scripts", "fetch_options_data.py")
 
     return await new Promise<NextResponse>((resolve) => {
-      const python = spawn(pythonPath, [scriptPath], {
+      const python = spawn(pythonPath, ["-m", "src.scanner.service"], {
         env: { ...process.env, PYTHONPATH: process.cwd() }
       })
 
-      let dataString = ""
-      let errorString = ""
+      let stdoutBuffer = ""
+      let stderrBuffer = ""
 
       python.stdout.on("data", (data) => {
-        dataString += data.toString()
+        stdoutBuffer += data.toString()
       })
 
       python.stderr.on("data", (data) => {
-        errorString += data.toString()
-        // Also capture stderr in case JSON is output there
-        dataString += data.toString()
+        stderrBuffer += data.toString()
       })
 
       python.on("error", (error) => {
@@ -100,10 +128,10 @@ export async function GET() {
 
       python.on("close", (code) => {
         if (code !== 0) {
-          console.error("Python script error:", errorString)
+          console.error("Python script error:", stderrBuffer)
           resolve(
             NextResponse.json(
-              { success: false, error: "Failed to scan options", details: errorString },
+              { success: false, error: "Failed to scan options", details: stderrBuffer },
               { status: 500 },
             ),
           )
@@ -111,200 +139,114 @@ export async function GET() {
         }
 
         try {
-          console.log("Total data length:", dataString.length)
-          console.log("Data ends with:", dataString.slice(-200))
-          
-          // Try to find the JSON array - look for the last complete array
-          const lines = dataString.split('\n')
-          let jsonString = ''
+          const combinedOutput = `${stdoutBuffer}\n${stderrBuffer}`.trim()
+          const lines = combinedOutput.split("\n")
+          let jsonString = ""
 
-          // Find the last line that appears to start a JSON payload
           for (let i = lines.length - 1; i >= 0; i--) {
-            const trimmed = lines[i].trim()
+            const trimmed = lines[i]?.trim()
             if (!trimmed) continue
-            if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
-              jsonString = lines.slice(i).join('\n')
+            if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+              jsonString = lines.slice(i).join("\n")
               break
             }
           }
 
-          if (jsonString) {
-            console.log("JSON string length:", jsonString.length)
-            console.log("JSON starts with:", jsonString.slice(0, 100))
-            const parsed = JSON.parse(jsonString)
-            let totalEvaluated: number | null = null
-            let rawOpportunities: RawOpportunity[] = []
-
-            if (Array.isArray(parsed)) {
-              rawOpportunities = parsed
-            } else if (parsed && typeof parsed === 'object') {
-              const maybeArray = Array.isArray((parsed as { signals?: unknown }).signals)
-                ? ((parsed as { signals: RawOpportunity[] }).signals)
-                : Array.isArray((parsed as { opportunities?: unknown }).opportunities)
-                  ? ((parsed as { opportunities: RawOpportunity[] }).opportunities)
-                  : []
-              rawOpportunities = maybeArray
-
-              const asNumber = (value: unknown): number | null =>
-                typeof value === 'number' && Number.isFinite(value) ? value : null
-
-              totalEvaluated =
-                asNumber((parsed as { totalEvaluated?: unknown }).totalEvaluated) ??
-                asNumber((parsed as { total_evaluated?: unknown }).total_evaluated) ??
-                null
-            }
-
-            const resolvedTotalEvaluated =
-              typeof totalEvaluated === 'number' ? totalEvaluated : rawOpportunities.length
-
-            // Transform the data to match frontend interface
-            const opportunities = rawOpportunities.map((opp) => {
-              const greeks = ensureOptionGreeks(opp.greeks, opp.contract)
-              const profitIntel =
-                opp.metadata?.market_data?.profit_probability ??
-                opp.score?.metadata?.profit_probability
-              const riskIntel =
-                opp.metadata?.market_data?.risk_metrics ?? opp.score?.metadata?.risk_metrics
-              const projectedReturns = opp.metadata?.market_data?.projected_returns ?? {}
-              const tenMoveReturn = projectedReturns['10%'] ?? 0
-              const maxReturnPct = projectedReturns['30%'] ?? 0
-              const breakevenMovePct = profitIntel?.required_move_pct
-              const probabilityPercent =
-                typeof profitIntel?.probability === 'number' ? profitIntel.probability * 100 : null
-              const riskRewardRatio =
-                typeof riskIntel?.reward_to_risk === 'number' ? riskIntel.reward_to_risk : null
-              const optionType = opp.contract?.option_type || 'call'
-              const strike = opp.contract?.strike ?? 0
-              const lastPrice = opp.contract?.last_price ?? 0
-              const contractCost = Math.max(lastPrice * 100, 0)
-              const breakeven =
-                strike && lastPrice
-                  ? optionType === 'call'
-                    ? strike + lastPrice
-                    : strike - lastPrice
-                  : 0
-              const maxLossPercent =
-                typeof riskIntel?.max_loss_pct === 'number' ? riskIntel.max_loss_pct : 100
-              const potentialReturnAmount =
-                typeof tenMoveReturn === 'number' ? tenMoveReturn * lastPrice * 100 : 0
-              const maxReturnAmount =
-                typeof maxReturnPct === 'number' ? maxReturnPct * lastPrice * 100 : 0
-              const maxLossAmount =
-                typeof maxLossPercent === 'number'
-                  ? (maxLossPercent / 100) * contractCost
-                  : contractCost
-
-              return {
-                symbol: opp.symbol,
-                optionType,
-                strike,
-                expiration: opp.contract?.expiration || '',
-                premium: lastPrice,
-                bid: opp.contract?.bid || 0,
-                ask: opp.contract?.ask || 0,
-                volume: opp.contract?.volume || 0,
-                openInterest: opp.contract?.open_interest || 0,
-                impliedVolatility: opp.contract?.implied_volatility || 0,
-                stockPrice: opp.contract?.stock_price || 0,
-                score: opp.score?.total_score || 0,
-                confidence: opp.confidence || 0,
-                reasoning: opp.reasons || [],
-                patterns: opp.tags || [],
-                catalysts: ['Technical Analysis', 'Volume Analysis'],
-                riskLevel: opp.tags?.includes('thin-market')
-                  ? 'high'
-                  : opp.tags?.includes('liquidity')
-                    ? 'low'
-                    : 'medium',
-                potentialReturn: tenMoveReturn ? tenMoveReturn * 100 : 0,
-                potentialReturnAmount,
-                maxReturn: maxReturnPct ? maxReturnPct * 100 : 0,
-                maxReturnAmount,
-                maxLoss: maxLossAmount,
-                maxLossPercent,
-                maxLossAmount,
-                breakeven,
-                ivRank: opp.iv_rank || 0,
-                volumeRatio: opp.metadata?.market_data?.volume_ratio || 0,
-                greeks,
-                daysToExpiration: opp.contract?.expiration
-                  ? Math.ceil(
-                      (new Date(opp.contract.expiration).getTime() - new Date().getTime()) /
-                        (1000 * 60 * 60 * 24),
-                    )
-                  : 0,
-                returnsAnalysis: [
-                  { move: '10%', return: tenMoveReturn ? tenMoveReturn * 100 : 0 },
-                  { move: '20%', return: projectedReturns['20%'] ? projectedReturns['20%'] * 100 : 0 },
-                  { move: '30%', return: maxReturnPct ? maxReturnPct * 100 : 0 }
-                ],
-                probabilityOfProfit: probabilityPercent,
-                profitProbabilityExplanation:
-                  typeof profitIntel?.explanation === 'string' ? profitIntel.explanation : '',
-                breakevenMovePercent: typeof breakevenMovePct === 'number' ? breakevenMovePct * 100 : null,
-                breakevenPrice: typeof profitIntel?.breakeven_price === 'number' ? profitIntel.breakeven_price : null,
-                riskRewardRatio,
-                shortTermRiskRewardRatio:
-                  typeof riskIntel?.ten_pct_move_reward_to_risk === 'number'
-                    ? riskIntel.ten_pct_move_reward_to_risk
-                    : null,
-              }
-            })
-
-            const asNumber = (value: number | null | undefined, fallback: number) =>
-              typeof value === 'number' && Number.isFinite(value) ? value : fallback
-
-            // Filter out expired/worthless options with 0% probability of profit
-            const filteredOpportunities = opportunities.filter((opp) => {
-              // Filter out options with 0% or null probability of profit (likely expired)
-              if (opp.probabilityOfProfit !== null && opp.probabilityOfProfit !== undefined) {
-                if (opp.probabilityOfProfit <= 0) {
-                  return false
-                }
-              }
-              return true
-            })
-
-            filteredOpportunities.sort((a, b) => {
-              const scoreDiff = asNumber(b.score, -Infinity) - asNumber(a.score, -Infinity)
-              if (scoreDiff !== 0) return scoreDiff
-
-              const riskDiff =
-                asNumber(b.riskRewardRatio, -Infinity) - asNumber(a.riskRewardRatio, -Infinity)
-              if (riskDiff !== 0) return riskDiff
-
-              const profitDiff =
-                asNumber(b.probabilityOfProfit, -Infinity) -
-                asNumber(a.probabilityOfProfit, -Infinity)
-              if (profitDiff !== 0) return profitDiff
-
-              return asNumber(b.potentialReturn, -Infinity) - asNumber(a.potentialReturn, -Infinity)
-            })
-
-            resolve(
-              NextResponse.json({
-                success: true,
-                timestamp: new Date().toISOString(),
-                opportunities: filteredOpportunities,
-                source: "yfinance",
-                totalEvaluated: resolvedTotalEvaluated,
-              }),
-            )
-          } else {
-            console.log("No JSON array found, returning empty results")
+          if (!jsonString) {
+            console.warn("Scanner produced no JSON payload", { stdout: stdoutBuffer, stderr: stderrBuffer })
             resolve(
               NextResponse.json({
                 success: true,
                 timestamp: new Date().toISOString(),
                 opportunities: [],
-                source: "yfinance",
-                totalEvaluated: null,
+                source: "adapter",
+                totalEvaluated: 0,
               }),
             )
+            return
           }
+
+          const parsed = JSON.parse(jsonString) as ScannerResponse
+          const metadata = parsed.metadata ?? {}
+          const rawOpportunities = Array.isArray(parsed.opportunities) ? parsed.opportunities : []
+
+          const sanitized = rawOpportunities
+            .filter((opp) => {
+              const probability = normalizePercent(opp.probabilityOfProfit)
+              return probability === null || probability > 0
+            })
+            .map((opp) => {
+              const contract = {
+                option_type: opp.optionType,
+                strike: opp.strike,
+                expiration: opp.expiration,
+                last_price: opp.premium,
+                bid: opp.bid,
+                ask: opp.ask,
+                volume: opp.volume,
+                open_interest: opp.openInterest,
+                implied_volatility: opp.impliedVolatility,
+                stock_price: opp.stockPrice,
+              }
+
+              const greeks = ensureOptionGreeks(opp.greeks, contract)
+
+              return {
+                ...opp,
+                probabilityOfProfit: normalizePercent(opp.probabilityOfProfit) ?? 0,
+                breakevenMovePercent: normalizePercent(opp.breakevenMovePercent) ?? 0,
+                potentialReturn: normalizePercent(opp.potentialReturn) ?? 0,
+                maxReturn: normalizePercent(opp.maxReturn) ?? 0,
+                returnsAnalysis: sanitizeReturns(opp.returnsAnalysis ?? []),
+                greeks,
+              }
+            })
+
+          sanitized.sort((a, b) => {
+            const scoreA = Number.isFinite(a.score) ? a.score : -Infinity
+            const scoreB = Number.isFinite(b.score) ? b.score : -Infinity
+            if (scoreA !== scoreB) {
+              return scoreB - scoreA
+            }
+
+            const riskA = Number.isFinite(a.riskRewardRatio ?? NaN) ? (a.riskRewardRatio as number) : -Infinity
+            const riskB = Number.isFinite(b.riskRewardRatio ?? NaN) ? (b.riskRewardRatio as number) : -Infinity
+            if (riskA !== riskB) {
+              return riskB - riskA
+            }
+
+            const probA = Number.isFinite(a.probabilityOfProfit) ? a.probabilityOfProfit : -Infinity
+            const probB = Number.isFinite(b.probabilityOfProfit) ? b.probabilityOfProfit : -Infinity
+            if (probA !== probB) {
+              return probB - probA
+            }
+
+            return (Number.isFinite(b.potentialReturn) ? b.potentialReturn : -Infinity) -
+              (Number.isFinite(a.potentialReturn) ? a.potentialReturn : -Infinity)
+          })
+
+          const timestamp = typeof metadata.fetchedAt === "string" ? metadata.fetchedAt : new Date().toISOString()
+          const totalEvaluated =
+            typeof parsed.totalEvaluated === "number" && Number.isFinite(parsed.totalEvaluated)
+              ? parsed.totalEvaluated
+              : typeof metadata.totalEvaluated === "number" && Number.isFinite(metadata.totalEvaluated)
+                ? metadata.totalEvaluated
+                : sanitized.length
+
+          resolve(
+            NextResponse.json({
+              success: true,
+              timestamp,
+              opportunities: sanitized,
+              source: metadata.source ?? "adapter",
+              totalEvaluated,
+              metadata,
+            }),
+          )
         } catch (error) {
           console.error("Error parsing Python output:", error)
-          console.error("Raw data:", dataString)
+          console.error("Raw stdout:", stdoutBuffer)
+          console.error("Raw stderr:", stderrBuffer)
           resolve(
             NextResponse.json(
               {
