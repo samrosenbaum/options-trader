@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 from datetime import datetime, timezone
 from typing import Any, Dict, Iterable, List, Mapping, Sequence, Tuple
 from uuid import uuid4
@@ -145,9 +146,11 @@ def estimate_profit_probability(contract: OptionContract) -> Dict[str, object]:
             "explanation": "Insufficient price data to model profitability.",
         }
 
-    sigma = float(contract.implied_volatility or 0.0)
-    if sigma <= 0:
+    sigma_raw = float(contract.implied_volatility or 0.0)
+    if not math.isfinite(sigma_raw) or sigma_raw <= 0:
         sigma = 0.35
+    else:
+        sigma = sigma_raw / 100.0 if sigma_raw > 3 else sigma_raw
 
     expiration = datetime.combine(contract.expiration, datetime.min.time(), tzinfo=timezone.utc)
     now = datetime.now(timezone.utc)
