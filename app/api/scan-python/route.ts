@@ -94,6 +94,41 @@ const sanitizeReturns = (returns: ScannerOpportunity["returnsAnalysis"]): Scanne
   }))
 }
 
+const parseScannerJson = (stdout: string, stderr: string): ScannerResponse | null => {
+  const attemptParse = (raw: string): ScannerResponse | null => {
+    const trimmed = raw.trim()
+    if (!trimmed) {
+      return null
+    }
+
+    // Fast path: the scanner prints JSON to stdout without additional logs.
+    try {
+      return JSON.parse(trimmed) as ScannerResponse
+    } catch {
+      // Fall through to try extracting the last JSON looking block.
+    }
+
+    const startIndex = trimmed.search(/[{[]/)
+    if (startIndex === -1) {
+      return null
+    }
+
+    const candidate = trimmed.slice(startIndex)
+    const endIndex = Math.max(candidate.lastIndexOf("}"), candidate.lastIndexOf("]"))
+    if (endIndex === -1) {
+      return null
+    }
+
+    try {
+      return JSON.parse(candidate.slice(0, endIndex + 1)) as ScannerResponse
+    } catch {
+      return null
+    }
+  }
+
+  return attemptParse(stdout) ?? attemptParse(`${stdout}\n${stderr}`)
+}
+
 export async function GET() {
   try {
     // Execute Python script to scan for opportunities
@@ -139,20 +174,9 @@ export async function GET() {
         }
 
         try {
-          const combinedOutput = `${stdoutBuffer}\n${stderrBuffer}`.trim()
-          const lines = combinedOutput.split("\n")
-          let jsonString = ""
+          const parsedOutput = parseScannerJson(stdoutBuffer, stderrBuffer)
 
-          for (let i = lines.length - 1; i >= 0; i--) {
-            const trimmed = lines[i]?.trim()
-            if (!trimmed) continue
-            if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
-              jsonString = lines.slice(i).join("\n")
-              break
-            }
-          }
-
-          if (!jsonString) {
+          if (!parsedOutput) {
             console.warn("Scanner produced no JSON payload", { stdout: stdoutBuffer, stderr: stderrBuffer })
             resolve(
               NextResponse.json({
@@ -166,7 +190,7 @@ export async function GET() {
             return
           }
 
-          const parsed = JSON.parse(jsonString) as ScannerResponse
+          const parsed = parsedOutput
           const metadata = parsed.metadata ?? {}
           const rawOpportunities = Array.isArray(parsed.opportunities) ? parsed.opportunities : []
 
