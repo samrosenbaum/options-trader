@@ -1,0 +1,1480 @@
+Starting advanced options scan for superior opportunities...
+Priority scan: 30 high-potential stocks
+Full scan: 420 total stocks
+Randomized priority order: ['UPST', 'PYPL', 'MSTR', 'HUT', 'META']...
+FAST MODE: Scanning top 8 priority stocks for quick results...
+Scanning UPST (1/8) - Success: 0, Failed: 0
+Scanning PYPL (2/8) - Success: 1, Failed: 0
+Scanning MSTR (3/8) - Success: 2, Failed: 0
+Scanning HUT (4/8) - Success: 3, Failed: 0
+Rate limiting pause after 3 requests...
+Scanning META (5/8) - Success: 4, Failed: 0
+Scanning SOFI (6/8) - Success: 5, Failed: 0
+Scanning CLOV (7/8) - Success: 6, Failed: 0
+Rate limiting pause after 6 requests...
+Scanning BITF (8/8) - Success: 7, Failed: 0
+
+Found 20 superior opportunities (score >= 70)
+[
+  {
+    "symbol": "META",
+    "optionType": "call",
+    "action": "buy",
+    "strike": 745.0,
+    "expiration": "2025-10-10",
+    "premium": 2.78,
+    "bid": 2.75,
+    "ask": 2.81,
+    "volume": 2303,
+    "openInterest": 872,
+    "impliedVolatility": 0.4014952429199219,
+    "stockPrice": 710.56,
+    "gammaSqueezeScore": 50,
+    "unusualFlowScore": 70,
+    "maxPainStrike": 722.5,
+    "newsImpactScore": 0,
+    "recentNews": [],
+    "score": 145,
+    "confidence": 98,
+    "reasoning": [
+      "Unusual volume (2.6x open interest)",
+      "High theta decay risk (0.300)",
+      "OPTIMAL strike selection (near ATM sweet spot)",
+      "EXCEPTIONAL risk/reward (12.2:1 on 10% move)",
+      "Massive call concentration (33,696 OI)",
+      "Extreme call volume (79,987.0) vs OI",
+      "Call sweep detected (11 unusual call blocks)",
+      "Put sweep detected (5 unusual put blocks)",
+      "Massive call block trade (14,977.0 volume)",
+      "Max pain at $722.5"
+    ],
+    "catalysts": [
+      "Technical Setup",
+      "Gamma Squeeze Potential",
+      "Smart Money Activity"
+    ],
+    "patterns": [
+      "Sweet Spot Strike",
+      "Asymmetric Payoff",
+      "Gamma Squeeze Setup",
+      "Unusual Options Flow",
+      "Max Pain Proximity"
+    ],
+    "riskLevel": "low",
+    "potentialReturn": 1217.1,
+    "maxReturn": 6329.1,
+    "maxLoss": 278.0,
+    "breakeven": 747.78,
+    "ivRank": 43.39,
+    "volumeRatio": 2.64,
+    "greeks": {
+      "delta": 0.1374,
+      "gamma": 0.007358,
+      "theta": -0.8335,
+      "vega": 0.1635
+    },
+    "daysToExpiration": 4,
+    "returnsAnalysis": [
+      {
+        "move": "10%",
+        "return": 1217.1
+      },
+      {
+        "move": "20%",
+        "return": 3773.1
+      },
+      {
+        "move": "30%",
+        "return": 6329.1
+      }
+    ]
+  },
+  {
+    "symbol": "META",
+    "optionType": "call",
+    "action": "buy",
+    "strike": 740.0,
+    "expiration": "2025-10-10",
+    "premium": 3.59,
+    "bid": 3.55,
+    "ask": 3.65,
+    "volume": 6337,
+    "openInterest": 2209,
+    "impliedVolatility": 0.40131213928222653,
+    "stockPrice": 710.56,
+    "gammaSqueezeScore": 50,
+    "unusualFlowScore": 70,
+    "maxPainStrike": 722.5,
+    "newsImpactScore": 0,
+    "recentNews": [],
+    "score": 145,
+    "confidence": 98,
+    "reasoning": [
+      "Unusual volume (2.9x open interest)",
+      "High theta decay risk (0.273)",
+      "OPTIMAL strike selection (near ATM sweet spot)",
+      "EXCELLENT liquidity (tight spread + high OI)",
+      "EXCEPTIONAL risk/reward (10.6:1 on 10% move)",
+      "High open interest (2209)",
+      "Massive call concentration (33,696 OI)",
+      "Extreme call volume (79,987.0) vs OI",
+      "Call sweep detected (11 unusual call blocks)",
+      "Put sweep detected (5 unusual put blocks)",
+      "Massive call block trade (14,977.0 volume)",
+      "Max pain at $722.5"
+    ],
+    "catalysts": [
+      "Technical Setup",
+      "Gamma Squeeze Potential",
+      "Smart Money Activity"
+    ],
+    "patterns": [
+      "Sweet Spot Strike",
+      "Asymmetric Payoff",
+      "Gamma Squeeze Setup",
+      "Unusual Options Flow",
+      "Max Pain Proximity"
+    ],
+    "riskLevel": "low",
+    "potentialReturn": 1059.2,
+    "maxReturn": 5017.8,
+    "maxLoss": 359.0,
+    "breakeven": 743.59,
+    "ivRank": 43.35,
+    "volumeRatio": 2.87,
+    "greeks": {
+      "delta": 0.1756,
+      "gamma": 0.008654,
+      "theta": -0.9807,
+      "vega": 0.1922
+    },
+    "daysToExpiration": 4,
+    "returnsAnalysis": [
+      {
+        "move": "10%",
+        "return": 1059.2
+      },
+      {
+        "move": "20%",
+        "return": 3038.5
+      },
+      {
+        "move": "30%",
+        "return": 5017.8
+      }
+    ]
+  },
+  {
+    "symbol": "META",
+    "optionType": "call",
+    "action": "buy",
+    "strike": 735.0,
+    "expiration": "2025-10-10",
+    "premium": 4.6,
+    "bid": 4.5,
+    "ask": 4.65,
+    "volume": 2329,
+    "openInterest": 1979,
+    "impliedVolatility": 0.39990834472656256,
+    "stockPrice": 710.56,
+    "gammaSqueezeScore": 50,
+    "unusualFlowScore": 70,
+    "maxPainStrike": 722.5,
+    "newsImpactScore": 0,
+    "recentNews": [],
+    "score": 145,
+    "confidence": 98,
+    "reasoning": [
+      "High theta decay risk (0.244)",
+      "OPTIMAL strike selection (near ATM sweet spot)",
+      "Very good liquidity",
+      "EXCEPTIONAL risk/reward (9.1:1 on 10% move)",
+      "Massive call concentration (33,696 OI)",
+      "Extreme call volume (79,987.0) vs OI",
+      "Call sweep detected (11 unusual call blocks)",
+      "Put sweep detected (5 unusual put blocks)",
+      "Massive call block trade (14,977.0 volume)",
+      "Max pain at $722.5"
+    ],
+    "catalysts": [
+      "Technical Setup",
+      "Gamma Squeeze Potential",
+      "Smart Money Activity"
+    ],
+    "patterns": [
+      "Sweet Spot Strike",
+      "Asymmetric Payoff",
+      "Gamma Squeeze Setup",
+      "Unusual Options Flow",
+      "Max Pain Proximity"
+    ],
+    "riskLevel": "low",
+    "potentialReturn": 913.4,
+    "maxReturn": 4002.8,
+    "maxLoss": 460.0,
+    "breakeven": 739.6,
+    "ivRank": 43.08,
+    "volumeRatio": 1.18,
+    "greeks": {
+      "delta": 0.2195,
+      "gamma": 0.009942,
+      "theta": -1.1205,
+      "vega": 0.22
+    },
+    "daysToExpiration": 4,
+    "returnsAnalysis": [
+      {
+        "move": "10%",
+        "return": 913.4
+      },
+      {
+        "move": "20%",
+        "return": 2458.1
+      },
+      {
+        "move": "30%",
+        "return": 4002.8
+      }
+    ]
+  },
+  {
+    "symbol": "META",
+    "optionType": "call",
+    "action": "buy",
+    "strike": 732.5,
+    "expiration": "2025-10-10",
+    "premium": 5.05,
+    "bid": 5.1,
+    "ask": 5.25,
+    "volume": 1323,
+    "openInterest": 379,
+    "impliedVolatility": 0.399969379272461,
+    "stockPrice": 710.56,
+    "gammaSqueezeScore": 50,
+    "unusualFlowScore": 70,
+    "maxPainStrike": 722.5,
+    "newsImpactScore": 0,
+    "recentNews": [],
+    "score": 145,
+    "confidence": 98,
+    "reasoning": [
+      "Very high unusual volume (3.5x open interest)",
+      "High theta decay risk (0.236)",
+      "OPTIMAL strike selection (near ATM sweet spot)",
+      "EXCEPTIONAL risk/reward (8.7:1 on 10% move)",
+      "Massive call concentration (33,696 OI)",
+      "Extreme call volume (79,987.0) vs OI",
+      "Call sweep detected (11 unusual call blocks)",
+      "Put sweep detected (5 unusual put blocks)",
+      "Massive call block trade (14,977.0 volume)",
+      "Max pain at $722.5"
+    ],
+    "catalysts": [
+      "Unusual Options Activity",
+      "Gamma Squeeze Potential",
+      "Smart Money Activity"
+    ],
+    "patterns": [
+      "Sweet Spot Strike",
+      "Asymmetric Payoff",
+      "Gamma Squeeze Setup",
+      "Unusual Options Flow",
+      "Max Pain Proximity"
+    ],
+    "riskLevel": "medium",
+    "potentialReturn": 872.6,
+    "maxReturn": 3686.7,
+    "maxLoss": 505.0,
+    "breakeven": 737.55,
+    "ivRank": 43.09,
+    "volumeRatio": 3.49,
+    "greeks": {
+      "delta": 0.2444,
+      "gamma": 0.010552,
+      "theta": -1.1907,
+      "vega": 0.2335
+    },
+    "daysToExpiration": 4,
+    "returnsAnalysis": [
+      {
+        "move": "10%",
+        "return": 872.6
+      },
+      {
+        "move": "20%",
+        "return": 2279.6
+      },
+      {
+        "move": "30%",
+        "return": 3686.7
+      }
+    ]
+  },
+  {
+    "symbol": "META",
+    "optionType": "call",
+    "action": "buy",
+    "strike": 730.0,
+    "expiration": "2025-10-10",
+    "premium": 5.75,
+    "bid": 5.75,
+    "ask": 5.9,
+    "volume": 14977,
+    "openInterest": 3595,
+    "impliedVolatility": 0.39978627563476565,
+    "stockPrice": 710.56,
+    "gammaSqueezeScore": 50,
+    "unusualFlowScore": 70,
+    "maxPainStrike": 722.5,
+    "newsImpactScore": 0,
+    "recentNews": [],
+    "score": 145,
+    "confidence": 98,
+    "reasoning": [
+      "Very high unusual volume (4.2x open interest)",
+      "High theta decay risk (0.218)",
+      "OPTIMAL strike selection (near ATM sweet spot)",
+      "EXCELLENT liquidity (tight spread + high OI)",
+      "EXCEPTIONAL risk/reward (8.0:1 on 10% move)",
+      "High open interest (3595)",
+      "Massive call concentration (33,696 OI)",
+      "Extreme call volume (79,987.0) vs OI",
+      "Call sweep detected (11 unusual call blocks)",
+      "Put sweep detected (5 unusual put blocks)",
+      "Massive call block trade (14,977.0 volume)",
+      "Max pain at $722.5"
+    ],
+    "catalysts": [
+      "Unusual Options Activity",
+      "Gamma Squeeze Potential",
+      "Smart Money Activity"
+    ],
+    "patterns": [
+      "Sweet Spot Strike",
+      "Asymmetric Payoff",
+      "Gamma Squeeze Setup",
+      "Unusual Options Flow",
+      "Max Pain Proximity"
+    ],
+    "riskLevel": "low",
+    "potentialReturn": 797.7,
+    "maxReturn": 3269.2,
+    "maxLoss": 575.0,
+    "breakeven": 735.75,
+    "ivRank": 43.05,
+    "volumeRatio": 4.17,
+    "greeks": {
+      "delta": 0.2706,
+      "gamma": 0.011132,
+      "theta": -1.2562,
+      "vega": 0.2462
+    },
+    "daysToExpiration": 4,
+    "returnsAnalysis": [
+      {
+        "move": "10%",
+        "return": 797.7
+      },
+      {
+        "move": "20%",
+        "return": 2033.4
+      },
+      {
+        "move": "30%",
+        "return": 3269.2
+      }
+    ]
+  },
+  {
+    "symbol": "PYPL",
+    "optionType": "call",
+    "action": "buy",
+    "strike": 71.0,
+    "expiration": "2025-10-10",
+    "premium": 0.61,
+    "bid": 0.6,
+    "ask": 0.63,
+    "volume": 13341,
+    "openInterest": 2492,
+    "impliedVolatility": 0.40479110839843746,
+    "stockPrice": 69.25,
+    "gammaSqueezeScore": 30,
+    "unusualFlowScore": 45,
+    "maxPainStrike": 69.0,
+    "newsImpactScore": 0,
+    "recentNews": [],
+    "score": 145,
+    "confidence": 98,
+    "reasoning": [
+      "EXTREME unusual volume (5.4x open interest)",
+      "High theta decay risk (0.210)",
+      "OPTIMAL strike selection (near ATM sweet spot)",
+      "Very good liquidity",
+      "EXCEPTIONAL risk/reward (7.5:1 on 10% move)",
+      "High open interest (2492)",
+      "MULTIPLE PATTERNS ALIGNED: Smart Money Flow, Sweet Spot Strike, Asymmetric Payoff",
+      "Massive call concentration (38,664 OI)",
+      "Call sweep detected (4 unusual call blocks)",
+      "Massive call block trade (13,341.0 volume)",
+      "Max pain at $69.0"
+    ],
+    "catalysts": [
+      "Massive Unusual Options Activity",
+      "Gamma Squeeze Potential",
+      "Smart Money Activity"
+    ],
+    "patterns": [
+      "Smart Money Flow",
+      "Sweet Spot Strike",
+      "Asymmetric Payoff",
+      "Gamma Squeeze Setup",
+      "Unusual Options Flow",
+      "Max Pain Proximity"
+    ],
+    "riskLevel": "low",
+    "potentialReturn": 748.4,
+    "maxReturn": 3018.9,
+    "maxLoss": 61.0,
+    "breakeven": 71.61,
+    "ivRank": 54.71,
+    "volumeRatio": 5.35,
+    "greeks": {
+      "delta": 0.2895,
+      "gamma": 0.116555,
+      "theta": -0.1281,
+      "vega": 0.0248
+    },
+    "daysToExpiration": 4,
+    "returnsAnalysis": [
+      {
+        "move": "10%",
+        "return": 748.4
+      },
+      {
+        "move": "20%",
+        "return": 1883.6
+      },
+      {
+        "move": "30%",
+        "return": 3018.9
+      }
+    ]
+  },
+  {
+    "symbol": "META",
+    "optionType": "call",
+    "action": "buy",
+    "strike": 727.5,
+    "expiration": "2025-10-10",
+    "premium": 6.45,
+    "bid": 6.45,
+    "ask": 6.6,
+    "volume": 1654,
+    "openInterest": 362,
+    "impliedVolatility": 0.3991759301757813,
+    "stockPrice": 710.56,
+    "gammaSqueezeScore": 50,
+    "unusualFlowScore": 70,
+    "maxPainStrike": 722.5,
+    "newsImpactScore": 0,
+    "recentNews": [],
+    "score": 145,
+    "confidence": 98,
+    "reasoning": [
+      "Very high unusual volume (4.6x open interest)",
+      "High theta decay risk (0.204)",
+      "OPTIMAL strike selection (near ATM sweet spot)",
+      "EXCEPTIONAL risk/reward (7.4:1 on 10% move)",
+      "Massive call concentration (33,696 OI)",
+      "Extreme call volume (79,987.0) vs OI",
+      "Call sweep detected (11 unusual call blocks)",
+      "Put sweep detected (5 unusual put blocks)",
+      "Massive call block trade (14,977.0 volume)",
+      "Max pain at $722.5"
+    ],
+    "catalysts": [
+      "Unusual Options Activity",
+      "Gamma Squeeze Potential",
+      "Smart Money Activity"
+    ],
+    "patterns": [
+      "Sweet Spot Strike",
+      "Asymmetric Payoff",
+      "Gamma Squeeze Setup",
+      "Unusual Options Flow",
+      "Max Pain Proximity"
+    ],
+    "riskLevel": "medium",
+    "potentialReturn": 739.0,
+    "maxReturn": 2942.3,
+    "maxLoss": 645.0,
+    "breakeven": 733.95,
+    "ivRank": 42.93,
+    "volumeRatio": 4.57,
+    "greeks": {
+      "delta": 0.2981,
+      "gamma": 0.011676,
+      "theta": -1.3151,
+      "vega": 0.2579
+    },
+    "daysToExpiration": 4,
+    "returnsAnalysis": [
+      {
+        "move": "10%",
+        "return": 739.0
+      },
+      {
+        "move": "20%",
+        "return": 1840.7
+      },
+      {
+        "move": "30%",
+        "return": 2942.3
+      }
+    ]
+  },
+  {
+    "symbol": "META",
+    "optionType": "call",
+    "action": "buy",
+    "strike": 725.0,
+    "expiration": "2025-10-10",
+    "premium": 7.25,
+    "bid": 7.25,
+    "ask": 7.4,
+    "volume": 3906,
+    "openInterest": 1567,
+    "impliedVolatility": 0.3998473101806641,
+    "stockPrice": 710.56,
+    "gammaSqueezeScore": 50,
+    "unusualFlowScore": 70,
+    "maxPainStrike": 722.5,
+    "newsImpactScore": 0,
+    "recentNews": [],
+    "score": 145,
+    "confidence": 98,
+    "reasoning": [
+      "Unusual volume (2.5x open interest)",
+      "High theta decay risk (0.189)",
+      "OPTIMAL strike selection (near ATM sweet spot)",
+      "Very good liquidity",
+      "EXCEPTIONAL risk/reward (6.8:1 on 10% move)",
+      "Massive call concentration (33,696 OI)",
+      "Extreme call volume (79,987.0) vs OI",
+      "Call sweep detected (11 unusual call blocks)",
+      "Put sweep detected (5 unusual put blocks)",
+      "Massive call block trade (14,977.0 volume)",
+      "Max pain at $722.5"
+    ],
+    "catalysts": [
+      "Technical Setup",
+      "Gamma Squeeze Potential",
+      "Smart Money Activity"
+    ],
+    "patterns": [
+      "Sweet Spot Strike",
+      "Asymmetric Payoff",
+      "Gamma Squeeze Setup",
+      "Unusual Options Flow",
+      "Max Pain Proximity"
+    ],
+    "riskLevel": "low",
+    "potentialReturn": 680.9,
+    "maxReturn": 2641.1,
+    "maxLoss": 725.0,
+    "breakeven": 732.25,
+    "ivRank": 43.07,
+    "volumeRatio": 2.49,
+    "greeks": {
+      "delta": 0.3276,
+      "gamma": 0.01214,
+      "theta": -1.3734,
+      "vega": 0.2686
+    },
+    "daysToExpiration": 4,
+    "returnsAnalysis": [
+      {
+        "move": "10%",
+        "return": 680.9
+      },
+      {
+        "move": "20%",
+        "return": 1661.0
+      },
+      {
+        "move": "30%",
+        "return": 2641.1
+      }
+    ]
+  },
+  {
+    "symbol": "META",
+    "optionType": "call",
+    "action": "buy",
+    "strike": 722.5,
+    "expiration": "2025-10-10",
+    "premium": 8.15,
+    "bid": 8.1,
+    "ask": 8.25,
+    "volume": 2062,
+    "openInterest": 577,
+    "impliedVolatility": 0.399969379272461,
+    "stockPrice": 710.56,
+    "gammaSqueezeScore": 50,
+    "unusualFlowScore": 70,
+    "maxPainStrike": 722.5,
+    "newsImpactScore": 0,
+    "recentNews": [],
+    "score": 145,
+    "confidence": 98,
+    "reasoning": [
+      "Very high unusual volume (3.6x open interest)",
+      "High theta decay risk (0.175)",
+      "OPTIMAL strike selection (near ATM sweet spot)",
+      "EXCEPTIONAL risk/reward (6.3:1 on 10% move)",
+      "Massive call concentration (33,696 OI)",
+      "Extreme call volume (79,987.0) vs OI",
+      "Call sweep detected (11 unusual call blocks)",
+      "Put sweep detected (5 unusual put blocks)",
+      "Massive call block trade (14,977.0 volume)",
+      "Max pain at $722.5"
+    ],
+    "catalysts": [
+      "Unusual Options Activity",
+      "Gamma Squeeze Potential",
+      "Smart Money Activity"
+    ],
+    "patterns": [
+      "Sweet Spot Strike",
+      "Asymmetric Payoff",
+      "Gamma Squeeze Setup",
+      "Unusual Options Flow",
+      "Max Pain Proximity"
+    ],
+    "riskLevel": "low",
+    "potentialReturn": 625.3,
+    "maxReturn": 2369.1,
+    "maxLoss": 815.0,
+    "breakeven": 730.65,
+    "ivRank": 43.09,
+    "volumeRatio": 3.57,
+    "greeks": {
+      "delta": 0.3579,
+      "gamma": 0.01255,
+      "theta": -1.4224,
+      "vega": 0.2777
+    },
+    "daysToExpiration": 4,
+    "returnsAnalysis": [
+      {
+        "move": "10%",
+        "return": 625.3
+      },
+      {
+        "move": "20%",
+        "return": 1497.2
+      },
+      {
+        "move": "30%",
+        "return": 2369.1
+      }
+    ]
+  },
+  {
+    "symbol": "META",
+    "optionType": "call",
+    "action": "buy",
+    "strike": 720.0,
+    "expiration": "2025-10-10",
+    "premium": 9.0,
+    "bid": 9.0,
+    "ask": 9.2,
+    "volume": 8739,
+    "openInterest": 1208,
+    "impliedVolatility": 0.40106800109863283,
+    "stockPrice": 710.56,
+    "gammaSqueezeScore": 50,
+    "unusualFlowScore": 70,
+    "maxPainStrike": 722.5,
+    "newsImpactScore": 0,
+    "recentNews": [],
+    "score": 145,
+    "confidence": 98,
+    "reasoning": [
+      "EXTREME unusual volume (7.2x open interest)",
+      "High theta decay risk (0.163)",
+      "OPTIMAL strike selection (near ATM sweet spot)",
+      "Very good liquidity",
+      "EXCEPTIONAL risk/reward (5.8:1 on 10% move)",
+      "MULTIPLE PATTERNS ALIGNED: Smart Money Flow, Sweet Spot Strike, Asymmetric Payoff",
+      "Massive call concentration (33,696 OI)",
+      "Extreme call volume (79,987.0) vs OI",
+      "Call sweep detected (11 unusual call blocks)",
+      "Put sweep detected (5 unusual put blocks)",
+      "Massive call block trade (14,977.0 volume)",
+      "Max pain at $722.5"
+    ],
+    "catalysts": [
+      "Massive Unusual Options Activity",
+      "Gamma Squeeze Potential",
+      "Smart Money Activity"
+    ],
+    "patterns": [
+      "Smart Money Flow",
+      "Sweet Spot Strike",
+      "Asymmetric Payoff",
+      "Gamma Squeeze Setup",
+      "Unusual Options Flow",
+      "Max Pain Proximity"
+    ],
+    "riskLevel": "low",
+    "potentialReturn": 584.6,
+    "maxReturn": 2163.6,
+    "maxLoss": 900.0,
+    "breakeven": 729.0,
+    "ivRank": 43.31,
+    "volumeRatio": 7.23,
+    "greeks": {
+      "delta": 0.3896,
+      "gamma": 0.012857,
+      "theta": -1.4672,
+      "vega": 0.2853
+    },
+    "daysToExpiration": 4,
+    "returnsAnalysis": [
+      {
+        "move": "10%",
+        "return": 584.6
+      },
+      {
+        "move": "20%",
+        "return": 1374.1
+      },
+      {
+        "move": "30%",
+        "return": 2163.6
+      }
+    ]
+  },
+  {
+    "symbol": "PYPL",
+    "optionType": "call",
+    "action": "buy",
+    "strike": 70.0,
+    "expiration": "2025-10-10",
+    "premium": 0.94,
+    "bid": 0.94,
+    "ask": 0.96,
+    "volume": 10233,
+    "openInterest": 3299,
+    "impliedVolatility": 0.40039662109375,
+    "stockPrice": 69.25,
+    "gammaSqueezeScore": 30,
+    "unusualFlowScore": 45,
+    "maxPainStrike": 69.0,
+    "newsImpactScore": 0,
+    "recentNews": [],
+    "score": 145,
+    "confidence": 98,
+    "reasoning": [
+      "Very high unusual volume (3.1x open interest)",
+      "High theta decay risk (0.154)",
+      "OPTIMAL strike selection (near ATM sweet spot)",
+      "EXCELLENT liquidity (tight spread + high OI)",
+      "EXCEPTIONAL risk/reward (5.6:1 on 10% move)",
+      "High open interest (3299)",
+      "Massive call concentration (38,664 OI)",
+      "Call sweep detected (4 unusual call blocks)",
+      "Massive call block trade (13,341.0 volume)",
+      "Max pain at $69.0"
+    ],
+    "catalysts": [
+      "Unusual Options Activity",
+      "Gamma Squeeze Potential",
+      "Smart Money Activity"
+    ],
+    "patterns": [
+      "Sweet Spot Strike",
+      "Asymmetric Payoff",
+      "Gamma Squeeze Setup",
+      "Unusual Options Flow",
+      "Max Pain Proximity"
+    ],
+    "riskLevel": "low",
+    "potentialReturn": 556.9,
+    "maxReturn": 2030.3,
+    "maxLoss": 94.0,
+    "breakeven": 70.94,
+    "ivRank": 53.49,
+    "volumeRatio": 3.1,
+    "greeks": {
+      "delta": 0.4118,
+      "gamma": 0.134067,
+      "theta": -0.145,
+      "vega": 0.0282
+    },
+    "daysToExpiration": 4,
+    "returnsAnalysis": [
+      {
+        "move": "10%",
+        "return": 556.9
+      },
+      {
+        "move": "20%",
+        "return": 1293.6
+      },
+      {
+        "move": "30%",
+        "return": 2030.3
+      }
+    ]
+  },
+  {
+    "symbol": "META",
+    "optionType": "call",
+    "action": "buy",
+    "strike": 717.5,
+    "expiration": "2025-10-10",
+    "premium": 10.05,
+    "bid": 9.6,
+    "ask": 10.2,
+    "volume": 4663,
+    "openInterest": 451,
+    "impliedVolatility": 0.4014952429199219,
+    "stockPrice": 710.56,
+    "gammaSqueezeScore": 50,
+    "unusualFlowScore": 70,
+    "maxPainStrike": 722.5,
+    "newsImpactScore": 0,
+    "recentNews": [],
+    "score": 145,
+    "confidence": 98,
+    "reasoning": [
+      "EXTREME unusual volume (10.3x open interest)",
+      "High theta decay risk (0.149)",
+      "At-the-money strike",
+      "EXCEPTIONAL risk/reward (5.4:1 on 10% move)",
+      "Massive call concentration (33,696 OI)",
+      "Extreme call volume (79,987.0) vs OI",
+      "Call sweep detected (11 unusual call blocks)",
+      "Put sweep detected (5 unusual put blocks)",
+      "Massive call block trade (14,977.0 volume)",
+      "Max pain at $722.5"
+    ],
+    "catalysts": [
+      "Massive Unusual Options Activity",
+      "Gamma Squeeze Potential",
+      "Smart Money Activity"
+    ],
+    "patterns": [
+      "Smart Money Flow",
+      "Asymmetric Payoff",
+      "Gamma Squeeze Setup",
+      "Unusual Options Flow",
+      "Max Pain Proximity"
+    ],
+    "riskLevel": "medium",
+    "potentialReturn": 538.0,
+    "maxReturn": 1952.0,
+    "maxLoss": 1005.0,
+    "breakeven": 727.55,
+    "ivRank": 43.39,
+    "volumeRatio": 10.34,
+    "greeks": {
+      "delta": 0.4218,
+      "gamma": 0.013101,
+      "theta": -1.5005,
+      "vega": 0.291
+    },
+    "daysToExpiration": 4,
+    "returnsAnalysis": [
+      {
+        "move": "10%",
+        "return": 538.0
+      },
+      {
+        "move": "20%",
+        "return": 1245.0
+      },
+      {
+        "move": "30%",
+        "return": 1952.0
+      }
+    ]
+  },
+  {
+    "symbol": "META",
+    "optionType": "call",
+    "action": "buy",
+    "strike": 715.0,
+    "expiration": "2025-10-10",
+    "premium": 11.2,
+    "bid": 11.1,
+    "ask": 11.3,
+    "volume": 5937,
+    "openInterest": 502,
+    "impliedVolatility": 0.4027159338378906,
+    "stockPrice": 710.56,
+    "gammaSqueezeScore": 50,
+    "unusualFlowScore": 70,
+    "maxPainStrike": 722.5,
+    "newsImpactScore": 0,
+    "recentNews": [],
+    "score": 145,
+    "confidence": 98,
+    "reasoning": [
+      "EXTREME unusual volume (11.8x open interest)",
+      "High theta decay risk (0.136)",
+      "At-the-money strike",
+      "Excellent risk/reward (4.9:1)",
+      "Massive call concentration (33,696 OI)",
+      "Extreme call volume (79,987.0) vs OI",
+      "Call sweep detected (11 unusual call blocks)",
+      "Put sweep detected (5 unusual put blocks)",
+      "Massive call block trade (14,977.0 volume)",
+      "Max pain at $722.5"
+    ],
+    "catalysts": [
+      "Massive Unusual Options Activity",
+      "Gamma Squeeze Potential",
+      "Smart Money Activity"
+    ],
+    "patterns": [
+      "Smart Money Flow",
+      "Gamma Squeeze Setup",
+      "Unusual Options Flow",
+      "Max Pain Proximity"
+    ],
+    "riskLevel": "low",
+    "potentialReturn": 494.8,
+    "maxReturn": 1763.6,
+    "maxLoss": 1120.0,
+    "breakeven": 726.2,
+    "ivRank": 43.63,
+    "volumeRatio": 11.83,
+    "greeks": {
+      "delta": 0.4547,
+      "gamma": 0.013232,
+      "theta": -1.5271,
+      "vega": 0.2948
+    },
+    "daysToExpiration": 4,
+    "returnsAnalysis": [
+      {
+        "move": "10%",
+        "return": 494.8
+      },
+      {
+        "move": "20%",
+        "return": 1129.2
+      },
+      {
+        "move": "30%",
+        "return": 1763.6
+      }
+    ]
+  },
+  {
+    "symbol": "META",
+    "optionType": "call",
+    "action": "buy",
+    "strike": 712.5,
+    "expiration": "2025-10-10",
+    "premium": 12.2,
+    "bid": 12.3,
+    "ask": 12.4,
+    "volume": 1648,
+    "openInterest": 201,
+    "impliedVolatility": 0.40180041564941404,
+    "stockPrice": 710.56,
+    "gammaSqueezeScore": 50,
+    "unusualFlowScore": 70,
+    "maxPainStrike": 722.5,
+    "newsImpactScore": 0,
+    "recentNews": [],
+    "score": 145,
+    "confidence": 98,
+    "reasoning": [
+      "EXTREME unusual volume (8.2x open interest)",
+      "High theta decay risk (0.126)",
+      "At-the-money strike",
+      "Excellent risk/reward (4.7:1)",
+      "Massive call concentration (33,696 OI)",
+      "Extreme call volume (79,987.0) vs OI",
+      "Call sweep detected (11 unusual call blocks)",
+      "Put sweep detected (5 unusual put blocks)",
+      "Massive call block trade (14,977.0 volume)",
+      "Max pain at $722.5"
+    ],
+    "catalysts": [
+      "Massive Unusual Options Activity",
+      "Gamma Squeeze Potential",
+      "Smart Money Activity"
+    ],
+    "patterns": [
+      "Smart Money Flow",
+      "Gamma Squeeze Setup",
+      "Unusual Options Flow",
+      "Max Pain Proximity"
+    ],
+    "riskLevel": "medium",
+    "potentialReturn": 466.5,
+    "maxReturn": 1631.4,
+    "maxLoss": 1220.0,
+    "breakeven": 724.7,
+    "ivRank": 43.45,
+    "volumeRatio": 8.2,
+    "greeks": {
+      "delta": 0.4877,
+      "gamma": 0.013342,
+      "theta": -1.5357,
+      "vega": 0.2966
+    },
+    "daysToExpiration": 4,
+    "returnsAnalysis": [
+      {
+        "move": "10%",
+        "return": 466.5
+      },
+      {
+        "move": "20%",
+        "return": 1049.0
+      },
+      {
+        "move": "30%",
+        "return": 1631.4
+      }
+    ]
+  },
+  {
+    "symbol": "META",
+    "optionType": "call",
+    "action": "buy",
+    "strike": 710.0,
+    "expiration": "2025-10-10",
+    "premium": 13.6,
+    "bid": 13.55,
+    "ask": 13.75,
+    "volume": 1567,
+    "openInterest": 298,
+    "impliedVolatility": 0.4061338684082031,
+    "stockPrice": 710.56,
+    "gammaSqueezeScore": 50,
+    "unusualFlowScore": 70,
+    "maxPainStrike": 722.5,
+    "newsImpactScore": 0,
+    "recentNews": [],
+    "score": 145,
+    "confidence": 98,
+    "reasoning": [
+      "EXTREME unusual volume (5.3x open interest)",
+      "Strong Delta-Gamma combination",
+      "High theta decay risk (0.114)",
+      "At-the-money strike",
+      "Excellent risk/reward (4.3:1)",
+      "Massive call concentration (33,696 OI)",
+      "Extreme call volume (79,987.0) vs OI",
+      "Call sweep detected (11 unusual call blocks)",
+      "Put sweep detected (5 unusual put blocks)",
+      "Massive call block trade (14,977.0 volume)",
+      "Max pain at $722.5"
+    ],
+    "catalysts": [
+      "Massive Unusual Options Activity",
+      "Gamma Squeeze Potential",
+      "Smart Money Activity"
+    ],
+    "patterns": [
+      "Smart Money Flow",
+      "Gamma Squeeze Setup",
+      "Unusual Options Flow",
+      "Max Pain Proximity"
+    ],
+    "riskLevel": "medium",
+    "potentialReturn": 426.6,
+    "maxReturn": 1471.5,
+    "maxLoss": 1360.0,
+    "breakeven": 723.6,
+    "ivRank": 44.31,
+    "volumeRatio": 5.26,
+    "greeks": {
+      "delta": 0.521,
+      "gamma": 0.013187,
+      "theta": -1.5534,
+      "vega": 0.2963
+    },
+    "daysToExpiration": 4,
+    "returnsAnalysis": [
+      {
+        "move": "10%",
+        "return": 426.6
+      },
+      {
+        "move": "20%",
+        "return": 949.1
+      },
+      {
+        "move": "30%",
+        "return": 1471.5
+      }
+    ]
+  },
+  {
+    "symbol": "META",
+    "optionType": "call",
+    "action": "buy",
+    "strike": 700.0,
+    "expiration": "2025-10-10",
+    "premium": 19.25,
+    "bid": 18.55,
+    "ask": 19.6,
+    "volume": 1129,
+    "openInterest": 369,
+    "impliedVolatility": 0.41535008483886715,
+    "stockPrice": 710.56,
+    "gammaSqueezeScore": 50,
+    "unusualFlowScore": 70,
+    "maxPainStrike": 722.5,
+    "newsImpactScore": 0,
+    "recentNews": [],
+    "score": 145,
+    "confidence": 98,
+    "reasoning": [
+      "Very high unusual volume (3.1x open interest)",
+      "Strong Delta-Gamma combination",
+      "High theta decay risk (0.078)",
+      "OPTIMAL strike selection (near ATM sweet spot)",
+      "Excellent risk/reward (3.2:1)",
+      "Massive call concentration (33,696 OI)",
+      "Extreme call volume (79,987.0) vs OI",
+      "Call sweep detected (11 unusual call blocks)",
+      "Put sweep detected (5 unusual put blocks)",
+      "Massive call block trade (14,977.0 volume)",
+      "Max pain at $722.5"
+    ],
+    "catalysts": [
+      "Unusual Options Activity",
+      "Gamma Squeeze Potential",
+      "Smart Money Activity"
+    ],
+    "patterns": [
+      "Sweet Spot Strike",
+      "Gamma Squeeze Setup",
+      "Unusual Options Flow",
+      "Max Pain Proximity"
+    ],
+    "riskLevel": "medium",
+    "potentialReturn": 324.0,
+    "maxReturn": 1062.2,
+    "maxLoss": 1925.0,
+    "breakeven": 719.25,
+    "ivRank": 46.13,
+    "volumeRatio": 3.06,
+    "greeks": {
+      "delta": 0.6475,
+      "gamma": 0.012019,
+      "theta": -1.4946,
+      "vega": 0.2762
+    },
+    "daysToExpiration": 4,
+    "returnsAnalysis": [
+      {
+        "move": "10%",
+        "return": 324.0
+      },
+      {
+        "move": "20%",
+        "return": 693.1
+      },
+      {
+        "move": "30%",
+        "return": 1062.2
+      }
+    ]
+  },
+  {
+    "symbol": "PYPL",
+    "optionType": "call",
+    "action": "buy",
+    "strike": 67.0,
+    "expiration": "2025-10-10",
+    "premium": 2.79,
+    "bid": 2.7,
+    "ask": 2.78,
+    "volume": 448,
+    "openInterest": 740,
+    "impliedVolatility": 0.43115803222656257,
+    "stockPrice": 69.25,
+    "gammaSqueezeScore": 30,
+    "unusualFlowScore": 45,
+    "maxPainStrike": 69.0,
+    "newsImpactScore": 0,
+    "recentNews": [],
+    "score": 145,
+    "confidence": 98,
+    "reasoning": [
+      "High Delta (0.78) + High Gamma - Explosive potential",
+      "OPTIMAL strike selection (near ATM sweet spot)",
+      "Massive call concentration (38,664 OI)",
+      "Call sweep detected (4 unusual call blocks)",
+      "Massive call block trade (13,341.0 volume)",
+      "Max pain at $69.0"
+    ],
+    "catalysts": [
+      "Technical Setup",
+      "Gamma Squeeze Potential",
+      "Smart Money Activity"
+    ],
+    "patterns": [
+      "Delta-Gamma Acceleration",
+      "Sweet Spot Strike",
+      "Gamma Squeeze Setup",
+      "Unusual Options Flow",
+      "Max Pain Proximity"
+    ],
+    "riskLevel": "low",
+    "potentialReturn": 228.9,
+    "maxReturn": 725.3,
+    "maxLoss": 279.0,
+    "breakeven": 69.79,
+    "ivRank": 62.06,
+    "volumeRatio": 0.61,
+    "greeks": {
+      "delta": 0.7783,
+      "gamma": 0.095145,
+      "theta": -0.1232,
+      "vega": 0.0216
+    },
+    "daysToExpiration": 4,
+    "returnsAnalysis": [
+      {
+        "move": "10%",
+        "return": 228.9
+      },
+      {
+        "move": "20%",
+        "return": 477.1
+      },
+      {
+        "move": "30%",
+        "return": 725.3
+      }
+    ]
+  },
+  {
+    "symbol": "PYPL",
+    "optionType": "call",
+    "action": "buy",
+    "strike": 68.0,
+    "expiration": "2025-10-17",
+    "premium": 2.55,
+    "bid": 2.46,
+    "ask": 2.52,
+    "volume": 1130,
+    "openInterest": 1097,
+    "impliedVolatility": 0.36817038085937503,
+    "stockPrice": 69.25,
+    "gammaSqueezeScore": 30,
+    "unusualFlowScore": 45,
+    "maxPainStrike": 69.0,
+    "newsImpactScore": 0,
+    "recentNews": [],
+    "score": 145,
+    "confidence": 98,
+    "reasoning": [
+      "High Delta (0.63) + High Gamma - Explosive potential",
+      "OPTIMAL strike selection (near ATM sweet spot)",
+      "Very good liquidity",
+      "Massive call concentration (38,664 OI)",
+      "Call sweep detected (4 unusual call blocks)",
+      "Massive call block trade (13,341.0 volume)",
+      "Max pain at $69.0"
+    ],
+    "catalysts": [
+      "Technical Setup",
+      "Gamma Squeeze Potential",
+      "Smart Money Activity"
+    ],
+    "patterns": [
+      "Delta-Gamma Acceleration",
+      "Sweet Spot Strike",
+      "Gamma Squeeze Setup",
+      "Unusual Options Flow",
+      "Max Pain Proximity"
+    ],
+    "riskLevel": "low",
+    "potentialReturn": 220.6,
+    "maxReturn": 763.7,
+    "maxLoss": 255.0,
+    "breakeven": 70.55,
+    "ivRank": 44.51,
+    "volumeRatio": 1.03,
+    "greeks": {
+      "delta": 0.6333,
+      "gamma": 0.085057,
+      "theta": -0.0814,
+      "vega": 0.0453
+    },
+    "daysToExpiration": 11,
+    "returnsAnalysis": [
+      {
+        "move": "10%",
+        "return": 220.6
+      },
+      {
+        "move": "20%",
+        "return": 492.2
+      },
+      {
+        "move": "30%",
+        "return": 763.7
+      }
+    ]
+  },
+  {
+    "symbol": "PYPL",
+    "optionType": "call",
+    "action": "buy",
+    "strike": 67.5,
+    "expiration": "2025-10-17",
+    "premium": 2.88,
+    "bid": 2.78,
+    "ask": 2.84,
+    "volume": 356,
+    "openInterest": 2404,
+    "impliedVolatility": 0.3706117626953125,
+    "stockPrice": 69.25,
+    "gammaSqueezeScore": 30,
+    "unusualFlowScore": 45,
+    "maxPainStrike": 69.0,
+    "newsImpactScore": 0,
+    "recentNews": [],
+    "score": 145,
+    "confidence": 98,
+    "reasoning": [
+      "High Delta (0.67) + High Gamma - Explosive potential",
+      "OPTIMAL strike selection (near ATM sweet spot)",
+      "EXCELLENT liquidity (tight spread + high OI)",
+      "High open interest (2404)",
+      "Massive call concentration (38,664 OI)",
+      "Call sweep detected (4 unusual call blocks)",
+      "Massive call block trade (13,341.0 volume)",
+      "Max pain at $69.0"
+    ],
+    "catalysts": [
+      "Technical Setup",
+      "Gamma Squeeze Potential",
+      "Smart Money Activity"
+    ],
+    "patterns": [
+      "Delta-Gamma Acceleration",
+      "Sweet Spot Strike",
+      "Gamma Squeeze Setup",
+      "Unusual Options Flow",
+      "Max Pain Proximity"
+    ],
+    "riskLevel": "low",
+    "potentialReturn": 201.2,
+    "maxReturn": 682.1,
+    "maxLoss": 288.0,
+    "breakeven": 70.38,
+    "ivRank": 45.19,
+    "volumeRatio": 0.15,
+    "greeks": {
+      "delta": 0.6749,
+      "gamma": 0.080794,
+      "theta": -0.0789,
+      "vega": 0.0433
+    },
+    "daysToExpiration": 11,
+    "returnsAnalysis": [
+      {
+        "move": "10%",
+        "return": 201.2
+      },
+      {
+        "move": "20%",
+        "return": 441.7
+      },
+      {
+        "move": "30%",
+        "return": 682.1
+      }
+    ]
+  },
+  {
+    "symbol": "MSTR",
+    "optionType": "call",
+    "action": "buy",
+    "strike": 345.0,
+    "expiration": "2025-10-17",
+    "premium": 19.43,
+    "bid": 19.25,
+    "ask": 19.7,
+    "volume": 341,
+    "openInterest": 3192,
+    "impliedVolatility": 0.6330603100585939,
+    "stockPrice": 351.63,
+    "gammaSqueezeScore": 55,
+    "unusualFlowScore": 70,
+    "maxPainStrike": 327.5,
+    "newsImpactScore": 0,
+    "recentNews": [],
+    "score": 145,
+    "confidence": 98,
+    "reasoning": [
+      "Strong Delta-Gamma combination",
+      "OPTIMAL strike selection (near ATM sweet spot)",
+      "EXCELLENT liquidity (tight spread + high OI)",
+      "High Vega (0.24) + Low IV - volatility expansion play",
+      "High open interest (3192)",
+      "Massive call concentration (84,425 OI)",
+      "Low put/call ratio (0.19) - bullish bias",
+      "Call sweep detected (11 unusual call blocks)",
+      "Put sweep detected (4 unusual put blocks)",
+      "Massive call block trade (15,480.0 volume)",
+      "Max pain at $327.5"
+    ],
+    "catalysts": [
+      "Technical Setup",
+      "Gamma Squeeze Potential",
+      "Smart Money Activity"
+    ],
+    "patterns": [
+      "Sweet Spot Strike",
+      "Volatility Expansion",
+      "Gamma Squeeze Setup",
+      "Unusual Options Flow",
+      "Max Pain Proximity"
+    ],
+    "riskLevel": "low",
+    "potentialReturn": 115.1,
+    "maxReturn": 477.0,
+    "maxLoss": 1943.0,
+    "breakeven": 364.43,
+    "ivRank": 22.01,
+    "volumeRatio": 0.11,
+    "greeks": {
+      "delta": 0.5956,
+      "gamma": 0.010026,
+      "theta": -0.7066,
+      "vega": 0.2365
+    },
+    "daysToExpiration": 11,
+    "returnsAnalysis": [
+      {
+        "move": "10%",
+        "return": 115.1
+      },
+      {
+        "move": "20%",
+        "return": 296.1
+      },
+      {
+        "move": "30%",
+        "return": 477.0
+      }
+    ]
+  }
+]
+=== END OF OUTPUT ===

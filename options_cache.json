@@ -1,0 +1,19 @@
+{
+  "timestamp": "2025-10-06T10:28:48.302723",
+  "data_count": 5182,
+  "symbols": [
+    "AAPL",
+    "QQQ",
+    "SPY",
+    "GOOGL",
+    "MSFT",
+    "AMZN",
+    "NVDA",
+    "TSLA",
+    "META",
+    "NFLX"
+  ],
+  "options": [
+    {
+      "contractSymbol": "AAPL251010C00110000",
+      "lastTradeDate": 
