@@ -152,12 +152,23 @@ export async function GET() {
               const optionType = opp.contract?.option_type || 'call'
               const strike = opp.contract?.strike ?? 0
               const lastPrice = opp.contract?.last_price ?? 0
+              const contractCost = Math.max(lastPrice * 100, 0)
               const breakeven =
                 strike && lastPrice
                   ? optionType === 'call'
                     ? strike + lastPrice
                     : strike - lastPrice
                   : 0
+              const maxLossPercent =
+                typeof riskIntel?.max_loss_pct === 'number' ? riskIntel.max_loss_pct : 100
+              const potentialReturnAmount =
+                typeof tenMoveReturn === 'number' ? tenMoveReturn * lastPrice * 100 : 0
+              const maxReturnAmount =
+                typeof maxReturnPct === 'number' ? maxReturnPct * lastPrice * 100 : 0
+              const maxLossAmount =
+                typeof maxLossPercent === 'number'
+                  ? (maxLossPercent / 100) * contractCost
+                  : contractCost
 
               return {
                 symbol: opp.symbol,
@@ -182,8 +193,12 @@ export async function GET() {
                     ? 'low'
                     : 'medium',
                 potentialReturn: tenMoveReturn ? tenMoveReturn * 100 : 0,
+                potentialReturnAmount,
                 maxReturn: maxReturnPct ? maxReturnPct * 100 : 0,
-                maxLoss: typeof riskIntel?.max_loss_pct === 'number' ? riskIntel.max_loss_pct : 100,
+                maxReturnAmount,
+                maxLoss: maxLossAmount,
+                maxLossPercent,
+                maxLossAmount,
                 breakeven,
                 ivRank: opp.iv_rank || 0,
                 volumeRatio: opp.metadata?.market_data?.volume_ratio || 0,
@@ -210,6 +225,25 @@ export async function GET() {
                     ? riskIntel.ten_pct_move_reward_to_risk
                     : null,
               }
+            })
+
+            const asNumber = (value: number | null | undefined, fallback: number) =>
+              typeof value === 'number' && Number.isFinite(value) ? value : fallback
+
+            opportunities.sort((a, b) => {
+              const scoreDiff = asNumber(b.score, -Infinity) - asNumber(a.score, -Infinity)
+              if (scoreDiff !== 0) return scoreDiff
+
+              const riskDiff =
+                asNumber(b.riskRewardRatio, -Infinity) - asNumber(a.riskRewardRatio, -Infinity)
+              if (riskDiff !== 0) return riskDiff
+
+              const profitDiff =
+                asNumber(b.probabilityOfProfit, -Infinity) -
+                asNumber(a.probabilityOfProfit, -Infinity)
+              if (profitDiff !== 0) return profitDiff
+
+              return asNumber(b.potentialReturn, -Infinity) - asNumber(a.potentialReturn, -Infinity)
             })
 
             resolve(
