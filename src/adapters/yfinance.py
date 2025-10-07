@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import random
 import time
 from datetime import date, datetime
@@ -87,18 +88,55 @@ class YFinanceOptionsDataAdapter(OptionsDataAdapter):
         time.sleep(delay)
 
     def _extract_price(self, ticker: yf.Ticker) -> float | None:
+        """Return the most up-to-date underlying price available."""
+
+        def _add_candidate(value: Any, candidates: List[float]) -> None:
+            if value in (None, 0, ""):
+                return
+            try:
+                price_val = float(value)
+            except (TypeError, ValueError):  # pragma: no cover - defensive branch
+                return
+            if not math.isfinite(price_val) or price_val <= 0:
+                return
+            candidates.append(price_val)
+
+        candidates: List[float] = []
+
+        # Prefer fast_info which is closer to real-time than the general info payload
         try:
-            info = self._retry(lambda: ticker.info, context="fetch price metadata")
-            if not isinstance(info, dict):  # pragma: no cover - defensive branch
-                return None
-            price = info.get("currentPrice")
-            if price in (None, 0):
-                price = info.get("regularMarketPrice")
-            if price in (None, 0):
-                price = info.get("previousClose")
-            return price
+            fast_info = self._retry(lambda: getattr(ticker, "fast_info", {}), context="fetch fast price info")
         except AdapterError:
-            return None
+            fast_info = {}
+        if isinstance(fast_info, dict):
+            for key in ("last_price", "lastPrice", "regular_market_price", "regularMarketPrice"):
+                _add_candidate(fast_info.get(key), candidates)
+
+        # Fall back to recent intraday history for a spot price if fast_info failed
+        if not candidates:
+            try:
+                history = self._retry(
+                    lambda: ticker.history(period="1d", interval="1m"),
+                    context="fetch intraday price history",
+                )
+            except AdapterError:
+                history = None
+            if isinstance(history, pd.DataFrame) and not history.empty:
+                last_close = history["Close"].dropna()
+                if not last_close.empty:
+                    _add_candidate(last_close.iloc[-1], candidates)
+
+        # Finally fall back to the (potentially stale) info payload if needed
+        if not candidates:
+            try:
+                info = self._retry(lambda: ticker.info, context="fetch price metadata")
+            except AdapterError:
+                info = None
+            if isinstance(info, dict):
+                for key in ("currentPrice", "regularMarketPrice", "previousClose"):
+                    _add_candidate(info.get(key), candidates)
+
+        return candidates[0] if candidates else None
 
 
 __all__ = ["YFinanceOptionsDataAdapter"]
