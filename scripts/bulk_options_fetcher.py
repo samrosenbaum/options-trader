@@ -8,11 +8,10 @@ import requests
 import json
 import time
 import concurrent.futures
-from datetime import datetime, timedelta
-import numpy as np
+from datetime import datetime
 
 from src.adapters.base import AdapterError
-from src.config import get_options_data_adapter
+from src.config import get_options_data_adapter, get_settings
 
 class BulkOptionsFetcher:
     def __init__(self):
@@ -22,13 +21,19 @@ class BulkOptionsFetcher:
         })
 
         self.adapter = get_options_data_adapter()
-        
+
+        # Maximum expirations to evaluate per symbol when fetching chains
+        self.max_expirations = 6
+
         # High-volume stocks that typically have good options liquidity
-        self.priority_symbols = [
+        base_symbols = [
             'SPY', 'QQQ', 'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'NVDA', 'META', 'NFLX',
             'AMD', 'INTC', 'CRM', 'ADBE', 'PYPL', 'UBER', 'SQ', 'ROKU', 'ZM', 'DOCU',
-            'SNOW', 'PLTR', 'COIN', 'HOOD', 'SOFI', 'AFRM', 'UPST', 'LCID', 'RIVN', 'XPEV'
+            'SNOW', 'PLTR', 'COIN', 'HOOD', 'SOFI', 'AFRM', 'UPST', 'LCID', 'RIVN', 'XPEV',
+            'SHOP', 'CRWD', 'SMCI', 'MARA', 'AI', 'AVGO', 'ASML', 'ANET', 'MDB',
         ]
+
+        self.priority_symbols = self._build_priority_symbols(base_symbols)
         
         # Alternative data sources
         self.data_sources = {
@@ -37,6 +42,29 @@ class BulkOptionsFetcher:
             'polygon': self.fetch_polygon_options,  # If you have API key
             'alpha_vantage': self.fetch_alpha_vantage_options  # If you have API key
         }
+
+    def _build_priority_symbols(self, base_symbols):
+        """Combine static high-liquidity names with configured watchlists."""
+
+        symbols = list(base_symbols)
+        try:
+            settings = get_settings()
+            for watchlist in settings.watchlists.values():
+                symbols.extend(watchlist)
+        except Exception as exc:  # pragma: no cover - defensive
+            print(f"⚠️  Unable to load watchlist symbols from config: {exc}")
+
+        # Preserve order while removing duplicates and normalising case
+        seen = set()
+        unique_symbols = []
+        for raw_symbol in symbols:
+            symbol = str(raw_symbol).upper().strip()
+            if not symbol or symbol in seen:
+                continue
+            seen.add(symbol)
+            unique_symbols.append(symbol)
+
+        return unique_symbols
 
     def fetch_options_via_adapter(self, symbol, max_expirations: int = 3):
         """Fetch options data using the configured adapter."""
@@ -125,10 +153,25 @@ class BulkOptionsFetcher:
         
         return None
     
-    def fetch_bulk_options_parallel(self, symbols=None, max_workers=3):
+    def fetch_bulk_options_parallel(self, symbols=None, max_workers=5, max_symbols: int | None = 30):
         """Fetch options data for multiple symbols in parallel"""
         if symbols is None:
-            symbols = self.priority_symbols[:10]  # Start with 10 symbols
+            symbols = self.priority_symbols
+            if max_symbols is not None:
+                symbols = symbols[:max_symbols]
+        else:
+            # Ensure we do not request duplicate symbols from callers
+            cleaned_symbols = []
+            seen = set()
+            for sym in symbols:
+                if not sym:
+                    continue
+                normalized = str(sym).upper().strip()
+                if normalized in seen:
+                    continue
+                seen.add(normalized)
+                cleaned_symbols.append(normalized)
+            symbols = cleaned_symbols
         
         all_options_data = []
         successful_fetches = 0
@@ -138,7 +181,7 @@ class BulkOptionsFetcher:
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
             # Submit all fetch tasks
             future_to_symbol = {
-                executor.submit(self.fetch_options_via_adapter, symbol): symbol
+                executor.submit(self.fetch_options_via_adapter, symbol, self.max_expirations): symbol
                 for symbol in symbols
             }
             
