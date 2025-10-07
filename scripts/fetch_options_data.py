@@ -107,7 +107,10 @@ def calculate_greeks(row: pd.Series) -> OptionGreeks:
     if T <= 0 or sigma <= 0 or S <= 0 or K <= 0:
         return OptionGreeks()
 
-    sigma = max(sigma, 1e-6)
+    # Handle very small IV values (likely data issues from yfinance)
+    # Deep ITM/OTM options often have bad IV data like 1e-05
+    if sigma < 0.01:  # Less than 1%
+        sigma = 0.25  # Use a reasonable default (25% IV)
     sqrt_T = np.sqrt(T)
     d1 = (np.log(S / K) + (r + 0.5 * sigma**2) * T) / (sigma * sqrt_T)
     d2 = d1 - sigma * sqrt_T

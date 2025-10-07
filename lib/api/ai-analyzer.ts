@@ -383,5 +383,19 @@ export async function scanForOpportunities(symbols: string[], contexts: MarketCo
   const response: ScanResponse = await requestSignals(requestPayload)
   const opportunities = response.signals.map((signal) => mergeSignalWithDraft(signal, draftMap))
 
-  return opportunities.filter((opp) => opp.score >= 60).sort((a, b) => b.score - a.score).slice(0, 10)
+  // Filter out low-scoring opportunities and expired/worthless options (0% profit probability)
+  return opportunities
+    .filter((opp) => {
+      // Must meet minimum score threshold
+      if (opp.score < 60) return false
+      
+      // Filter out expired/worthless options with 0% probability of profit
+      if (opp.probabilityOfProfit !== null && opp.probabilityOfProfit !== undefined) {
+        if (opp.probabilityOfProfit <= 0) return false
+      }
+      
+      return true
+    })
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 10)
 }
