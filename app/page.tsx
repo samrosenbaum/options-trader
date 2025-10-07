@@ -459,11 +459,15 @@ export default function HomePage() {
   }
 
   const getRiskRewardExplanation = (opp: Opportunity) => {
-    const maxReturn = opp.maxReturn
-    const maxLossPercent = opp.maxLossPercent
-    const maxLossAmount = opp.maxLossAmount
-    const potentialReturn = opp.potentialReturn
-    const daysToExp = opp.daysToExpiration
+    const sanitizeNumber = (value: number | null | undefined, fallback: number) => {
+      return typeof value === 'number' && Number.isFinite(value) ? value : fallback
+    }
+
+    const maxReturn = sanitizeNumber(opp.maxReturn, 0)
+    const maxLossPercent = sanitizeNumber(opp.maxLossPercent, 100)
+    const maxLossAmount = sanitizeNumber(opp.maxLossAmount, sanitizeNumber(opp.premium, 0) * 100)
+    const potentialReturn = sanitizeNumber(opp.potentialReturn, 0)
+    const daysToExp = sanitizeNumber(opp.daysToExpiration, 0)
 
     let explanation = `This trade offers a potential return of ${potentialReturn.toFixed(1)}% on a 10% stock move, with a maximum possible return of ${maxReturn.toFixed(1)}%. `
 
@@ -476,8 +480,10 @@ export default function HomePage() {
 
     // Risk/Reward ratio
     const lossBasis = Math.max(Math.abs(maxLossPercent), 1)
-    const shortTermRatio = opp.shortTermRiskRewardRatio ?? potentialReturn / lossBasis
-    const asymmetryRatio = opp.riskRewardRatio ?? maxReturn / lossBasis
+    const computedShortTermRatio = lossBasis !== 0 ? potentialReturn / lossBasis : 0
+    const computedAsymmetryRatio = lossBasis !== 0 ? maxReturn / lossBasis : 0
+    const shortTermRatio = sanitizeNumber(opp.shortTermRiskRewardRatio, sanitizeNumber(computedShortTermRatio, 0))
+    const asymmetryRatio = sanitizeNumber(opp.riskRewardRatio, sanitizeNumber(computedAsymmetryRatio, 0))
     if (shortTermRatio > 5) {
       explanation += `This creates an excellent near-term risk/reward ratio of ${shortTermRatio.toFixed(1)}:1 on a 10% move, meaning you could make ${shortTermRatio.toFixed(1)}x more than you could lose. `
     } else if (shortTermRatio > 2) {
