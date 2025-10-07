@@ -160,9 +160,15 @@ export default function HomePage() {
       const data = await response.json()
       if (data.success) {
         setOpportunities(data.opportunities || [])
-        // Set total evaluated to 30 (the original scan limit) for now
-        // In the future, this could come from the API response
-        setTotalEvaluated(30)
+        const evaluatedFromApi =
+          typeof data.totalEvaluated === 'number'
+            ? data.totalEvaluated
+            : typeof data.total_evaluated === 'number'
+              ? data.total_evaluated
+              : Array.isArray(data.opportunities)
+                ? data.opportunities.length
+                : 0
+        setTotalEvaluated(evaluatedFromApi)
         setLastUpdate(new Date())
       }
     } catch (error) {

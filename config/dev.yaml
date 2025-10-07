@@ -30,6 +30,8 @@ watchlists:
     - ASML
     - PLTR
     - ANET
+scanner:
+  limit_per_symbol: 3
 fetcher:
   max_priority_symbols: null
 scoring:
