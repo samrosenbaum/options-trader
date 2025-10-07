@@ -150,7 +150,12 @@ def estimate_profit_probability(contract: OptionContract) -> Dict[str, object]:
     if not math.isfinite(sigma_raw) or sigma_raw <= 0:
         sigma = 0.35
     else:
-        sigma = sigma_raw / 100.0 if sigma_raw > 3 else sigma_raw
+        # Handle very small IV values (likely data issues from yfinance)
+        # These tiny values like 1e-05 are clearly data quality issues
+        if sigma_raw < 0.001:  # Less than 0.1%
+            sigma = 0.25  # Use a reasonable default for options with bad IV data
+        else:
+            sigma = sigma_raw / 100.0 if sigma_raw > 3 else sigma_raw
 
     expiration = datetime.combine(contract.expiration, datetime.min.time(), tzinfo=timezone.utc)
     now = datetime.now(timezone.utc)
