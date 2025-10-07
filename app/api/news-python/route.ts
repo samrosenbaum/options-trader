@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server"
+import { resolvePythonExecutable } from "@/lib/server/python"
+import path from "path"
 
 export const runtime = "nodejs"
 export const maxDuration = 30
@@ -6,9 +8,11 @@ export const maxDuration = 30
 export async function GET() {
   try {
     const { spawn } = await import("child_process")
+    const pythonPath = await resolvePythonExecutable()
+    const scriptPath = path.join(process.cwd(), "scripts", "fetch_market_news.py")
 
     return await new Promise<NextResponse>((resolve) => {
-      const python = spawn("./venv/bin/python3", ["scripts/fetch_market_news.py"])
+      const python = spawn(pythonPath, [scriptPath])
 
       let dataString = ""
       let errorString = ""
@@ -19,6 +23,16 @@ export async function GET() {
 
       python.stderr.on("data", (data) => {
         errorString += data.toString()
+      })
+
+      python.on("error", (error) => {
+        console.error("Failed to start python process:", error)
+        resolve(
+          NextResponse.json(
+            { success: false, error: "Failed to fetch news", details: error instanceof Error ? error.message : String(error) },
+            { status: 500 },
+          ),
+        )
       })
 
       python.on("close", (code) => {
