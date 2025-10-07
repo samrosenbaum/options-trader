@@ -66,6 +66,12 @@ interface Opportunity {
     move: string
     return: number
   }>
+  moveAnalysis?: MoveAnalysis | null
+  eventIntel?: {
+    earnings_in_days?: number
+    news_sentiment_label?: string
+    unique_drivers?: string[]
+  }
   gammaSqueezeScore?: number
   unusualFlowScore?: number
   maxPainStrike?: number
@@ -354,49 +360,204 @@ export default function HomePage() {
     return explanations
   }
 
+  const renderMoveThesis = (opp: Opportunity) => {
+    const thesisPoints = (opp.reasoning || []).filter(Boolean)
+    const catalysts = (opp.catalysts || []).filter(Boolean)
+    const patterns = (opp.patterns || []).filter(Boolean)
+    const moveAnalysis = opp.moveAnalysis
+    const tradeLogic = getTradeLogic(opp)
+
+    return (
+      <div className="space-y-4">
+        {tradeLogic && (
+          <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
+            <h5 className="font-medium text-slate-900 dark:text-white mb-2">Trade Logic</h5>
+            <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">{tradeLogic}</p>
+          </div>
+        )}
+
+        {thesisPoints.length > 0 && (
+          <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
+            <h5 className="font-medium text-slate-900 dark:text-white mb-2">Why This Setup Works</h5>
+            <ul className="space-y-2 text-sm text-slate-700 dark:text-slate-300 list-disc list-inside">
+              {thesisPoints.map((point, index) => (
+                <li key={index}>{point}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {moveAnalysis && (
+          <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
+            <h5 className="font-medium text-slate-900 dark:text-white mb-3">Expected Move Analysis</h5>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+              <div>
+                <div className="text-xs font-medium text-slate-600 dark:text-slate-400">Expected Move</div>
+                <div className="text-sm font-semibold text-slate-900 dark:text-white">
+                  {formatPercent(moveAnalysis.expectedMovePercent, 1)}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs font-medium text-slate-600 dark:text-slate-400">Implied Volatility</div>
+                <div className="text-sm font-semibold text-slate-900 dark:text-white">
+                  {formatPercent(moveAnalysis.impliedVol, 1)}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs font-medium text-slate-600 dark:text-slate-400">Days to Expiration</div>
+                <div className="text-sm font-semibold text-slate-900 dark:text-white">
+                  {moveAnalysis.daysToExpiration ?? opp.daysToExpiration}
+                </div>
+              </div>
+            </div>
+
+            {moveAnalysis.thresholds?.length ? (
+              <div className="space-y-2">
+                {moveAnalysis.thresholds.map((threshold, index) => (
+                  <div
+                    key={index}
+                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 rounded-xl bg-white/60 dark:bg-slate-900/60 px-3 py-2"
+                  >
+                    <div>
+                      <div className="text-sm font-medium text-slate-900 dark:text-white">{threshold.threshold}</div>
+                      <div className="text-xs text-slate-600 dark:text-slate-400">{threshold.summary}</div>
+                    </div>
+                    <div className="text-right text-xs text-slate-500 dark:text-slate-400">
+                      {threshold.baseProbability !== null && (
+                        <div>Base: {formatPercent(threshold.baseProbability, 1)}</div>
+                      )}
+                      {threshold.conviction !== null && (
+                        <div>Conviction: {threshold.conviction.toFixed(1)} / 5</div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        )}
+
+        {(catalysts.length > 0 || patterns.length > 0) && (
+          <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
+            <h5 className="font-medium text-slate-900 dark:text-white mb-2">Supporting Signals</h5>
+            <div className="flex flex-wrap gap-2">
+              {patterns.map((pattern, index) => (
+                <span key={`pattern-${index}`} className="px-3 py-1 bg-slate-200 dark:bg-slate-700 text-xs font-medium rounded-xl">
+                  {pattern}
+                </span>
+              ))}
+              {catalysts.map((catalyst, index) => (
+                <span key={`catalyst-${index}`} className="px-3 py-1 bg-emerald-200/80 dark:bg-emerald-900/40 text-xs font-medium text-emerald-900 dark:text-emerald-100 rounded-xl">
+                  {catalyst}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
+
   const getRiskRewardExplanation = (opp: Opportunity) => {
-    const maxReturn = opp.maxReturn
-    const maxLossPercent = opp.maxLossPercent
-    const maxLossAmount = opp.maxLossAmount
-    const potentialReturn = opp.potentialReturn
-    const daysToExp = opp.daysToExpiration
+    const maxReturn = Number.isFinite(opp.maxReturn) ? opp.maxReturn : null
+    const maxLossPercent = Number.isFinite(opp.maxLossPercent) ? opp.maxLossPercent : null
+    const maxLossAmount = Number.isFinite(opp.maxLossAmount) ? opp.maxLossAmount : null
+    const potentialReturn = Number.isFinite(opp.potentialReturn) ? opp.potentialReturn : null
+    const daysToExp = Number.isFinite(opp.daysToExpiration) ? opp.daysToExpiration : null
 
-    let explanation = `This trade offers a potential return of ${potentialReturn.toFixed(1)}% on a 10% stock move, with a maximum possible return of ${maxReturn.toFixed(1)}%. `
+    const explanationParts: string[] = []
 
-    // Risk assessment
-    if (maxLossPercent < 100) {
-      explanation += `Your maximum loss is limited to ${maxLossPercent.toFixed(1)}% of your investment (${formatCurrency(maxLossAmount)} per contract). `
+    if (potentialReturn !== null && maxReturn !== null) {
+      explanationParts.push(
+        `This trade offers a potential return of ${potentialReturn.toFixed(1)}% on a 10% stock move, with a maximum possible return of ${maxReturn.toFixed(1)}%.`
+      )
     } else {
-      explanation += `Your maximum loss is ${maxLossPercent.toFixed(1)}% of your investment (${formatCurrency(maxLossAmount)} per contract). `
+      explanationParts.push('This trade highlights an asymmetric payoff profile, but some return metrics are unavailable.')
     }
 
-    // Risk/Reward ratio
-    const shortTermRatio = opp.shortTermRiskRewardRatio ?? (potentialReturn / Math.max(Math.abs(maxLoss), 1))
-    const asymmetryRatio = opp.riskRewardRatio ?? (maxReturn / Math.max(Math.abs(maxLoss), 1))
-    if (shortTermRatio > 5) {
-      explanation += `This creates an excellent near-term risk/reward ratio of ${shortTermRatio.toFixed(1)}:1 on a 10% move, meaning you could make ${shortTermRatio.toFixed(1)}x more than you could lose. `
-    } else if (shortTermRatio > 2) {
-      explanation += `This creates a good risk/reward ratio of ${shortTermRatio.toFixed(1)}:1, providing favorable odds even on a modest move. `
+    if (maxLossPercent !== null && maxLossAmount !== null) {
+      if (maxLossPercent < 100) {
+        explanationParts.push(
+          `Your maximum loss is limited to ${maxLossPercent.toFixed(1)}% of your investment (${formatCurrency(maxLossAmount)} per contract).`
+        )
+      } else {
+        explanationParts.push(
+          `Your maximum loss is ${maxLossPercent.toFixed(1)}% of your investment (${formatCurrency(maxLossAmount)} per contract).`
+        )
+      }
+    } else if (maxLossPercent !== null) {
+      explanationParts.push(`Your maximum loss is approximately ${maxLossPercent.toFixed(1)}% of your investment.`)
+    } else if (maxLossAmount !== null) {
+      explanationParts.push(`Your maximum loss per contract is approximately ${formatCurrency(maxLossAmount)}.`)
     } else {
-      explanation += `This creates a risk/reward ratio of ${shortTermRatio.toFixed(1)}:1 on the first 10% move. `
+      explanationParts.push('Review the option chain to understand the maximum loss profile for this trade.')
     }
 
-    if (asymmetryRatio >= 3) {
-      explanation += `The max payoff is ${asymmetryRatio.toFixed(1)}x larger than the capital at risk, giving this setup major asymmetric upside if the stock really runs. `
-    } else if (asymmetryRatio >= 1.5) {
-      explanation += `There's still ${asymmetryRatio.toFixed(1)}x more upside than downside if the bigger move plays out. `
+    const lossBasis = maxLossPercent !== null ? Math.max(Math.abs(maxLossPercent), 1) : null
+    const shortTermRatio = (() => {
+      if (Number.isFinite(opp.shortTermRiskRewardRatio)) {
+        return opp.shortTermRiskRewardRatio as number
+      }
+      if (potentialReturn !== null && lossBasis !== null) {
+        return potentialReturn / lossBasis
+      }
+      return null
+    })()
+    const asymmetryRatio = (() => {
+      if (Number.isFinite(opp.riskRewardRatio)) {
+        return opp.riskRewardRatio as number
+      }
+      if (maxReturn !== null && lossBasis !== null) {
+        return maxReturn / lossBasis
+      }
+      return null
+    })()
+
+    if (shortTermRatio !== null) {
+      if (shortTermRatio > 5) {
+        explanationParts.push(
+          `This creates an excellent near-term risk/reward ratio of ${shortTermRatio.toFixed(1)}:1 on a 10% move, meaning you could make ${shortTermRatio.toFixed(1)}x more than you could lose.`
+        )
+      } else if (shortTermRatio > 2) {
+        explanationParts.push(
+          `This creates a good risk/reward ratio of ${shortTermRatio.toFixed(1)}:1, providing favorable odds even on a modest move.`
+        )
+      } else {
+        explanationParts.push(
+          `This creates a risk/reward ratio of ${shortTermRatio.toFixed(1)}:1 on the first 10% move.`
+        )
+      }
     }
-    
-    // Time considerations
-    if (daysToExp <= 7) {
-      explanation += `With only ${daysToExp} days left, this is a high-conviction trade that needs to work quickly. The short timeframe amplifies both profit potential and time decay risk.`
-    } else if (daysToExp <= 30) {
-      explanation += `With ${daysToExp} days until expiration, you have a reasonable timeframe for the trade to develop while managing time decay.`
-    } else {
-      explanation += `With ${daysToExp} days until expiration, you have plenty of time for the trade thesis to play out with lower time decay pressure.`
+
+    if (asymmetryRatio !== null) {
+      if (asymmetryRatio >= 3) {
+        explanationParts.push(
+          `The max payoff is ${asymmetryRatio.toFixed(1)}x larger than the capital at risk, giving this setup major asymmetric upside if the stock really runs.`
+        )
+      } else if (asymmetryRatio >= 1.5) {
+        explanationParts.push(
+          `There's still ${asymmetryRatio.toFixed(1)}x more upside than downside if the bigger move plays out.`
+        )
+      }
     }
-    
-    return explanation
+
+    if (daysToExp !== null) {
+      if (daysToExp <= 7) {
+        explanationParts.push(
+          `With only ${daysToExp} days left, this is a high-conviction trade that needs to work quickly. The short timeframe amplifies both profit potential and time decay risk.`
+        )
+      } else if (daysToExp <= 30) {
+        explanationParts.push(
+          `With ${daysToExp} days until expiration, you have a reasonable timeframe for the trade to develop while managing time decay.`
+        )
+      } else {
+        explanationParts.push(
+          `With ${daysToExp} days until expiration, you have plenty of time for the trade thesis to play out with lower time decay pressure.`
+        )
+      }
+    }
+
+    return explanationParts.join(' ')
   }
 
   const calculateInvestmentScenario = (opp: Opportunity, amount: number): InvestmentScenario => {
@@ -829,6 +990,7 @@ export default function HomePage() {
                       </div>
                     )}
 
+                    <div className="space-y-6 mb-6">
                       {renderMoveThesis(opp)}
 
                       {/* Risk Assessment */}
@@ -838,6 +1000,7 @@ export default function HomePage() {
                           {getRiskRewardExplanation(opp)}
                         </p>
                       </div>
+
                       {opp.probabilityOfProfit !== null && (
                         <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl p-4 border border-emerald-200 dark:border-emerald-800">
                           <div className="flex items-center justify-between mb-3">
@@ -850,7 +1013,7 @@ export default function HomePage() {
                             <div
                               className="h-full bg-emerald-500"
                               style={{ width: `${Math.max(0, Math.min(opp.probabilityOfProfit, 100)).toFixed(1)}%` }}
-                            ></div>
+                            />
                           </div>
                           <div className="flex items-center justify-between text-xs text-emerald-800 dark:text-emerald-200 mb-3">
                             {opp.breakevenMovePercent !== null ? (
@@ -858,47 +1021,13 @@ export default function HomePage() {
                             ) : (
                               <span>Breakeven move unavailable</span>
                             )}
-                            {opp.breakevenPrice !== null && (
-                              <span>Breakeven ${opp.breakevenPrice.toFixed(2)}</span>
-                            )}
+                            {opp.breakevenPrice !== null && <span>Breakeven ${opp.breakevenPrice.toFixed(2)}</span>}
                           </div>
-                        </div>
-
-                        <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
-                          <h5 className="font-medium text-slate-900 dark:text-white mb-2">Risk & Reward Profile</h5>
-                          <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
-                            {getRiskRewardExplanation(opp)}
+                          <p className="text-sm text-emerald-900 dark:text-emerald-100 leading-relaxed">
+                            {opp.profitProbabilityExplanation || 'Probability estimate unavailable for this contract.'}
                           </p>
                         </div>
-
-                        {opp.probabilityOfProfit !== null && (
-                          <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl p-4 border border-emerald-200 dark:border-emerald-800">
-                            <div className="flex items-center justify-between mb-3">
-                              <h5 className="font-medium text-emerald-900 dark:text-emerald-100">Likelihood of Profit</h5>
-                              <span className="text-lg font-semibold text-emerald-700 dark:text-emerald-200">
-                                {opp.probabilityOfProfit.toFixed(1)}%
-                              </span>
-                            </div>
-                            <div className="w-full h-2 bg-emerald-100 dark:bg-emerald-900/40 rounded-full overflow-hidden mb-2">
-                              <div
-                                className="h-full bg-emerald-500"
-                                style={{ width: `${Math.max(0, Math.min(opp.probabilityOfProfit, 100)).toFixed(1)}%` }}
-                              ></div>
-                            </div>
-                            <div className="flex items-center justify-between text-xs text-emerald-800 dark:text-emerald-200 mb-3">
-                              {opp.breakevenMovePercent !== null ? (
-                                <span>Needs {opp.breakevenMovePercent.toFixed(1)}% move to breakeven</span>
-                              ) : (
-                                <span>Breakeven move unavailable</span>
-                              )}
-                              {opp.breakevenPrice !== null && <span>Breakeven ${opp.breakevenPrice.toFixed(2)}</span>}
-                            </div>
-                            <p className="text-sm text-emerald-900 dark:text-emerald-100 leading-relaxed">
-                              {opp.profitProbabilityExplanation || 'Probability estimate unavailable for this contract.'}
-                            </p>
-                          </div>
-                        )}
-                      </div>
+                      )}
                     </div>
 
                     <div className="mb-6">
@@ -1058,6 +1187,13 @@ export default function HomePage() {
                         <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Vega</div>
                         <div className="text-sm font-semibold text-slate-900 dark:text-white">{opp.greeks.vega.toFixed(3)}</div>
                       </div>
+                    </div>
+                    <div className="mt-4 space-y-2">
+                      {getGreeksExplanation(opp).map((explanation, index) => (
+                        <p key={index} className="text-xs text-slate-600 dark:text-slate-400">
+                          {explanation}
+                        </p>
+                      ))}
                     </div>
                   </div>
                 )
