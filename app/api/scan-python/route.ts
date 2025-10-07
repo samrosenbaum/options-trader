@@ -117,11 +117,12 @@ export async function GET() {
           // Try to find the JSON array - look for the last complete array
           const lines = dataString.split('\n')
           let jsonString = ''
-          
-          // Find the last line that starts with '['
+
+          // Find the last line that appears to start a JSON payload
           for (let i = lines.length - 1; i >= 0; i--) {
-            if (lines[i].trim().startsWith('[')) {
-              // Found start of JSON array, reconstruct from here
+            const trimmed = lines[i].trim()
+            if (!trimmed) continue
+            if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
               jsonString = lines.slice(i).join('\n')
               break
             }
@@ -131,7 +132,30 @@ export async function GET() {
             console.log("JSON string length:", jsonString.length)
             console.log("JSON starts with:", jsonString.slice(0, 100))
             const parsed = JSON.parse(jsonString)
-            const rawOpportunities: RawOpportunity[] = Array.isArray(parsed) ? parsed : []
+            let totalEvaluated: number | null = null
+            let rawOpportunities: RawOpportunity[] = []
+
+            if (Array.isArray(parsed)) {
+              rawOpportunities = parsed
+            } else if (parsed && typeof parsed === 'object') {
+              const maybeArray = Array.isArray((parsed as { signals?: unknown }).signals)
+                ? ((parsed as { signals: RawOpportunity[] }).signals)
+                : Array.isArray((parsed as { opportunities?: unknown }).opportunities)
+                  ? ((parsed as { opportunities: RawOpportunity[] }).opportunities)
+                  : []
+              rawOpportunities = maybeArray
+
+              const asNumber = (value: unknown): number | null =>
+                typeof value === 'number' && Number.isFinite(value) ? value : null
+
+              totalEvaluated =
+                asNumber((parsed as { totalEvaluated?: unknown }).totalEvaluated) ??
+                asNumber((parsed as { total_evaluated?: unknown }).total_evaluated) ??
+                null
+            }
+
+            const resolvedTotalEvaluated =
+              typeof totalEvaluated === 'number' ? totalEvaluated : rawOpportunities.length
 
             // Transform the data to match frontend interface
             const opportunities = rawOpportunities.map((opp) => {
@@ -263,6 +287,7 @@ export async function GET() {
                 timestamp: new Date().toISOString(),
                 opportunities: filteredOpportunities,
                 source: "yfinance",
+                totalEvaluated: resolvedTotalEvaluated,
               }),
             )
           } else {
@@ -273,6 +298,7 @@ export async function GET() {
                 timestamp: new Date().toISOString(),
                 opportunities: [],
                 source: "yfinance",
+                totalEvaluated: null,
               }),
             )
           }

@@ -23,6 +23,9 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
         "default": ["SPY", "QQQ"],
     },
     "scoring": copy.deepcopy(DEFAULT_SCORER_CONFIG),
+    "scanner": {
+        "limit_per_symbol": 3,
+    },
     "adapter": {
         "provider": "yfinance",
         "settings": {},
@@ -95,6 +98,10 @@ class CacheSettings(BaseModel):
     ttl_seconds: int = 900
 
 
+class ScannerSettings(BaseModel):
+    limit_per_symbol: int = 3
+
+
 class SQLiteSettings(BaseModel):
     path: str = "data/options.db"
     pragmas: Dict[str, Any] = Field(default_factory=dict)
@@ -116,6 +123,7 @@ class AppSettings(BaseModel):
     env: str
     watchlists: Dict[str, List[str]]
     scoring: ScoringSettings
+    scanner: ScannerSettings = Field(default_factory=ScannerSettings)
     adapter: AdapterSettings
     fetcher: FetcherSettings = Field(default_factory=FetcherSettings)
     cache: CacheSettings

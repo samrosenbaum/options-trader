@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import math
+from argparse import ArgumentParser
 from datetime import datetime, timezone
 from typing import Any, Dict, Iterable, List, Mapping, Sequence, Tuple
 from uuid import uuid4
@@ -723,17 +724,19 @@ def scan_symbols(
     symbols: Sequence[str],
     limit_per_symbol: int = 5,
     engine: CompositeScoringEngine | None = None,
-) -> Tuple[List[Signal], Dict[str, pd.DataFrame]]:
+) -> Tuple[List[Signal], int, Dict[str, pd.DataFrame]]:
     engine = engine or CompositeScoringEngine()
     aggregated: List[Signal] = []
     chains: Dict[str, pd.DataFrame] = {}
+    total_evaluated = 0
     for symbol in symbols:
         ranked, chain = rank_options_for_symbol(symbol, engine)
         if chain is not None:
             chains[symbol] = chain
+        total_evaluated += len(ranked)
         if ranked:
             aggregated.extend(ranked[:limit_per_symbol])
-    return aggregated, chains
+    return aggregated, total_evaluated, chains
 
 
 def serialize_signals(signals: Iterable[Signal]) -> List[Dict[str, object]]:
@@ -785,6 +788,7 @@ def _persist_scan_results(
     watchlist: Sequence[str],
     signals: List[Signal],
     chains: Mapping[str, pd.DataFrame],
+    total_evaluated: int,
 ) -> None:
     if not chains and not signals:
         return
@@ -800,6 +804,7 @@ def _persist_scan_results(
             "symbols": list(watchlist),
             "signal_count": len(signals),
             "option_snapshot_count": total_options,
+            "total_evaluated": total_evaluated,
         },
     )
     option_snapshots: List[OptionSnapshot] = []
@@ -809,12 +814,37 @@ def _persist_scan_results(
     storage.save_run(metadata, option_snapshots, signal_snapshots)
 
 
+def _build_arg_parser() -> ArgumentParser:
+    parser = ArgumentParser(description="Scan option chains and score opportunities.")
+    parser.add_argument(
+        "--limit-per-symbol",
+        type=int,
+        help="Maximum number of opportunities to keep per symbol.",
+    )
+    return parser
+
+
 if __name__ == "__main__":
+    args = _build_arg_parser().parse_args()
+
     settings = get_settings()
     watchlist_name = "default"
     watchlist = settings.get_watchlist(watchlist_name)
     engine = CompositeScoringEngine(settings.scoring_dict())
-    signals, chains = scan_symbols(watchlist, limit_per_symbol=3, engine=engine)
-    _persist_scan_results(settings, watchlist_name, watchlist, signals, chains)
-    print(json.dumps(serialize_signals(signals), indent=2, default=str))
+
+    limit_from_settings = getattr(getattr(settings, "scanner", None), "limit_per_symbol", None)
+    limit_per_symbol = args.limit_per_symbol or limit_from_settings or 3
+
+    signals, total_evaluated, chains = scan_symbols(
+        watchlist, limit_per_symbol=limit_per_symbol, engine=engine
+    )
+    _persist_scan_results(
+        settings, watchlist_name, watchlist, signals, chains, total_evaluated
+    )
+    payload = {
+        "signals": serialize_signals(signals),
+        "total_evaluated": total_evaluated,
+        "limit_per_symbol": limit_per_symbol,
+    }
+    print(json.dumps(payload, indent=2, default=str))
 
