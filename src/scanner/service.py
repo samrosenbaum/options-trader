@@ -1,0 +1,574 @@
+"""Smart options scanning service reusable across scripts and APIs."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from math import isfinite
+from typing import Any, Dict, List, Mapping, Optional, Sequence
+
+import pandas as pd
+
+from scripts.bulk_options_fetcher import BulkOptionsFetcher
+from src.config import get_settings
+
+
+@dataclass(slots=True)
+class ScanResult:
+    """Container holding serialized scan opportunities and metadata."""
+
+    opportunities: List[Dict[str, Any]]
+    metadata: Dict[str, Any]
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "opportunities": self.opportunities,
+            "metadata": self.metadata,
+            "totalEvaluated": self.metadata.get("totalEvaluated", len(self.opportunities)),
+        }
+
+    def to_json(self, *, indent: int | None = None) -> str:
+        return json.dumps(self.to_dict(), indent=indent, default=str)
+
+
+class SmartOptionsScanner:
+    """Core implementation extracted from the legacy smart scanner script."""
+
+    def __init__(self, max_symbols: int | None = None):
+        settings = get_settings()
+        self.symbol_limit = max_symbols if max_symbols is not None else settings.fetcher.max_priority_symbols
+        self.fetcher = BulkOptionsFetcher()
+        self.cache_file = "options_cache.json"
+        self.last_fetch_time: datetime | None = None
+
+    def is_market_hours(self) -> bool:
+        """Check if market is currently open."""
+
+        now = datetime.now()
+        market_open = now.replace(hour=9, minute=30, second=0, microsecond=0)
+        market_close = now.replace(hour=16, minute=0, second=0, microsecond=0)
+        return market_open <= now <= market_close
+
+    def should_refresh_data(self) -> bool:
+        """Determine if cached data should be refreshed."""
+
+        if not self.is_market_hours():
+            return False
+
+        if self.last_fetch_time is None:
+            return True
+
+        time_since_fetch = (datetime.now() - self.last_fetch_time).total_seconds()
+        return time_since_fetch > 300  # 5 minutes
+
+    def get_current_options_data(self) -> pd.DataFrame | None:
+        """Get current options data, using cache if appropriate."""
+
+        if self.should_refresh_data():
+            print("🔄 Market is open and data needs refresh - fetching fresh data...", file=sys.stderr)
+            data = self.fetcher.get_fresh_options_data(use_cache=False, max_symbols=self.symbol_limit)
+            self.last_fetch_time = datetime.now()
+        else:
+            print("📂 Using cached data (market closed or recent fetch)", file=sys.stderr)
+            data = self.fetcher.get_fresh_options_data(use_cache=True, max_symbols=self.symbol_limit)
+
+        return data
+
+    def analyze_opportunities(self, options_data: pd.DataFrame | None) -> List[Dict[str, Any]]:
+        """Analyze options data for opportunities."""
+
+        if options_data is None or options_data.empty:
+            return []
+
+        working_data = options_data.copy()
+        numeric_columns = [
+            "volume",
+            "openInterest",
+            "lastPrice",
+            "bid",
+            "ask",
+            "impliedVolatility",
+            "stockPrice",
+        ]
+        for col in numeric_columns:
+            if col in working_data.columns:
+                working_data[col] = pd.to_numeric(working_data[col], errors="coerce")
+
+        liquid_options = working_data[
+            (working_data["volume"] > 200)
+            & (working_data["openInterest"] > 1000)
+            & (working_data["lastPrice"] > 0.25)
+            & (working_data["bid"] > 0)
+            & (working_data["ask"] > 0)
+        ].copy()
+
+        print(f"📊 Analyzing {len(liquid_options)} liquid options...", file=sys.stderr)
+
+        opportunities: List[Dict[str, Any]] = []
+        for _, option in liquid_options.iterrows():
+            returns_analysis, metrics = self.calculate_returns_analysis(option)
+            probability_score = self.calculate_probability_score(option, metrics)
+            score = self.calculate_opportunity_score(option, metrics, probability_score)
+
+            best_roi = metrics["bestRoiPercent"]
+            if best_roi <= 0:
+                continue
+
+            high_asymmetry = best_roi >= 220
+            high_conviction = probability_score >= 28 and metrics["tenMoveRoiPercent"] >= 40
+
+            if score >= 75 and (high_asymmetry or high_conviction):
+                volume_ratio = float(option["volume"] / max(option["openInterest"], 1))
+                spread_pct = (option["ask"] - option["bid"]) / max(option["lastPrice"], 0.01)
+                probability_percent = self.estimate_probability_percent(probability_score)
+
+                reasoning = self.generate_reasoning(
+                    option,
+                    score,
+                    metrics,
+                    probability_score,
+                    volume_ratio,
+                    spread_pct,
+                )
+                catalysts = ["Volume/Flow Confirmation", "Favourable Risk-Reward Setup"]
+                patterns = ["Liquidity Analysis", "Risk/Reward Modeling"]
+                if best_roi >= 250:
+                    patterns.append("Asymmetrical Upside")
+                if probability_percent >= 70:
+                    catalysts.append("High Conviction Setup")
+
+                opportunity = {
+                    "symbol": option["symbol"],
+                    "optionType": option["type"],
+                    "strike": float(option["strike"]),
+                    "expiration": option["expiration"],
+                    "premium": float(option["lastPrice"]),
+                    "bid": float(option["bid"]),
+                    "ask": float(option["ask"]),
+                    "volume": int(option["volume"]),
+                    "openInterest": int(option["openInterest"]),
+                    "impliedVolatility": float(option["impliedVolatility"]) if pd.notna(option["impliedVolatility"]) else 0.0,
+                    "stockPrice": float(option["stockPrice"]),
+                    "score": score,
+                    "confidence": min(95, (score * 0.35) + (probability_percent * 0.65)),
+                    "reasoning": reasoning,
+                    "catalysts": catalysts,
+                    "patterns": patterns,
+                    "riskLevel": self.assess_risk_level(option, metrics, probability_score),
+                    "potentialReturn": metrics["tenMoveRoiPercent"],
+                    "potentialReturnAmount": metrics["tenMoveNetProfit"],
+                    "maxReturn": metrics["bestRoiPercent"],
+                    "maxReturnAmount": metrics["bestNetProfit"],
+                    "maxLossPercent": 100.0,
+                    "maxLossAmount": metrics["costBasis"],
+                    "maxLoss": metrics["costBasis"],
+                    "breakeven": metrics["breakevenPrice"],
+                    "breakevenPrice": metrics["breakevenPrice"],
+                    "breakevenMovePercent": metrics["breakevenMovePercent"],
+                    "ivRank": self.calculate_iv_rank(option),
+                    "volumeRatio": volume_ratio,
+                    "probabilityOfProfit": probability_percent,
+                    "profitProbabilityExplanation": self.build_probability_explanation(
+                        option,
+                        metrics,
+                        probability_percent,
+                        volume_ratio,
+                    ),
+                    "riskRewardRatio": metrics["bestRoiPercent"] / 100 if metrics["bestRoiPercent"] > 0 else None,
+                    "shortTermRiskRewardRatio": (
+                        metrics["tenMoveRoiPercent"] / 100 if metrics["tenMoveRoiPercent"] > 0 else None
+                    ),
+                    "greeks": self.calculate_greeks_approximation(option),
+                    "daysToExpiration": self.calculate_days_to_expiration(option["expiration"]),
+                    "returnsAnalysis": returns_analysis,
+                }
+                opportunities.append(opportunity)
+
+        opportunities.sort(key=lambda item: item.get("score", 0), reverse=True)
+        return opportunities
+
+    def calculate_opportunity_score(self, option: pd.Series, metrics: Mapping[str, float], probability_score: float) -> float:
+        """Calculate opportunity score based on liquidity, risk/reward and probability."""
+
+        score = 0.0
+
+        volume_ratio = option["volume"] / max(option["openInterest"], 1)
+        if volume_ratio > 4:
+            score += 18
+        elif volume_ratio > 3:
+            score += 15
+        elif volume_ratio > 2:
+            score += 12
+        elif volume_ratio > 1.5:
+            score += 8
+
+        spread_pct = (option["ask"] - option["bid"]) / max(option["lastPrice"], 0.01)
+        if spread_pct < 0.05:
+            score += 18
+        elif spread_pct < 0.1:
+            score += 12
+        elif spread_pct < 0.2:
+            score += 6
+
+        best_roi = max(0.0, metrics["bestRoiPercent"])
+        short_term_roi = max(0.0, metrics["tenMoveRoiPercent"])
+
+        score += min(35, best_roi / 4)
+        score += min(12, short_term_roi / 6)
+        score += probability_score
+
+        iv = option["impliedVolatility"]
+        if pd.notna(iv):
+            if 0.2 <= iv <= 0.6:
+                score += 5
+            elif iv > 0.8:
+                score -= 3
+
+        return float(max(0.0, min(100.0, score)))
+
+    def generate_reasoning(
+        self,
+        option: pd.Series,
+        score: float,
+        metrics: Mapping[str, float],
+        probability_score: float,
+        volume_ratio: float,
+        spread_pct: float,
+    ) -> List[str]:
+        """Generate natural language reasoning for the opportunity."""
+
+        reasoning: List[str] = []
+
+        if volume_ratio > 2:
+            reasoning.append(f"Unusual demand with {volume_ratio:.1f}x open interest volume")
+
+        if spread_pct < 0.1:
+            reasoning.append("Tight bid/ask spread supporting fast entries and exits")
+
+        breakeven_move = metrics["breakevenMovePercent"]
+        if isfinite(breakeven_move):
+            if breakeven_move <= 0:
+                reasoning.append("Already trading beyond breakeven levels")
+            elif breakeven_move <= 5:
+                reasoning.append(f"Requires only a {breakeven_move:.1f}% move to break even")
+            elif breakeven_move <= 8:
+                reasoning.append(f"Reasonable {breakeven_move:.1f}% move needed to break even")
+
+        if metrics["bestRoiPercent"] >= 200:
+            reasoning.append(f"Models show {metrics['bestRoiPercent']:.0f}% upside on a strong move")
+
+        probability_percent = self.estimate_probability_percent(probability_score)
+        if probability_percent >= 65:
+            reasoning.append(f"Probability model flags ~{probability_percent:.0f}% chance of profit")
+
+        dte = self.calculate_days_to_expiration(option["expiration"])
+        if dte > 0:
+            reasoning.append(f"{dte} days until expiration provides time for the thesis to play out")
+
+        if not reasoning:
+            reasoning.append("Balanced mix of liquidity, upside, and probability")
+
+        return reasoning
+
+    def assess_risk_level(
+        self,
+        option: pd.Series,
+        metrics: Mapping[str, float],
+        probability_score: float,
+    ) -> str:
+        """Assess risk profile combining ROI potential and probability."""
+
+        breakeven_move = metrics["breakevenMovePercent"]
+        probability_percent = self.estimate_probability_percent(probability_score)
+
+        if breakeven_move <= 5 and probability_percent >= 70:
+            return "low"
+        if metrics["bestRoiPercent"] >= 250 and probability_percent >= 55:
+            return "medium"
+        if option["lastPrice"] < 1.0 and probability_percent < 50:
+            return "high"
+        return "medium"
+
+    def calculate_breakeven(self, option: pd.Series) -> float:
+        """Calculate breakeven price."""
+
+        if option["type"] == "call":
+            return float(option["strike"] + option["lastPrice"])
+        return float(option["strike"] - option["lastPrice"])
+
+    def calculate_iv_rank(self, option: pd.Series) -> float:
+        """Calculate IV rank (simplified)."""
+
+        if pd.notna(option["impliedVolatility"]):
+            return float(min(100, option["impliedVolatility"] * 100))
+        return 50.0
+
+    def calculate_probability_score(self, option: pd.Series, metrics: Mapping[str, float]) -> float:
+        """Score the likelihood of hitting breakeven based on context."""
+
+        score = 0.0
+
+        breakeven_move = metrics["breakevenMovePercent"]
+        if breakeven_move <= 0:
+            score += 32
+        elif breakeven_move <= 4:
+            score += 28
+        elif breakeven_move <= 6:
+            score += 24
+        elif breakeven_move <= 8:
+            score += 18
+        elif breakeven_move <= 12:
+            score += 12
+        elif breakeven_move <= 18:
+            score += 8
+
+        volume = option["volume"]
+        open_interest = option["openInterest"]
+        if volume > 5000 and open_interest > 10000:
+            score += 6
+        elif volume > 1000 and open_interest > 3000:
+            score += 4
+
+        dte = self.calculate_days_to_expiration(option["expiration"])
+        if 7 <= dte <= 45:
+            score += 6
+        elif dte < 7:
+            score -= 4
+
+        iv = option["impliedVolatility"]
+        if pd.notna(iv):
+            if iv < 0.2:
+                score += 2
+            elif iv > 0.7:
+                score -= 4
+
+        return float(max(0.0, min(40.0, score)))
+
+    def estimate_probability_percent(self, probability_score: float) -> float:
+        return float(max(5.0, min(92.0, probability_score * 2.4)))
+
+    def build_probability_explanation(
+        self,
+        option: pd.Series,
+        metrics: Mapping[str, float],
+        probability_percent: float,
+        volume_ratio: float,
+    ) -> str:
+        explanation_parts: List[str] = []
+
+        breakeven_move = metrics["breakevenMovePercent"]
+        if breakeven_move <= 0:
+            move_text = "Already beyond breakeven with supportive flow"
+        else:
+            move_text = f"Needs {breakeven_move:.1f}% move with {volume_ratio:.1f}x volume/interest support"
+        explanation_parts.append(move_text)
+
+        dte = self.calculate_days_to_expiration(option["expiration"])
+        if dte:
+            explanation_parts.append(f"{dte} days to expiration")
+
+        iv = option["impliedVolatility"]
+        if pd.notna(iv):
+            explanation_parts.append(
+                f"IV at {iv:.0%} provides {'amplified' if iv > 0.4 else 'controlled'} pricing"
+            )
+
+        explanation_parts.append(f"Modeled probability ≈ {probability_percent:.0f}%")
+
+        return ". ".join(explanation_parts)
+
+    def calculate_greeks_approximation(self, option: pd.Series) -> Dict[str, float]:
+        """Calculate approximate Greeks using simple heuristics."""
+
+        stock_price = float(option["stockPrice"])
+        strike = float(option["strike"])
+        iv = float(option["impliedVolatility"]) if pd.notna(option["impliedVolatility"]) else 0.3
+        dte = max(self.calculate_days_to_expiration(option["expiration"]), 1)
+
+        time_factor = max(0.2, min(1.0, dte / 45))
+
+        if option["type"] == "call":
+            moneyness = (stock_price - strike) / max(stock_price, 0.01)
+            delta = 0.5 + moneyness * 2.2
+        else:
+            moneyness = (strike - stock_price) / max(stock_price, 0.01)
+            delta = -0.5 - moneyness * 2.2
+
+        delta = max(-0.95, min(0.95, delta))
+        gamma = max(0.005, min(0.15, (0.12 / max(dte / 30, 1)) * (1 - abs(moneyness))))
+        theta = -max(0.02, min(0.25, (iv * 0.4 + 0.03) / max(dte / 45, 0.5)))
+        vega = max(0.05, min(0.4, (0.2 + time_factor) * (1 - abs(delta))))
+
+        return {
+            "delta": float(delta),
+            "gamma": float(gamma),
+            "theta": float(theta),
+            "vega": float(vega),
+        }
+
+    def calculate_days_to_expiration(self, expiration_date: Any) -> int:
+        """Calculate days to expiration."""
+
+        try:
+            exp_date = pd.to_datetime(expiration_date)
+            days = (exp_date - datetime.now()).days
+            return max(int(days), 0)
+        except Exception:
+            return 30
+
+    def calculate_returns_analysis(self, option: pd.Series) -> tuple[List[Dict[str, Any]], Dict[str, float]]:
+        """Return ROI scenarios (in percent) and supporting metrics."""
+
+        stock_price = float(option["stockPrice"])
+        strike = float(option["strike"])
+        premium = float(option["lastPrice"])
+        cost_basis = premium * 100
+        breakeven_price = self.calculate_breakeven(option)
+
+        if option["type"] == "call":
+            breakeven_move_pct = ((breakeven_price - stock_price) / max(stock_price, 0.01)) * 100
+        else:
+            breakeven_move_pct = ((stock_price - breakeven_price) / max(stock_price, 0.01)) * 100
+
+        moves = [0.10, 0.15, 0.20, 0.30]
+        scenarios: List[Dict[str, Any]] = []
+        scenario_metrics: List[Dict[str, float]] = []
+
+        for move in moves:
+            if option["type"] == "call":
+                target_price = stock_price * (1 + move)
+                intrinsic = max(0.0, target_price - strike)
+            else:
+                target_price = stock_price * (1 - move)
+                intrinsic = max(0.0, strike - target_price)
+
+            payoff = intrinsic * 100
+            net_profit = payoff - cost_basis
+            roi_percent = (net_profit / cost_basis) * 100 if cost_basis else 0.0
+
+            scenarios.append({"move": f"{int(move * 100)}%", "return": roi_percent})
+            scenario_metrics.append(
+                {
+                    "move": move,
+                    "roi_percent": roi_percent,
+                    "net_profit": net_profit,
+                    "target_price": target_price,
+                }
+            )
+
+        best = max(scenario_metrics, key=lambda item: item["roi_percent"]) if scenario_metrics else {
+            "roi_percent": 0.0,
+            "net_profit": 0.0,
+            "move": moves[0],
+        }
+
+        ten_move = next(
+            (item for item in scenario_metrics if abs(item["move"] - 0.10) < 1e-6),
+            scenario_metrics[0] if scenario_metrics else {"roi_percent": 0.0, "net_profit": 0.0},
+        )
+        fifteen_move = next(
+            (item for item in scenario_metrics if abs(item["move"] - 0.15) < 1e-6),
+            scenario_metrics[0] if scenario_metrics else {"roi_percent": 0.0, "net_profit": 0.0},
+        )
+
+        metrics = {
+            "costBasis": cost_basis,
+            "breakevenMovePercent": breakeven_move_pct,
+            "breakevenPrice": breakeven_price,
+            "bestRoiPercent": best["roi_percent"],
+            "bestNetProfit": best["net_profit"],
+            "bestMovePercent": best["move"] * 100 if isinstance(best["move"], (int, float)) else best["move"],
+            "tenMoveRoiPercent": ten_move.get("roi_percent", 0.0),
+            "tenMoveNetProfit": ten_move.get("net_profit", 0.0),
+            "fifteenMoveRoiPercent": fifteen_move.get("roi_percent", 0.0),
+            "fifteenMoveNetProfit": fifteen_move.get("net_profit", 0.0),
+        }
+
+        return scenarios, metrics
+
+    def scan_for_opportunities(self) -> ScanResult:
+        """Execute the scan and package results for consumers."""
+
+        print("🔍 Starting smart options scan...", file=sys.stderr)
+        options_data = self.get_current_options_data()
+
+        if options_data is None or options_data.empty:
+            metadata = {
+                "fetchedAt": datetime.now(timezone.utc).isoformat(),
+                "symbolCount": 0,
+                "totalOptions": 0,
+                "totalEvaluated": 0,
+                "symbols": [],
+                "chainsBySymbol": {},
+                "source": "adapter",
+                "symbolLimit": self.symbol_limit,
+            }
+            return ScanResult([], metadata)
+
+        opportunities = self.analyze_opportunities(options_data)
+        print(f"✅ Found {len(opportunities)} high-scoring opportunities", file=sys.stderr)
+
+        chains_by_symbol = {
+            symbol: group.to_dict(orient="records")
+            for symbol, group in options_data.groupby("symbol")
+        }
+
+        metadata = {
+            "fetchedAt": datetime.now(timezone.utc).isoformat(),
+            "symbolCount": len(chains_by_symbol),
+            "totalOptions": int(len(options_data)),
+            "totalEvaluated": int(len(options_data)),
+            "symbols": list(chains_by_symbol.keys()),
+            "chainsBySymbol": chains_by_symbol,
+            "source": "adapter",
+            "symbolLimit": self.symbol_limit,
+            "opportunityCount": len(opportunities),
+        }
+        return ScanResult(opportunities, metadata)
+
+
+def _parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Scan for high potential options setups")
+    parser.add_argument(
+        "--max-symbols",
+        type=int,
+        default=None,
+        help=(
+            "Limit the number of symbols fetched from the priority/watchlist universe. "
+            "Use 0 or omit the flag to scan the full list."
+        ),
+    )
+    parser.add_argument(
+        "--json-indent",
+        type=int,
+        default=None,
+        help="Pretty print JSON with the provided indentation",
+    )
+    return parser.parse_args(argv)
+
+
+def _normalize_symbol_limit(raw_limit: Optional[int]) -> Optional[int]:
+    if raw_limit is None:
+        return None
+    if raw_limit <= 0:
+        return None
+    return raw_limit
+
+
+def run_scan(max_symbols: Optional[int] = None) -> ScanResult:
+    scanner = SmartOptionsScanner(max_symbols=max_symbols)
+    return scanner.scan_for_opportunities()
+
+
+def cli(argv: Optional[Sequence[str]] = None) -> None:
+    args = _parse_args(argv)
+    symbol_limit = _normalize_symbol_limit(args.max_symbols)
+    result = run_scan(symbol_limit)
+    print(result.to_json(indent=args.json_indent))
+
+
+if __name__ == "__main__":
+    cli()
