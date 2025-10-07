@@ -6,7 +6,7 @@ import { Card } from './ui/card'
 interface RealTimeProgressProps {
   isScanning: boolean
   scanType: 'options' | 'crypto'
-  onScanComplete?: (results: any[]) => void
+  onScanComplete?: (results: ScanUpdate[]) => void
 }
 
 interface ScanUpdate {
@@ -40,20 +40,23 @@ export default function RealTimeProgress({ isScanning, scanType, onScanComplete 
     setIsConnected(true)
     
     // Simulate real-time scanning updates
-    const symbols = scanType === 'options' 
-      ? ['AMD', 'NFLX', 'TSLA', 'AAPL', 'MSFT', 'NVDA', 'GOOGL', 'META', 'AMZN', 'HOOD', 'SOFI', 'PLTR', 'COIN', 'MARA', 'RIOT', 'BITF', 'HUT', 'PYPL', 'SQ', 'ROKU', 'GME', 'AMC', 'SPCE', 'LCID', 'RIVN', 'XPEV', 'NIO', 'WKHS', 'CLOV', 'AFRM']
-      : ['bitcoin', 'ethereum', 'binancecoin', 'cardano', 'solana', 'polkadot', 'chainlink', 'avalanche-2', 'polygon', 'litecoin', 'bitcoin-cash', 'stellar', 'monero', 'ethereum-classic', 'vechain', 'filecoin', 'tron', 'cosmos', 'algorand', 'tezos', 'zcash', 'dash', 'decred', 'qtum', 'waves', 'nano', 'icon', 'ontology', 'steem', 'siacoin']
+      const symbols = scanType === 'options'
+        ? ['AMD', 'NFLX', 'TSLA', 'AAPL', 'MSFT', 'NVDA', 'GOOGL', 'META', 'AMZN', 'HOOD', 'SOFI', 'PLTR', 'COIN', 'MARA', 'RIOT', 'BITF', 'HUT', 'PYPL', 'SQ', 'ROKU', 'GME', 'AMC', 'SPCE', 'LCID', 'RIVN', 'XPEV', 'NIO', 'WKHS', 'CLOV', 'AFRM']
+        : ['bitcoin', 'ethereum', 'binancecoin', 'cardano', 'solana', 'polkadot', 'chainlink', 'avalanche-2', 'polygon', 'litecoin', 'bitcoin-cash', 'stellar', 'monero', 'ethereum-classic', 'vechain', 'filecoin', 'tron', 'cosmos', 'algorand', 'tezos', 'zcash', 'dash', 'decred', 'qtum', 'waves', 'nano', 'icon', 'ontology', 'steem', 'siacoin']
 
-    let currentIndex = 0
-    const scanInterval = setInterval(() => {
-      if (currentIndex >= symbols.length) {
-        clearInterval(scanInterval)
-        setIsConnected(false)
-        // Simulate final results
-        const results = scanUpdates.filter(update => update.status === 'success')
-        onScanComplete?.(results)
-        return
-      }
+      let currentIndex = 0
+      const scanInterval = setInterval(() => {
+        if (currentIndex >= symbols.length) {
+          clearInterval(scanInterval)
+          setIsConnected(false)
+          // Simulate final results using the latest updates snapshot
+          setScanUpdates(prev => {
+            const results = prev.filter(update => update.status === 'success')
+            onScanComplete?.(results)
+            return prev
+          })
+          return
+        }
 
       const symbol = symbols[currentIndex]
       setCurrentSymbol(symbol)

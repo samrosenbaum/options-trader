@@ -81,13 +81,13 @@ export default function LiveTicker() {
         </div>
       </div>
 
-      <div className="overflow-x-auto">
-        <div className="flex space-x-6 min-w-max">
-          {tickerData.map((item, index) => (
-            <div
-              key={item.symbol}
-              className="flex items-center space-x-3 p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 min-w-[200px] hover:shadow-md transition-shadow"
-            >
+        <div className="overflow-x-auto">
+          <div className="flex space-x-6 min-w-max">
+            {tickerData.map((item) => (
+              <div
+                key={item.symbol}
+                className="flex items-center space-x-3 p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 min-w-[200px] hover:shadow-md transition-shadow"
+              >
               <div className="flex flex-col">
                 <div className="flex items-center gap-2">
                   <span className={`text-lg ${item.type === 'crypto' ? 'text-orange-500' : 'text-blue-500'}`}>
@@ -126,10 +126,10 @@ export default function LiveTicker() {
                   </div>
                 )}
               </div>
-            </div>
-          ))}
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
 
       {/* Market Status */}
       <div className="mt-4 flex items-center justify-between text-sm">

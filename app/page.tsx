@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import ScanProgress from '../components/scan-progress'
 import RealTimeProgress from '../components/real-time-progress'
 import LiveTicker from '../components/live-ticker'
 
@@ -683,9 +682,9 @@ export default function HomePage() {
               </svg>
             </div>
             <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">No opportunities found</h3>
-            <p className="text-slate-600 dark:text-slate-400 mb-6">
-              The scanner is currently running but hasn't found any high-scoring opportunities yet.
-            </p>
+              <p className="text-slate-600 dark:text-slate-400 mb-6">
+                The scanner is currently running but hasn&apos;t found any high-scoring opportunities yet.
+              </p>
             <button
               onClick={fetchOpportunities}
               className="px-6 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-medium hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors"
@@ -711,137 +710,124 @@ export default function HomePage() {
               {opportunities.map((opp, index) => {
                 const scenario = calculateInvestmentScenario(opp, investmentAmount)
                 const isPerContractView = scenario.basis === 'perContract'
-                const potentialReturnDisplay = isPerContractView ? scenario.potentialReturnAmountPerContract : scenario.potentialReturnAmount
-                const maxReturnDisplay = isPerContractView ? scenario.maxReturnAmountPerContract : scenario.maxReturnAmount
-                const maxLossDisplay = isPerContractView ? scenario.maxLossAmountPerContract : scenario.maxLossAmount
+                const potentialReturnDisplay = isPerContractView
+                  ? scenario.potentialReturnAmountPerContract
+                  : scenario.potentialReturnAmount
+                const maxReturnDisplay = isPerContractView
+                  ? scenario.maxReturnAmountPerContract
+                  : scenario.maxReturnAmount
+                const maxLossDisplay = isPerContractView
+                  ? scenario.maxLossAmountPerContract
+                  : scenario.maxLossAmount
+
                 return (
-                  <div key={index} className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-100 dark:border-slate-800 hover:border-slate-200 dark:hover:border-slate-700 transition-colors">
-                  <div className="flex items-start justify-between mb-6">
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-4">
-                        <div className="text-2xl font-bold text-slate-900 dark:text-white">
-                          {opp.symbol}
-                </div>
-                        <div className={`px-3 py-1 rounded-xl text-sm font-medium ${getScoreColor(opp.score)}`}>
-                          {opp.score}/100
-                </div>
-                        <div className="flex items-center gap-2">
-                          {opp.gammaSqueezeScore && opp.gammaSqueezeScore > 0 && (
-                            <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-xl text-xs font-medium">
-                              GAMMA: {opp.gammaSqueezeScore}
-                            </span>
-                          )}
-                          {opp.unusualFlowScore && opp.unusualFlowScore > 0 && (
-                            <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-xl text-xs font-medium">
-                              FLOW: {opp.unusualFlowScore}
-                            </span>
-                          )}
-                          {opp.newsImpactScore && opp.newsImpactScore > 0 && (
-                            <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-xl text-xs font-medium">
-                              NEWS: {opp.newsImpactScore}
-                            </span>
-                          )}
-                          {opp.riskRewardRatio && opp.riskRewardRatio >= 3 && (
-                            <span className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-xl text-xs font-semibold">
-                              ASYM EDGE {opp.riskRewardRatio.toFixed(1)}x
-                            </span>
-                          )}
-                          {opp.probabilityOfProfit !== null && opp.probabilityOfProfit >= 55 && (
-                            <span className="px-3 py-1 bg-sky-100 text-sky-700 rounded-xl text-xs font-semibold">
-                              WIN RATE {opp.probabilityOfProfit.toFixed(0)}%
-                            </span>
-                          )}
+                  <div
+                    key={index}
+                    className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-100 dark:border-slate-800 hover:border-slate-200 dark:hover:border-slate-700 transition-colors"
+                  >
+                    <div className="flex items-start justify-between mb-6">
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-4">
+                          <div className="text-2xl font-bold text-slate-900 dark:text-white">{opp.symbol}</div>
+                          <div className={`px-3 py-1 rounded-xl text-sm font-medium ${getScoreColor(opp.score)}`}>
+                            {opp.score}/100
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {opp.gammaSqueezeScore && opp.gammaSqueezeScore > 0 && (
+                              <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-xl text-xs font-medium">
+                                GAMMA: {opp.gammaSqueezeScore}
+                              </span>
+                            )}
+                            {opp.unusualFlowScore && opp.unusualFlowScore > 0 && (
+                              <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-xl text-xs font-medium">
+                                FLOW: {opp.unusualFlowScore}
+                              </span>
+                            )}
+                            {opp.newsImpactScore && opp.newsImpactScore > 0 && (
+                              <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-xl text-xs font-medium">
+                                NEWS: {opp.newsImpactScore}
+                              </span>
+                            )}
+                            {opp.riskRewardRatio && opp.riskRewardRatio >= 3 && (
+                              <span className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-xl text-xs font-semibold">
+                                ASYM EDGE {opp.riskRewardRatio.toFixed(1)}x
+                              </span>
+                            )}
+                            {opp.probabilityOfProfit !== null && opp.probabilityOfProfit >= 55 && (
+                              <span className="px-3 py-1 bg-sky-100 text-sky-700 rounded-xl text-xs font-semibold">
+                                WIN RATE {opp.probabilityOfProfit.toFixed(0)}%
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-6 text-sm text-slate-600 dark:text-slate-400">
+                          <span>
+                            {opp.optionType.toUpperCase()} ${opp.strike}
+                          </span>
+                          <span>Expires {opp.expiration}</span>
+                          <span>{opp.daysToExpiration} days</span>
+                          <span className={`px-2 py-1 rounded-lg text-xs font-medium border ${getRiskColor(opp.riskLevel)}`}>
+                            {opp.riskLevel.toUpperCase()} RISK
+                          </span>
                         </div>
                       </div>
-                      
-                      <div className="flex items-center gap-6 text-sm text-slate-600 dark:text-slate-400">
-                        <span>{opp.optionType.toUpperCase()} ${opp.strike}</span>
-                        <span>Expires {opp.expiration}</span>
-                        <span>{opp.daysToExpiration} days</span>
-                        <span className={`px-2 py-1 rounded-lg text-xs font-medium border ${getRiskColor(opp.riskLevel)}`}>
-                          {opp.riskLevel.toUpperCase()} RISK
-                        </span>
-            </div>
-          </div>
 
-                    <div className="text-right space-y-1">
-                      <div className="text-2xl font-semibold text-slate-900 dark:text-white">
-                        {formatCurrency(opp.premium)}
-              </div>
-                      <div className="text-sm text-slate-600 dark:text-slate-400">
-                        Premium
-              </div>
-            </div>
-                  </div>
-
-                  {/* Recent News */}
-                  {opp.recentNews && opp.recentNews.length > 0 && (
-                    <div className="mb-6">
-                      <h4 className="font-semibold text-slate-900 dark:text-white mb-3">Recent News</h4>
-                      <div className="space-y-3">
-                        {opp.recentNews.map((news, i) => (
-                          <div key={i} className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
-                            <div className="flex items-start justify-between mb-2">
-                              <h5 className="text-sm font-medium text-slate-900 dark:text-white line-clamp-2">
-                                {news.headline}
-                              </h5>
-                              <span className={`px-2 py-1 rounded-lg text-xs font-medium ml-3 ${
-                                news.category === 'political' ? 'bg-red-100 text-red-700' :
-                                news.category === 'regulatory' ? 'bg-orange-100 text-orange-700' :
-                                news.category === 'earnings' ? 'bg-blue-100 text-blue-700' :
-                                'bg-slate-100 text-slate-700'
-                              }`}>
-                                {news.category}
-                              </span>
-                  </div>
-                            <p className="text-xs text-slate-600 dark:text-slate-400 mb-3 line-clamp-2">
-                              {news.summary}
-                            </p>
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs text-slate-500 dark:text-slate-500">
-                                {news.source}
-                              </span>
-                              <div className="flex items-center gap-3">
-                                <span className={`text-xs font-medium ${
-                                  news.sentiment.score > 0 ? 'text-emerald-600' : 
-                                  news.sentiment.score < 0 ? 'text-red-600' : 'text-slate-600'
-                                }`}>
-                                  {news.sentiment.label}
-                                </span>
-                                <span className="text-xs text-slate-500">
-                                  Impact: {news.impact_score}
-                                </span>
-                  </div>
-                </div>
-              </div>
-                        ))}
+                      <div className="text-right space-y-1">
+                        <div className="text-2xl font-semibold text-slate-900 dark:text-white">
+                          {formatCurrency(opp.premium)}
+                        </div>
+                        <div className="text-sm text-slate-600 dark:text-slate-400">Premium</div>
                       </div>
                     </div>
-                  )}
 
-                  {/* Trade Logic & Analysis */}
-                  <div className="mb-6">
-                    <h4 className="font-semibold text-slate-900 dark:text-white mb-3">Why This Trade Makes Sense</h4>
-                    <div className="space-y-4">
-                      {/* Trade Logic */}
-                      <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
-                        <h5 className="font-medium text-slate-900 dark:text-white mb-2">Trade Logic</h5>
-                        <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
-                          {getTradeLogic(opp)}
-                        </p>
-                      </div>
-
-                      {/* Greeks Explanation */}
-                      <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
-                        <h5 className="font-medium text-slate-900 dark:text-white mb-2">What the Greeks Tell Us</h5>
-                        <div className="space-y-2">
-                          {getGreeksExplanation(opp).map((explanation, i) => (
-                            <p key={i} className="text-sm text-slate-700 dark:text-slate-300">
-                              • {explanation}
-                            </p>
+                    {opp.recentNews && opp.recentNews.length > 0 && (
+                      <div className="mb-6">
+                        <h4 className="font-semibold text-slate-900 dark:text-white mb-3">Recent News</h4>
+                        <div className="space-y-3">
+                          {opp.recentNews.map((news, i) => (
+                            <div key={i} className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
+                              <div className="flex items-start justify-between mb-2">
+                                <h5 className="text-sm font-medium text-slate-900 dark:text-white line-clamp-2">
+                                  {news.headline}
+                                </h5>
+                                <span
+                                  className={`px-2 py-1 rounded-lg text-xs font-medium ml-3 ${
+                                    news.category === 'political'
+                                      ? 'bg-red-100 text-red-700'
+                                      : news.category === 'regulatory'
+                                        ? 'bg-orange-100 text-orange-700'
+                                        : news.category === 'earnings'
+                                          ? 'bg-blue-100 text-blue-700'
+                                          : 'bg-slate-100 text-slate-700'
+                                  }`}
+                                >
+                                  {news.category}
+                                </span>
+                              </div>
+                              <p className="text-xs text-slate-600 dark:text-slate-400 mb-3 line-clamp-2">{news.summary}</p>
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs text-slate-500 dark:text-slate-500">{news.source}</span>
+                                <div className="flex items-center gap-3">
+                                  <span
+                                    className={`text-xs font-medium ${
+                                      news.sentiment.score > 0
+                                        ? 'text-emerald-600'
+                                        : news.sentiment.score < 0
+                                          ? 'text-red-600'
+                                          : 'text-slate-600'
+                                    }`}
+                                  >
+                                    {news.sentiment.label}
+                                  </span>
+                                  <span className="text-xs text-slate-500">Impact: {news.impact_score}</span>
+                                </div>
+                              </div>
+                            </div>
                           ))}
                         </div>
                       </div>
+                    )}
 
                       {renderMoveThesis(opp)}
 
@@ -876,182 +862,207 @@ export default function HomePage() {
                               <span>Breakeven ${opp.breakevenPrice.toFixed(2)}</span>
                             )}
                           </div>
-                          <p className="text-sm text-emerald-900 dark:text-emerald-100 leading-relaxed">
-                            {opp.profitProbabilityExplanation || 'Probability estimate unavailable for this contract.'}
+                        </div>
+
+                        <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
+                          <h5 className="font-medium text-slate-900 dark:text-white mb-2">Risk & Reward Profile</h5>
+                          <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                            {getRiskRewardExplanation(opp)}
                           </p>
                         </div>
-                      )}
-                    </div>
-                  </div>
 
-                  {/* Investment Calculator */}
-                  <div className="mb-6">
-                    <h4 className="font-semibold text-slate-900 dark:text-white mb-3">Investment Calculator</h4>
-                    <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-6">
-                      <div className="space-y-4">
-                        {/* Investment Summary */}
-                        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-4 bg-white dark:bg-slate-700 rounded-xl">
-                          <div>
-                            <div className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                              {scenario.basis === 'position' ? 'Your Position' : 'Per-Contract Preview'}
-                            </div>
-                            <div className="text-lg font-semibold text-slate-900 dark:text-white">
-                              {scenario.basis === 'position'
-                                ? `${formatCurrency(scenario.totalCost)} for ${scenario.contractsToBuy} contract${scenario.contractsToBuy !== 1 ? 's' : ''}`
-                                : `${formatCurrency(scenario.displayCost)} per contract`}
-                            </div>
-                            {scenario.basis === 'position' ? (
-                              <div className="text-xs text-slate-500 dark:text-slate-300 mt-1">
-                                Remaining capital: {formatCurrency(scenario.remainingCapital)}
-                              </div>
-                            ) : scenario.requiredCapital > 0 ? (
-                              <div className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-                                Add {formatCurrency(scenario.shortfall)} more to control one contract (requires {formatCurrency(scenario.requiredCapital)}).
-                              </div>
-                            ) : (
-                              <div className="text-xs text-slate-500 dark:text-slate-300 mt-1">
-                                Waiting for pricing data to size this trade.
-                              </div>
-                            )}
-                          </div>
-                          <div className="text-right">
-                            <div className="text-sm font-medium text-slate-600 dark:text-slate-400">Option Price</div>
-                            <div className="text-lg font-semibold text-slate-900 dark:text-white">
-                              {formatCurrency(opp.premium)} per share
-                            </div>
-                            <div className="text-sm text-slate-500 dark:text-slate-400">
-                              {formatCurrency(scenario.contractCost)} per contract
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Profit Scenarios */}
-                        <div>
-                          <div className="flex items-center justify-between mb-3">
-                            <h5 className="font-medium text-slate-900 dark:text-white">Potential Profits</h5>
-                            {isPerContractView && (
-                              <span className="text-xs font-medium text-amber-600 dark:text-amber-300">
-                                Showing per-contract economics
+                        {opp.probabilityOfProfit !== null && (
+                          <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl p-4 border border-emerald-200 dark:border-emerald-800">
+                            <div className="flex items-center justify-between mb-3">
+                              <h5 className="font-medium text-emerald-900 dark:text-emerald-100">Likelihood of Profit</h5>
+                              <span className="text-lg font-semibold text-emerald-700 dark:text-emerald-200">
+                                {opp.probabilityOfProfit.toFixed(1)}%
                               </span>
-                            )}
+                            </div>
+                            <div className="w-full h-2 bg-emerald-100 dark:bg-emerald-900/40 rounded-full overflow-hidden mb-2">
+                              <div
+                                className="h-full bg-emerald-500"
+                                style={{ width: `${Math.max(0, Math.min(opp.probabilityOfProfit, 100)).toFixed(1)}%` }}
+                              ></div>
+                            </div>
+                            <div className="flex items-center justify-between text-xs text-emerald-800 dark:text-emerald-200 mb-3">
+                              {opp.breakevenMovePercent !== null ? (
+                                <span>Needs {opp.breakevenMovePercent.toFixed(1)}% move to breakeven</span>
+                              ) : (
+                                <span>Breakeven move unavailable</span>
+                              )}
+                              {opp.breakevenPrice !== null && <span>Breakeven ${opp.breakevenPrice.toFixed(2)}</span>}
+                            </div>
+                            <p className="text-sm text-emerald-900 dark:text-emerald-100 leading-relaxed">
+                              {opp.profitProbabilityExplanation || 'Probability estimate unavailable for this contract.'}
+                            </p>
                           </div>
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                            {scenario.scenarios.map((scenarioItem, i) => (
-                              <div key={i} className="bg-white dark:bg-slate-700 rounded-xl p-4">
-                                <div className="flex items-center justify-between mb-2">
-                                  <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                                    {scenarioItem.move || `${scenarioItem.return.toFixed(0)}%`} Stock Move
-                                  </span>
-                                  <span className="text-xs font-semibold text-emerald-600">
-                                    +{scenarioItem.return.toFixed(1)}%
-                                  </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="mb-6">
+                      <h4 className="font-semibold text-slate-900 dark:text-white mb-3">Investment Calculator</h4>
+                      <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-6">
+                        <div className="space-y-4">
+                          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-4 bg-white dark:bg-slate-700 rounded-xl">
+                            <div>
+                              <div className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                                {scenario.basis === 'position' ? 'Your Position' : 'Per-Contract Preview'}
+                              </div>
+                              <div className="text-lg font-semibold text-slate-900 dark:text-white">
+                                {scenario.basis === 'position'
+                                  ? `${formatCurrency(scenario.totalCost)} for ${scenario.contractsToBuy} contract${scenario.contractsToBuy !== 1 ? 's' : ''}`
+                                  : `${formatCurrency(scenario.displayCost)} per contract`}
+                              </div>
+                              {scenario.basis === 'position' ? (
+                                <div className="text-xs text-slate-500 dark:text-slate-300 mt-1">
+                                  Remaining capital: {formatCurrency(scenario.remainingCapital)}
                                 </div>
-                                <div className="space-y-1">
-                                  <div className="flex justify-between text-sm">
-                                    <span className="text-slate-600 dark:text-slate-400">Profit:</span>
-                                    <span className="font-semibold text-emerald-600">
-                                      {formatCurrency(scenarioItem.profit)}
+                              ) : scenario.requiredCapital > 0 ? (
+                                <div className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                                  Add {formatCurrency(scenario.shortfall)} more to control one contract (requires {formatCurrency(scenario.requiredCapital)}).
+                                </div>
+                              ) : (
+                                <div className="text-xs text-slate-500 dark:text-slate-300 mt-1">
+                                  Waiting for pricing data to size this trade.
+                                </div>
+                              )}
+                            </div>
+                            <div className="text-right">
+                              <div className="text-sm font-medium text-slate-600 dark:text-slate-400">Option Price</div>
+                              <div className="text-lg font-semibold text-slate-900 dark:text-white">
+                                {formatCurrency(opp.premium)} per share
+                              </div>
+                              <div className="text-sm text-slate-500 dark:text-slate-400">
+                                {formatCurrency(scenario.contractCost)} per contract
+                              </div>
+                            </div>
+                          </div>
+
+                          <div>
+                            <div className="flex items-center justify-between mb-3">
+                              <h5 className="font-medium text-slate-900 dark:text-white">Potential Profits</h5>
+                              {isPerContractView && (
+                                <span className="text-xs font-medium text-amber-600 dark:text-amber-300">
+                                  Showing per-contract economics
+                                </span>
+                              )}
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                              {scenario.scenarios.map((scenarioItem, i) => (
+                                <div key={i} className="bg-white dark:bg-slate-700 rounded-xl p-4">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                                      {scenarioItem.move || `${scenarioItem.return.toFixed(0)}%`} Stock Move
+                                    </span>
+                                    <span className="text-xs font-semibold text-emerald-600">
+                                      +{scenarioItem.return.toFixed(1)}%
                                     </span>
                                   </div>
-                                  <div className="flex justify-between text-sm">
-                                    <span className="text-slate-600 dark:text-slate-400">Total Value:</span>
-                                    <span className="font-semibold text-slate-900 dark:text-white">
-                                      {formatCurrency(scenarioItem.totalValue)}
-                                    </span>
+                                  <div className="space-y-1">
+                                    <div className="flex justify-between text-sm">
+                                      <span className="text-slate-600 dark:text-slate-400">Profit:</span>
+                                      <span className="font-semibold text-emerald-600">
+                                        {formatCurrency(scenarioItem.profit)}
+                                      </span>
+                                    </div>
+                                    <div className="flex justify-between text-sm">
+                                      <span className="text-slate-600 dark:text-slate-400">Total Value:</span>
+                                      <span className="font-semibold text-slate-900 dark:text-white">
+                                        {formatCurrency(scenarioItem.totalValue)}
+                                      </span>
+                                    </div>
                                   </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
+                            <div className="flex items-start gap-3">
+                              <div className="w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center mt-0.5">
+                                <span className="text-xs text-white font-bold">!</span>
+                              </div>
+                              <div>
+                                <div className="font-medium text-amber-800 dark:text-amber-200 mb-1">Risk Warning</div>
+                                <div className="text-sm text-amber-700 dark:text-amber-300">
+                                  Maximum loss: {formatCurrency(opp.maxLossAmount)} ({opp.maxLossPercent.toFixed(1)}% of investment).
+                                  Options can expire worthless, and you could lose your entire investment.
                                 </div>
                               </div>
-                            ))}
-                          </div>
-                        </div>
-
-                            {/* Risk Warning */}
-                            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
-                              <div className="flex items-start gap-3">
-                                <div className="w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center mt-0.5">
-                                  <span className="text-xs text-white font-bold">!</span>
-                                </div>
-                                <div>
-                                  <div className="font-medium text-amber-800 dark:text-amber-200 mb-1">Risk Warning</div>
-                                  <div className="text-sm text-amber-700 dark:text-amber-300">
-                                    Maximum loss: {formatCurrency(opp.maxLossAmount)} ({opp.maxLossPercent.toFixed(1)}% of investment).
-                                    Options can expire worthless, and you could lose your entire investment.
-                  </div>
-                  </div>
-                </div>
                             </div>
                           </div>
                         </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Key Metrics */}
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-                    <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
-                      <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Potential Return</div>
-                      <div className="text-lg font-semibold text-emerald-600">{opp.potentialReturn.toFixed(1)}%</div>
-                      <div className="text-xs text-slate-500 dark:text-slate-400">≈ {formatCurrency(opp.potentialReturnAmount)}</div>
-                    </div>
-                    <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
-                      <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Max Return</div>
-                      <div className="text-lg font-semibold text-emerald-600">{opp.maxReturn.toFixed(1)}%</div>
-                      <div className="text-xs text-slate-500 dark:text-slate-400">≈ {formatCurrency(opp.maxReturnAmount)}</div>
-                    </div>
-                    <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
-                      <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Max Loss</div>
-                      <div className="text-lg font-semibold text-red-600">{opp.maxLossPercent.toFixed(1)}%</div>
-                      <div className="text-xs text-slate-500 dark:text-slate-400">≈ {formatCurrency(opp.maxLossAmount)}</div>
-                      {opp.riskRewardRatio && opp.riskRewardRatio >= 3 && (
-                        <div className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-emerald-600">
-                          <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                          {opp.riskRewardRatio.toFixed(1)}x upside vs risk
-                        </div>
-                      )}
-                    </div>
-                    <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
-                      <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Profit Probability</div>
-                      <div className="text-lg font-semibold text-slate-900 dark:text-white">
-                        {opp.probabilityOfProfit !== null ? `${opp.probabilityOfProfit.toFixed(1)}%` : '—'}
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+                      <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
+                        <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Potential Return</div>
+                        <div className="text-lg font-semibold text-emerald-600">{opp.potentialReturn.toFixed(1)}%</div>
+                        <div className="text-xs text-slate-500 dark:text-slate-400">≈ {formatCurrency(potentialReturnDisplay)}</div>
                       </div>
-                      {opp.breakevenMovePercent !== null && (
-                        <div className="text-xs text-slate-500 dark:text-slate-400">
-                          Needs {opp.breakevenMovePercent.toFixed(1)}% move
-                        </div>
-                      )}
-                    </div>
-                    <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
-                      <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Reward-to-Risk</div>
-                      <div className={`text-lg font-semibold ${opp.riskRewardRatio && opp.riskRewardRatio >= 3 ? 'text-emerald-600' : 'text-slate-900 dark:text-white'}`}>
-                        {opp.riskRewardRatio ? `${opp.riskRewardRatio.toFixed(1)}x` : '—'}
+                      <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
+                        <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Max Return</div>
+                        <div className="text-lg font-semibold text-emerald-600">{opp.maxReturn.toFixed(1)}%</div>
+                        <div className="text-xs text-slate-500 dark:text-slate-400">≈ {formatCurrency(maxReturnDisplay)}</div>
                       </div>
-                      {opp.riskRewardRatio && opp.riskRewardRatio >= 3 && (
-                        <div className="text-xs text-emerald-600">Asymmetric payoff</div>
-                      )}
+                      <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
+                        <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Max Loss</div>
+                        <div className="text-lg font-semibold text-red-600">{opp.maxLossPercent.toFixed(1)}%</div>
+                        <div className="text-xs text-slate-500 dark:text-slate-400">≈ {formatCurrency(maxLossDisplay)}</div>
+                        {opp.riskRewardRatio && opp.riskRewardRatio >= 3 && (
+                          <div className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-emerald-600">
+                            <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                            {opp.riskRewardRatio.toFixed(1)}x upside vs risk
+                          </div>
+                        )}
+                      </div>
+                      <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
+                        <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Profit Probability</div>
+                        <div className="text-lg font-semibold text-slate-900 dark:text-white">
+                          {opp.probabilityOfProfit !== null ? `${opp.probabilityOfProfit.toFixed(1)}%` : '—'}
+                        </div>
+                        {opp.breakevenMovePercent !== null && (
+                          <div className="text-xs text-slate-500 dark:text-slate-400">
+                            Needs {opp.breakevenMovePercent.toFixed(1)}% move
+                          </div>
+                        )}
+                      </div>
+                      <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
+                        <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Reward-to-Risk</div>
+                        <div className={`text-lg font-semibold ${opp.riskRewardRatio && opp.riskRewardRatio >= 3 ? 'text-emerald-600' : 'text-slate-900 dark:text-white'}`}>
+                          {opp.riskRewardRatio ? `${opp.riskRewardRatio.toFixed(1)}x` : '—'}
+                        </div>
+                        {opp.riskRewardRatio && opp.riskRewardRatio >= 3 && (
+                          <div className="text-xs text-emerald-600">Asymmetric payoff</div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="text-center">
+                        <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Delta</div>
+                        <div className="text-sm font-semibold text-slate-900 dark:text-white">{opp.greeks.delta.toFixed(3)}</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Gamma</div>
+                        <div className="text-sm font-semibold text-slate-900 dark:text-white">{opp.greeks.gamma.toFixed(3)}</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Theta</div>
+                        <div className="text-sm font-semibold text-slate-900 dark:text-white">{opp.greeks.theta.toFixed(3)}</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Vega</div>
+                        <div className="text-sm font-semibold text-slate-900 dark:text-white">{opp.greeks.vega.toFixed(3)}</div>
+                      </div>
                     </div>
                   </div>
+                )
+              })}
 
-                  {/* Greeks */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="text-center">
-                      <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Delta</div>
-                      <div className="text-sm font-semibold text-slate-900 dark:text-white">{opp.greeks.delta.toFixed(3)}</div>
-              </div>
-                    <div className="text-center">
-                      <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Gamma</div>
-                      <div className="text-sm font-semibold text-slate-900 dark:text-white">{opp.greeks.gamma.toFixed(3)}</div>
-            </div>
-                    <div className="text-center">
-                      <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Theta</div>
-                      <div className="text-sm font-semibold text-slate-900 dark:text-white">{opp.greeks.theta.toFixed(3)}</div>
-            </div>
-                    <div className="text-center">
-                      <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Vega</div>
-                      <div className="text-sm font-semibold text-slate-900 dark:text-white">{opp.greeks.vega.toFixed(3)}</div>
-                </div>
-                </div>
-                </div>
-              )})}
             </div>
           </div>
         )}
@@ -1114,7 +1125,7 @@ export default function HomePage() {
                 </div>
                 <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">No crypto alerts found</h3>
                 <p className="text-slate-600 dark:text-slate-400 mb-6">
-                  Click "Scan Crypto" to find coins with explosive potential based on volume, momentum, and fundamentals.
+                  Click &quot;Scan Crypto&quot; to find coins with explosive potential based on volume, momentum, and fundamentals.
                 </p>
                 <button
                   onClick={fetchCryptoAlerts}
