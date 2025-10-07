@@ -12,7 +12,7 @@ export async function GET() {
     const scriptPath = path.join(process.cwd(), "scripts", "fetch_market_news.py")
 
     return await new Promise<NextResponse>((resolve) => {
-      const python = spawn(pythonPath, [scriptPath])
+      const python = spawn("./venv/bin/python3", ["scripts/fetch_market_news.py"])
 
       let dataString = ""
       let errorString = ""

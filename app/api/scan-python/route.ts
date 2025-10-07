@@ -70,7 +70,7 @@ export async function GET() {
     const scriptPath = path.join(process.cwd(), "scripts", "fetch_options_data.py")
 
     return await new Promise<NextResponse>((resolve) => {
-      const python = spawn(pythonPath, [scriptPath], {
+      const python = spawn("./venv/bin/python3", ["scripts/fetch_options_data.py"], {
         env: { ...process.env, PYTHONPATH: process.cwd() }
       })
 

@@ -15,7 +15,7 @@ export async function GET(request: Request) {
     const scriptPath = path.join(process.cwd(), "scripts", "get_stock_quotes.py")
 
     return await new Promise<NextResponse>((resolve) => {
-      const python = spawn(pythonPath, [scriptPath, symbols])
+      const python = spawn("./venv/bin/python3", ["scripts/get_stock_quotes.py", symbols])
 
       let dataString = ""
       let errorString = ""
