@@ -36,6 +36,10 @@ export interface OpportunityScore {
   volumeRatio: number
   newsImpact: number
   greeks: OptionGreeks
+  probabilityOfProfit?: number | null
+  profitProbabilityExplanation?: string
+  breakevenMovePercent?: number | null
+  breakevenPrice?: number | null
 }
 
 interface SampleOption {
@@ -241,6 +245,19 @@ function mergeSignalWithDraft(signal: Signal, draftMap: Map<string, OpportunityS
   const key = `${signal.contract.symbol}|${signal.contract.type}|${signal.contract.strike}|${signal.contract.expiration}`
   const draft = draftMap.get(key)
   const metadata = signal.metadata || {}
+  
+  // Extract profit probability from metadata
+  const profitProbability = metadata.profit_probability as any
+  const probabilityOfProfit = profitProbability?.probability != null 
+    ? Number(profitProbability.probability) * 100  // Convert to percentage
+    : null
+  const profitProbabilityExplanation = profitProbability?.explanation as string | undefined
+  const breakevenMovePercent = profitProbability?.required_move_pct != null
+    ? Number(profitProbability.required_move_pct) * 100  // Convert to percentage
+    : null
+  const breakevenPrice = profitProbability?.breakeven_price != null
+    ? Number(profitProbability.breakeven_price)
+    : null
 
   return {
     symbol: signal.symbol,
@@ -267,6 +284,10 @@ function mergeSignalWithDraft(signal: Signal, draftMap: Map<string, OpportunityS
     volumeRatio: Number(metadata.volumeRatio ?? draft?.volumeRatio ?? 0),
     newsImpact: Number(metadata.newsImpact ?? draft?.newsImpact ?? 0),
     greeks: signal.greeks,
+    probabilityOfProfit,
+    profitProbabilityExplanation,
+    breakevenMovePercent,
+    breakevenPrice,
   }
 }
 
