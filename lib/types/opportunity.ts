@@ -21,6 +21,16 @@ export interface MoveAnalysis {
   drivers: string[]
 }
 
+export interface DataQualityInfo {
+  quality: 'high' | 'medium' | 'low' | 'rejected'
+  score: number
+  issues: string[]
+  warnings: string[]
+  priceSource: string
+  priceTimestamp: string | null
+  priceAgeSeconds: number | null
+}
+
 export interface Opportunity {
   symbol: string
   optionType: string
@@ -81,6 +91,7 @@ export interface Opportunity {
     }
     impact_score: number
   }>
+  _dataQuality?: DataQualityInfo
 }
 
 export interface CryptoAlert {

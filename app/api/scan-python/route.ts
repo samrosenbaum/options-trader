@@ -201,7 +201,7 @@ export async function GET() {
             })
             .map((opp) => {
               const contract = {
-                option_type: opp.optionType,
+                option_type: opp.optionType as "call" | "put",
                 strike: opp.strike,
                 expiration: opp.expiration,
                 last_price: opp.premium,

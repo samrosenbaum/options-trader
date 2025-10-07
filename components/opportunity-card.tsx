@@ -1,4 +1,5 @@
 import { Opportunity } from '../lib/types/opportunity'
+import { DataQualityBadge } from './data-quality-badge'
 
 const isFiniteNumber = (value: unknown): value is number =>
   typeof value === 'number' && Number.isFinite(value)
@@ -553,6 +554,13 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
           <div className="text-sm text-slate-600 dark:text-slate-400">Premium</div>
         </div>
       </div>
+
+      {/* Data Quality Badge */}
+      {opportunity._dataQuality && (
+        <div className="mb-6">
+          <DataQualityBadge quality={opportunity._dataQuality} />
+        </div>
+      )}
 
       {opportunity.recentNews && opportunity.recentNews.length > 0 && (
         <div className="mb-6">

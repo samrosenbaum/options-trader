@@ -15,6 +15,7 @@ import pandas as pd
 from scripts.bulk_options_fetcher import BulkOptionsFetcher
 from src.config import AppSettings, get_settings
 from src.scanner.universe import build_scan_universe
+from src.validation import OptionsDataValidator, DataQuality
 
 
 @dataclass(slots=True)
@@ -57,6 +58,7 @@ class SmartOptionsScanner:
         self.current_batch_symbols: List[str] = []
         self.cache_file = "options_cache.json"
         self.last_fetch_time: datetime | None = None
+        self.validator = OptionsDataValidator()
 
     @property
     def batch_size(self) -> int:
@@ -204,6 +206,14 @@ class SmartOptionsScanner:
                 if probability_percent >= 70:
                     catalysts.append("High Conviction Setup")
 
+                # Validate data quality before creating opportunity
+                quality_report = self.validator.validate_option(option.to_dict())
+
+                # Skip rejected quality options
+                if quality_report.quality == DataQuality.REJECTED:
+                    print(f"⚠️  Rejected {option['symbol']} {option['type']} ${option['strike']} - Quality issues: {quality_report.issues}", file=sys.stderr)
+                    continue
+
                 opportunity = {
                     "symbol": option["symbol"],
                     "optionType": option["type"],
@@ -248,6 +258,16 @@ class SmartOptionsScanner:
                     "greeks": self.calculate_greeks_approximation(option),
                     "daysToExpiration": self.calculate_days_to_expiration(option["expiration"]),
                     "returnsAnalysis": returns_analysis,
+                    # Add data quality metadata
+                    "_dataQuality": {
+                        "quality": quality_report.quality.value,
+                        "score": quality_report.score,
+                        "issues": quality_report.issues,
+                        "warnings": quality_report.warnings,
+                        "priceSource": option.get("_price_source", "unknown"),
+                        "priceTimestamp": option.get("_price_timestamp"),
+                        "priceAgeSeconds": option.get("_price_age_seconds"),
+                    },
                 }
                 opportunities.append(opportunity)
 
