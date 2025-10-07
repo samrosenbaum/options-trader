@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { resolvePythonExecutable } from "@/lib/server/python"
+import { ensureOptionGreeks } from "@/lib/math/greeks"
 import path from "path"
 
 interface ProbabilityIntel {
@@ -134,6 +135,7 @@ export async function GET() {
 
             // Transform the data to match frontend interface
             const opportunities = rawOpportunities.map((opp) => {
+              const greeks = ensureOptionGreeks(opp.greeks, opp.contract)
               const profitIntel =
                 opp.metadata?.market_data?.profit_probability ??
                 opp.score?.metadata?.profit_probability
@@ -185,7 +187,7 @@ export async function GET() {
                 breakeven,
                 ivRank: opp.iv_rank || 0,
                 volumeRatio: opp.metadata?.market_data?.volume_ratio || 0,
-                greeks: opp.greeks || { delta: 0, gamma: 0, theta: 0, vega: 0 },
+                greeks,
                 daysToExpiration: opp.contract?.expiration
                   ? Math.ceil(
                       (new Date(opp.contract.expiration).getTime() - new Date().getTime()) /
