@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server"
+import { resolvePythonExecutable } from "@/lib/server/python"
+import path from "path"
 
 interface ProbabilityIntel {
   probability?: number
@@ -64,6 +66,8 @@ export async function GET() {
   try {
     // Execute Python script to scan for opportunities
     const { spawn } = await import("child_process")
+    const pythonPath = await resolvePythonExecutable()
+    const scriptPath = path.join(process.cwd(), "scripts", "fetch_options_data.py")
 
     return await new Promise<NextResponse>((resolve) => {
       const python = spawn("./venv/bin/python3", ["scripts/fetch_options_data.py"], {
@@ -81,6 +85,16 @@ export async function GET() {
         errorString += data.toString()
         // Also capture stderr in case JSON is output there
         dataString += data.toString()
+      })
+
+      python.on("error", (error) => {
+        console.error("Failed to start python process:", error)
+        resolve(
+          NextResponse.json(
+            { success: false, error: "Failed to execute scan", details: error instanceof Error ? error.message : String(error) },
+            { status: 500 },
+          ),
+        )
       })
 
       python.on("close", (code) => {
