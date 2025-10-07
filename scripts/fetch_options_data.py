@@ -330,7 +330,7 @@ def _headline_sentiment(text: str) -> float:
 
 def _build_earnings_context(ticker: yf.Ticker) -> Dict[str, object]:
     context: Dict[str, object] = {}
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     try:
         earnings = ticker.get_earnings_dates(limit=6)
     except Exception:
@@ -666,6 +666,9 @@ def evaluate_contract(
     if event_context:
         market_data["event_intel"] = event_context
 
+    profit_probability = estimate_profit_probability(contract)
+    risk_metrics = summarize_risk_metrics(contract, projected_returns)
+
     result = engine.score(contract, greeks, market_data)
     result.score.metadata.update(
         {
@@ -779,7 +782,7 @@ def _persist_scan_results(
     total_options = sum(len(df) for df in chains.values())
     metadata = RunMetadata(
         run_id=uuid4().hex,
-        run_at=datetime.utcnow(),
+        run_at=datetime.now(timezone.utc),
         environment=settings.env,
         watchlist=watchlist_name,
         extra={

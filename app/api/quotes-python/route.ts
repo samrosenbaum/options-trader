@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server"
+import { resolvePythonExecutable } from "@/lib/server/python"
+import path from "path"
 
 export const runtime = "nodejs"
 export const maxDuration = 30
@@ -9,9 +11,11 @@ export async function GET(request: Request) {
     const symbols = searchParams.get("symbols") || "AAPL,MSFT,GOOGL,AMZN,NVDA,TSLA,META,AMD,NFLX,SPY"
 
     const { spawn } = await import("child_process")
+    const pythonPath = await resolvePythonExecutable()
+    const scriptPath = path.join(process.cwd(), "scripts", "get_stock_quotes.py")
 
-    return new Promise((resolve) => {
-      const python = spawn("./venv/bin/python3", ["scripts/get_stock_quotes.py", symbols])
+    return await new Promise<NextResponse>((resolve) => {
+      const python = spawn(pythonPath, [scriptPath, symbols])
 
       let dataString = ""
       let errorString = ""
@@ -22,6 +26,16 @@ export async function GET(request: Request) {
 
       python.stderr.on("data", (data) => {
         errorString += data.toString()
+      })
+
+      python.on("error", (error) => {
+        console.error("Failed to start python process:", error)
+        resolve(
+          NextResponse.json(
+            { success: false, error: "Failed to fetch quotes", details: error instanceof Error ? error.message : String(error) },
+            { status: 500 },
+          ),
+        )
       })
 
       python.on("close", (code) => {

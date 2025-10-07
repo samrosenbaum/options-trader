@@ -23,7 +23,7 @@ export async function GET() {
       errorOutput += data.toString()
     })
 
-    return new Promise((resolve) => {
+    return await new Promise<NextResponse>((resolve) => {
       pythonProcess.on('close', (code) => {
         if (code === 0) {
           try {
