@@ -102,7 +102,8 @@ function calculatePotentialReturn(
 ): number {
   const targetPrice = type === "call" ? currentPrice * 1.1 : currentPrice * 0.9
   const intrinsicValue = type === "call" ? Math.max(0, targetPrice - strike) : Math.max(0, strike - targetPrice)
-  return Math.max(0, intrinsicValue - premium)
+  // Return the potential dollar gain for a single contract (100 shares)
+  return Math.max(0, intrinsicValue - premium) * 100
 }
 
 function getNextExpiration(): string {
