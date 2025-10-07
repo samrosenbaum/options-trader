@@ -10,7 +10,7 @@ export async function GET(request: Request) {
 
     const { spawn } = await import("child_process")
 
-    return new Promise((resolve) => {
+    return await new Promise<NextResponse>((resolve) => {
       const python = spawn("./venv/bin/python3", ["scripts/get_stock_quotes.py", symbols])
 
       let dataString = ""
