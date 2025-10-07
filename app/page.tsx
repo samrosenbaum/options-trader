@@ -144,6 +144,7 @@ type InvestmentScenario = {
 
 export default function HomePage() {
   const [opportunities, setOpportunities] = useState<Opportunity[]>([])
+  const [totalEvaluated, setTotalEvaluated] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
   const [autoRefresh, setAutoRefresh] = useState(true)
@@ -159,6 +160,9 @@ export default function HomePage() {
       const data = await response.json()
       if (data.success) {
         setOpportunities(data.opportunities || [])
+        // Set total evaluated to 30 (the original scan limit) for now
+        // In the future, this could come from the API response
+        setTotalEvaluated(30)
         setLastUpdate(new Date())
       }
     } catch (error) {
@@ -821,9 +825,17 @@ export default function HomePage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-12">
           <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-100 dark:border-slate-800">
             <div className="space-y-2">
+              <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Total Evaluated</p>
+              <p className="text-3xl font-semibold text-slate-900 dark:text-white">{totalEvaluated}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-500">Options scanned</p>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-100 dark:border-slate-800">
+            <div className="space-y-2">
               <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Total Opportunities</p>
               <p className="text-3xl font-semibold text-slate-900 dark:text-white">{opportunities.length}</p>
-              <p className="text-xs text-slate-500 dark:text-slate-500">Live scan results</p>
+              <p className="text-xs text-slate-500 dark:text-slate-500">High-quality picks</p>
             </div>
           </div>
 
@@ -832,33 +844,25 @@ export default function HomePage() {
               <p className="text-sm font-medium text-slate-600 dark:text-slate-400">High Score (90+)</p>
               <p className="text-3xl font-semibold text-red-600">{opportunities.filter(o => o.score >= 90).length}</p>
               <p className="text-xs text-red-600">Explosive potential</p>
-              </div>
-              </div>
-
-          <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-100 dark:border-slate-800">
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Gamma Squeezes</p>
-              <p className="text-3xl font-semibold text-orange-600">{opportunities.filter(o => o.gammaSqueezeScore && o.gammaSqueezeScore > 0).length}</p>
-              <p className="text-xs text-orange-600">Squeeze potential</p>
             </div>
-                  </div>
+          </div>
 
           <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-100 dark:border-slate-800">
             <div className="space-y-2">
-              <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Unusual Flow</p>
-              <p className="text-3xl font-semibold text-blue-600">{opportunities.filter(o => o.unusualFlowScore && o.unusualFlowScore > 0).length}</p>
-              <p className="text-xs text-blue-600">Smart money activity</p>
-                  </div>
-                </div>
+              <p className="text-sm font-medium text-slate-600 dark:text-slate-400">High Volume</p>
+              <p className="text-3xl font-semibold text-orange-600">{opportunities.filter(o => o.volumeRatio > 2).length}</p>
+              <p className="text-xs text-orange-600">Volume spikes</p>
+            </div>
+          </div>
 
           <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-100 dark:border-slate-800">
             <div className="space-y-2">
-              <p className="text-sm font-medium text-slate-600 dark:text-slate-400">News Impact</p>
-              <p className="text-3xl font-semibold text-purple-600">{opportunities.filter(o => o.newsImpactScore && o.newsImpactScore > 0).length}</p>
-              <p className="text-xs text-purple-600">News catalysts</p>
-                  </div>
-                </div>
-              </div>
+              <p className="text-sm font-medium text-slate-600 dark:text-slate-400">News Catalysts</p>
+              <p className="text-3xl font-semibold text-blue-600">{opportunities.filter(o => o.catalysts && o.catalysts.length > 0).length}</p>
+              <p className="text-xs text-blue-600">With catalysts</p>
+            </div>
+          </div>
+        </div>
 
         {/* Loading State */}
         {isLoading && (

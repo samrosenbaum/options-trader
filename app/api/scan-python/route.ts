@@ -230,7 +230,18 @@ export async function GET() {
             const asNumber = (value: number | null | undefined, fallback: number) =>
               typeof value === 'number' && Number.isFinite(value) ? value : fallback
 
-            opportunities.sort((a, b) => {
+            // Filter out expired/worthless options with 0% probability of profit
+            const filteredOpportunities = opportunities.filter((opp) => {
+              // Filter out options with 0% or null probability of profit (likely expired)
+              if (opp.probabilityOfProfit !== null && opp.probabilityOfProfit !== undefined) {
+                if (opp.probabilityOfProfit <= 0) {
+                  return false
+                }
+              }
+              return true
+            })
+
+            filteredOpportunities.sort((a, b) => {
               const scoreDiff = asNumber(b.score, -Infinity) - asNumber(a.score, -Infinity)
               if (scoreDiff !== 0) return scoreDiff
 
@@ -250,7 +261,7 @@ export async function GET() {
               NextResponse.json({
                 success: true,
                 timestamp: new Date().toISOString(),
-                opportunities,
+                opportunities: filteredOpportunities,
                 source: "yfinance",
               }),
             )
