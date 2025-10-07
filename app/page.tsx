@@ -775,7 +775,7 @@ export default function HomePage() {
               <div className="w-5 h-5 border-2 border-slate-300 border-t-slate-900 dark:border-slate-600 dark:border-t-white rounded-full animate-spin"></div>
               <span className="font-medium">Scanning for opportunities...</span>
             </div>
-              </div>
+          </div>
         )}
 
         {/* Empty State */}
