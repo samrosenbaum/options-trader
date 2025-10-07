@@ -7,7 +7,7 @@ export async function GET() {
   try {
     const { spawn } = await import("child_process")
 
-    return new Promise((resolve) => {
+    return await new Promise<NextResponse>((resolve) => {
       const python = spawn("./venv/bin/python3", ["scripts/fetch_market_news.py"])
 
       let dataString = ""
