@@ -42,6 +42,43 @@ export interface OpportunityScore {
   breakevenPrice?: number | null
 }
 
+interface ProfitProbabilityMetadata {
+  probability?: number
+  explanation?: string
+  required_move_pct?: number
+  breakeven_price?: number
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null
+}
+
+function parseProfitProbabilityMetadata(value: unknown): ProfitProbabilityMetadata | undefined {
+  if (!isRecord(value)) {
+    return undefined
+  }
+
+  const metadata: ProfitProbabilityMetadata = {}
+
+  if (typeof value.probability === "number") {
+    metadata.probability = value.probability
+  }
+
+  if (typeof value.explanation === "string") {
+    metadata.explanation = value.explanation
+  }
+
+  if (typeof value.required_move_pct === "number") {
+    metadata.required_move_pct = value.required_move_pct
+  }
+
+  if (typeof value.breakeven_price === "number") {
+    metadata.breakeven_price = value.breakeven_price
+  }
+
+  return metadata
+}
+
 interface SampleOption {
   type: "call" | "put"
   strike: number
@@ -245,13 +282,13 @@ function mergeSignalWithDraft(signal: Signal, draftMap: Map<string, OpportunityS
   const key = `${signal.contract.symbol}|${signal.contract.type}|${signal.contract.strike}|${signal.contract.expiration}`
   const draft = draftMap.get(key)
   const metadata = signal.metadata || {}
-  
+
   // Extract profit probability from metadata
-  const profitProbability = metadata.profit_probability as any
-  const probabilityOfProfit = profitProbability?.probability != null 
+  const profitProbability = parseProfitProbabilityMetadata(metadata.profit_probability)
+  const probabilityOfProfit = profitProbability?.probability != null
     ? Number(profitProbability.probability) * 100  // Convert to percentage
     : null
-  const profitProbabilityExplanation = profitProbability?.explanation as string | undefined
+  const profitProbabilityExplanation = profitProbability?.explanation
   const breakevenMovePercent = profitProbability?.required_move_pct != null
     ? Number(profitProbability.required_move_pct) * 100  // Convert to percentage
     : null

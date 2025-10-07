@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import RealTimeProgress from '../components/real-time-progress'
 import LiveTicker from '../components/live-ticker'
 
@@ -26,6 +26,14 @@ interface MoveAnalysis {
   thresholds: MoveAnalysisThreshold[]
   drivers: string[]
 }
+
+type OpportunitySortOption =
+  | 'promising'
+  | 'riskReward'
+  | 'probability'
+  | 'maxReturn'
+  | 'safety'
+  | 'expiration'
 
 interface Opportunity {
   symbol: string
@@ -143,6 +151,7 @@ export default function HomePage() {
   const [activeTab, setActiveTab] = useState<'options' | 'crypto'>('options')
   const [cryptoAlerts, setCryptoAlerts] = useState<CryptoAlert[]>([])
   const [cryptoLoading, setCryptoLoading] = useState(false)
+  const [sortOption, setSortOption] = useState<OpportunitySortOption>('promising')
 
   const fetchOpportunities = async () => {
     try {
@@ -193,7 +202,7 @@ export default function HomePage() {
 
   useEffect(() => {
     fetchOpportunities()
-    
+
     if (autoRefresh && isMarketOpen()) {
       const interval = setInterval(() => {
         if (isMarketOpen()) {
@@ -203,6 +212,83 @@ export default function HomePage() {
       return () => clearInterval(interval)
     }
   }, [autoRefresh])
+
+  const sortedOpportunities = useMemo(() => {
+    if (opportunities.length === 0) {
+      return opportunities
+    }
+
+    const ranked = [...opportunities]
+    const toNumber = (value: number | null | undefined, fallback: number) =>
+      typeof value === 'number' && Number.isFinite(value) ? value : fallback
+
+    const comparePromising = (a: Opportunity, b: Opportunity) => {
+      const scoreDiff = toNumber(b.score, -Infinity) - toNumber(a.score, -Infinity)
+      if (scoreDiff !== 0) return scoreDiff
+
+      const riskDiff = toNumber(b.riskRewardRatio, -Infinity) - toNumber(a.riskRewardRatio, -Infinity)
+      if (riskDiff !== 0) return riskDiff
+
+      const probDiff =
+        toNumber(b.probabilityOfProfit, -Infinity) - toNumber(a.probabilityOfProfit, -Infinity)
+      if (probDiff !== 0) return probDiff
+
+      return toNumber(b.potentialReturn, -Infinity) - toNumber(a.potentialReturn, -Infinity)
+    }
+
+    const compareRiskReward = (a: Opportunity, b: Opportunity) => {
+      const diff = toNumber(b.riskRewardRatio, -Infinity) - toNumber(a.riskRewardRatio, -Infinity)
+      if (diff !== 0) return diff
+      return comparePromising(a, b)
+    }
+
+    const compareProbability = (a: Opportunity, b: Opportunity) => {
+      const diff =
+        toNumber(b.probabilityOfProfit, -Infinity) - toNumber(a.probabilityOfProfit, -Infinity)
+      if (diff !== 0) return diff
+      return comparePromising(a, b)
+    }
+
+    const compareMaxReturn = (a: Opportunity, b: Opportunity) => {
+      const diff = toNumber(b.maxReturn, -Infinity) - toNumber(a.maxReturn, -Infinity)
+      if (diff !== 0) return diff
+      return comparePromising(a, b)
+    }
+
+    const compareSafety = (a: Opportunity, b: Opportunity) => {
+      const diff = toNumber(a.maxLossPercent, Infinity) - toNumber(b.maxLossPercent, Infinity)
+      if (diff !== 0) return diff
+      return comparePromising(a, b)
+    }
+
+    const compareExpiration = (a: Opportunity, b: Opportunity) => {
+      const diff = toNumber(a.daysToExpiration, Infinity) - toNumber(b.daysToExpiration, Infinity)
+      if (diff !== 0) return diff
+      return comparePromising(a, b)
+    }
+
+    const comparatorMap: Record<OpportunitySortOption, (a: Opportunity, b: Opportunity) => number> = {
+      promising: comparePromising,
+      riskReward: compareRiskReward,
+      probability: compareProbability,
+      maxReturn: compareMaxReturn,
+      safety: compareSafety,
+      expiration: compareExpiration,
+    }
+
+    const comparator = comparatorMap[sortOption] ?? comparePromising
+    ranked.sort(comparator)
+    return ranked
+  }, [opportunities, sortOption])
+
+  const availableSortOptions: Array<{ value: OpportunitySortOption; label: string }> = [
+    { value: 'promising', label: 'Most Promising' },
+    { value: 'riskReward', label: 'Highest Asymmetry' },
+    { value: 'probability', label: 'Highest Win Rate' },
+    { value: 'maxReturn', label: 'Highest Max Return' },
+    { value: 'safety', label: 'Lowest Risk' },
+    { value: 'expiration', label: 'Soonest Expiration' },
+  ]
 
   const getRiskColor = (riskLevel: string) => {
     switch (riskLevel) {
@@ -808,17 +894,39 @@ export default function HomePage() {
         {/* Opportunities Grid - Fabric-inspired card design */}
         {!isLoading && opportunities.length > 0 && (
           <div className="space-y-8">
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">
-                Trading Opportunities
-              </h2>
-              <span className="text-sm text-slate-500 dark:text-slate-400">
-                {opportunities.length} opportunities found
-              </span>
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
+                <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">
+                  Trading Opportunities
+                </h2>
+                <span className="text-sm text-slate-500 dark:text-slate-400">
+                  {sortedOpportunities.length} opportunities found
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <label
+                  htmlFor="opportunity-sort"
+                  className="text-sm font-medium text-slate-600 dark:text-slate-300"
+                >
+                  Sort by
+                </label>
+                <select
+                  id="opportunity-sort"
+                  value={sortOption}
+                  onChange={(event) => setSortOption(event.target.value as OpportunitySortOption)}
+                  className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:focus:border-slate-500 dark:focus:ring-white/10"
+                >
+                  {availableSortOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             <div className="grid gap-6">
-              {opportunities.map((opp, index) => {
+              {sortedOpportunities.map((opp, index) => {
                 const scenario = calculateInvestmentScenario(opp, investmentAmount)
                 const isPerContractView = scenario.basis === 'perContract'
                 const potentialReturnDisplay = isPerContractView
