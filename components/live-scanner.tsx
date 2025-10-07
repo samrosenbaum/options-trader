@@ -7,6 +7,13 @@ import { Button } from "@/components/ui/button"
 import { TrendingUp, TrendingDown, RefreshCw, Zap, Target } from "lucide-react"
 import type { OpportunityScore } from "@/lib/api/ai-analyzer"
 
+const currencyFormatter = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+})
+
 export function LiveScanner() {
   const [opportunities, setOpportunities] = useState<OpportunityScore[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -145,8 +152,10 @@ export function LiveScanner() {
 
                     <div className="mt-3 grid grid-cols-3 gap-4 text-sm">
                       <div>
-                        <p className="text-muted-foreground">Potential Return</p>
-                        <p className="font-mono font-semibold text-bull">${opp.potentialReturn.toFixed(2)}</p>
+                        <p className="text-muted-foreground">Potential Return (per contract)</p>
+                        <p className="font-mono font-semibold text-bull">
+                          {currencyFormatter.format(opp.potentialReturn)}
+                        </p>
                       </div>
                       <div>
                         <p className="text-muted-foreground">Max Loss</p>
