@@ -49,6 +49,15 @@ python3 scripts/fetch_market_news.py
 python3 scripts/get_stock_quotes.py AAPL,MSFT,NVDA
 \`\`\`
 
+## Controlling the Scanner Symbol Universe
+
+The bulk options fetcher combines a core list of liquid tickers with any symbols defined in your environment's watchlists. You can control how many of these names are requested in two ways:
+
+- **Configuration**: Set `fetcher.max_priority_symbols` in `config/dev.yaml`, `config/prod.yaml`, or a custom environment file. Use `null` to scan the full list or provide an integer to cap requests (e.g. `max_priority_symbols: 50`).
+- **Command line override**: When running `scripts/smart_options_scanner.py`, pass `--max-symbols <N>` to temporarily limit the scan. Omit the flag or pass `0` to use the configured/default behaviour.
+
+This makes it easy to widen the search universe in research environments while applying tighter limits in production to reduce load on upstream data providers.
+
 ## How It Works
 
 ### Data Sources (100% Free)
