@@ -1,5 +1,8 @@
 import { Opportunity } from '../lib/types/opportunity'
 
+const isFiniteNumber = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isFinite(value)
+
 type InvestmentScenario = {
   contractCost: number
   contractsToBuy: number
@@ -23,7 +26,11 @@ type InvestmentScenario = {
   }>
 }
 
-const formatCurrency = (amount: number) => {
+const formatCurrency = (amount: number | null | undefined) => {
+  if (!isFiniteNumber(amount)) {
+    return '—'
+  }
+
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
@@ -33,10 +40,19 @@ const formatCurrency = (amount: number) => {
 }
 
 const formatPercent = (value: number | null | undefined, digits = 0) => {
-  if (value === null || value === undefined || Number.isNaN(value)) {
+  if (!isFiniteNumber(value)) {
     return '—'
   }
+
   return `${value.toFixed(digits)}%`
+}
+
+const safeToFixed = (value: number | null | undefined, digits = 1) => {
+  if (!isFiniteNumber(value)) {
+    return null
+  }
+
+  return value.toFixed(digits)
 }
 
 const getRiskColor = (riskLevel: string) => {
@@ -472,6 +488,13 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
   const maxLossDisplay = isPerContractView
     ? scenario.maxLossAmountPerContract
     : scenario.maxLossAmount
+  const riskRewardRatioRaw = isFiniteNumber(opportunity.riskRewardRatio)
+    ? (opportunity.riskRewardRatio as number)
+    : null
+  const riskRewardRatioLabel = riskRewardRatioRaw !== null ? riskRewardRatioRaw.toFixed(1) : null
+  const showAsymmetricEdge = riskRewardRatioRaw !== null && riskRewardRatioRaw >= 3
+  const maxLossPercentLabel = safeToFixed(opportunity.maxLossPercent, 1)
+  const maxLossWarning = `Maximum loss: ${formatCurrency(opportunity.maxLossAmount)}${maxLossPercentLabel ? ` (${maxLossPercentLabel}% of investment)` : ''}. Options can expire worthless, and you could lose your entire investment.`
 
   return (
     <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-100 dark:border-slate-800 hover:border-slate-200 dark:hover:border-slate-700 transition-colors">
@@ -498,9 +521,9 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
                   NEWS: {opportunity.newsImpactScore}
                 </span>
               )}
-              {opportunity.riskRewardRatio && opportunity.riskRewardRatio >= 3 && (
+              {showAsymmetricEdge && (
                 <span className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-xl text-xs font-semibold">
-                  ASYM EDGE {opportunity.riskRewardRatio.toFixed(1)}x
+                  ASYM EDGE {riskRewardRatioLabel}x
                 </span>
               )}
               {opportunity.probabilityOfProfit !== null && opportunity.probabilityOfProfit >= 55 && (
@@ -703,10 +726,7 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
                 </div>
                 <div>
                   <div className="font-medium text-amber-800 dark:text-amber-200 mb-1">Risk Warning</div>
-                  <div className="text-sm text-amber-700 dark:text-amber-300">
-                    Maximum loss: {formatCurrency(opportunity.maxLossAmount)} ({opportunity.maxLossPercent.toFixed(1)}% of investment).
-                    Options can expire worthless, and you could lose your entire investment.
-                  </div>
+                  <div className="text-sm text-amber-700 dark:text-amber-300">{maxLossWarning}</div>
                 </div>
               </div>
             </div>
@@ -717,22 +737,22 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
         <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
           <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Potential Return</div>
-          <div className="text-lg font-semibold text-emerald-600">{opportunity.potentialReturn.toFixed(1)}%</div>
+          <div className="text-lg font-semibold text-emerald-600">{formatPercent(opportunity.potentialReturn, 1)}</div>
           <div className="text-xs text-slate-500 dark:text-slate-400">≈ {formatCurrency(potentialReturnDisplay)}</div>
         </div>
         <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
           <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Max Return</div>
-          <div className="text-lg font-semibold text-emerald-600">{opportunity.maxReturn.toFixed(1)}%</div>
+          <div className="text-lg font-semibold text-emerald-600">{formatPercent(opportunity.maxReturn, 1)}</div>
           <div className="text-xs text-slate-500 dark:text-slate-400">≈ {formatCurrency(maxReturnDisplay)}</div>
         </div>
         <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
           <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Max Loss</div>
-          <div className="text-lg font-semibold text-red-600">{opportunity.maxLossPercent.toFixed(1)}%</div>
+          <div className="text-lg font-semibold text-red-600">{formatPercent(opportunity.maxLossPercent, 1)}</div>
           <div className="text-xs text-slate-500 dark:text-slate-400">≈ {formatCurrency(maxLossDisplay)}</div>
-          {opportunity.riskRewardRatio && opportunity.riskRewardRatio >= 3 && (
+          {showAsymmetricEdge && (
             <div className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-emerald-600">
               <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              {opportunity.riskRewardRatio.toFixed(1)}x upside vs risk
+              {riskRewardRatioLabel}x upside vs risk
             </div>
           )}
         </div>
@@ -749,10 +769,10 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
         </div>
         <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
           <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Reward-to-Risk</div>
-          <div className={`text-lg font-semibold ${opportunity.riskRewardRatio && opportunity.riskRewardRatio >= 3 ? 'text-emerald-600' : 'text-slate-900 dark:text-white'}`}>
-            {opportunity.riskRewardRatio ? `${opportunity.riskRewardRatio.toFixed(1)}x` : '—'}
+          <div className={`text-lg font-semibold ${showAsymmetricEdge ? 'text-emerald-600' : 'text-slate-900 dark:text-white'}`}>
+            {riskRewardRatioLabel ? `${riskRewardRatioLabel}x` : '—'}
           </div>
-          {opportunity.riskRewardRatio && opportunity.riskRewardRatio >= 3 && (
+          {showAsymmetricEdge && (
             <div className="text-xs text-emerald-600">Asymmetric payoff</div>
           )}
         </div>
