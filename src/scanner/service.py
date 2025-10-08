@@ -14,6 +14,7 @@ import pandas as pd
 
 from scripts.bulk_options_fetcher import BulkOptionsFetcher
 from src.config import AppSettings, get_settings
+from src.scanner.iv_rank_history import IVRankHistory
 from src.scanner.universe import build_scan_universe
 from src.validation import OptionsDataValidator, DataQuality
 
@@ -59,6 +60,13 @@ class SmartOptionsScanner:
         self.cache_file = "options_cache.json"
         self.last_fetch_time: datetime | None = None
         self.validator = OptionsDataValidator()
+        sqlite_path: Optional[str] = None
+        try:
+            sqlite_settings = settings.storage.require_sqlite()
+            sqlite_path = sqlite_settings.path
+        except Exception:
+            sqlite_path = None
+        self.iv_history = IVRankHistory(sqlite_path)
 
     @property
     def batch_size(self) -> int:
@@ -398,11 +406,27 @@ class SmartOptionsScanner:
         return float(option["strike"] - option["lastPrice"])
 
     def calculate_iv_rank(self, option: pd.Series) -> float:
-        """Calculate IV percentage (not true IV rank - would need 52w IV data)."""
+        """Calculate IV rank using a 52-week percentile of historical observations."""
 
-        if pd.notna(option["impliedVolatility"]):
-            return float(min(100, option["impliedVolatility"] * 100))
-        return 50.0
+        raw_iv = option.get("impliedVolatility")
+        if pd.isna(raw_iv):
+            return 50.0
+
+        try:
+            current_iv = float(raw_iv)
+        except (TypeError, ValueError):
+            return 50.0
+
+        if not isfinite(current_iv) or current_iv <= 0:
+            return 50.0
+
+        symbol = str(option.get("symbol", ""))
+        percentile = self.iv_history.percentile(symbol, current_iv)
+        if percentile is not None and isfinite(percentile):
+            return float(percentile)
+
+        # Fallback to simple scaling when no history is available.
+        return float(max(0.0, min(100.0, current_iv * 100.0)))
 
     def calculate_probability_score(self, option: pd.Series, metrics: Mapping[str, float]) -> float:
         """Calculate real probability of profit using statistical methods."""

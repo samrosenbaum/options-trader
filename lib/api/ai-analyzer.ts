@@ -89,9 +89,49 @@ interface SampleOption {
   delta: number
 }
 
-function calculateIVRank(currentIV: number): number {
-  const typicalIVRange = { low: 20, high: 80 }
-  return ((currentIV - typicalIVRange.low) / (typicalIVRange.high - typicalIVRange.low)) * 100
+function normalizeImpliedVol(value: number): number {
+  if (!Number.isFinite(value)) {
+    return 0
+  }
+  const absolute = Math.abs(value)
+  return absolute > 1 ? absolute / 100 : absolute
+}
+
+function buildSyntheticIvHistory(option: SampleOption, context: MarketContext): number[] {
+  const iv = normalizeImpliedVol(option.iv)
+  const realized = Math.max(0.05, Math.min(0.9, Math.abs(context.volatility) / 100))
+  const low = Math.max(0.05, Math.min(iv * 0.6, realized * 2))
+  const high = Math.max(iv * 1.4, realized * 6, low + 0.05)
+  const steps = 21
+  const history: number[] = []
+
+  for (let i = 0; i < steps; i += 1) {
+    const fraction = i / (steps - 1)
+    const seasonal = Math.sin(fraction * Math.PI * 2) * iv * 0.15
+    const baseline = low + (high - low) * fraction
+    history.push(Number(Math.max(0.05, baseline + seasonal).toFixed(4)))
+  }
+
+  return history
+}
+
+function calculateIVRank(currentIV: number, history?: number[]): number {
+  const iv = normalizeImpliedVol(currentIV)
+  if (iv <= 0) {
+    return 0
+  }
+
+  const normalizedHistory = (history ?? []).map(normalizeImpliedVol).filter((value) => value > 0)
+  if (normalizedHistory.length === 0) {
+    return Number(Math.max(0, Math.min(100, iv * 100)).toFixed(2))
+  }
+
+  const sorted = normalizedHistory.slice().sort((a, b) => a - b)
+  const below = sorted.filter((value) => value < iv).length
+  const equal = sorted.filter((value) => value === iv).length
+  const percentile = ((below + 0.5 * equal) / sorted.length) * 100
+
+  return Number(Math.max(0, Math.min(100, percentile)).toFixed(2))
 }
 
 function calculatePotentialReturn(
@@ -169,7 +209,8 @@ export function buildOpportunity(
   const greeks = computeGreeks(option, context.price)
   const avgSentiment = context.news.reduce((sum, n) => sum + n.sentiment, 0) / Math.max(context.news.length, 1)
   const volumeRatio = option.volume / Math.max(option.openInterest, 1)
-  const ivRank = calculateIVRank(option.iv)
+  const ivHistory = buildSyntheticIvHistory(option, context)
+  const ivRank = calculateIVRank(option.iv, ivHistory)
   const potentialReturn = calculatePotentialReturn(option.type, context.price, option.strike, mid)
   const breakeven = option.type === "call" ? option.strike + mid : option.strike - mid
   const moneyness = (context.price - option.strike) / Math.max(context.price, 1)
@@ -225,9 +266,16 @@ export function buildOpportunity(
     reasoning,
     riskLevel,
     potentialReturn: Number(potentialReturn.toFixed(2)),
-    maxLoss: Number(mid.toFixed(2)),
+    maxLoss: Number((mid * 100).toFixed(2)),
     breakeven: Number(breakeven.toFixed(2)),
     ivRank: Number(ivRank.toFixed(2)),
+    ivHistoryWindow: ivHistory.length,
+    ivRange: {
+      current: Number(option.iv.toFixed(2)),
+      normalized: Number(normalizeImpliedVol(option.iv).toFixed(4)),
+      min: Number((Math.min(...ivHistory) * 100).toFixed(2)),
+      max: Number((Math.max(...ivHistory) * 100).toFixed(2)),
+    },
     volumeRatio: Number(volumeRatio.toFixed(2)),
     newsImpact: Number(avgSentiment.toFixed(2)),
     heuristicsScore,
@@ -243,6 +291,10 @@ export function buildOpportunity(
       volume: context.volume,
       newsImpact: avgSentiment,
       volumeRatio,
+      iv_rank: ivRank,
+      iv_history_window: ivHistory.length,
+      iv_history_min: Math.min(...ivHistory),
+      iv_history_max: Math.max(...ivHistory),
     },
     metadata,
   }
