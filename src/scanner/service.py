@@ -596,7 +596,6 @@ class SmartOptionsScanner:
                 "totalEvaluated": 0,
                 "symbols": [],
                 "requestedSymbols": list(symbols),
-                "chainsBySymbol": {},
                 "source": "adapter",
                 "symbolLimit": self.symbol_limit,
                 "rotationState": dict(self.rotation_state or {}),
@@ -618,7 +617,7 @@ class SmartOptionsScanner:
             "totalEvaluated": int(len(options_data)),
             "symbols": list(chains_by_symbol.keys()),
             "requestedSymbols": list(symbols),
-            "chainsBySymbol": chains_by_symbol,
+            # Removed chainsBySymbol - causes 10MB+ JSON responses that overflow stdout buffer
             "source": "adapter",
             "symbolLimit": self.symbol_limit,
             "opportunityCount": len(opportunities),
@@ -676,7 +675,6 @@ def run_deep_scan(
 
     settings = get_settings()
     aggregated_opportunities: List[Dict[str, Any]] = []
-    aggregated_chains: Dict[str, List[Mapping[str, Any]]] = {}
     batch_metadata: List[Mapping[str, Any]] = []
 
     for index in range(batch_count):
@@ -691,9 +689,6 @@ def run_deep_scan(
                 "totalOptions": result.metadata.get("totalOptions", 0),
             }
         )
-        for symbol, chains in result.metadata.get("chainsBySymbol", {}).items():
-            bucket = aggregated_chains.setdefault(symbol, [])
-            bucket.extend(chains)
 
     def _sort_key(opportunity: Mapping[str, Any]) -> Tuple[float, float]:
         max_return = float(opportunity.get("maxReturn", 0) or 0)
@@ -712,14 +707,25 @@ def run_deep_scan(
             seen_requested.add(upper)
             unique_requested.append(upper)
 
+    # Collect unique symbols from all batches
+    unique_symbols = []
+    seen_symbols: set[str] = set()
+    for meta in batch_metadata:
+        for symbol in meta.get("symbols", []):
+            upper = str(symbol).upper()
+            if upper in seen_symbols:
+                continue
+            seen_symbols.add(upper)
+            unique_symbols.append(upper)
+
     metadata: Dict[str, Any] = {
         "fetchedAt": datetime.now(timezone.utc).isoformat(),
         "symbolCount": len(unique_requested),
         "totalOptions": sum(meta.get("totalOptions", 0) for meta in batch_metadata),
         "totalEvaluated": sum(meta.get("totalOptions", 0) for meta in batch_metadata),
-        "symbols": list(aggregated_chains.keys()),
+        "symbols": unique_symbols,
         "requestedSymbols": unique_requested,
-        "chainsBySymbol": aggregated_chains,
+        # Removed chainsBySymbol - causes 10MB+ JSON responses that overflow stdout buffer
         "source": "adapter",
         "symbolLimit": max_symbols or settings.scanner.batch_size,
         "opportunityCount": len(aggregated_opportunities),

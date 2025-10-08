@@ -52,7 +52,7 @@ watchlists:
     - APRN
 scanner:
   limit_per_symbol: 3
-  batch_size: 25
+  batch_size: null  # Scan all symbols every time for comprehensive coverage
   rotation_mode: round_robin
 fetcher:
   max_priority_symbols: null
