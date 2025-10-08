@@ -100,3 +100,20 @@ def test_analyzer_handles_multiindex_history():
     signal = analyzer.analyze("TSLA")
 
     assert signal.classification in {"watchlist", "elevated_swing_risk", "calm"}
+
+
+def test_analyzer_normalizes_lowercase_columns():
+    def lowercase_fetcher(symbol: str, lookback: str, interval: str) -> pd.DataFrame:  # noqa: ARG001
+        history = build_history()
+        history.columns = [col.lower() for col in history.columns]
+        return history
+
+    analyzer = SwingSignalAnalyzer(
+        price_fetcher=lowercase_fetcher,
+        news_fetcher=fake_news_fetcher,
+        market_fetcher=fake_market_fetcher,
+    )
+
+    signal = analyzer.analyze("NVDA")
+
+    assert signal.classification in {"watchlist", "elevated_swing_risk", "calm"}

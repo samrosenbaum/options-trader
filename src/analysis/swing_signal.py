@@ -354,6 +354,28 @@ class SwingSignalAnalyzer:
 
         # Ensure the columns are simple strings (xs can return Index with name)
         history.columns = [str(col) for col in history.columns]
+
+        # Some data sources return lowercase or underscored OHLCV headers.
+        # Normalize these so downstream checks can rely on the canonical names.
+        canonical = {
+            "open": "Open",
+            "high": "High",
+            "low": "Low",
+            "close": "Close",
+            "adjclose": "Adj Close",
+            "adj_close": "Adj Close",
+            "volume": "Volume",
+        }
+
+        rename_map = {}
+        for column in history.columns:
+            key = column.lower().replace(" ", "").replace("_", "")
+            if key in canonical:
+                rename_map[column] = canonical[key]
+
+        if rename_map:
+            history = history.rename(columns=rename_map)
+
         return history
 
     @staticmethod
