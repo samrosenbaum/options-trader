@@ -841,13 +841,13 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
       </div>
 
       {/* Trade Summary */}
-      {opportunity.tradeSummary && (
+      {opportunity.tradeSummary ? (
         <div className="mb-6 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 border border-indigo-200 dark:border-indigo-800 rounded-2xl p-4">
           <div className="text-sm font-medium text-slate-900 dark:text-white leading-relaxed">
             {opportunity.tradeSummary}
           </div>
         </div>
-      )}
+      ) : null}
 
       {/* Data Quality Badge */}
       {opportunity._dataQuality && (

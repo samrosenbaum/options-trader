@@ -48,6 +48,7 @@ interface SwingSignalMetadata extends Record<string, unknown> {
   lookback?: string
   interval?: string
   atr_ratio?: number
+  summary?: string
   momentum_zscore?: number
   volume_zscore?: number
   news_sample?: SwingSignalNewsHeadline[]
@@ -76,6 +77,7 @@ interface Opportunity {
   strike: number
   expiration: string
   premium: number
+  tradeSummary?: string
   stockPrice: number
   score: number
   confidence: number
