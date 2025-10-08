@@ -181,6 +181,161 @@ type InvestmentScenario = {
   }>
 }
 
+function ProfitLossSlider({
+  opportunity,
+  investmentAmount,
+  contractsToTrade = 1
+}: {
+  opportunity: Opportunity
+  investmentAmount: number
+  contractsToTrade?: number
+}) {
+  const [stockPricePercent, setStockPricePercent] = useState(0)
+
+  const stockPrice = opportunity.stockPrice
+  const strike = opportunity.strike
+  const premium = opportunity.premium
+  const optionType = opportunity.optionType
+  const breakevenPrice = opportunity.breakevenPrice || (
+    optionType === 'call' ? strike + premium : strike - premium
+  )
+
+  // Calculate the range for the slider (±50% or ±2x expected move, whichever is larger)
+  const expectedMove = opportunity.moveAnalysis?.expectedMovePercent || 20
+  const maxRange = Math.max(50, expectedMove * 2)
+
+  // Calculate target stock price based on slider percentage
+  const targetStockPrice = stockPrice * (1 + stockPricePercent / 100)
+  const dollarMove = targetStockPrice - stockPrice
+
+  // Calculate option value at target price
+  let optionValue = 0
+  if (optionType === 'call') {
+    optionValue = Math.max(0, targetStockPrice - strike)
+  } else {
+    optionValue = Math.max(0, strike - targetStockPrice)
+  }
+
+  // Calculate P/L
+  const costBasis = premium * 100 * contractsToTrade
+  const currentValue = optionValue * 100 * contractsToTrade
+  const profitLoss = currentValue - costBasis
+  const profitLossPercent = (profitLoss / costBasis) * 100
+
+  // Determine color based on profit/loss
+  const getColor = () => {
+    if (profitLoss > 0) return 'text-emerald-600'
+    if (profitLoss < 0) return 'text-red-600'
+    return 'text-slate-600'
+  }
+
+  const getBgColor = () => {
+    if (profitLoss > 0) return 'bg-emerald-100 dark:bg-emerald-900/30'
+    if (profitLoss < 0) return 'bg-red-100 dark:bg-red-900/30'
+    return 'bg-slate-100 dark:bg-slate-800'
+  }
+
+  // Calculate breakeven percentage
+  const breakevenPercent = ((breakevenPrice - stockPrice) / stockPrice) * 100
+
+  return (
+    <div className="bg-white dark:bg-slate-700 rounded-xl p-5 mb-4 border-2 border-slate-200 dark:border-slate-600">
+      <div className="mb-4">
+        <div className="flex items-center justify-between mb-2">
+          <h5 className="font-semibold text-slate-900 dark:text-white">Interactive Profit/Loss Explorer</h5>
+          <button
+            onClick={() => setStockPricePercent(0)}
+            className="text-xs px-2 py-1 bg-slate-100 dark:bg-slate-600 text-slate-600 dark:text-slate-300 rounded hover:bg-slate-200 dark:hover:bg-slate-500"
+          >
+            Reset
+          </button>
+        </div>
+        <p className="text-xs text-slate-500 dark:text-slate-400">
+          Move the slider to explore how stock price changes affect your profit/loss
+        </p>
+      </div>
+
+      {/* Slider */}
+      <div className="relative mb-6">
+        <input
+          type="range"
+          min={-maxRange}
+          max={maxRange}
+          step={0.5}
+          value={stockPricePercent}
+          onChange={(e) => setStockPricePercent(parseFloat(e.target.value))}
+          className="w-full h-2 bg-slate-200 dark:bg-slate-600 rounded-lg appearance-none cursor-pointer slider"
+          style={{
+            background: `linear-gradient(to right,
+              #ef4444 0%,
+              #f59e0b ${((breakevenPercent + maxRange) / (maxRange * 2)) * 100}%,
+              #10b981 ${((breakevenPercent + maxRange) / (maxRange * 2)) * 100}%,
+              #10b981 100%)`
+          }}
+        />
+
+        {/* Breakeven marker */}
+        <div
+          className="absolute top-0 w-0.5 h-2 bg-slate-900 dark:bg-white"
+          style={{
+            left: `${((breakevenPercent + maxRange) / (maxRange * 2)) * 100}%`,
+            transform: 'translateX(-50%)'
+          }}
+        />
+        <div
+          className="absolute -bottom-5 text-xs text-slate-600 dark:text-slate-400 whitespace-nowrap"
+          style={{
+            left: `${((breakevenPercent + maxRange) / (maxRange * 2)) * 100}%`,
+            transform: 'translateX(-50%)'
+          }}
+        >
+          BE
+        </div>
+      </div>
+
+      {/* Results */}
+      <div className={`${getBgColor()} rounded-lg p-4 space-y-3`}>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <div className="text-xs text-slate-600 dark:text-slate-400 mb-1">Stock Price Move</div>
+            <div className="text-lg font-bold text-slate-900 dark:text-white">
+              {stockPricePercent >= 0 ? '+' : ''}{stockPricePercent.toFixed(1)}%
+            </div>
+            <div className="text-xs text-slate-500 dark:text-slate-400">
+              ${stockPrice.toFixed(2)} → ${targetStockPrice.toFixed(2)} ({dollarMove >= 0 ? '+' : ''}${dollarMove.toFixed(2)})
+            </div>
+          </div>
+
+          <div>
+            <div className="text-xs text-slate-600 dark:text-slate-400 mb-1">Profit/Loss</div>
+            <div className={`text-lg font-bold ${getColor()}`}>
+              {profitLoss >= 0 ? '+' : ''}${profitLoss.toFixed(2)}
+            </div>
+            <div className={`text-xs ${getColor()}`}>
+              {profitLossPercent >= 0 ? '+' : ''}{profitLossPercent.toFixed(1)}% return
+            </div>
+          </div>
+        </div>
+
+        <div className="pt-2 border-t border-slate-300 dark:border-slate-600">
+          <div className="flex justify-between text-xs">
+            <span className="text-slate-600 dark:text-slate-400">Option Value</span>
+            <span className="font-semibold text-slate-900 dark:text-white">
+              ${optionValue.toFixed(2)}/share (${currentValue.toFixed(2)} total)
+            </span>
+          </div>
+          <div className="flex justify-between text-xs mt-1">
+            <span className="text-slate-600 dark:text-slate-400">Cost Basis</span>
+            <span className="font-semibold text-slate-900 dark:text-white">
+              ${costBasis.toFixed(2)}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function HomePage() {
   const [opportunities, setOpportunities] = useState<Opportunity[]>([])
   const [totalEvaluated, setTotalEvaluated] = useState(0)
@@ -344,6 +499,15 @@ export default function HomePage() {
 
     const comparator = comparatorMap[sortOption] ?? comparePromising
     ranked.sort(comparator)
+
+    // Debug: Check sorting results
+    if (ranked.length > 0) {
+      console.log('After sorting by', sortOption, '- Top 3:')
+      ranked.slice(0, 3).forEach((opp, i) => {
+        console.log(`  ${i + 1}. ${opp.symbol} - Score: ${opp.score}, RR: ${opp.riskRewardRatio}, Prob: ${opp.probabilityOfProfit}, MaxRet: ${opp.maxReturn}, MaxLoss%: ${opp.maxLossPercent}, DTE: ${opp.daysToExpiration}`)
+      })
+    }
+
     return ranked
   }, [opportunities, sortOption])
 
@@ -708,6 +872,15 @@ export default function HomePage() {
 
           {swingSignal && (
             <>
+              {/* Swing Signal Summary */}
+              {swingSignal.metadata?.summary && (
+                <div className="mb-4 bg-white/70 dark:bg-slate-900/60 border border-indigo-100/60 dark:border-indigo-900/40 rounded-xl px-4 py-3">
+                  <div className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                    {swingSignal.metadata.summary}
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {metrics.map((metric) => (
                   <div key={metric.label} className="bg-white/60 dark:bg-slate-900/60 rounded-xl px-3 py-2">
@@ -1353,6 +1526,15 @@ export default function HomePage() {
                       </div>
                     </div>
 
+                    {/* Trade Summary */}
+                    {opp.tradeSummary && (
+                      <div className="mb-6 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 border border-indigo-200 dark:border-indigo-800 rounded-2xl p-4">
+                        <div className="text-sm font-medium text-slate-900 dark:text-white leading-relaxed">
+                          {opp.tradeSummary}
+                        </div>
+                      </div>
+                    )}
+
                     {opp.recentNews && opp.recentNews.length > 0 && (
                       <div className="mb-6">
                         <h4 className="font-semibold text-slate-900 dark:text-white mb-3">Recent News</h4>
@@ -1480,7 +1662,14 @@ export default function HomePage() {
                           </div>
 
                           <div>
-                            <div className="flex items-center justify-between mb-3">
+                            {/* Interactive Profit/Loss Slider */}
+                            <ProfitLossSlider
+                              opportunity={opp}
+                              investmentAmount={isPerContractView ? scenario.contractCost : scenario.totalCost}
+                              contractsToTrade={isPerContractView ? 1 : scenario.contractsToBuy}
+                            />
+
+                            <div className="flex items-center justify-between mb-3 mt-6">
                               <h5 className="font-medium text-slate-900 dark:text-white">Potential Profits</h5>
                               {isPerContractView && (
                                 <span className="text-xs font-medium text-amber-600 dark:text-amber-300">

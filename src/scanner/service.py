@@ -252,7 +252,7 @@ class SmartOptionsScanner:
                 directional_bias = self.calculate_directional_bias(option, swing_signal)
 
                 # Generate clear trade summary
-                trade_summary = self.generate_trade_summary(option, metrics)
+                trade_summary = self.generate_trade_summary(option, metrics, returns_analysis)
 
                 reasoning = self.generate_reasoning(
                     option,
@@ -397,35 +397,17 @@ class SmartOptionsScanner:
 
         return float(max(0.0, min(100.0, score)))
 
-    def generate_trade_summary(self, option: pd.Series, metrics: Mapping[str, float]) -> str:
-        """Generate a clear, concise summary of what needs to happen for this trade to profit.
+    def generate_trade_summary(self, option: pd.Series, metrics: Mapping[str, float], returns_analysis: List[Dict[str, Any]]) -> str:
+        """Generate a clear, concise summary of what needs to happen for this trade to profit meaningfully.
 
-        Example: "Stock needs to go UP by $5.23 (3.2%) to $165.23 within 5 days to break even"
+        Instead of just showing breakeven, this shows the move needed for a decent profit (first profitable scenario).
+        Example: "Stock needs to go UP by $1.74 (3.0%) to make $164 profit (12% return) within 1 week"
         """
         stock_price = float(option["stockPrice"])
-        strike = float(option["strike"])
-        breakeven_price = metrics["breakevenPrice"]
-        breakeven_move_pct = abs(metrics["breakevenMovePercent"])
+        premium = float(option["lastPrice"])
+        cost_basis = premium * 100
         dte = self.calculate_days_to_expiration(option["expiration"])
         option_type = option["type"].upper()
-
-        # Determine direction
-        if option_type == "CALL":
-            direction = "UP"
-            dollar_move = breakeven_price - stock_price
-        else:
-            direction = "DOWN"
-            dollar_move = stock_price - breakeven_price
-
-        # Format the move amounts
-        dollar_move_abs = abs(dollar_move)
-
-        # Handle cases where we're already past breakeven
-        if dollar_move < 0:
-            if option_type == "CALL":
-                return f"✅ Already {dollar_move_abs:.2f} ({breakeven_move_pct:.1f}%) above breakeven at ${stock_price:.2f}. Breakeven at ${breakeven_price:.2f}."
-            else:
-                return f"✅ Already {dollar_move_abs:.2f} ({breakeven_move_pct:.1f}%) below breakeven at ${stock_price:.2f}. Breakeven at ${breakeven_price:.2f}."
 
         # Time frame description
         if dte == 0:
@@ -438,23 +420,56 @@ class SmartOptionsScanner:
             weeks = dte // 7
             time_desc = f"within {weeks} week{'s' if weeks > 1 else ''}"
 
-        # Build the summary
+        # Find the first scenario with meaningful profit (at least 20% ROI)
+        target_scenario = None
+        for scenario in returns_analysis:
+            move_pct = scenario.get("movePct", 0)  # Numeric move percentage
+            # Skip negative moves (wrong direction)
+            if (option_type == "CALL" and move_pct < 0) or (option_type == "PUT" and move_pct > 0):
+                continue
+
+            roi = scenario["return"]
+            if roi >= 20:  # At least 20% profit
+                target_scenario = scenario
+                break
+
+        if not target_scenario:
+            # Fallback to breakeven if no profitable scenario found
+            breakeven_price = metrics["breakevenPrice"]
+            breakeven_move_pct = abs(metrics["breakevenMovePercent"])
+            direction = "UP" if option_type == "CALL" else "DOWN"
+            dollar_move_abs = abs(breakeven_price - stock_price)
+
+            return (
+                f"📊 Stock needs to go {direction} by ${dollar_move_abs:.2f} ({breakeven_move_pct:.1f}%) "
+                f"to ${breakeven_price:.2f} {time_desc} to break even"
+            )
+
+        # Calculate target price and dollar move
+        move_pct = abs(target_scenario.get("movePct", 0))
+        target_price = stock_price * (1 + target_scenario.get("movePct", 0) / 100)
+        dollar_move = abs(target_price - stock_price)
+        profit_amount = cost_basis * target_scenario["return"] / 100
+        roi = target_scenario["return"]
+        direction = "UP" if option_type == "CALL" else "DOWN"
+
+        # Build meaningful profit summary
         summary = (
-            f"📊 Stock needs to go {direction} by ${dollar_move_abs:.2f} ({breakeven_move_pct:.1f}%) "
-            f"to ${breakeven_price:.2f} {time_desc} to break even"
+            f"📊 Stock needs to go {direction} by ${dollar_move:.2f} ({move_pct:.1f}%) "
+            f"to ${target_price:.2f} {time_desc} for ${profit_amount:.0f} profit ({roi:.0f}% return)"
         )
 
-        # Add context about expected move
-        expected_move_1sd = metrics.get("expectedMove1SD", 0)
+        # Add context about feasibility
+        expected_move_1sd = metrics.get("expectedMove1SD", 0) * 100  # Convert to percentage
         if expected_move_1sd > 0:
-            if breakeven_move_pct < expected_move_1sd * 0.5:
-                summary += " ✓ (well within expected range)"
-            elif breakeven_move_pct < expected_move_1sd:
-                summary += " ✓ (within expected range)"
-            elif breakeven_move_pct < expected_move_1sd * 2:
-                summary += " ⚠ (requires above-average move)"
+            if move_pct < expected_move_1sd * 0.5:
+                summary += " ✓ Very achievable"
+            elif move_pct < expected_move_1sd:
+                summary += " ✓ Achievable"
+            elif move_pct < expected_move_1sd * 1.5:
+                summary += " ⚠ Requires favorable conditions"
             else:
-                summary += " ⚠⚠ (requires exceptional move)"
+                summary += " ⚠⚠ Requires exceptional move"
 
         return summary
 
@@ -926,7 +941,7 @@ class SmartOptionsScanner:
             # Format move percentage with proper sign
             move_pct = move * 100
             move_str = f"{move_pct:+.1f}%" if move != 0 else "0%"
-            scenarios.append({"move": move_str, "return": roi_percent})
+            scenarios.append({"move": move_str, "movePct": move_pct, "return": roi_percent})
             scenario_metrics.append(
                 {
                     "move": move,
