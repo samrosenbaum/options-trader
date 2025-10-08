@@ -1,3 +1,5 @@
+import React from 'react'
+
 import { DataQualityInfo } from '@/lib/types/opportunity'
 import { AlertTriangle, CheckCircle, Info, XCircle } from 'lucide-react'
 

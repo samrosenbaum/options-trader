@@ -1,3 +1,5 @@
+import React from 'react'
+
 import { Opportunity, SwingSignalNewsHeadline } from '../lib/types/opportunity'
 import { DataQualityBadge } from './data-quality-badge'
 
