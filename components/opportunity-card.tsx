@@ -218,6 +218,15 @@ const renderSwingInsights = (opp: Opportunity) => {
 
       {swingSignal && (
         <>
+          {/* Plain-English Summary */}
+          {swingSignal.metadata?.summary && (
+            <div className="mb-4 bg-white/70 dark:bg-slate-900/60 border border-indigo-100/60 dark:border-indigo-900/40 rounded-xl px-4 py-3">
+              <div className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                {swingSignal.metadata.summary}
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {metrics
               .filter(Boolean)
@@ -830,6 +839,15 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
           <div className="text-sm text-slate-600 dark:text-slate-400">Premium</div>
         </div>
       </div>
+
+      {/* Trade Summary */}
+      {opportunity.tradeSummary && (
+        <div className="mb-6 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 border border-indigo-200 dark:border-indigo-800 rounded-2xl p-4">
+          <div className="text-sm font-medium text-slate-900 dark:text-white leading-relaxed">
+            {opportunity.tradeSummary}
+          </div>
+        </div>
+      )}
 
       {/* Data Quality Badge */}
       {opportunity._dataQuality && (

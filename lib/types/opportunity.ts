@@ -46,6 +46,7 @@ export interface SwingSignalMetadata extends Record<string, unknown> {
   volume_zscore?: number
   news_sample?: SwingSignalNewsHeadline[]
   market_context?: Record<string, unknown>
+  summary?: string
 }
 
 export interface SwingSignalInsight {
@@ -72,6 +73,7 @@ export interface Opportunity {
   strike: number
   expiration: string
   premium: number
+  tradeSummary?: string
   stockPrice: number
   score: number
   confidence: number
