@@ -248,6 +248,12 @@ class SmartOptionsScanner:
 
                 swing_signal, swing_error = self._swing_signal_for(option["symbol"])
 
+                # Calculate directional bias to help choose between calls and puts
+                directional_bias = self.calculate_directional_bias(option, swing_signal)
+
+                # Generate clear trade summary
+                trade_summary = self.generate_trade_summary(option, metrics)
+
                 reasoning = self.generate_reasoning(
                     option,
                     score,
@@ -277,6 +283,7 @@ class SmartOptionsScanner:
                     "strike": float(option["strike"]),
                     "expiration": option["expiration"],
                     "premium": float(option["lastPrice"]),
+                    "tradeSummary": trade_summary,
                     "bid": float(option["bid"]),
                     "ask": float(option["ask"]),
                     "volume": int(option["volume"]),
@@ -293,6 +300,13 @@ class SmartOptionsScanner:
                     "potentialReturnAmount": metrics["tenMoveNetProfit"],
                     "maxReturn": metrics["bestRoiPercent"],
                     "maxReturnAmount": metrics["bestNetProfit"],
+                    # New realistic scenario fields
+                    "expectedMoveReturn": metrics["expectedMoveRoiPercent"],
+                    "expectedMoveAmount": metrics["expectedMoveNetProfit"],
+                    "optimisticMoveReturn": metrics["optimisticMoveRoiPercent"],
+                    "optimisticMoveAmount": metrics["optimisticMoveNetProfit"],
+                    "expectedMove1SD": metrics["expectedMove1SD"],
+                    "expectedMove2SD": metrics["expectedMove2SD"],
                     "maxLossPercent": 100.0,
                     "maxLossAmount": metrics["costBasis"],
                     "maxLoss": metrics["costBasis"],
@@ -315,6 +329,7 @@ class SmartOptionsScanner:
                     "greeks": self.calculate_greeks_approximation(option),
                     "daysToExpiration": self.calculate_days_to_expiration(option["expiration"]),
                     "returnsAnalysis": returns_analysis,
+                    "directionalBias": directional_bias,
                     # Add data quality metadata
                     "_dataQuality": {
                         "quality": quality_report.quality.value,
@@ -381,6 +396,67 @@ class SmartOptionsScanner:
                 score -= 3
 
         return float(max(0.0, min(100.0, score)))
+
+    def generate_trade_summary(self, option: pd.Series, metrics: Mapping[str, float]) -> str:
+        """Generate a clear, concise summary of what needs to happen for this trade to profit.
+
+        Example: "Stock needs to go UP by $5.23 (3.2%) to $165.23 within 5 days to break even"
+        """
+        stock_price = float(option["stockPrice"])
+        strike = float(option["strike"])
+        breakeven_price = metrics["breakevenPrice"]
+        breakeven_move_pct = abs(metrics["breakevenMovePercent"])
+        dte = self.calculate_days_to_expiration(option["expiration"])
+        option_type = option["type"].upper()
+
+        # Determine direction
+        if option_type == "CALL":
+            direction = "UP"
+            dollar_move = breakeven_price - stock_price
+        else:
+            direction = "DOWN"
+            dollar_move = stock_price - breakeven_price
+
+        # Format the move amounts
+        dollar_move_abs = abs(dollar_move)
+
+        # Handle cases where we're already past breakeven
+        if dollar_move < 0:
+            if option_type == "CALL":
+                return f"✅ Already {dollar_move_abs:.2f} ({breakeven_move_pct:.1f}%) above breakeven at ${stock_price:.2f}. Breakeven at ${breakeven_price:.2f}."
+            else:
+                return f"✅ Already {dollar_move_abs:.2f} ({breakeven_move_pct:.1f}%) below breakeven at ${stock_price:.2f}. Breakeven at ${breakeven_price:.2f}."
+
+        # Time frame description
+        if dte == 0:
+            time_desc = "by market close TODAY"
+        elif dte == 1:
+            time_desc = "within 1 day"
+        elif dte <= 7:
+            time_desc = f"within {dte} days"
+        else:
+            weeks = dte // 7
+            time_desc = f"within {weeks} week{'s' if weeks > 1 else ''}"
+
+        # Build the summary
+        summary = (
+            f"📊 Stock needs to go {direction} by ${dollar_move_abs:.2f} ({breakeven_move_pct:.1f}%) "
+            f"to ${breakeven_price:.2f} {time_desc} to break even"
+        )
+
+        # Add context about expected move
+        expected_move_1sd = metrics.get("expectedMove1SD", 0)
+        if expected_move_1sd > 0:
+            if breakeven_move_pct < expected_move_1sd * 0.5:
+                summary += " ✓ (well within expected range)"
+            elif breakeven_move_pct < expected_move_1sd:
+                summary += " ✓ (within expected range)"
+            elif breakeven_move_pct < expected_move_1sd * 2:
+                summary += " ⚠ (requires above-average move)"
+            else:
+                summary += " ⚠⚠ (requires exceptional move)"
+
+        return summary
 
     def generate_reasoning(
         self,
@@ -598,6 +674,160 @@ class SmartOptionsScanner:
             "vega": float(vega),
         }
 
+    def calculate_directional_bias(self, option: pd.Series, swing_signal: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+        """Calculate directional bias to help users choose between calls and puts on the same symbol.
+
+        Returns a dict with:
+        - direction: "bullish", "bearish", or "neutral"
+        - confidence: 0-100 score for the directional conviction
+        - signals: breakdown of contributing factors
+        - recommendation: which option type aligns with the bias
+        """
+
+        signals = {}
+        bullish_score = 0.0
+        bearish_score = 0.0
+
+        # 1. Momentum from swing signal (strongest indicator)
+        if swing_signal:
+            factors = {f["name"]: f for f in swing_signal.get("factors", [])}
+
+            # Momentum breakout factor
+            if "Momentum Breakout" in factors:
+                momentum_factor = factors["Momentum Breakout"]
+                momentum_zscore = momentum_factor.get("details", {}).get("momentum_zscore", 0)
+
+                if momentum_zscore > 1.5:
+                    bullish_score += 30
+                    signals["momentum"] = f"Strong bullish momentum ({momentum_zscore:.2f} σ above mean)"
+                elif momentum_zscore > 0.5:
+                    bullish_score += 15
+                    signals["momentum"] = f"Moderate bullish momentum ({momentum_zscore:.2f} σ above mean)"
+                elif momentum_zscore < -1.5:
+                    bearish_score += 30
+                    signals["momentum"] = f"Strong bearish momentum ({momentum_zscore:.2f} σ below mean)"
+                elif momentum_zscore < -0.5:
+                    bearish_score += 15
+                    signals["momentum"] = f"Moderate bearish momentum ({momentum_zscore:.2f} σ below mean)"
+                else:
+                    signals["momentum"] = f"Neutral momentum ({momentum_zscore:.2f} σ)"
+
+            # News sentiment
+            if "News & Catalysts" in factors:
+                news_factor = factors["News & Catalysts"]
+                avg_sentiment = news_factor.get("details", {}).get("average_sentiment", 0)
+
+                if avg_sentiment > 0.3:
+                    bullish_score += 20
+                    signals["news"] = f"Positive news sentiment ({avg_sentiment:.2f})"
+                elif avg_sentiment > 0.1:
+                    bullish_score += 10
+                    signals["news"] = f"Slightly positive news ({avg_sentiment:.2f})"
+                elif avg_sentiment < -0.3:
+                    bearish_score += 20
+                    signals["news"] = f"Negative news sentiment ({avg_sentiment:.2f})"
+                elif avg_sentiment < -0.1:
+                    bearish_score += 10
+                    signals["news"] = f"Slightly negative news ({avg_sentiment:.2f})"
+                else:
+                    signals["news"] = "Neutral news sentiment"
+
+            # Volatility expansion (benefits both directions but more for options aligned with momentum)
+            if "Volatility Expansion" in factors:
+                vol_factor = factors["Volatility Expansion"]
+                atr_ratio = vol_factor.get("details", {}).get("atr_ratio", 1.0)
+
+                if atr_ratio > 1.3:
+                    signals["volatility"] = f"High volatility ({atr_ratio:.1f}x baseline) - favors strong moves"
+                elif atr_ratio > 1.1:
+                    signals["volatility"] = f"Elevated volatility ({atr_ratio:.1f}x baseline)"
+                else:
+                    signals["volatility"] = f"Normal volatility ({atr_ratio:.1f}x baseline)"
+
+        # 2. Price relative to strike (moneyness)
+        stock_price = float(option["stockPrice"])
+        strike = float(option["strike"])
+        option_type = option["type"]
+
+        moneyness = (stock_price - strike) / stock_price
+
+        if option_type == "call":
+            if moneyness > 0.05:  # Deep ITM call
+                signals["moneyness"] = "Deep ITM - stock well above strike"
+            elif moneyness > 0:
+                signals["moneyness"] = "ITM - stock above strike"
+            elif moneyness > -0.05:
+                signals["moneyness"] = "Near ATM - close to strike"
+            else:
+                signals["moneyness"] = "OTM - stock below strike"
+        else:  # put
+            if moneyness < -0.05:  # Deep ITM put
+                signals["moneyness"] = "Deep ITM - stock well below strike"
+            elif moneyness < 0:
+                signals["moneyness"] = "ITM - stock below strike"
+            elif moneyness < 0.05:
+                signals["moneyness"] = "Near ATM - close to strike"
+            else:
+                signals["moneyness"] = "OTM - stock above strike"
+
+        # 3. Greeks alignment
+        greeks = self.calculate_greeks_approximation(option)
+        delta = greeks.get("delta", 0)
+
+        if option_type == "call" and delta > 0.7:
+            signals["delta"] = f"High delta ({delta:.2f}) - moves strongly with stock"
+        elif option_type == "put" and delta < -0.7:
+            signals["delta"] = f"High delta ({abs(delta):.2f}) - moves strongly with stock"
+        elif abs(delta) > 0.3:
+            signals["delta"] = f"Moderate delta ({abs(delta):.2f})"
+        else:
+            signals["delta"] = f"Low delta ({abs(delta):.2f}) - needs large move"
+
+        # Determine overall direction
+        net_score = bullish_score - bearish_score
+
+        if net_score > 20:
+            direction = "bullish"
+            confidence = min(100, 50 + net_score)
+        elif net_score < -20:
+            direction = "bearish"
+            confidence = min(100, 50 - net_score)
+        else:
+            direction = "neutral"
+            confidence = 50 - abs(net_score) / 2
+
+        # Recommendation based on direction and option type
+        if direction == "bullish":
+            if option_type == "call":
+                alignment = "aligned"
+                recommendation = "✓ Bullish bias supports this CALL"
+            else:
+                alignment = "opposed"
+                recommendation = "⚠ Bullish bias opposes this PUT"
+        elif direction == "bearish":
+            if option_type == "call":
+                alignment = "opposed"
+                recommendation = "⚠ Bearish bias opposes this CALL"
+            else:
+                alignment = "aligned"
+                recommendation = "✓ Bearish bias supports this PUT"
+        else:
+            alignment = "neutral"
+            recommendation = f"↔ Neutral bias - {option_type.upper()} not strongly favored or opposed"
+
+        return {
+            "direction": direction,
+            "confidence": round(confidence, 1),
+            "alignment": alignment,
+            "recommendation": recommendation,
+            "signals": signals,
+            "scores": {
+                "bullish": round(bullish_score, 1),
+                "bearish": round(bearish_score, 1),
+                "net": round(net_score, 1),
+            }
+        }
+
     def calculate_days_to_expiration(self, expiration_date: Any) -> int:
         """Calculate days to expiration."""
 
@@ -609,7 +839,14 @@ class SmartOptionsScanner:
             return 30
 
     def calculate_returns_analysis(self, option: pd.Series) -> tuple[List[Dict[str, Any]], Dict[str, float]]:
-        """Return ROI scenarios (in percent) and supporting metrics."""
+        """Return ROI scenarios (in percent) and supporting metrics.
+
+        Uses realistic price move expectations based on:
+        - Days to expiration (DTE)
+        - Implied volatility (IV)
+        - Historical typical moves
+        """
+        import math
 
         stock_price = float(option["stockPrice"])
         strike = float(option["strike"])
@@ -622,9 +859,56 @@ class SmartOptionsScanner:
         else:
             breakeven_move_pct = ((stock_price - breakeven_price) / max(stock_price, 0.01)) * 100
 
-        # Evaluate profit/loss across realistic price movements
-        # For calls: positive moves matter most; for puts: negative moves matter most
-        moves = [-0.15, -0.10, -0.05, -0.02, 0.0, 0.02, 0.05, 0.075, 0.10, 0.12, 0.15]
+        # Calculate realistic expected move based on DTE and IV
+        dte = self.calculate_days_to_expiration(option["expiration"])
+        iv = float(option["impliedVolatility"]) if pd.notna(option["impliedVolatility"]) else 0.30
+
+        # Expected move formula: IV * sqrt(DTE/365)
+        # This gives us the 1 standard deviation expected move
+        expected_move_1sd = iv * math.sqrt(max(dte, 1) / 365.0)
+
+        # For very short-dated options (0-3 DTE), use minimum realistic scenarios
+        if dte <= 3:
+            # Intraday/overnight scenarios - much smaller moves
+            moves = [
+                -expected_move_1sd * 1.5,  # ~1.5 SD down
+                -expected_move_1sd,         # 1 SD down
+                -expected_move_1sd * 0.5,   # 0.5 SD down
+                -0.01,                       # Small move down
+                0.0,                         # No move
+                0.01,                        # Small move up
+                expected_move_1sd * 0.5,    # 0.5 SD up
+                expected_move_1sd,          # 1 SD up
+                expected_move_1sd * 1.5,    # ~1.5 SD up
+            ]
+        elif dte <= 7:
+            # Weekly scenarios - moderate moves
+            moves = [
+                -expected_move_1sd * 2,     # 2 SD down
+                -expected_move_1sd * 1.5,   # 1.5 SD down
+                -expected_move_1sd,         # 1 SD down
+                -0.02,                       # Small move down
+                0.0,                         # No move
+                0.02,                        # Small move up
+                expected_move_1sd,          # 1 SD up
+                expected_move_1sd * 1.5,    # 1.5 SD up
+                expected_move_1sd * 2,      # 2 SD up
+            ]
+        else:
+            # Monthly+ scenarios - can use broader ranges
+            moves = [
+                -expected_move_1sd * 2,     # 2 SD down
+                -expected_move_1sd * 1.5,   # 1.5 SD down
+                -expected_move_1sd,         # 1 SD down
+                -0.03,                       # Small move down
+                0.0,                         # No move
+                0.03,                        # Small move up
+                expected_move_1sd,          # 1 SD up
+                expected_move_1sd * 1.5,    # 1.5 SD up
+                expected_move_1sd * 2,      # 2 SD up
+                expected_move_1sd * 2.5,    # 2.5 SD up (rare but possible)
+            ]
+
         scenarios: List[Dict[str, Any]] = []
         scenario_metrics: List[Dict[str, float]] = []
 
@@ -658,16 +942,22 @@ class SmartOptionsScanner:
             "move": moves[0],
         }
 
-        ten_move_target = 0.10 if option["type"] == "call" else -0.10
-        ten_move = next(
-            (item for item in scenario_metrics if abs(item["move"] - ten_move_target) < 1e-6),
-            scenario_metrics[0] if scenario_metrics else {"roi_percent": 0.0, "net_profit": 0.0},
-        )
-        fifteen_move_target = 0.15 if option["type"] == "call" else -0.15
-        fifteen_move = next(
-            (item for item in scenario_metrics if abs(item["move"] - fifteen_move_target) < 1e-6),
-            scenario_metrics[0] if scenario_metrics else {"roi_percent": 0.0, "net_profit": 0.0},
-        )
+        # Use 1 standard deviation move as the "realistic target" instead of arbitrary 10%
+        # This is statistically what we'd expect ~68% of the time
+        one_sd_target = expected_move_1sd if option["type"] == "call" else -expected_move_1sd
+        one_sd_move = min(
+            scenario_metrics,
+            key=lambda item: abs(item["move"] - one_sd_target),
+            default={"roi_percent": 0.0, "net_profit": 0.0}
+        ) if scenario_metrics else {"roi_percent": 0.0, "net_profit": 0.0}
+
+        # Use 2 standard deviation move as the "optimistic scenario" (~95% probability range)
+        two_sd_target = expected_move_1sd * 2 if option["type"] == "call" else -expected_move_1sd * 2
+        two_sd_move = min(
+            scenario_metrics,
+            key=lambda item: abs(item["move"] - two_sd_target),
+            default={"roi_percent": 0.0, "net_profit": 0.0}
+        ) if scenario_metrics else {"roi_percent": 0.0, "net_profit": 0.0}
 
         metrics = {
             "costBasis": cost_basis,
@@ -676,10 +966,20 @@ class SmartOptionsScanner:
             "bestRoiPercent": best["roi_percent"],
             "bestNetProfit": best["net_profit"],
             "bestMovePercent": best["move"] * 100 if isinstance(best["move"], (int, float)) else best["move"],
-            "tenMoveRoiPercent": ten_move.get("roi_percent", 0.0),
-            "tenMoveNetProfit": ten_move.get("net_profit", 0.0),
-            "fifteenMoveRoiPercent": fifteen_move.get("roi_percent", 0.0),
-            "fifteenMoveNetProfit": fifteen_move.get("net_profit", 0.0),
+            # Rename these to be clearer about what they represent
+            "expectedMoveRoiPercent": one_sd_move.get("roi_percent", 0.0),  # 1 SD move (68% probability)
+            "expectedMoveNetProfit": one_sd_move.get("net_profit", 0.0),
+            "optimisticMoveRoiPercent": two_sd_move.get("roi_percent", 0.0),  # 2 SD move (~95% probability)
+            "optimisticMoveNetProfit": two_sd_move.get("net_profit", 0.0),
+            # Keep old names for backward compatibility but with new values
+            "tenMoveRoiPercent": one_sd_move.get("roi_percent", 0.0),
+            "tenMoveNetProfit": one_sd_move.get("net_profit", 0.0),
+            "fifteenMoveRoiPercent": two_sd_move.get("roi_percent", 0.0),
+            "fifteenMoveNetProfit": two_sd_move.get("net_profit", 0.0),
+            # Add metadata about what moves were used
+            "expectedMove1SD": expected_move_1sd * 100,  # As percentage
+            "expectedMove2SD": expected_move_1sd * 2 * 100,
+            "dteUsedForCalculation": dte,
         }
 
         return scenarios, metrics

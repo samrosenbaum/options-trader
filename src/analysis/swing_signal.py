@@ -130,6 +130,17 @@ class SwingSignalAnalyzer:
 
         classification = self._classify_score(composite)
 
+        # Generate human-readable summary
+        summary = self._generate_swing_summary(
+            composite,
+            classification,
+            volatility_factor,
+            momentum_factor,
+            volume_factor,
+            news_factor,
+            market_factor,
+        )
+
         metadata = {
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "lookback": self.lookback,
@@ -139,6 +150,7 @@ class SwingSignalAnalyzer:
             "volume_zscore": volume_factor.details.get("volume_zscore"),
             "news_sample": news_factor.details.get("headlines", [])[:2],
             "market_context": market_factor.details,
+            "summary": summary,
         }
 
         return SwingSignal(
@@ -406,6 +418,97 @@ class SwingSignalAnalyzer:
         normalized = (value - lower) / (upper - lower)
         normalized = max(0.0, min(1.0, normalized))
         return normalized * 100
+
+    @staticmethod
+    def _generate_swing_summary(
+        composite: float,
+        classification: str,
+        volatility_factor: FactorScore,
+        momentum_factor: FactorScore,
+        volume_factor: FactorScore,
+        news_factor: FactorScore,
+        market_factor: FactorScore,
+    ) -> str:
+        """Generate a plain-English summary of what the swing signal means for traders."""
+
+        # Extract key metrics
+        momentum_zscore = momentum_factor.details.get("momentum_zscore", 0)
+        atr_ratio = volatility_factor.details.get("atr_ratio", 1.0)
+        volume_zscore = volume_factor.details.get("volume_zscore", 0)
+        avg_sentiment = news_factor.details.get("average_sentiment", 0)
+
+        parts = []
+
+        # Overall assessment
+        if classification == "elevated_swing_risk":
+            parts.append("⚠️ HIGH SWING POTENTIAL: This stock shows elevated risk of large price swings.")
+        elif classification == "watchlist":
+            parts.append("👀 MODERATE ACTIVITY: Stock shows some signs of potential movement worth monitoring.")
+        else:
+            parts.append("😌 CALM CONDITIONS: Stock is trading in a relatively stable pattern.")
+
+        # Momentum explanation
+        if abs(momentum_zscore) > 1.5:
+            direction = "above" if momentum_zscore > 0 else "below"
+            strength = "significantly" if abs(momentum_zscore) > 2 else "moderately"
+            parts.append(
+                f"Price is {strength} {direction} its 20-day average ({abs(momentum_zscore):.1f} standard deviations), "
+                f"suggesting {'strong upward' if momentum_zscore > 0 else 'downward'} momentum."
+            )
+        elif abs(momentum_zscore) > 0.5:
+            direction = "trending up" if momentum_zscore > 0 else "trending down"
+            parts.append(f"Price is {direction} but still within normal ranges.")
+        else:
+            parts.append("Price is trading near its recent average with no clear directional trend.")
+
+        # Volatility explanation
+        if atr_ratio > 1.5:
+            parts.append(
+                f"Volatility is {atr_ratio:.0%} of baseline - expect larger than normal price swings. "
+                "This increases both risk and opportunity for options traders."
+            )
+        elif atr_ratio > 1.2:
+            parts.append(f"Volatility is slightly elevated at {atr_ratio:.0%} of baseline.")
+        elif atr_ratio < 0.8:
+            parts.append(
+                f"Volatility is compressed at {atr_ratio:.0%} of baseline - "
+                "the stock has been moving less than usual, which could precede a breakout."
+            )
+
+        # Volume explanation
+        if volume_zscore > 2:
+            parts.append(
+                "Volume is surging well above average - institutional activity or news-driven interest likely."
+            )
+        elif volume_zscore > 1:
+            parts.append("Volume is elevated, suggesting increased trader interest.")
+        elif volume_zscore < -1:
+            parts.append("Volume is below average - less conviction in current price levels.")
+
+        # News sentiment (if meaningful)
+        if avg_sentiment > 0.2:
+            parts.append(f"News sentiment is positive ({avg_sentiment:.2f}), potentially supporting upside.")
+        elif avg_sentiment < -0.2:
+            parts.append(f"News sentiment is negative ({avg_sentiment:.2f}), creating headwinds.")
+
+        # Trading implications
+        if classification == "elevated_swing_risk":
+            parts.append(
+                "💡 TRADING IMPLICATION: Options premiums likely elevated. "
+                "Consider wider stops and position sizing for directional trades."
+            )
+        elif classification == "watchlist":
+            parts.append(
+                "💡 TRADING IMPLICATION: Watch for breakout confirmation. "
+                "Options may offer good risk/reward if direction becomes clearer."
+            )
+        else:
+            parts.append(
+                "💡 TRADING IMPLICATION: Low urgency. "
+                "Selling premium strategies (covered calls, cash-secured puts) may be favored in stable conditions."
+            )
+
+        return " ".join(parts)
 
     @staticmethod
     def _classify_score(score: float) -> str:
