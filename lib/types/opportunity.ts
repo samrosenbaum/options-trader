@@ -21,6 +21,41 @@ export interface MoveAnalysis {
   drivers: string[]
 }
 
+export interface SwingSignalFactor {
+  name: string
+  score: number
+  rationale: string
+  details: Record<string, unknown>
+}
+
+export interface SwingSignalNewsHeadline {
+  title?: string
+  summary?: string
+  url?: string
+  publisher?: string
+  sentiment_score?: number
+  sentiment_label?: string
+}
+
+export interface SwingSignalMetadata extends Record<string, unknown> {
+  generated_at?: string
+  lookback?: string
+  interval?: string
+  atr_ratio?: number
+  momentum_zscore?: number
+  volume_zscore?: number
+  news_sample?: SwingSignalNewsHeadline[]
+  market_context?: Record<string, unknown>
+}
+
+export interface SwingSignalInsight {
+  symbol: string
+  compositeScore: number
+  classification: string
+  factors: SwingSignalFactor[]
+  metadata: SwingSignalMetadata
+}
+
 export interface DataQualityInfo {
   quality: 'high' | 'medium' | 'low' | 'rejected'
   score: number
@@ -91,6 +126,8 @@ export interface Opportunity {
     }
     impact_score: number
   }>
+  swingSignal?: SwingSignalInsight | null
+  swingSignalError?: string
   _dataQuality?: DataQualityInfo
 }
 
