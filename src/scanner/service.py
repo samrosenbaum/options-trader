@@ -392,55 +392,49 @@ class SmartOptionsScanner:
         return float(option["strike"] - option["lastPrice"])
 
     def calculate_iv_rank(self, option: pd.Series) -> float:
-        """Calculate IV rank (simplified)."""
+        """Calculate IV percentage (not true IV rank - would need 52w IV data)."""
 
         if pd.notna(option["impliedVolatility"]):
             return float(min(100, option["impliedVolatility"] * 100))
         return 50.0
 
     def calculate_probability_score(self, option: pd.Series, metrics: Mapping[str, float]) -> float:
-        """Score the likelihood of hitting breakeven based on context."""
+        """Calculate real probability of profit using statistical methods."""
+        import math
+        from scipy import stats
 
-        score = 0.0
-
-        breakeven_move = metrics["breakevenMovePercent"]
-        if breakeven_move <= 0:
-            score += 32
-        elif breakeven_move <= 4:
-            score += 28
-        elif breakeven_move <= 6:
-            score += 24
-        elif breakeven_move <= 8:
-            score += 18
-        elif breakeven_move <= 12:
-            score += 12
-        elif breakeven_move <= 18:
-            score += 8
-
-        volume = option["volume"]
-        open_interest = option["openInterest"]
-        if volume > 5000 and open_interest > 10000:
-            score += 6
-        elif volume > 1000 and open_interest > 3000:
-            score += 4
-
+        breakeven_move_pct = abs(metrics["breakevenMovePercent"])
         dte = self.calculate_days_to_expiration(option["expiration"])
-        if 7 <= dte <= 45:
-            score += 6
-        elif dte < 7:
-            score -= 4
 
-        iv = option["impliedVolatility"]
-        if pd.notna(iv):
-            if iv < 0.2:
-                score += 2
-            elif iv > 0.7:
-                score -= 4
+        if dte <= 0:
+            return 0.0
 
-        return float(max(0.0, min(40.0, score)))
+        # Use Implied Volatility (annualized) - this is what the market expects
+        iv = float(option["impliedVolatility"]) if pd.notna(option["impliedVolatility"]) else 0.30
+
+        # Convert annualized IV to expected move over the time period
+        # Expected daily volatility = IV / sqrt(252 trading days)
+        # Expected move over DTE = daily_vol * sqrt(DTE)
+        daily_vol = iv / math.sqrt(252)
+        expected_move_pct = daily_vol * math.sqrt(dte) * 100  # Convert to percentage
+
+        # Calculate z-score: how many standard deviations is breakeven from current price
+        if expected_move_pct == 0:
+            z_score = 0
+        else:
+            z_score = breakeven_move_pct / expected_move_pct
+
+        # For calls: probability stock goes UP past breakeven = 1 - CDF(z_score)
+        # For puts: probability stock goes DOWN past breakeven = 1 - CDF(z_score)
+        # Using normal distribution (stock returns are approximately normal)
+        probability = 1 - stats.norm.cdf(z_score)
+
+        # Convert to percentage and clamp to reasonable range
+        return float(max(1.0, min(99.0, probability * 100)))
 
     def estimate_probability_percent(self, probability_score: float) -> float:
-        return float(max(5.0, min(92.0, probability_score * 2.4)))
+        """Return probability score directly - it's already a percentage now."""
+        return float(probability_score)
 
     def build_probability_explanation(
         self,
@@ -473,26 +467,43 @@ class SmartOptionsScanner:
         return ". ".join(explanation_parts)
 
     def calculate_greeks_approximation(self, option: pd.Series) -> Dict[str, float]:
-        """Calculate approximate Greeks using simple heuristics."""
+        """Calculate Greeks using Black-Scholes model."""
+        import math
+        from scipy import stats
 
         stock_price = float(option["stockPrice"])
         strike = float(option["strike"])
         iv = float(option["impliedVolatility"]) if pd.notna(option["impliedVolatility"]) else 0.3
         dte = max(self.calculate_days_to_expiration(option["expiration"]), 1)
 
-        time_factor = max(0.2, min(1.0, dte / 45))
+        # Time to expiration in years
+        T = dte / 365.0
+        # Risk-free rate (approximate current rate)
+        r = 0.045
 
+        # Black-Scholes d1 and d2
+        d1 = (math.log(stock_price / strike) + (r + 0.5 * iv ** 2) * T) / (iv * math.sqrt(T))
+        d2 = d1 - iv * math.sqrt(T)
+
+        # Calculate Greeks
         if option["type"] == "call":
-            moneyness = (stock_price - strike) / max(stock_price, 0.01)
-            delta = 0.5 + moneyness * 2.2
+            delta = stats.norm.cdf(d1)
         else:
-            moneyness = (strike - stock_price) / max(stock_price, 0.01)
-            delta = -0.5 - moneyness * 2.2
+            delta = stats.norm.cdf(d1) - 1  # Put delta is negative
 
-        delta = max(-0.95, min(0.95, delta))
-        gamma = max(0.005, min(0.15, (0.12 / max(dte / 30, 1)) * (1 - abs(moneyness))))
-        theta = -max(0.02, min(0.25, (iv * 0.4 + 0.03) / max(dte / 45, 0.5)))
-        vega = max(0.05, min(0.4, (0.2 + time_factor) * (1 - abs(delta))))
+        # Gamma is same for calls and puts
+        gamma = stats.norm.pdf(d1) / (stock_price * iv * math.sqrt(T))
+
+        # Theta (per day, not per year)
+        if option["type"] == "call":
+            theta = (-(stock_price * stats.norm.pdf(d1) * iv) / (2 * math.sqrt(T))
+                    - r * strike * math.exp(-r * T) * stats.norm.cdf(d2)) / 365
+        else:
+            theta = (-(stock_price * stats.norm.pdf(d1) * iv) / (2 * math.sqrt(T))
+                    + r * strike * math.exp(-r * T) * stats.norm.cdf(-d2)) / 365
+
+        # Vega (per 1% change in IV)
+        vega = stock_price * stats.norm.pdf(d1) * math.sqrt(T) / 100
 
         return {
             "delta": float(delta),
@@ -525,7 +536,9 @@ class SmartOptionsScanner:
         else:
             breakeven_move_pct = ((stock_price - breakeven_price) / max(stock_price, 0.01)) * 100
 
-        moves = [0.10, 0.15, 0.20, 0.30]
+        # Evaluate profit/loss across realistic price movements
+        # For calls: positive moves matter most; for puts: negative moves matter most
+        moves = [-0.10, -0.05, -0.01, 0.0, 0.01, 0.025, 0.05, 0.075, 0.10, 0.12]
         scenarios: List[Dict[str, Any]] = []
         scenario_metrics: List[Dict[str, float]] = []
 
@@ -541,7 +554,10 @@ class SmartOptionsScanner:
             net_profit = payoff - cost_basis
             roi_percent = (net_profit / cost_basis) * 100 if cost_basis else 0.0
 
-            scenarios.append({"move": f"{int(move * 100)}%", "return": roi_percent})
+            # Format move percentage with proper sign
+            move_pct = move * 100
+            move_str = f"{move_pct:+.1f}%" if move != 0 else "0%"
+            scenarios.append({"move": move_str, "return": roi_percent})
             scenario_metrics.append(
                 {
                     "move": move,

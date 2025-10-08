@@ -147,32 +147,53 @@ export default function HomePage() {
   const [totalEvaluated, setTotalEvaluated] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
+  const [lastSuccessfulUpdate, setLastSuccessfulUpdate] = useState<Date | null>(null)
   const [autoRefresh, setAutoRefresh] = useState(true)
   const [investmentAmount, setInvestmentAmount] = useState(1000)
   const [activeTab, setActiveTab] = useState<'options' | 'crypto'>('options')
   const [cryptoAlerts, setCryptoAlerts] = useState<CryptoAlert[]>([])
   const [cryptoLoading, setCryptoLoading] = useState(false)
   const [sortOption, setSortOption] = useState<OpportunitySortOption>('promising')
+  const [isStaleData, setIsStaleData] = useState(false)
 
   const fetchOpportunities = async () => {
     try {
       const response = await fetch('/api/scan-python')
       const data = await response.json()
+      setLastUpdate(new Date())
+
       if (data.success) {
-        setOpportunities(data.opportunities || [])
-        const evaluatedFromApi =
-          typeof data.totalEvaluated === 'number'
-            ? data.totalEvaluated
-            : typeof data.total_evaluated === 'number'
-              ? data.total_evaluated
-              : Array.isArray(data.opportunities)
-                ? data.opportunities.length
-                : 0
-        setTotalEvaluated(evaluatedFromApi)
-        setLastUpdate(new Date())
+        // Only update if we got results, or if this is the initial load
+        if (data.opportunities && data.opportunities.length > 0) {
+          setOpportunities(data.opportunities)
+          const evaluatedFromApi =
+            typeof data.totalEvaluated === 'number'
+              ? data.totalEvaluated
+              : typeof data.total_evaluated === 'number'
+                ? data.total_evaluated
+                : Array.isArray(data.opportunities)
+                  ? data.opportunities.length
+                  : 0
+          setTotalEvaluated(evaluatedFromApi)
+          setLastSuccessfulUpdate(new Date())
+          setIsStaleData(false)
+        } else if (opportunities.length === 0) {
+          // If we have no existing data, update even with empty results
+          setOpportunities([])
+          setTotalEvaluated(0)
+          setIsStaleData(false)
+        } else {
+          // Keep existing data but mark as stale
+          setIsStaleData(true)
+          console.warn('Scan returned no results - keeping previous data visible')
+        }
       }
     } catch (error) {
       console.error('Error fetching opportunities:', error)
+      // On error, keep existing data and mark as stale
+      if (opportunities.length > 0) {
+        setIsStaleData(true)
+      }
     } finally {
       setIsLoading(false)
     }
@@ -195,39 +216,35 @@ export default function HomePage() {
 
   const isMarketOpen = () => {
     const now = new Date()
-    const day = now.getDay() // 0 = Sunday, 6 = Saturday
-    const hour = now.getHours()
-    const minute = now.getMinutes()
-    
+
+    // Convert to Eastern Time
+    const etTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }))
+    const day = etTime.getDay() // 0 = Sunday, 6 = Saturday
+    const hour = etTime.getHours()
+    const minute = etTime.getMinutes()
+
     // Market is closed on weekends
     if (day === 0 || day === 6) return false
-    
-    // Market hours: 9:30 AM - 4:00 PM ET (14:30 - 21:00 UTC)
-    const marketOpen = 14.5 // 9:30 AM ET in decimal hours
-    const marketClose = 21 // 4:00 PM ET in decimal hours
+
+    // Market hours: 9:30 AM - 4:00 PM ET
+    const marketOpen = 9.5 // 9:30 AM
+    const marketClose = 16 // 4:00 PM
     const currentTime = hour + minute / 60
-    
+
     return currentTime >= marketOpen && currentTime < marketClose
   }
 
   useEffect(() => {
     fetchOpportunities()
-
-    if (autoRefresh && isMarketOpen()) {
-      const interval = setInterval(() => {
-        if (isMarketOpen()) {
-          fetchOpportunities()
-        }
-      }, 60000) // Refresh every minute when market is open
-      return () => clearInterval(interval)
-    }
-  }, [autoRefresh])
+    // Auto-refresh disabled - user must manually refresh to avoid API overuse
+  }, [])
 
   const sortedOpportunities = useMemo(() => {
     if (opportunities.length === 0) {
       return opportunities
     }
 
+    console.log(`Sorting ${opportunities.length} opportunities by: ${sortOption}`)
     const ranked = [...opportunities]
     const toNumber = (value: number | null | undefined, fallback: number) =>
       typeof value === 'number' && Number.isFinite(value) ? value : fallback
@@ -793,14 +810,24 @@ export default function HomePage() {
             </div>
 
           <div className="mt-6 flex items-center gap-6 text-sm">
-            {lastUpdate && (
+            {lastSuccessfulUpdate && (
               <div className="text-slate-500 dark:text-slate-400">
-                Last updated: {lastUpdate.toLocaleString()}
+                Last successful scan: {lastSuccessfulUpdate.toLocaleString()}
+                {isStaleData && (
+                  <span className="ml-2 px-2 py-0.5 bg-amber-100 text-amber-700 text-xs rounded-md font-medium">
+                    Showing cached data
+                  </span>
+                )}
+              </div>
+            )}
+            {lastUpdate && lastUpdate !== lastSuccessfulUpdate && (
+              <div className="text-slate-400 dark:text-slate-500 text-xs">
+                Last check: {lastUpdate.toLocaleString()}
               </div>
             )}
             <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
-              isMarketOpen() 
-                ? 'bg-emerald-100 text-emerald-700' 
+              isMarketOpen()
+                ? 'bg-emerald-100 text-emerald-700'
                 : 'bg-slate-100 text-slate-600'
             }`}>
               <div className={`w-2 h-2 rounded-full ${
@@ -923,8 +950,12 @@ export default function HomePage() {
                 <select
                   id="opportunity-sort"
                   value={sortOption}
-                  onChange={(event) => setSortOption(event.target.value as OpportunitySortOption)}
-                  className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:focus:border-slate-500 dark:focus:ring-white/10"
+                  onChange={(event) => {
+                    const newSort = event.target.value as OpportunitySortOption
+                    console.log('Sort changed to:', newSort)
+                    setSortOption(newSort)
+                  }}
+                  className="rounded-2xl border-2 border-slate-900 dark:border-white bg-white px-4 py-2 text-sm font-medium text-slate-900 dark:text-white shadow-sm transition-all hover:shadow-md focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/20 dark:bg-slate-800 dark:focus:border-white dark:focus:ring-white/20 cursor-pointer"
                 >
                   {availableSortOptions.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -932,6 +963,9 @@ export default function HomePage() {
                     </option>
                   ))}
                 </select>
+                <span className="text-xs text-slate-500 dark:text-slate-400">
+                  ({sortedOpportunities.length} shown)
+                </span>
               </div>
             </div>
 

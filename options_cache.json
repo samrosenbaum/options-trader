@@ -1,32 +1,22 @@
 {
-  "timestamp": "2025-10-07T16:00:15.380390",
-  "data_count": 12989,
+  "timestamp": "2025-10-07T20:32:05.922354",
+  "data_count": 4890,
   "symbols": [
-    "FVRR",
+    "JNJ",
+    "MCD",
     "PLUG",
-    "RUN",
     "PEP",
     "HD",
+    "FVRR",
+    "RUN",
+    "BYND",
     "GME",
     "AMC",
-    "BYND",
-    "QQQ",
     "SPY",
-    "AAPL",
-    "MSFT",
-    "GOOGL",
-    "AMZN",
-    "TSLA",
-    "NVDA",
-    "META",
-    "NFLX",
-    "INTC",
-    "AMD",
-    "CRM",
-    "ADBE",
-    "PYPL"
+    "QQQ",
+    "AAPL"
   ],
   "options": [
     {
-      "contractSymbol": "FVRR251017C00015000",
+      "contractSymbol": "JNJ251010C00135000",
       "lastTradeDate": 
