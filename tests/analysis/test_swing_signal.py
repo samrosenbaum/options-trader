@@ -83,3 +83,20 @@ def test_analyzer_requires_sufficient_history():
 
     with pytest.raises(ValueError):
         analyzer.analyze("MSFT")
+
+
+def test_analyzer_handles_multiindex_history():
+    def multiindex_fetcher(symbol: str, lookback: str, interval: str) -> pd.DataFrame:  # noqa: ARG001
+        history = build_history()
+        history.columns = pd.MultiIndex.from_product([[symbol], history.columns])
+        return history
+
+    analyzer = SwingSignalAnalyzer(
+        price_fetcher=multiindex_fetcher,
+        news_fetcher=fake_news_fetcher,
+        market_fetcher=fake_market_fetcher,
+    )
+
+    signal = analyzer.analyze("TSLA")
+
+    assert signal.classification in {"watchlist", "elevated_swing_risk", "calm"}
