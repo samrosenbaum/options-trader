@@ -80,13 +80,21 @@ class SwingSignalAnalyzer:
     def analyze(self, symbol: str) -> SwingSignal:
         symbol = symbol.upper()
         history = self.price_fetcher(symbol, self.lookback, self.interval)
+        history = self._normalize_history(symbol, history)
 
         if history.empty or len(history) < 40:
             raise ValueError(
                 f"Not enough price history to evaluate {symbol}. Need at least 40 data points."
             )
 
-        history = history.dropna(subset=["High", "Low", "Close", "Volume"])
+        required_columns = ["High", "Low", "Close", "Volume"]
+        missing_columns = [col for col in required_columns if col not in history.columns]
+        if missing_columns:
+            raise ValueError(
+                f"Price history for {symbol} is missing required columns: {missing_columns}"
+            )
+
+        history = history.dropna(subset=required_columns)
         if history.empty:
             raise ValueError(f"Price history for {symbol} is missing OHLCV data.")
 
@@ -324,6 +332,30 @@ class SwingSignalAnalyzer:
     # ------------------------------------------------------------------
     # Helpers
     # ------------------------------------------------------------------
+    @staticmethod
+    def _normalize_history(symbol: str, history: pd.DataFrame) -> pd.DataFrame:
+        """Normalize price history to a standard single-index column layout.
+
+        Some price providers (notably yfinance) can return a MultiIndex where
+        the first level contains the ticker symbol. This helper extracts the
+        relevant slice so the rest of the analyzer can operate on a predictable
+        OHLCV schema.
+        """
+
+        if history.empty:
+            return history
+
+        if isinstance(history.columns, pd.MultiIndex):
+            try:
+                history = history.xs(symbol, axis=1, level=0)
+            except KeyError:
+                # Fall back to the first level if the exact symbol is not present
+                history = history.droplevel(0, axis=1)
+
+        # Ensure the columns are simple strings (xs can return Index with name)
+        history.columns = [str(col) for col in history.columns]
+        return history
+
     @staticmethod
     def _average_true_range(history: pd.DataFrame, window: int) -> pd.Series:
         high_low = history["High"] - history["Low"]
