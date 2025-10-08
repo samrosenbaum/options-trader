@@ -1,17 +1,30 @@
 {
-  "timestamp": "2025-10-07T15:52:04.815409",
-  "data_count": 1795,
+  "timestamp": "2025-10-07T16:00:15.380390",
+  "data_count": 12989,
   "symbols": [
     "FVRR",
+    "PLUG",
+    "RUN",
+    "PEP",
+    "HD",
+    "GME",
     "AMC",
     "BYND",
-    "RUN",
-    "GME",
-    "SPY",
     "QQQ",
+    "SPY",
     "AAPL",
     "MSFT",
-    "GOOGL"
+    "GOOGL",
+    "AMZN",
+    "TSLA",
+    "NVDA",
+    "META",
+    "NFLX",
+    "INTC",
+    "AMD",
+    "CRM",
+    "ADBE",
+    "PYPL"
   ],
   "options": [
     {
