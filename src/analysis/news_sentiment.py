@@ -121,15 +121,27 @@ def fetch_symbol_news(symbol: str, limit: int = 5) -> List[NewsHeadline]:
         raw_news = []
 
     for item in raw_news[:limit]:
-        title = item.get("title", "")
-        summary = item.get("summary", "")
+        # Handle both old and new yfinance news formats
+        content = item.get("content", item)  # New format nests data under "content"
+
+        title = content.get("title", "")
+        summary = content.get("summary", content.get("description", ""))
+
+        # Get publisher info
+        provider = content.get("provider", {})
+        publisher = provider.get("displayName", "") if isinstance(provider, dict) else content.get("publisher", "")
+
+        # Get URL
+        canonical = content.get("canonicalUrl", {})
+        url = canonical.get("url", "") if isinstance(canonical, dict) else content.get("link", "")
+
         sentiment = score_sentiment(f"{title} {summary}")
         news_items.append(
             NewsHeadline(
                 title=title,
                 summary=summary,
-                url=item.get("link", ""),
-                publisher=item.get("publisher", ""),
+                url=url,
+                publisher=publisher,
                 sentiment_score=sentiment["score"],
                 sentiment_label=sentiment["label"],
             )
