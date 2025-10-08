@@ -344,10 +344,13 @@ class SmartOptionsScanner:
         if isfinite(breakeven_move):
             if breakeven_move <= 0:
                 reasoning.append("Already trading beyond breakeven levels")
-            elif breakeven_move <= 5:
-                reasoning.append(f"Requires only a {breakeven_move:.1f}% move to break even")
-            elif breakeven_move <= 8:
-                reasoning.append(f"Reasonable {breakeven_move:.1f}% move needed to break even")
+            else:
+                abs_move = abs(breakeven_move)
+                direction = "drop" if option["type"] == "put" else "gain"
+                if abs_move <= 5:
+                    reasoning.append(f"Requires only a {abs_move:.1f}% {direction} to break even")
+                elif abs_move <= 8:
+                    reasoning.append(f"Needs a manageable {abs_move:.1f}% {direction} to break even")
 
         if metrics["bestRoiPercent"] >= 200:
             reasoning.append(f"Models show {metrics['bestRoiPercent']:.0f}% upside on a strong move")
@@ -375,8 +378,11 @@ class SmartOptionsScanner:
 
         breakeven_move = metrics["breakevenMovePercent"]
         probability_percent = self.estimate_probability_percent(probability_score)
+        abs_move = abs(breakeven_move)
 
-        if breakeven_move <= 5 and probability_percent >= 70:
+        if breakeven_move <= 0 and probability_percent >= 65:
+            return "low"
+        if abs_move <= 5 and probability_percent >= 70:
             return "low"
         if metrics["bestRoiPercent"] >= 250 and probability_percent >= 55:
             return "medium"
@@ -449,7 +455,10 @@ class SmartOptionsScanner:
         if breakeven_move <= 0:
             move_text = "Already beyond breakeven with supportive flow"
         else:
-            move_text = f"Needs {breakeven_move:.1f}% move with {volume_ratio:.1f}x volume/interest support"
+            direction = "drop" if option["type"] == "put" else "gain"
+            move_text = (
+                f"Needs {abs(breakeven_move):.1f}% {direction} with {volume_ratio:.1f}x volume/interest support"
+            )
         explanation_parts.append(move_text)
 
         dte = self.calculate_days_to_expiration(option["expiration"])
@@ -538,16 +547,15 @@ class SmartOptionsScanner:
 
         # Evaluate profit/loss across realistic price movements
         # For calls: positive moves matter most; for puts: negative moves matter most
-        moves = [-0.10, -0.05, -0.01, 0.0, 0.01, 0.025, 0.05, 0.075, 0.10, 0.12]
+        moves = [-0.15, -0.10, -0.05, -0.02, 0.0, 0.02, 0.05, 0.075, 0.10, 0.12, 0.15]
         scenarios: List[Dict[str, Any]] = []
         scenario_metrics: List[Dict[str, float]] = []
 
         for move in moves:
+            target_price = stock_price * (1 + move)
             if option["type"] == "call":
-                target_price = stock_price * (1 + move)
                 intrinsic = max(0.0, target_price - strike)
             else:
-                target_price = stock_price * (1 - move)
                 intrinsic = max(0.0, strike - target_price)
 
             payoff = intrinsic * 100
@@ -573,12 +581,14 @@ class SmartOptionsScanner:
             "move": moves[0],
         }
 
+        ten_move_target = 0.10 if option["type"] == "call" else -0.10
         ten_move = next(
-            (item for item in scenario_metrics if abs(item["move"] - 0.10) < 1e-6),
+            (item for item in scenario_metrics if abs(item["move"] - ten_move_target) < 1e-6),
             scenario_metrics[0] if scenario_metrics else {"roi_percent": 0.0, "net_profit": 0.0},
         )
+        fifteen_move_target = 0.15 if option["type"] == "call" else -0.15
         fifteen_move = next(
-            (item for item in scenario_metrics if abs(item["move"] - 0.15) < 1e-6),
+            (item for item in scenario_metrics if abs(item["move"] - fifteen_move_target) < 1e-6),
             scenario_metrics[0] if scenario_metrics else {"roi_percent": 0.0, "net_profit": 0.0},
         )
 

@@ -79,7 +79,6 @@ const getScoreColor = (score: number) => {
 const getTradeLogic = (opp: Opportunity) => {
   const isCall = opp.optionType === 'call'
   const daysToExp = opp.daysToExpiration
-  const strikeVsPrice = opp.strike / opp.stockPrice
   const ivRank = opp.ivRank
   const eventIntel = opp.eventIntel || {}
 
@@ -91,12 +90,28 @@ const getTradeLogic = (opp: Opportunity) => {
     logic += `This is a PUT option betting that ${opp.symbol} will go DOWN. `
   }
 
-  if (strikeVsPrice < 0.95) {
-    logic += `The strike price is ${((1 - strikeVsPrice) * 100).toFixed(1)}% below the current stock price, making this an in-the-money option with built-in value. `
-  } else if (strikeVsPrice > 1.05) {
-    logic += `The strike price is ${((strikeVsPrice - 1) * 100).toFixed(1)}% above the current stock price, making this an out-of-the-money option that needs a significant move to be profitable. `
+  const price = Math.max(opp.stockPrice, 0)
+  const strike = opp.strike
+  const relativeDiff = price > 0 ? Math.abs(price - strike) / price : 0
+
+  if (relativeDiff < 0.01) {
+    logic += 'The strike price is essentially at-the-money, so even small moves in the underlying can swing this trade. '
+  } else if (isCall) {
+    const diffPct = price > 0 ? ((price - strike) / price) * 100 : 0
+    if (diffPct > 0) {
+      logic += `The strike is ${Math.abs(diffPct).toFixed(1)}% below the stock price, giving this call intrinsic value from the start. `
+    } else {
+      const neededMove = Math.abs(diffPct)
+      logic += `The strike is ${neededMove.toFixed(1)}% above the stock price, so the shares need roughly a ${neededMove.toFixed(1)}% rally to move in-the-money. `
+    }
   } else {
-    logic += `The strike price is very close to the current stock price, making this an at-the-money option that's highly sensitive to price movements. `
+    const diffPct = price > 0 ? ((strike - price) / price) * 100 : 0
+    if (diffPct > 0) {
+      logic += `The strike is ${Math.abs(diffPct).toFixed(1)}% above the stock price, meaning this put already carries intrinsic value from the recent downside move. `
+    } else {
+      const neededDrop = Math.abs(diffPct)
+      logic += `The strike is ${neededDrop.toFixed(1)}% below the stock price, so the underlying would need to drop about ${neededDrop.toFixed(1)}% for the put to move in-the-money. `
+    }
   }
 
   if (daysToExp <= 7) {
@@ -190,6 +205,20 @@ const getGreeksExplanation = (opp: Opportunity) => {
   }
 
   return explanations
+}
+
+const formatBreakevenRequirement = (opp: Opportunity) => {
+  const move = opp.breakevenMovePercent
+  if (!isFiniteNumber(move)) {
+    return null
+  }
+
+  if (move <= 0) {
+    return 'Already beyond breakeven'
+  }
+
+  const direction = opp.optionType === 'put' ? 'drop' : 'gain'
+  return `Needs ${Math.abs(move).toFixed(1)}% ${direction} to breakeven`
 }
 
 const renderMoveThesis = (opp: Opportunity) => {
@@ -635,11 +664,10 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
               />
             </div>
             <div className="flex items-center justify-between text-xs text-emerald-800 dark:text-emerald-200 mb-3">
-              {opportunity.breakevenMovePercent !== null ? (
-                <span>Needs {opportunity.breakevenMovePercent.toFixed(1)}% move to breakeven</span>
-              ) : (
-                <span>Breakeven move unavailable</span>
-              )}
+              {(() => {
+                const breakevenText = formatBreakevenRequirement(opportunity)
+                return breakevenText ? <span>{breakevenText}</span> : <span>Breakeven move unavailable</span>
+              })()}
               {opportunity.breakevenPrice !== null && <span>Breakeven ${opportunity.breakevenPrice.toFixed(2)}</span>}
             </div>
             <p className="text-sm text-emerald-900 dark:text-emerald-100 leading-relaxed">
@@ -704,14 +732,20 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
                       <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
                         {scenarioItem.move || `${scenarioItem.return.toFixed(0)}%`} Stock Move
                       </span>
-                      <span className="text-xs font-semibold text-emerald-600">
-                        +{scenarioItem.return.toFixed(1)}%
+                      <span
+                        className={`text-xs font-semibold ${scenarioItem.return >= 0 ? 'text-emerald-600' : 'text-red-600'}`}
+                      >
+                        {scenarioItem.return >= 0
+                          ? `+${scenarioItem.return.toFixed(1)}%`
+                          : `${scenarioItem.return.toFixed(1)}%`}
                       </span>
                     </div>
                     <div className="space-y-1">
                       <div className="flex justify-between text-sm">
                         <span className="text-slate-600 dark:text-slate-400">Profit:</span>
-                        <span className="font-semibold text-emerald-600">
+                        <span
+                          className={`font-semibold ${scenarioItem.profit >= 0 ? 'text-emerald-600' : 'text-red-600'}`}
+                        >
                           {formatCurrency(scenarioItem.profit)}
                         </span>
                       </div>
@@ -769,11 +803,12 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
           <div className="text-lg font-semibold text-slate-900 dark:text-white">
             {opportunity.probabilityOfProfit !== null ? `${opportunity.probabilityOfProfit.toFixed(1)}%` : '—'}
           </div>
-          {opportunity.breakevenMovePercent !== null && (
-            <div className="text-xs text-slate-500 dark:text-slate-400">
-              Needs {opportunity.breakevenMovePercent.toFixed(1)}% move
-            </div>
-          )}
+          {(() => {
+            const breakevenText = formatBreakevenRequirement(opportunity)
+            return breakevenText ? (
+              <div className="text-xs text-slate-500 dark:text-slate-400">{breakevenText}</div>
+            ) : null
+          })()}
         </div>
         <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
           <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Reward-to-Risk</div>
