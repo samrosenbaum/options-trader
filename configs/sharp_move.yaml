@@ -1,0 +1,21 @@
+universe:
+  default_tickers: ["GOOGL", "MSFT", "NVDA", "META", "TSLA", "SPY", "QQQ"]
+filters:
+  min_liquidity: 500
+  max_spread_pct: 0.06
+  call_delta_range: [0.25, 0.65]
+  put_delta_range: [-0.65, -0.25]
+scoring_weights:
+  w_event: 0.30
+  w_vol: 0.20
+  w_tech: 0.25
+  w_flow: 0.15
+  w_micro: 0.10
+event_windows:
+  earnings_days: 3
+  macro_days: 1
+risk:
+  simulations: 10000
+  risk_free_rate: 0.03
+io:
+  cache_ttl_minutes: 120
