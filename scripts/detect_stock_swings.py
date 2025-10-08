@@ -6,6 +6,17 @@ import argparse
 import json
 from typing import List, Union, cast
 
+# Ensure the repository root is on the import path when executed directly.
+try:  # pragma: no cover - defensive runtime configuration
+    import src  # type: ignore  # noqa: F401
+except ModuleNotFoundError:  # pragma: no cover
+    import sys
+    from pathlib import Path
+
+    project_root = Path(__file__).resolve().parents[1]
+    if str(project_root) not in sys.path:
+        sys.path.insert(0, str(project_root))
+
 from src.analysis import SwingSignal, SwingSignalAnalyzer
 
 Result = Union[SwingSignal, dict]
