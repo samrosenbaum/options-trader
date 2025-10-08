@@ -165,15 +165,21 @@ class SwingSignalAnalyzer:
         except Exception:
             return {}
 
+        # Normalize market data the same way we normalize symbol data
+        vix = self._normalize_history("^VIX", vix)
+        spy = self._normalize_history("SPY", spy)
+
         context: Dict[str, float] = {}
-        if not vix.empty:
-            vix_ma = vix["Close"].rolling(20).mean().iloc[-1]
-            vix_latest = vix["Close"].iloc[-1]
-            if vix_ma and not np.isnan(vix_ma):
-                context["vix_ratio"] = float(vix_latest / vix_ma) if vix_ma else 1.0
-        if not spy.empty:
-            spy_ret = spy["Close"].pct_change(5).iloc[-1]
-            if not np.isnan(spy_ret):
+        if not vix.empty and "Close" in vix.columns:
+            vix_close = vix["Close"]
+            vix_ma = vix_close.rolling(20).mean().iloc[-1]
+            vix_latest = vix_close.iloc[-1]
+            if pd.notna(vix_ma) and vix_ma > 0:
+                context["vix_ratio"] = float(vix_latest / vix_ma)
+        if not spy.empty and "Close" in spy.columns:
+            spy_close = spy["Close"]
+            spy_ret = spy_close.pct_change(5).iloc[-1]
+            if pd.notna(spy_ret):
                 context["spy_return_5d"] = float(spy_ret)
         return context
 
@@ -347,10 +353,15 @@ class SwingSignalAnalyzer:
 
         if isinstance(history.columns, pd.MultiIndex):
             try:
-                history = history.xs(symbol, axis=1, level=0)
+                # Try to extract the symbol from level 1 first (where ticker symbols are)
+                history = history.xs(symbol, axis=1, level=1)
             except KeyError:
-                # Fall back to the first level if the exact symbol is not present
-                history = history.droplevel(0, axis=1)
+                try:
+                    # Fall back to level 0 if that didn't work
+                    history = history.xs(symbol, axis=1, level=0)
+                except KeyError:
+                    # If the exact symbol is not present in either level, drop level 0
+                    history = history.droplevel(0, axis=1)
 
         # Ensure the columns are simple strings (xs can return Index with name)
         history.columns = [str(col) for col in history.columns]
