@@ -47,6 +47,19 @@ interface ScannerOpportunity {
     move: string
     return: number
   }>
+  swingSignal?: {
+    symbol: string
+    compositeScore: number
+    classification: string
+    factors: Array<{
+      name: string
+      score: number
+      rationale: string
+      details: Record<string, unknown>
+    }>
+    metadata: Record<string, unknown>
+  } | null
+  swingSignalError?: string
 }
 
 interface ScannerMetadata {

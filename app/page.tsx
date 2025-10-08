@@ -27,6 +27,41 @@ interface MoveAnalysis {
   drivers: string[]
 }
 
+interface SwingSignalFactor {
+  name: string
+  score: number
+  rationale: string
+  details: Record<string, unknown>
+}
+
+interface SwingSignalNewsHeadline {
+  title?: string
+  summary?: string
+  url?: string
+  publisher?: string
+  sentiment_score?: number
+  sentiment_label?: string
+}
+
+interface SwingSignalMetadata extends Record<string, unknown> {
+  generated_at?: string
+  lookback?: string
+  interval?: string
+  atr_ratio?: number
+  momentum_zscore?: number
+  volume_zscore?: number
+  news_sample?: SwingSignalNewsHeadline[]
+  market_context?: Record<string, unknown>
+}
+
+interface SwingSignalInsight {
+  symbol: string
+  compositeScore: number
+  classification: string
+  factors: SwingSignalFactor[]
+  metadata: SwingSignalMetadata
+}
+
 type OpportunitySortOption =
   | 'promising'
   | 'riskReward'
@@ -95,6 +130,8 @@ interface Opportunity {
     }
     impact_score: number
   }>
+  swingSignal?: SwingSignalInsight | null
+  swingSignalError?: string
 }
 
 interface CryptoAlert {
@@ -349,6 +386,82 @@ export default function HomePage() {
     return `${value.toFixed(digits)}%`
   }
 
+  const safeToFixed = (value: number | null | undefined, digits = 1) => {
+    if (value === null || value === undefined || Number.isNaN(value)) {
+      return null
+    }
+    return value.toFixed(digits)
+  }
+
+  const formatSwingClassification = (classification?: string | null) => {
+    if (!classification) {
+      return null
+    }
+
+    const normalized = classification.toLowerCase()
+    const mapping: Record<string, string> = {
+      elevated_swing_risk: 'Elevated swing risk',
+      watchlist: 'On watchlist',
+      calm: 'Calm regime',
+    }
+
+    if (mapping[normalized]) {
+      return mapping[normalized]
+    }
+
+    return classification
+      .split('_')
+      .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+      .join(' ')
+  }
+
+  const getSwingBadgeClass = (classification?: string | null) => {
+    switch (classification) {
+      case 'elevated_swing_risk':
+        return 'bg-red-100 text-red-700 border border-red-200 dark:bg-red-500/10 dark:text-red-200 dark:border-red-500/40'
+      case 'watchlist':
+        return 'bg-amber-100 text-amber-700 border border-amber-200 dark:bg-amber-500/10 dark:text-amber-200 dark:border-amber-500/40'
+      case 'calm':
+        return 'bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-200 dark:border-emerald-500/40'
+      default:
+        return 'bg-slate-100 text-slate-700 border border-slate-200 dark:bg-slate-700/40 dark:text-slate-200 dark:border-slate-600/50'
+    }
+  }
+
+  const formatDetailValue = (value: unknown): string => {
+    if (typeof value === 'number') {
+      if (Number.isInteger(value)) {
+        return value.toLocaleString()
+      }
+      if (Math.abs(value) >= 100) {
+        return value.toFixed(1)
+      }
+      if (Math.abs(value) >= 1) {
+        return value.toFixed(2)
+      }
+      return value.toFixed(3)
+    }
+
+    if (typeof value === 'string') {
+      return value.replace(/_/g, ' ')
+    }
+
+    if (Array.isArray(value)) {
+      return value
+        .map((item) => formatDetailValue(item))
+        .filter(Boolean)
+        .join(', ')
+    }
+
+    if (value && typeof value === 'object') {
+      return Object.entries(value as Record<string, unknown>)
+        .map(([key, val]) => `${key}: ${formatDetailValue(val)}`)
+        .join(', ')
+    }
+
+    return ''
+  }
+
   const formatBreakevenRequirement = (opp: Opportunity) => {
     const move = opp.breakevenMovePercent
     if (move === null || !Number.isFinite(move)) {
@@ -508,8 +621,174 @@ export default function HomePage() {
     const moveAnalysis = opp.moveAnalysis
     const tradeLogic = getTradeLogic(opp)
 
+    const swingSignal = opp.swingSignal
+    const swingSignalError = opp.swingSignalError
+
+    const swingInsights = (() => {
+      if (!swingSignal && !swingSignalError) {
+        return null
+      }
+
+      const classificationLabel = formatSwingClassification(swingSignal?.classification)
+      const compositeScore = typeof swingSignal?.compositeScore === 'number' ? swingSignal.compositeScore : null
+
+      const metadata = swingSignal?.metadata ?? {}
+      const atrRatio = typeof metadata.atr_ratio === 'number' ? metadata.atr_ratio : null
+      const momentumZ = typeof metadata.momentum_zscore === 'number' ? metadata.momentum_zscore : null
+      const volumeZ = typeof metadata.volume_zscore === 'number' ? metadata.volume_zscore : null
+
+      const metrics: Array<{ label: string; value: string }> = [
+        {
+          label: 'Composite Score',
+          value: compositeScore !== null ? compositeScore.toFixed(1) : '—',
+        },
+        {
+          label: 'ATR Expansion',
+          value: atrRatio !== null ? `${atrRatio.toFixed(2)}x baseline` : '—',
+        },
+        {
+          label: 'Momentum Z-Score',
+          value: momentumZ !== null ? `${momentumZ.toFixed(2)}σ` : '—',
+        },
+        {
+          label: 'Volume Z-Score',
+          value: volumeZ !== null ? `${volumeZ.toFixed(2)}σ` : '—',
+        },
+      ]
+
+      if (metadata.market_context && typeof metadata.market_context === 'object') {
+        const context = metadata.market_context as Record<string, unknown>
+        const vixRatio = typeof context.vix_ratio === 'number' ? context.vix_ratio : null
+        const spyReturn = typeof context.spy_return_5d === 'number' ? context.spy_return_5d : null
+        if (vixRatio !== null) {
+          metrics.push({ label: 'VIX vs 20d', value: `${(vixRatio * 100).toFixed(0)}%` })
+        }
+        if (spyReturn !== null) {
+          metrics.push({ label: 'SPY 5d', value: `${(spyReturn * 100).toFixed(1)}%` })
+        }
+      }
+
+      const factors = swingSignal?.factors ?? []
+      const sortedFactors = [...factors].sort((a, b) => {
+        const scoreA = typeof a.score === 'number' ? a.score : -Infinity
+        const scoreB = typeof b.score === 'number' ? b.score : -Infinity
+        return scoreB - scoreA
+      })
+
+      const newsSample: SwingSignalNewsHeadline[] = []
+      if (Array.isArray(metadata.news_sample)) {
+        metadata.news_sample.forEach((headline) => {
+          newsSample.push(headline)
+        })
+      }
+
+      return (
+        <div className="bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/50 rounded-2xl p-4 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+            <div>
+              <h5 className="font-medium text-indigo-900 dark:text-indigo-100">Multi-Factor Swing Signal</h5>
+              <p className="text-xs text-indigo-700/80 dark:text-indigo-200/80">
+                Blends volatility, momentum, volume, news sentiment, and market regime to gauge move potential.
+              </p>
+            </div>
+            {classificationLabel && (
+              <span className={`px-3 py-1 rounded-full text-xs font-medium ${getSwingBadgeClass(swingSignal?.classification)}`}>
+                {classificationLabel}
+              </span>
+            )}
+          </div>
+
+          {swingSignalError && !swingSignal && (
+            <div className="text-xs text-red-600 dark:text-red-300 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl px-3 py-2">
+              Unable to compute swing signal: {swingSignalError}
+            </div>
+          )}
+
+          {swingSignal && (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {metrics.map((metric) => (
+                  <div key={metric.label} className="bg-white/60 dark:bg-slate-900/60 rounded-xl px-3 py-2">
+                    <div className="text-[11px] uppercase tracking-wide text-indigo-600 dark:text-indigo-300 font-semibold">
+                      {metric.label}
+                    </div>
+                    <div className="text-sm font-semibold text-slate-900 dark:text-white">{metric.value}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="space-y-3">
+                {sortedFactors.map((factor) => {
+                  const detailEntries = Object.entries(factor.details ?? {}).filter(([label, value]) =>
+                    label !== 'headlines' && value !== null && value !== undefined && formatDetailValue(value) !== ''
+                  )
+                  return (
+                    <div
+                      key={factor.name}
+                      className="bg-white/70 dark:bg-slate-900/60 border border-indigo-100/60 dark:border-indigo-900/40 rounded-xl px-3 py-3"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <div className="text-sm font-semibold text-slate-900 dark:text-white">{factor.name}</div>
+                          <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">{factor.rationale}</p>
+                        </div>
+                        <span className="text-xs font-semibold text-indigo-700 dark:text-indigo-200 bg-indigo-100/80 dark:bg-indigo-800/50 rounded-full px-2 py-1">
+                          {safeToFixed(factor.score, 1) ?? '—'}
+                        </span>
+                      </div>
+                      {detailEntries.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {detailEntries.map(([label, value]) => (
+                            <span
+                              key={label}
+                              className="inline-flex items-center gap-1 rounded-full bg-indigo-100/70 dark:bg-indigo-800/40 text-[11px] text-indigo-700 dark:text-indigo-200 px-2 py-1"
+                            >
+                              <span className="font-medium">{label.replace(/_/g, ' ')}:</span>
+                              <span>{formatDetailValue(value)}</span>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+
+              {newsSample.length > 0 && (
+                <div className="bg-white/70 dark:bg-slate-900/60 border border-indigo-100/60 dark:border-indigo-900/40 rounded-xl px-3 py-3">
+                  <div className="text-[11px] uppercase tracking-wide text-indigo-600 dark:text-indigo-300 font-semibold mb-2">
+                    Recent catalysts sampled
+                  </div>
+                  <div className="space-y-2">
+                    {newsSample.slice(0, 3).map((headline, index) => (
+                      <div key={index} className="text-xs text-slate-700 dark:text-slate-200">
+                        <div className="font-medium text-slate-900 dark:text-white">{headline?.title || 'Headline unavailable'}</div>
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                          {headline?.publisher && <span>{headline.publisher}</span>}
+                          {typeof headline?.sentiment_label === 'string' && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-indigo-100/70 dark:bg-indigo-800/40 text-indigo-700 dark:text-indigo-200">
+                              Sentiment: {headline.sentiment_label.replace(/_/g, ' ')}
+                              {typeof headline?.sentiment_score === 'number' && (
+                                <span>({headline.sentiment_score.toFixed(2)})</span>
+                              )}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )
+    })()
+
     return (
       <div className="space-y-4">
+        {swingInsights}
+
         {tradeLogic && (
           <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
             <h5 className="font-medium text-slate-900 dark:text-white mb-2">Trade Logic</h5>

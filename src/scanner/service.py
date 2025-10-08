@@ -13,6 +13,7 @@ from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Tuple
 import pandas as pd
 
 from scripts.bulk_options_fetcher import BulkOptionsFetcher
+from src.analysis import SwingSignal, SwingSignalAnalyzer
 from src.config import AppSettings, get_settings
 from src.scanner.iv_rank_history import IVRankHistory
 from src.scanner.universe import build_scan_universe
@@ -67,6 +68,9 @@ class SmartOptionsScanner:
         except Exception:
             sqlite_path = None
         self.iv_history = IVRankHistory(sqlite_path)
+        self.swing_analyzer: SwingSignalAnalyzer | None = None
+        self._swing_signal_cache: Dict[str, Optional[Dict[str, Any]]] = {}
+        self._swing_error_cache: Dict[str, str] = {}
 
     @property
     def batch_size(self) -> int:
@@ -151,6 +155,49 @@ class SmartOptionsScanner:
 
         return data
 
+    def _serialize_swing_signal(self, signal: SwingSignal) -> Dict[str, Any]:
+        return {
+            "symbol": signal.symbol,
+            "compositeScore": round(signal.composite_score, 2),
+            "classification": signal.classification,
+            "factors": [
+                {
+                    "name": factor.name,
+                    "score": round(factor.score, 2),
+                    "rationale": factor.rationale,
+                    "details": factor.details,
+                }
+                for factor in signal.factors
+            ],
+            "metadata": signal.metadata,
+        }
+
+    def _swing_signal_for(self, symbol: str) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
+        normalized = str(symbol).upper()
+        if normalized in self._swing_signal_cache:
+            return self._swing_signal_cache[normalized], self._swing_error_cache.get(normalized)
+
+        if self.swing_analyzer is None:
+            self.swing_analyzer = SwingSignalAnalyzer()
+
+        try:
+            signal = self.swing_analyzer.analyze(normalized)
+        except Exception as exc:  # noqa: BLE001
+            message = str(exc)
+            self._swing_signal_cache[normalized] = None
+            self._swing_error_cache[normalized] = message
+            print(
+                f"⚠️  Swing analyzer unavailable for {normalized}: {message}",
+                file=sys.stderr,
+            )
+            return None, message
+
+        payload = self._serialize_swing_signal(signal)
+        self._swing_signal_cache[normalized] = payload
+        if normalized in self._swing_error_cache:
+            self._swing_error_cache.pop(normalized, None)
+        return payload, None
+
     def analyze_opportunities(self, options_data: pd.DataFrame | None) -> List[Dict[str, Any]]:
         """Analyze options data for opportunities."""
 
@@ -198,6 +245,8 @@ class SmartOptionsScanner:
                 volume_ratio = float(option["volume"] / max(option["openInterest"], 1))
                 spread_pct = (option["ask"] - option["bid"]) / max(option["lastPrice"], 0.01)
                 probability_percent = self.estimate_probability_percent(probability_score)
+
+                swing_signal, swing_error = self._swing_signal_for(option["symbol"])
 
                 reasoning = self.generate_reasoning(
                     option,
@@ -277,6 +326,10 @@ class SmartOptionsScanner:
                         "priceAgeSeconds": option.get("_price_age_seconds"),
                     },
                 }
+                if swing_signal is not None:
+                    opportunity["swingSignal"] = swing_signal
+                if swing_error is not None:
+                    opportunity["swingSignalError"] = swing_error
                 opportunities.append(opportunity)
 
         # Sort by score and limit to top 20 to prevent JSON overflow

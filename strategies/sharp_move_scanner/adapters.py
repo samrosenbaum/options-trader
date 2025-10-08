@@ -8,9 +8,8 @@ from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from functools import lru_cache
 from pathlib import Path
-from typing import Dict, List, Optional, Sequence
+from typing import Dict, Iterable, List, Optional, Sequence
 
-import numpy as np
 import pandas as pd
 import yfinance as yf
 
@@ -23,77 +22,6 @@ except Exception:  # pragma: no cover - defensive guard for minimal installs
     OptionsDataAdapter = None  # type: ignore
 
 LOGGER = logging.getLogger("sharp_move.adapters")
-
-_SAMPLE_DATA_DIR = Path("data/sharp_move_samples")
-
-
-def _sample_history_path(symbol: str) -> Path:
-    return _SAMPLE_DATA_DIR / f"{symbol.upper()}_history.csv"
-
-
-def _load_sample_history(symbol: str) -> pd.DataFrame:
-    path = _sample_history_path(symbol)
-    if not path.exists():
-        return pd.DataFrame()
-    history = pd.read_csv(path, parse_dates=["Date"])
-    history.set_index("Date", inplace=True)
-    return history
-
-
-def _synthetic_expirations() -> Sequence[date]:
-    today = date.today()
-    base = today + timedelta(days=3)
-    return [base, base + timedelta(days=2), base + timedelta(days=5)]
-
-
-def _synthetic_chain(symbol: str, expiration: date) -> pd.DataFrame:
-    history = _load_sample_history(symbol)
-    if history.empty:
-        spot = 100.0
-    else:
-        spot = float(history["Close"].iloc[-1])
-    spread_width = max(spot * 0.02, 1.0)
-    strikes = [round(spot * factor, 2) for factor in (0.95, 1.0, 1.05)]
-    rows: List[Dict[str, object]] = []
-    for idx, strike in enumerate(strikes):
-        offset = strikes[idx] - spot
-        base_mid = max(spread_width + abs(offset) * 0.1, 0.5)
-        bid = base_mid * 0.98
-        ask = base_mid * 1.02
-        iv = max(0.2, min(0.6, 0.35 + (idx - 1) * 0.05))
-        volume = 800 + idx * 150
-        oi = 1200 + idx * 200
-        gamma = 0.02 / (idx + 1)
-        theta = -0.05 * (idx + 1)
-        vega = 0.1 * (idx + 1)
-        call_delta = 0.25 + idx * 0.2
-        put_delta = -0.25 - idx * 0.2
-        for opt_type, delta in (("call", call_delta), ("put", put_delta)):
-            rows.append(
-                {
-                    "symbol": symbol,
-                    "expiration": expiration,
-                    "type": opt_type,
-                    "strike": float(strike),
-                    "bid": float(bid),
-                    "ask": float(ask),
-                    "lastPrice": base_mid,
-                    "volume": float(volume),
-                    "openInterest": float(oi),
-                    "impliedVolatility": float(iv),
-                    "delta": float(delta if opt_type == "call" else -abs(delta)),
-                    "gamma": float(gamma),
-                    "theta": float(theta),
-                    "vega": float(vega),
-                    "stockPrice": float(spot),
-                }
-            )
-    frame = pd.DataFrame(rows)
-    if not frame.empty:
-        frame["mid"] = (frame["bid"] + frame["ask"]) / 2.0
-        frame["spread_pct"] = (frame["ask"] - frame["bid"]).clip(lower=0) / frame["mid"].replace(0, np.nan)
-        frame["spread_pct"] = frame["spread_pct"].fillna(0.05)
-    return frame
 
 
 @dataclass
@@ -139,7 +67,7 @@ def list_expirations(symbol: str) -> Sequence[date]:
         expirations = getattr(ticker, "options", [])
     except Exception as exc:  # pragma: no cover - yfinance uses broad exceptions
         LOGGER.error("Failed to load expirations via yfinance for %s: %s", normalized, exc)
-        return _synthetic_expirations()
+        return []
 
     parsed: List[date] = []
     for raw in expirations:
@@ -147,7 +75,7 @@ def list_expirations(symbol: str) -> Sequence[date]:
             parsed.append(datetime.strptime(raw, "%Y-%m-%d").date())
         except Exception:
             continue
-    return parsed or _synthetic_expirations()
+    return parsed
 
 
 def _fetch_chain_via_adapter(symbol: str, expiration: date) -> OptionsChain | None:
@@ -176,15 +104,7 @@ def get_options_chain(symbol: str, expiration: date) -> pd.DataFrame:
         option_chain = ticker.option_chain(expiration.strftime("%Y-%m-%d"))
     except Exception as exc:  # pragma: no cover - defensive guard
         LOGGER.error("yfinance failed to fetch option chain for %s %s: %s", normalized, expiration, exc)
-        synthetic = _synthetic_chain(normalized, expiration)
-        if synthetic.empty:
-            return synthetic
-        spot = get_spot_price(normalized)
-        if spot is not None:
-            synthetic["stockPrice"] = synthetic.get("stockPrice", spot)
-        else:
-            synthetic["stockPrice"] = synthetic.get("stockPrice")
-        return synthetic
+        return pd.DataFrame()
 
     calls = getattr(option_chain, "calls", pd.DataFrame()).copy()
     puts = getattr(option_chain, "puts", pd.DataFrame()).copy()
@@ -195,7 +115,7 @@ def get_options_chain(symbol: str, expiration: date) -> pd.DataFrame:
         frame["symbol"] = normalized
         frame["expiration"] = expiration
     if calls.empty and puts.empty:
-        return _synthetic_chain(normalized, expiration)
+        return pd.DataFrame()
     combined = pd.concat([calls, puts], ignore_index=True, sort=False)
     spot = get_spot_price(normalized)
     if spot is not None:
@@ -236,13 +156,6 @@ def get_spot_price(symbol: str) -> float | None:
             return float(price)
     except Exception:
         LOGGER.debug("ticker.info lookup failed for %s", normalized, exc_info=True)
-
-    history = _load_sample_history(normalized)
-    if not history.empty:
-        try:
-            return float(history["Close"].iloc[-1])
-        except Exception:
-            LOGGER.debug("Sample history close lookup failed for %s", normalized, exc_info=True)
     return None
 
 
@@ -256,15 +169,8 @@ def get_price_history(symbol: str, period: str = "1y", interval: str = "1d") -> 
         history = ticker.history(period=period, interval=interval, auto_adjust=False)
     except Exception as exc:  # pragma: no cover - yfinance raises broad errors
         LOGGER.error("Failed to download price history for %s: %s", normalized, exc)
-        history = pd.DataFrame()
-    if history is not None and not history.empty:
-        return history.dropna(how="all")
-
-    sample = _load_sample_history(normalized)
-    if sample.empty:
-        LOGGER.warning("No sample history available for %s", normalized)
         return pd.DataFrame()
-    return sample
+    return history.dropna(how="all")
 
 
 @lru_cache(maxsize=64)
