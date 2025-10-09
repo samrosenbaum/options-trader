@@ -783,67 +783,67 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
   const maxLossWarning = `Maximum loss: ${formatCurrency(opportunity.maxLossAmount)}${maxLossPercentLabel ? ` (${maxLossPercentLabel}% of investment)` : ''}. Options can expire worthless, and you could lose your entire investment.`
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-100 dark:border-slate-800 hover:border-slate-200 dark:hover:border-slate-700 transition-colors">
-      <div className="flex items-start justify-between mb-6">
-        <div className="space-y-3">
-          <div className="flex items-center gap-4">
-            <div className="text-2xl font-bold text-slate-900 dark:text-white">{opportunity.symbol}</div>
-            <div className={`px-3 py-1 rounded-xl text-sm font-medium ${getScoreColor(opportunity.score)}`}>
-              {opportunity.score}/100
+    <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 hover:shadow-lg transition-all">
+      <div className="flex items-start justify-between mb-5">
+        <div className="space-y-3 flex-1">
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="text-3xl font-bold text-slate-900 dark:text-white">{opportunity.symbol}</div>
+            <div className={`px-4 py-1.5 rounded-lg text-base font-bold ${getScoreColor(opportunity.score)}`}>
+              {opportunity.score}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               {opportunity.gammaSqueezeScore && opportunity.gammaSqueezeScore > 0 && (
-                <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-xl text-xs font-medium">
-                  GAMMA: {opportunity.gammaSqueezeScore}
+                <span className="px-3 py-1 bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 rounded-lg text-sm font-semibold">
+                  GAMMA {opportunity.gammaSqueezeScore}
                 </span>
               )}
               {opportunity.unusualFlowScore && opportunity.unusualFlowScore > 0 && (
-                <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-xl text-xs font-medium">
-                  FLOW: {opportunity.unusualFlowScore}
+                <span className="px-3 py-1 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 rounded-lg text-sm font-semibold">
+                  FLOW {opportunity.unusualFlowScore}
                 </span>
               )}
               {opportunity.newsImpactScore && opportunity.newsImpactScore > 0 && (
-                <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-xl text-xs font-medium">
-                  NEWS: {opportunity.newsImpactScore}
+                <span className="px-3 py-1 bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 rounded-lg text-sm font-semibold">
+                  NEWS {opportunity.newsImpactScore}
                 </span>
               )}
               {showAsymmetricEdge && (
-                <span className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-xl text-xs font-semibold">
-                  ASYM EDGE {riskRewardRatioLabel}x
+                <span className="px-3 py-1 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 rounded-lg text-sm font-bold">
+                  {riskRewardRatioLabel}x EDGE
                 </span>
               )}
               {opportunity.probabilityOfProfit !== null && opportunity.probabilityOfProfit >= 55 && (
-                <span className="px-3 py-1 bg-sky-100 text-sky-700 rounded-xl text-xs font-semibold">
-                  WIN RATE {opportunity.probabilityOfProfit.toFixed(0)}%
+                <span className="px-3 py-1 bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400 rounded-lg text-sm font-bold">
+                  {opportunity.probabilityOfProfit.toFixed(0)}% WIN
                 </span>
               )}
             </div>
           </div>
 
-          <div className="flex items-center gap-6 text-sm text-slate-600 dark:text-slate-400">
-            <span>
+          <div className="flex items-center gap-5 text-base text-slate-600 dark:text-slate-400 flex-wrap">
+            <span className="font-semibold">
               {opportunity.optionType.toUpperCase()} ${opportunity.strike}
             </span>
-            <span>Expires {opportunity.expiration}</span>
-            <span>{opportunity.daysToExpiration} days</span>
-            <span className={`px-2 py-1 rounded-lg text-xs font-medium border ${getRiskColor(opportunity.riskLevel)}`}>
-              {opportunity.riskLevel.toUpperCase()} RISK
+            <span>Exp: {opportunity.expiration}</span>
+            <span className="font-medium">{opportunity.daysToExpiration}d</span>
+            <span className={`px-3 py-1 rounded-lg text-sm font-bold border ${getRiskColor(opportunity.riskLevel)}`}>
+              {opportunity.riskLevel.toUpperCase()}
             </span>
           </div>
         </div>
 
-        <div className="text-right space-y-1">
-          <div className="text-2xl font-semibold text-slate-900 dark:text-white">
+        <div className="text-right space-y-1 ml-4">
+          <div className="text-3xl font-bold text-slate-900 dark:text-white">
             {formatCurrency(opportunity.premium)}
           </div>
-          <div className="text-sm text-slate-600 dark:text-slate-400">Premium</div>
+          <div className="text-sm text-slate-500 dark:text-slate-400 font-medium">Premium</div>
         </div>
       </div>
 
       {/* Trade Summary */}
       {opportunity.tradeSummary ? (
-        <div className="mb-6 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 border border-indigo-200 dark:border-indigo-800 rounded-2xl p-4">
-          <div className="text-sm font-medium text-slate-900 dark:text-white leading-relaxed">
+        <div className="mb-5 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 border border-indigo-200 dark:border-indigo-800 rounded-xl p-5">
+          <div className="text-base font-medium text-slate-900 dark:text-white leading-relaxed">
             {opportunity.tradeSummary}
           </div>
         </div>

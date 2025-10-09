@@ -1185,33 +1185,32 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-slate-950">
-      {/* Header - Fabric-inspired clean design */}
-      <div className="border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950">
-        <div className="max-w-6xl mx-auto px-8 py-12">
-          <div className="flex items-center justify-between">
-            <div className="space-y-3">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl flex items-center justify-center overflow-hidden">
-                  <img src="/logo.png" alt="Money Printer" className="w-full h-full object-contain" />
-                </div>
-                <div>
-                  <h1 className="text-4xl font-semibold text-slate-900 dark:text-white tracking-tight">
-                    Money Printer
-                  </h1>
-                  <p className="text-lg text-slate-600 dark:text-slate-400 font-normal">
-                    Your second brain for finding explosive trading opportunities
-                  </p>
-                </div>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+      {/* Header - Modern, compact design */}
+      <div className="border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+        <div className="max-w-7xl mx-auto px-6 py-6">
+          <div className="flex items-center justify-between flex-wrap gap-6">
+            {/* Logo and Title */}
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center overflow-hidden">
+                <img src="/logo.png" alt="Money Printer" className="w-full h-full object-contain" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+                  Money Printer
+                </h1>
+                <p className="text-sm text-slate-600 dark:text-slate-400">
+                  Find explosive trading opportunities
+                </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-4 flex-wrap">
               {/* Tab Navigation */}
-              <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-2xl p-1">
+              <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-1">
                 <button
                   onClick={() => setActiveTab('options')}
-                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                     activeTab === 'options'
                       ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm'
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -1221,7 +1220,7 @@ export default function HomePage() {
                 </button>
                 <button
                   onClick={() => setActiveTab('crypto')}
-                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                     activeTab === 'crypto'
                       ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm'
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -1231,46 +1230,23 @@ export default function HomePage() {
                 </button>
               </div>
 
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                  Investment Amount:
-                </span>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-slate-500">$</span>
-                  <input
-                    type="number"
-                    value={investmentAmount}
-                    onChange={(e) => setInvestmentAmount(Number(e.target.value))}
-                    className="w-24 px-2 py-1 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
-                    min="100"
-                    max="100000"
-                    step="100"
-                  />
-                </div>
+              <div className="flex items-center gap-2 bg-white dark:bg-slate-800 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700">
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">$</span>
+                <input
+                  type="number"
+                  value={investmentAmount}
+                  onChange={(e) => setInvestmentAmount(Number(e.target.value))}
+                  className="w-28 text-base font-semibold bg-transparent text-slate-900 dark:text-white focus:outline-none"
+                  min="100"
+                  max="100000"
+                  step="100"
+                />
               </div>
-              
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                  Auto-refresh {isMarketOpen() ? '(every 60s)' : '(when market opens)'}
-                </span>
-                <button
-                  onClick={() => setAutoRefresh(!autoRefresh)}
-                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                    autoRefresh ? 'bg-slate-900 dark:bg-white' : 'bg-slate-200 dark:bg-slate-700'
-                  }`}
-                >
-                  <span
-                    className={`inline-block h-3 w-3 transform rounded-full bg-white dark:bg-slate-900 transition-transform ${
-                      autoRefresh ? 'translate-x-5' : 'translate-x-1'
-                    }`}
-                  />
-                </button>
-              </div>
-              
+
               <button
                 onClick={activeTab === 'options' ? fetchOpportunities : fetchCryptoAlerts}
                 disabled={activeTab === 'options' ? isLoading : cryptoLoading}
-                className="px-6 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-medium shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-3 disabled:opacity-50 text-sm"
+                className="px-6 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-lg font-semibold shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-2 disabled:opacity-50"
               >
                 {(activeTab === 'options' ? isLoading : cryptoLoading) ? (
                   <>
@@ -1282,97 +1258,87 @@ export default function HomePage() {
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                     </svg>
-                    Scan {activeTab === 'options' ? 'Options' : 'Crypto'}
+                    Scan
                   </>
                 )}
               </button>
               </div>
             </div>
 
-          <div className="mt-6 flex items-center gap-6 text-sm">
+          <div className="mt-4 flex items-center gap-4 flex-wrap text-sm">
+            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg font-medium ${
+              isMarketOpen()
+                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+            }`}>
+              <div className={`w-2 h-2 rounded-full ${
+                isMarketOpen() ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'
+              }`}></div>
+              {isMarketOpen() ? 'Market Open' : 'Market Closed'}
+            </div>
             {lastSuccessfulUpdate && (
-              <div className="text-slate-500 dark:text-slate-400">
-                Last successful scan: {lastSuccessfulUpdate.toLocaleString()}
+              <div className="text-slate-600 dark:text-slate-400">
+                Last scan: {lastSuccessfulUpdate.toLocaleTimeString()}
                 {isStaleData && (
-                  <span className="ml-2 px-2 py-0.5 bg-amber-100 text-amber-700 text-xs rounded-md font-medium">
-                    Showing cached data
+                  <span className="ml-2 px-2 py-1 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 text-xs rounded-md font-medium">
+                    Cached
                   </span>
                 )}
               </div>
             )}
-            {lastUpdate && lastUpdate !== lastSuccessfulUpdate && (
-              <div className="text-slate-400 dark:text-slate-500 text-xs">
-                Last check: {lastUpdate.toLocaleString()}
-              </div>
-            )}
-            <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
-              isMarketOpen()
-                ? 'bg-emerald-100 text-emerald-700'
-                : 'bg-slate-100 text-slate-600'
-            }`}>
-              <div className={`w-2 h-2 rounded-full ${
-                isMarketOpen() ? 'bg-emerald-500' : 'bg-slate-400'
-              }`}></div>
-              {isMarketOpen() ? 'Market Open' : 'Market Closed'}
-            </div>
                 </div>
                 </div>
               </div>
 
       {/* Live Ticker */}
-      <div className="max-w-6xl mx-auto px-8">
+      <div className="max-w-7xl mx-auto px-6 py-4">
         <LiveTicker />
       </div>
 
-      <div className="max-w-6xl mx-auto px-8 py-12">
+      <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Scan Progress */}
-        <RealTimeProgress 
-          isScanning={isLoading || cryptoLoading} 
+        <RealTimeProgress
+          isScanning={isLoading || cryptoLoading}
           scanType={activeTab}
           onScanComplete={(results) => {
             console.log('Scan completed with results:', results)
           }}
         />
-        
-        {/* Stats Cards - Fabric-inspired minimal design */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-12">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-100 dark:border-slate-800">
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Total Evaluated</p>
-              <p className="text-3xl font-semibold text-slate-900 dark:text-white">{totalEvaluated}</p>
-              <p className="text-xs text-slate-500 dark:text-slate-500">Options scanned</p>
+
+        {/* Stats Cards - Modern compact design */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+          <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800">
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">Scanned</p>
+              <p className="text-2xl font-bold text-slate-900 dark:text-white">{totalEvaluated}</p>
             </div>
           </div>
 
-          <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-100 dark:border-slate-800">
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Total Opportunities</p>
-              <p className="text-3xl font-semibold text-slate-900 dark:text-white">{opportunities.length}</p>
-              <p className="text-xs text-slate-500 dark:text-slate-500">High-quality picks</p>
+          <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800">
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">Found</p>
+              <p className="text-2xl font-bold text-slate-900 dark:text-white">{opportunities.length}</p>
             </div>
           </div>
 
-          <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-100 dark:border-slate-800">
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-slate-600 dark:text-slate-400">High Score (90+)</p>
-              <p className="text-3xl font-semibold text-red-600">{opportunities.filter(o => o.score >= 90).length}</p>
-              <p className="text-xs text-red-600">Explosive potential</p>
+          <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800">
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">High Score</p>
+              <p className="text-2xl font-bold text-red-600 dark:text-red-500">{opportunities.filter(o => o.score >= 90).length}</p>
             </div>
           </div>
 
-          <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-100 dark:border-slate-800">
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-slate-600 dark:text-slate-400">High Volume</p>
-              <p className="text-3xl font-semibold text-orange-600">{opportunities.filter(o => o.volumeRatio > 2).length}</p>
-              <p className="text-xs text-orange-600">Volume spikes</p>
+          <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800">
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">Volume</p>
+              <p className="text-2xl font-bold text-orange-600 dark:text-orange-500">{opportunities.filter(o => o.volumeRatio > 2).length}</p>
             </div>
           </div>
 
-          <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-100 dark:border-slate-800">
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-slate-600 dark:text-slate-400">News Catalysts</p>
-              <p className="text-3xl font-semibold text-blue-600">{opportunities.filter(o => o.catalysts && o.catalysts.length > 0).length}</p>
-              <p className="text-xs text-blue-600">With catalysts</p>
+          <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800">
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">Catalysts</p>
+              <p className="text-2xl font-bold text-blue-600 dark:text-blue-500">{opportunities.filter(o => o.catalysts && o.catalysts.length > 0).length}</p>
             </div>
           </div>
         </div>
@@ -1449,7 +1415,7 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div className="grid gap-6">
+            <div className="space-y-5">
               {sortedOpportunities.map((opp, index) => {
                 const scenario = calculateInvestmentScenario(opp, investmentAmount)
                 const isPerContractView = scenario.basis === 'perContract'
@@ -1466,68 +1432,68 @@ export default function HomePage() {
                 return (
                   <div
                     key={index}
-                    className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-100 dark:border-slate-800 hover:border-slate-200 dark:hover:border-slate-700 transition-colors"
+                    className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 hover:shadow-lg transition-all"
                   >
-                    <div className="flex items-start justify-between mb-6">
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-4">
-                          <div className="text-2xl font-bold text-slate-900 dark:text-white">{opp.symbol}</div>
-                          <div className={`px-3 py-1 rounded-xl text-sm font-medium ${getScoreColor(opp.score)}`}>
-                            {opp.score}/100
+                    <div className="flex items-start justify-between mb-5">
+                      <div className="space-y-3 flex-1">
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <div className="text-3xl font-bold text-slate-900 dark:text-white">{opp.symbol}</div>
+                          <div className={`px-4 py-1.5 rounded-lg text-base font-bold ${getScoreColor(opp.score)}`}>
+                            {opp.score}
                           </div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             {opp.gammaSqueezeScore && opp.gammaSqueezeScore > 0 && (
-                              <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-xl text-xs font-medium">
-                                GAMMA: {opp.gammaSqueezeScore}
+                              <span className="px-3 py-1 bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 rounded-lg text-sm font-semibold">
+                                GAMMA {opp.gammaSqueezeScore}
                               </span>
                             )}
                             {opp.unusualFlowScore && opp.unusualFlowScore > 0 && (
-                              <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-xl text-xs font-medium">
-                                FLOW: {opp.unusualFlowScore}
+                              <span className="px-3 py-1 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 rounded-lg text-sm font-semibold">
+                                FLOW {opp.unusualFlowScore}
                               </span>
                             )}
                             {opp.newsImpactScore && opp.newsImpactScore > 0 && (
-                              <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-xl text-xs font-medium">
-                                NEWS: {opp.newsImpactScore}
+                              <span className="px-3 py-1 bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 rounded-lg text-sm font-semibold">
+                                NEWS {opp.newsImpactScore}
                               </span>
                             )}
                             {opp.riskRewardRatio && opp.riskRewardRatio >= 3 && (
-                              <span className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-xl text-xs font-semibold">
-                                ASYM EDGE {opp.riskRewardRatio.toFixed(1)}x
+                              <span className="px-3 py-1 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 rounded-lg text-sm font-bold">
+                                {opp.riskRewardRatio.toFixed(1)}x EDGE
                               </span>
                             )}
                             {opp.probabilityOfProfit !== null && opp.probabilityOfProfit >= 55 && (
-                              <span className="px-3 py-1 bg-sky-100 text-sky-700 rounded-xl text-xs font-semibold">
-                                WIN RATE {opp.probabilityOfProfit.toFixed(0)}%
+                              <span className="px-3 py-1 bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400 rounded-lg text-sm font-bold">
+                                {opp.probabilityOfProfit.toFixed(0)}% WIN
                               </span>
                             )}
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-6 text-sm text-slate-600 dark:text-slate-400">
-                          <span>
+                        <div className="flex items-center gap-5 text-base text-slate-600 dark:text-slate-400 flex-wrap">
+                          <span className="font-semibold">
                             {opp.optionType.toUpperCase()} ${opp.strike}
                           </span>
-                          <span>Expires {opp.expiration}</span>
-                          <span>{opp.daysToExpiration} days</span>
-                          <span className={`px-2 py-1 rounded-lg text-xs font-medium border ${getRiskColor(opp.riskLevel)}`}>
-                            {opp.riskLevel.toUpperCase()} RISK
+                          <span>Exp: {opp.expiration}</span>
+                          <span className="font-medium">{opp.daysToExpiration}d</span>
+                          <span className={`px-3 py-1 rounded-lg text-sm font-bold border ${getRiskColor(opp.riskLevel)}`}>
+                            {opp.riskLevel.toUpperCase()}
                           </span>
                         </div>
                       </div>
 
-                      <div className="text-right space-y-1">
-                        <div className="text-2xl font-semibold text-slate-900 dark:text-white">
+                      <div className="text-right space-y-1 ml-4">
+                        <div className="text-3xl font-bold text-slate-900 dark:text-white">
                           {formatCurrency(opp.premium)}
                         </div>
-                        <div className="text-sm text-slate-600 dark:text-slate-400">Premium</div>
+                        <div className="text-sm text-slate-500 dark:text-slate-400 font-medium">Premium</div>
                       </div>
                     </div>
 
                     {/* Trade Summary */}
                     {opp.tradeSummary && (
-                      <div className="mb-6 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 border border-indigo-200 dark:border-indigo-800 rounded-2xl p-4">
-                        <div className="text-sm font-medium text-slate-900 dark:text-white leading-relaxed">
+                      <div className="mb-5 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 border border-indigo-200 dark:border-indigo-800 rounded-xl p-5">
+                        <div className="text-base font-medium text-slate-900 dark:text-white leading-relaxed">
                           {opp.tradeSummary}
                         </div>
                       </div>
