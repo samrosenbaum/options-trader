@@ -268,6 +268,11 @@ class SmartOptionsScanner:
                     option["symbol"], option, symbol_options_chain
                 )
 
+                preferred_option_type = self._preferred_option_type(enhanced_bias, directional_bias)
+                if preferred_option_type and option["type"] != preferred_option_type:
+                    # Skip opportunities that conflict with the directional view
+                    continue
+
                 # Generate clear trade summary
                 trade_summary = self.generate_trade_summary(option, metrics, returns_analysis)
 
@@ -375,6 +380,25 @@ class SmartOptionsScanner:
             opportunities = opportunities[:max_opportunities]
 
         return opportunities
+
+    def _preferred_option_type(
+        self,
+        enhanced_bias: Optional[Dict[str, Any]],
+        directional_bias: Optional[Dict[str, Any]],
+    ) -> Optional[str]:
+        """Determine the preferred option type based on directional signals."""
+
+        for bias in (enhanced_bias, directional_bias):
+            if not bias:
+                continue
+
+            direction = bias.get("direction")
+            if direction == "bullish":
+                return "call"
+            if direction == "bearish":
+                return "put"
+
+        return None
 
     def calculate_opportunity_score(self, option: pd.Series, metrics: Mapping[str, float], probability_score: float) -> float:
         """Calculate opportunity score based on liquidity, risk/reward and probability."""
