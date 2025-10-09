@@ -17,6 +17,7 @@ from src.analysis import SwingSignal, SwingSignalAnalyzer
 from src.config import AppSettings, get_settings
 from src.scanner.iv_rank_history import IVRankHistory
 from src.scanner.universe import build_scan_universe
+from src.signals import OptionsSkewAnalyzer, SmartMoneyFlowDetector, SignalAggregator
 from src.validation import OptionsDataValidator, DataQuality
 
 
@@ -71,6 +72,12 @@ class SmartOptionsScanner:
         self.swing_analyzer: SwingSignalAnalyzer | None = None
         self._swing_signal_cache: Dict[str, Optional[Dict[str, Any]]] = {}
         self._swing_error_cache: Dict[str, str] = {}
+
+        # Initialize directional signal framework
+        self.signal_aggregator = SignalAggregator([
+            OptionsSkewAnalyzer(weight=0.55),  # 55% weight
+            SmartMoneyFlowDetector(weight=0.45),  # 45% weight
+        ])
 
     @property
     def batch_size(self) -> int:
@@ -251,6 +258,13 @@ class SmartOptionsScanner:
                 # Calculate directional bias to help choose between calls and puts
                 directional_bias = self.calculate_directional_bias(option, swing_signal)
 
+                # Calculate ENHANCED directional bias using new signal framework
+                # Get full options chain for this symbol
+                symbol_options_chain = working_data[working_data["symbol"] == option["symbol"]].copy()
+                enhanced_bias = self.calculate_enhanced_directional_bias(
+                    option["symbol"], option, symbol_options_chain
+                )
+
                 # Generate clear trade summary
                 trade_summary = self.generate_trade_summary(option, metrics, returns_analysis)
 
@@ -330,6 +344,7 @@ class SmartOptionsScanner:
                     "daysToExpiration": self.calculate_days_to_expiration(option["expiration"]),
                     "returnsAnalysis": returns_analysis,
                     "directionalBias": directional_bias,
+                    "enhancedDirectionalBias": enhanced_bias,  # New proprietary signal framework
                     # Add data quality metadata
                     "_dataQuality": {
                         "quality": quality_report.quality.value,
@@ -693,6 +708,75 @@ class SmartOptionsScanner:
             "theta": float(theta),
             "vega": float(vega),
         }
+
+    def calculate_enhanced_directional_bias(
+        self, symbol: str, option: pd.Series, options_chain: pd.DataFrame
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Calculate enhanced directional bias using the new signal framework.
+
+        Args:
+            symbol: Stock symbol
+            option: Current option being analyzed
+            options_chain: Full options chain for the symbol (for skew analysis)
+
+        Returns:
+            Dictionary with directional prediction or None if insufficient data
+        """
+        try:
+            stock_price = float(option.get("stockPrice", 0))
+            if stock_price <= 0:
+                return None
+
+            # Calculate ATM IV for skew analysis
+            atm_iv = float(option.get("impliedVolatility", 0))
+
+            # Get historical volume data (simplified - using current as proxy)
+            call_options = options_chain[options_chain["type"] == "call"]
+            put_options = options_chain[options_chain["type"] == "put"]
+
+            avg_call_volume = call_options["volume"].mean() if not call_options.empty else 1
+            avg_put_volume = put_options["volume"].mean() if not put_options.empty else 1
+
+            historical_volume = {
+                "avg_call_volume": float(avg_call_volume * 0.7),  # Assume current is 30% above avg
+                "avg_put_volume": float(avg_put_volume * 0.7),
+                "call_volume_std": float(avg_call_volume * 0.3),
+                "put_volume_std": float(avg_put_volume * 0.3),
+            }
+
+            # Calculate price change (simplified)
+            price_change = 0.0  # Could enhance with actual price history
+
+            # Prepare data for signal aggregator
+            signal_data = {
+                "options_chain": options_chain,
+                "options_data": options_chain,
+                "stock_price": stock_price,
+                "atm_iv": atm_iv,
+                "historical_volume": historical_volume,
+                "price_change": price_change,
+            }
+
+            # Calculate directional score using signal aggregator
+            directional_score = self.signal_aggregator.aggregate(symbol, signal_data)
+
+            # Get detailed breakdown
+            breakdown = self.signal_aggregator.get_signal_breakdown(directional_score)
+
+            # Convert to format compatible with existing code
+            return {
+                "direction": directional_score.direction.value,
+                "confidence": round(directional_score.confidence, 2),
+                "score": round(directional_score.score, 2),
+                "recommendation": directional_score.recommendation,
+                "signals": breakdown["signals"],
+                "timestamp": directional_score.timestamp.isoformat(),
+            }
+
+        except Exception as e:
+            print(f"Error calculating enhanced directional bias for {symbol}: {e}")
+            return None
 
     def calculate_directional_bias(self, option: pd.Series, swing_signal: Optional[Dict[str, Any]]) -> Dict[str, Any]:
         """Calculate directional bias to help users choose between calls and puts on the same symbol.

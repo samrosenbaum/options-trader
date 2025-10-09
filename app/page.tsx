@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
+import Image from 'next/image'
 import RealTimeProgress from '../components/real-time-progress'
 import LiveTicker from '../components/live-ticker'
 
@@ -25,6 +26,23 @@ interface MoveAnalysis {
   daysToExpiration: number | null
   thresholds: MoveAnalysisThreshold[]
   drivers: string[]
+}
+
+interface EnhancedDirectionalBias {
+  direction: 'bullish' | 'bearish' | 'neutral'
+  confidence: number
+  score: number
+  recommendation: string
+  signals: Array<{
+    name: string
+    weight: number
+    direction: 'bullish' | 'bearish' | 'neutral'
+    score: number
+    confidence: number
+    weighted_contribution: number
+    rationale: string
+  }>
+  timestamp: string
 }
 
 interface SwingSignalFactor {
@@ -134,6 +152,7 @@ interface Opportunity {
   }>
   swingSignal?: SwingSignalInsight | null
   swingSignalError?: string
+  enhancedDirectionalBias?: EnhancedDirectionalBias | null
 }
 
 interface CryptoAlert {
@@ -183,18 +202,17 @@ type InvestmentScenario = {
 
 function ProfitLossSlider({
   opportunity,
-  investmentAmount,
   contractsToTrade = 1
 }: {
   opportunity: Opportunity
-  investmentAmount: number
   contractsToTrade?: number
 }) {
   const [stockPricePercent, setStockPricePercent] = useState(0)
 
-  const stockPrice = opportunity.stockPrice
-  const strike = opportunity.strike
-  const premium = opportunity.premium
+  // Safely extract values with fallbacks
+  const stockPrice = typeof opportunity.stockPrice === 'number' && opportunity.stockPrice > 0 ? opportunity.stockPrice : 0
+  const strike = typeof opportunity.strike === 'number' && opportunity.strike > 0 ? opportunity.strike : 0
+  const premium = typeof opportunity.premium === 'number' && opportunity.premium > 0 ? opportunity.premium : 0
   const optionType = opportunity.optionType
   const breakevenPrice = opportunity.breakevenPrice || (
     optionType === 'call' ? strike + premium : strike - premium
@@ -216,11 +234,11 @@ function ProfitLossSlider({
     optionValue = Math.max(0, strike - targetStockPrice)
   }
 
-  // Calculate P/L
+  // Calculate P/L with safety checks
   const costBasis = premium * 100 * contractsToTrade
   const currentValue = optionValue * 100 * contractsToTrade
   const profitLoss = currentValue - costBasis
-  const profitLossPercent = (profitLoss / costBasis) * 100
+  const profitLossPercent = costBasis > 0 ? (profitLoss / costBasis) * 100 : 0
 
   // Determine color based on profit/loss
   const getColor = () => {
@@ -235,8 +253,8 @@ function ProfitLossSlider({
     return 'bg-slate-100 dark:bg-slate-800'
   }
 
-  // Calculate breakeven percentage
-  const breakevenPercent = ((breakevenPrice - stockPrice) / stockPrice) * 100
+  // Calculate breakeven percentage with safety check
+  const breakevenPercent = stockPrice > 0 ? ((breakevenPrice - stockPrice) / stockPrice) * 100 : 0
 
   return (
     <div className="bg-white dark:bg-slate-700 rounded-xl p-5 mb-4 border-2 border-slate-200 dark:border-slate-600">
@@ -340,9 +358,7 @@ export default function HomePage() {
   const [opportunities, setOpportunities] = useState<Opportunity[]>([])
   const [totalEvaluated, setTotalEvaluated] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
-  const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
   const [lastSuccessfulUpdate, setLastSuccessfulUpdate] = useState<Date | null>(null)
-  const [autoRefresh, setAutoRefresh] = useState(true)
   const [investmentAmount, setInvestmentAmount] = useState(1000)
   const [activeTab, setActiveTab] = useState<'options' | 'crypto'>('options')
   const [cryptoAlerts, setCryptoAlerts] = useState<CryptoAlert[]>([])
@@ -350,11 +366,10 @@ export default function HomePage() {
   const [sortOption, setSortOption] = useState<OpportunitySortOption>('promising')
   const [isStaleData, setIsStaleData] = useState(false)
 
-  const fetchOpportunities = async () => {
+  const fetchOpportunities = useCallback(async () => {
     try {
       const response = await fetch('/api/scan-python')
       const data = await response.json()
-      setLastUpdate(new Date())
 
       if (data.success) {
         // Extract totalEvaluated regardless of whether we found opportunities
@@ -393,7 +408,7 @@ export default function HomePage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [opportunities])
 
   const fetchCryptoAlerts = async () => {
     try {
@@ -433,7 +448,7 @@ export default function HomePage() {
   useEffect(() => {
     fetchOpportunities()
     // Auto-refresh disabled - user must manually refresh to avoid API overuse
-  }, [])
+  }, [fetchOpportunities])
 
   const sortedOpportunities = useMemo(() => {
     if (opportunities.length === 0) {
@@ -1061,8 +1076,10 @@ export default function HomePage() {
     }
 
     const maxReturn = sanitizeNumber(opp.maxReturn, 0)
-    const maxLossPercent = sanitizeNumber(opp.maxLossPercent || (opp.premium / opp.premium * 100), 100)
-    const maxLossAmount = sanitizeNumber(opp.maxLossAmount || sanitizeNumber(opp.premium, 0) * 100, sanitizeNumber(opp.premium, 0) * 100)
+    // For long options, max loss is always 100% of premium paid
+    const maxLossPercent = sanitizeNumber(opp.maxLossPercent, 100)
+    const premiumPerContract = sanitizeNumber(opp.premium, 0) * 100
+    const maxLossAmount = sanitizeNumber(opp.maxLossAmount, premiumPerContract)
     const potentialReturn = sanitizeNumber(opp.potentialReturn, 0)
     const daysToExp = sanitizeNumber(opp.daysToExpiration, 0)
 
@@ -1110,9 +1127,22 @@ export default function HomePage() {
   const calculateInvestmentScenario = (opp: Opportunity, amount: number): InvestmentScenario => {
     const optionPrice = opp.premium || 0
     const contractCost = Math.max(optionPrice * 100, 0)
-    const perContractPotentialReturn = opp.potentialReturnAmount || ((opp.potentialReturn / 100) * contractCost)
-    const perContractMaxReturn = opp.maxReturnAmount || ((opp.maxReturn / 100) * contractCost)
-    const perContractMaxLoss = opp.maxLossAmount || contractCost
+
+    // Calculate per-contract returns with proper null/undefined handling
+    const potentialReturnPercent = typeof opp.potentialReturn === 'number' && Number.isFinite(opp.potentialReturn) ? opp.potentialReturn : 0
+    const maxReturnPercent = typeof opp.maxReturn === 'number' && Number.isFinite(opp.maxReturn) ? opp.maxReturn : 0
+
+    const perContractPotentialReturn = (typeof opp.potentialReturnAmount === 'number' && Number.isFinite(opp.potentialReturnAmount))
+      ? opp.potentialReturnAmount
+      : (potentialReturnPercent / 100) * contractCost
+
+    const perContractMaxReturn = (typeof opp.maxReturnAmount === 'number' && Number.isFinite(opp.maxReturnAmount))
+      ? opp.maxReturnAmount
+      : (maxReturnPercent / 100) * contractCost
+
+    const perContractMaxLoss = (typeof opp.maxLossAmount === 'number' && Number.isFinite(opp.maxLossAmount))
+      ? opp.maxLossAmount
+      : contractCost
 
     if (contractCost <= 0) {
       return {
@@ -1157,7 +1187,7 @@ export default function HomePage() {
     const scenarioBase = basis === 'position' ? totalCost : contractCost
 
     const scenarios = (opp.returnsAnalysis || []).map((scenario) => {
-      const percentReturn = scenario?.return || 0
+      const percentReturn = typeof scenario?.return === 'number' && Number.isFinite(scenario.return) ? scenario.return : 0
       const profit = scenarioBase * (percentReturn / 100)
       return {
         move: scenario?.move || '',
@@ -1195,7 +1225,7 @@ export default function HomePage() {
             {/* Logo and Title */}
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl flex items-center justify-center overflow-hidden">
-                <img src="/logo.svg" alt="Money Printer" className="w-full h-full object-contain" />
+                <Image src="/logo.svg" alt="Money Printer" width={48} height={48} className="w-full h-full object-contain" />
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-white">
@@ -1503,6 +1533,72 @@ export default function HomePage() {
                       </div>
                     )}
 
+                    {/* Enhanced Directional Bias - NEW PROPRIETARY SIGNAL */}
+                    {opp.enhancedDirectionalBias && (
+                      <div className="mb-5 bg-gradient-to-r from-purple-500/10 to-blue-500/10 border-2 border-purple-500/30 rounded-xl p-5 shadow-lg">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            <h4 className="font-bold text-white text-lg">📊 Directional Prediction</h4>
+                            <span className={`px-3 py-1 rounded-lg text-sm font-bold ${
+                              opp.enhancedDirectionalBias.direction === 'bullish'
+                                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/50'
+                                : opp.enhancedDirectionalBias.direction === 'bearish'
+                                ? 'bg-red-500/20 text-red-300 border border-red-500/50'
+                                : 'bg-zinc-500/20 text-zinc-300 border border-zinc-500/50'
+                            }`}>
+                              {opp.enhancedDirectionalBias.direction.toUpperCase()}
+                            </span>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-2xl font-bold text-purple-300">
+                              {opp.enhancedDirectionalBias.confidence.toFixed(0)}%
+                            </div>
+                            <div className="text-xs text-zinc-400">Confidence</div>
+                          </div>
+                        </div>
+
+                        <div className="text-sm text-zinc-300 mb-4 leading-relaxed">
+                          {opp.enhancedDirectionalBias.recommendation}
+                        </div>
+
+                        {/* Signal Breakdown */}
+                        <div className="space-y-2">
+                          <div className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">
+                            Contributing Signals:
+                          </div>
+                          {opp.enhancedDirectionalBias.signals.map((signal, idx) => (
+                            <div key={idx} className="bg-black/30 rounded-lg p-3 border border-zinc-700/50">
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-semibold text-white text-sm">{signal.name}</span>
+                                  <span className={`text-xs px-2 py-0.5 rounded ${
+                                    signal.direction === 'bullish'
+                                      ? 'bg-emerald-500/20 text-emerald-400'
+                                      : signal.direction === 'bearish'
+                                      ? 'bg-red-500/20 text-red-400'
+                                      : 'bg-zinc-500/20 text-zinc-400'
+                                  }`}>
+                                    {signal.direction}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-3 text-xs">
+                                  <span className="text-zinc-400">
+                                    Score: <span className="text-white font-semibold">{signal.score.toFixed(0)}</span>
+                                  </span>
+                                  <span className="text-zinc-400">
+                                    Conf: <span className="text-white font-semibold">{signal.confidence.toFixed(0)}%</span>
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="text-xs text-zinc-400 leading-relaxed">
+                                {signal.rationale}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     {opp.recentNews && opp.recentNews.length > 0 && (
                       <div className="mb-6">
                         <h4 className="font-semibold text-slate-900 dark:text-white mb-3">Recent News</h4>
@@ -1633,7 +1729,6 @@ export default function HomePage() {
                             {/* Interactive Profit/Loss Slider */}
                             <ProfitLossSlider
                               opportunity={opp}
-                              investmentAmount={isPerContractView ? scenario.contractCost : scenario.totalCost}
                               contractsToTrade={isPerContractView ? 1 : scenario.contractsToBuy}
                             />
 
