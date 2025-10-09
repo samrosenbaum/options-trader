@@ -1133,7 +1133,6 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
             ))}
           </div>
         </div>
-        </div>
       )}
     </div>
   )
