@@ -1,22 +1,11 @@
 {
-  "timestamp": "2025-10-08T22:00:28.456759",
-  "data_count": 3798,
+  "timestamp": "2025-10-09T10:00:07.799302",
+  "data_count": 629,
   "symbols": [
-    "MCD",
-    "JNJ",
-    "PG",
-    "PEP",
-    "KO",
-    "FVRR",
-    "PLUG",
-    "RUN",
-    "HD",
-    "GME",
-    "AMC",
-    "BYND",
-    "SPY"
+    "RIVN",
+    "LCID"
   ],
   "options": [
     {
-      "contractSymbol": "MCD251010C00160000",
+      "contractSymbol": "RIVN251010C00005000",
       "lastTradeDate": 
