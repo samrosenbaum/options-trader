@@ -269,8 +269,7 @@ class SmartOptionsScanner:
                 )
 
                 preferred_option_type = self._preferred_option_type(enhanced_bias, directional_bias)
-                option_type = str(option.get("type", "")).strip().lower()
-                if preferred_option_type and option_type and option_type != preferred_option_type:
+                if preferred_option_type and option["type"] != preferred_option_type:
                     # Skip opportunities that conflict with the directional view
                     continue
 
@@ -393,7 +392,7 @@ class SmartOptionsScanner:
             if not bias:
                 continue
 
-            direction = str(bias.get("direction", "")).strip().lower()
+            direction = bias.get("direction")
             if direction == "bullish":
                 return "call"
             if direction == "bearish":
