@@ -18,7 +18,7 @@ from src.analysis import SwingSignal, SwingSignalAnalyzer
 from src.config import AppSettings, get_settings
 from src.scanner.iv_rank_history import IVRankHistory
 from src.scanner.universe import build_scan_universe
-from src.signals import OptionsSkewAnalyzer, SmartMoneyFlowDetector, RegimeDetector, SignalAggregator
+from src.signals import OptionsSkewAnalyzer, SmartMoneyFlowDetector, RegimeDetector, VolumeProfileAnalyzer, SignalAggregator
 from src.validation import OptionsDataValidator, DataQuality
 
 
@@ -76,9 +76,10 @@ class SmartOptionsScanner:
 
         # Initialize directional signal framework
         self.signal_aggregator = SignalAggregator([
-            OptionsSkewAnalyzer(weight=0.40),  # 40% weight
-            SmartMoneyFlowDetector(weight=0.35),  # 35% weight
-            RegimeDetector(weight=0.25),  # 25% weight
+            OptionsSkewAnalyzer(weight=0.30),  # 30% weight
+            SmartMoneyFlowDetector(weight=0.30),  # 30% weight
+            RegimeDetector(weight=0.20),  # 20% weight
+            VolumeProfileAnalyzer(weight=0.20),  # 20% weight
         ])
 
     @property
