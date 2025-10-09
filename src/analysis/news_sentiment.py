@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, Iterable, List
+from datetime import datetime, timezone, timedelta
+from typing import Dict, Iterable, List, Optional
 
 import yfinance as yf
 
@@ -18,6 +19,7 @@ class NewsHeadline:
     publisher: str
     sentiment_score: float
     sentiment_label: str
+    published_at: Optional[datetime] = None
 
     def to_dict(self) -> Dict[str, object]:
         return {
@@ -27,6 +29,7 @@ class NewsHeadline:
             "publisher": self.publisher,
             "sentiment_score": self.sentiment_score,
             "sentiment_label": self.sentiment_label,
+            "published_at": self.published_at.isoformat() if self.published_at else None,
         }
 
 
@@ -120,7 +123,9 @@ def fetch_symbol_news(symbol: str, limit: int = 5) -> List[NewsHeadline]:
     except Exception:
         raw_news = []
 
-    for item in raw_news[:limit]:
+    cutoff = datetime.now(timezone.utc) - timedelta(days=7)
+
+    for item in raw_news:
         # Handle both old and new yfinance news formats
         content = item.get("content", item)  # New format nests data under "content"
 
@@ -135,6 +140,27 @@ def fetch_symbol_news(symbol: str, limit: int = 5) -> List[NewsHeadline]:
         canonical = content.get("canonicalUrl", {})
         url = canonical.get("url", "") if isinstance(canonical, dict) else content.get("link", "")
 
+        # Published time (providerPublishTime is seconds since epoch)
+        published_at: Optional[datetime]
+        publish_time = content.get("providerPublishTime") or content.get("pubDate")
+        if publish_time:
+            try:
+                if isinstance(publish_time, (int, float)):
+                    published_at = datetime.fromtimestamp(float(publish_time), tz=timezone.utc)
+                else:
+                    iso_str = str(publish_time)
+                    if iso_str.endswith("Z"):
+                        iso_str = iso_str.replace("Z", "+00:00")
+                    published_at = datetime.fromisoformat(iso_str)
+                    if published_at.tzinfo is None:
+                        published_at = published_at.replace(tzinfo=timezone.utc)
+                if published_at < cutoff:
+                    continue
+            except Exception:
+                published_at = None
+        else:
+            published_at = None
+
         sentiment = score_sentiment(f"{title} {summary}")
         news_items.append(
             NewsHeadline(
@@ -144,7 +170,11 @@ def fetch_symbol_news(symbol: str, limit: int = 5) -> List[NewsHeadline]:
                 publisher=publisher,
                 sentiment_score=sentiment["score"],
                 sentiment_label=sentiment["label"],
+                published_at=published_at,
             )
         )
+
+        if len(news_items) >= limit:
+            break
 
     return news_items
