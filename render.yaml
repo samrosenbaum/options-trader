@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: options-trader
+    runtime: node
+    buildCommand: pip install -r requirements.txt && npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 18
+      - key: PYTHON_VERSION
+        value: 3.11
+      - key: NODE_ENV
+        value: production
+    healthCheckPath: /
