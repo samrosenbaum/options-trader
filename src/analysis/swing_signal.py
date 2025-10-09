@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Callable, Dict, Iterable, List, Optional
 
 import numpy as np
@@ -141,6 +141,14 @@ class SwingSignalAnalyzer:
             market_factor,
         )
 
+        factor_breakdown = self._build_factor_breakdown(
+            volatility_factor,
+            momentum_factor,
+            volume_factor,
+            news_factor,
+            market_factor,
+        )
+
         metadata = {
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "lookback": self.lookback,
@@ -151,6 +159,7 @@ class SwingSignalAnalyzer:
             "news_sample": news_factor.details.get("headlines", [])[:2],
             "market_context": market_factor.details,
             "summary": summary,
+            "factorBreakdown": factor_breakdown,
         }
 
         return SwingSignal(
@@ -297,13 +306,33 @@ class SwingSignalAnalyzer:
                 details={"headlines": []},
             )
 
-        scores = [headline.sentiment_score for headline in headlines]
+        recent_cutoff = datetime.now(timezone.utc) - timedelta(days=7)
+        fresh_headlines = [
+            headline
+            for headline in headlines
+            if headline.published_at is None or headline.published_at >= recent_cutoff
+        ]
+
+        if not fresh_headlines:
+            return FactorScore(
+                name="News & Catalysts",
+                score=45.0,
+                rationale="Only stale headlines older than 7 days; treating sentiment as slightly cautious.",
+                details={
+                    "headlines": [headline.to_dict() for headline in headlines],
+                    "staleHeadlineCount": len(headlines),
+                    "freshHeadlineCount": 0,
+                    "source": "yfinance",
+                },
+            )
+
+        scores = [headline.sentiment_score for headline in fresh_headlines]
         avg_score = float(np.mean(scores))
         score = self._scale(avg_score, lower=-0.5, upper=0.6)
         rationale = (
-            "Average news sentiment score of {:.2f} across {} headlines.".format(
+            "Average news sentiment score of {:.2f} across {} fresh headlines.".format(
                 avg_score,
-                len(headlines),
+                len(fresh_headlines),
             )
         )
         return FactorScore(
@@ -312,7 +341,10 @@ class SwingSignalAnalyzer:
             rationale=rationale,
             details={
                 "average_sentiment": round(avg_score, 3),
-                "headlines": [headline.to_dict() for headline in headlines],
+                "headlines": [headline.to_dict() for headline in fresh_headlines],
+                "staleHeadlineCount": len(headlines) - len(fresh_headlines),
+                "freshHeadlineCount": len(fresh_headlines),
+                "source": "yfinance",
             },
         )
 
@@ -436,6 +468,7 @@ class SwingSignalAnalyzer:
         atr_ratio = volatility_factor.details.get("atr_ratio", 1.0)
         volume_zscore = volume_factor.details.get("volume_zscore", 0)
         avg_sentiment = news_factor.details.get("average_sentiment", 0)
+        spy_return = market_factor.details.get("spy_return_5d")
 
         parts = []
 
@@ -491,6 +524,20 @@ class SwingSignalAnalyzer:
         elif avg_sentiment < -0.2:
             parts.append(f"News sentiment is negative ({avg_sentiment:.2f}), creating headwinds.")
 
+        # Directional cues
+        if momentum_zscore >= 0.75:
+            parts.append("Directional bias skewed bullish – upside setups benefit from strong momentum.")
+        elif momentum_zscore <= -0.75:
+            parts.append("Directional bias skewed bearish – downside setups align with current momentum.")
+        else:
+            parts.append("Directional momentum is muted, so confirmation from price action is important.")
+
+        if spy_return is not None:
+            if spy_return > 0.01:
+                parts.append("Broad market has positive 5-day drift, modestly supporting call positioning.")
+            elif spy_return < -0.01:
+                parts.append("Broad market weakness over 5 days provides a tailwind for protective puts.")
+
         # Trading implications
         if classification == "elevated_swing_risk":
             parts.append(
@@ -509,6 +556,145 @@ class SwingSignalAnalyzer:
             )
 
         return " ".join(parts)
+
+    @staticmethod
+    def _build_factor_breakdown(
+        volatility_factor: FactorScore,
+        momentum_factor: FactorScore,
+        volume_factor: FactorScore,
+        news_factor: FactorScore,
+        market_factor: FactorScore,
+    ) -> List[Dict[str, object]]:
+        breakdown: List[Dict[str, object]] = []
+
+        momentum_z = momentum_factor.details.get("momentum_zscore")
+        if momentum_z is not None:
+            if momentum_z >= 0.75:
+                stance = "bullish"
+                favors = "calls"
+                explanation = (
+                    f"Price is {momentum_z:.2f}σ above its 20-day mean, which historically signals upside continuation."
+                )
+            elif momentum_z <= -0.75:
+                stance = "bearish"
+                favors = "puts"
+                explanation = (
+                    f"Price is {abs(momentum_z):.2f}σ below its 20-day mean, increasing odds of further downside."
+                )
+            else:
+                stance = "neutral"
+                favors = "either"
+                explanation = "Momentum is near the mean; price direction needs confirmation."
+            breakdown.append(
+                {
+                    "factor": "Momentum Breakout",
+                    "reading": f"{momentum_z:.2f}σ" if momentum_z is not None else None,
+                    "stance": stance,
+                    "favors": favors,
+                    "explanation": explanation,
+                }
+            )
+
+        atr_ratio = volatility_factor.details.get("atr_ratio")
+        if atr_ratio is not None:
+            if atr_ratio >= 1.4:
+                explanation = (
+                    f"ATR is {atr_ratio:.0%} of baseline – expect bigger swings that reward correct directional trades."
+                )
+            elif atr_ratio <= 0.8:
+                explanation = (
+                    f"ATR compressed to {atr_ratio:.0%} of baseline – breakouts may follow after quiet periods."
+                )
+            else:
+                explanation = f"ATR at {atr_ratio:.0%} of baseline suggests normal volatility conditions."
+            breakdown.append(
+                {
+                    "factor": "Volatility Expansion",
+                    "reading": f"{atr_ratio:.2f}x baseline",
+                    "stance": "volatility",
+                    "favors": "both",
+                    "explanation": explanation,
+                }
+            )
+
+        volume_z = volume_factor.details.get("volume_zscore")
+        if volume_z is not None:
+            if volume_z >= 1.5:
+                explanation = (
+                    f"Volume {volume_z:.2f}σ above average shows strong participation backing the move."
+                )
+            elif volume_z <= -1.0:
+                explanation = (
+                    f"Volume {abs(volume_z):.2f}σ below average – conviction behind the move is limited."
+                )
+            else:
+                explanation = "Volume near average keeps conviction moderate."
+            breakdown.append(
+                {
+                    "factor": "Volume Imbalance",
+                    "reading": f"{volume_z:.2f}σ",
+                    "stance": "confirmation" if volume_z >= 1.0 else "neutral",
+                    "favors": "both" if volume_z >= -1.0 else "either",
+                    "explanation": explanation,
+                }
+            )
+
+        avg_sentiment = news_factor.details.get("average_sentiment")
+        if avg_sentiment is not None:
+            if avg_sentiment >= 0.2:
+                stance = "bullish"
+                favors = "calls"
+                explanation = (
+                    f"Average sentiment {avg_sentiment:.2f} is positive – headlines lean toward upside catalysts."
+                )
+            elif avg_sentiment <= -0.2:
+                stance = "bearish"
+                favors = "puts"
+                explanation = (
+                    f"Average sentiment {avg_sentiment:.2f} is negative – headline tone warns of downside risk."
+                )
+            else:
+                stance = "neutral"
+                favors = "either"
+                explanation = "Headline tone is mixed; rely on other confirmation."
+            breakdown.append(
+                {
+                    "factor": "News & Catalysts",
+                    "reading": f"score {avg_sentiment:.2f}",
+                    "stance": stance,
+                    "favors": favors,
+                    "explanation": explanation,
+                }
+            )
+
+        vix_ratio = market_factor.details.get("vix_ratio")
+        spy_return = market_factor.details.get("spy_return_5d")
+        if vix_ratio is not None or spy_return is not None:
+            explanation_parts: List[str] = []
+            favors = "both"
+            if vix_ratio is not None:
+                explanation_parts.append(f"VIX at {vix_ratio:.0%} of its average signals market-wide swing potential.")
+            if spy_return is not None:
+                if spy_return > 0.01:
+                    explanation_parts.append("SPY up over 1% in 5 days – bullish backdrop for calls.")
+                    favors = "calls"
+                elif spy_return < -0.01:
+                    explanation_parts.append("SPY down over 1% in 5 days – bearish backdrop aiding puts.")
+                    favors = "puts"
+            breakdown.append(
+                {
+                    "factor": "Market Regime",
+                    "reading": {
+                        "vix_ratio": vix_ratio,
+                        "spy_return_5d": spy_return,
+                    },
+                    "stance": "context",
+                    "favors": favors,
+                    "explanation": " ".join(explanation_parts) if explanation_parts else "Market context neutral.",
+                }
+            )
+
+        return breakdown
 
     @staticmethod
     def _classify_score(score: float) -> str:
