@@ -107,33 +107,80 @@ const sanitizeReturns = (returns: ScannerOpportunity["returnsAnalysis"]): Scanne
   }))
 }
 
+const extractJsonPayload = (raw: string): string | null => {
+  const trimmed = raw.trim()
+  if (!trimmed) {
+    return null
+  }
+
+  try {
+    JSON.parse(trimmed)
+    return trimmed
+  } catch {
+    // Ignore and attempt to locate the JSON fragment below.
+  }
+
+  let end = -1
+  for (let index = trimmed.length - 1; index >= 0; index -= 1) {
+    const char = trimmed[index]
+    if (char === "}" || char === "]") {
+      end = index
+      break
+    }
+  }
+
+  if (end === -1) {
+    return null
+  }
+
+  let depth = 0
+  let inString = false
+  let isEscaped = false
+
+  for (let index = end; index >= 0; index -= 1) {
+    const char = trimmed[index]
+
+    if (inString) {
+      if (isEscaped) {
+        isEscaped = false
+      } else if (char === "\\") {
+        isEscaped = true
+      } else if (char === "\"") {
+        inString = false
+      }
+      continue
+    }
+
+    if (char === "\"") {
+      inString = true
+      continue
+    }
+
+    if (char === "}" || char === "]") {
+      depth += 1
+      continue
+    }
+
+    if (char === "{" || char === "[") {
+      depth -= 1
+      if (depth === 0) {
+        return trimmed.slice(index, end + 1)
+      }
+    }
+  }
+
+  return null
+}
+
 const parseScannerJson = (stdout: string, stderr: string): ScannerResponse | null => {
   const attemptParse = (raw: string): ScannerResponse | null => {
-    const trimmed = raw.trim()
-    if (!trimmed) {
-      return null
-    }
-
-    // Fast path: the scanner prints JSON to stdout without additional logs.
-    try {
-      return JSON.parse(trimmed) as ScannerResponse
-    } catch {
-      // Fall through to try extracting the last JSON looking block.
-    }
-
-    const startIndex = trimmed.search(/[{[]/)
-    if (startIndex === -1) {
-      return null
-    }
-
-    const candidate = trimmed.slice(startIndex)
-    const endIndex = Math.max(candidate.lastIndexOf("}"), candidate.lastIndexOf("]"))
-    if (endIndex === -1) {
+    const payload = extractJsonPayload(raw)
+    if (!payload) {
       return null
     }
 
     try {
-      return JSON.parse(candidate.slice(0, endIndex + 1)) as ScannerResponse
+      return JSON.parse(payload) as ScannerResponse
     } catch {
       return null
     }
@@ -208,10 +255,6 @@ export async function GET() {
           const rawOpportunities = Array.isArray(parsed.opportunities) ? parsed.opportunities : []
 
           const sanitized = rawOpportunities
-            .filter((opp) => {
-              const probability = normalizePercent(opp.probabilityOfProfit)
-              return probability === null || probability > 0
-            })
             .map((opp) => {
               const contract = {
                 option_type: opp.optionType as "call" | "put",
@@ -227,10 +270,13 @@ export async function GET() {
               }
 
               const greeks = ensureOptionGreeks(opp.greeks, contract)
+              const normalizedProbability = normalizePercent(opp.probabilityOfProfit)
+              const probabilityOfProfit =
+                normalizedProbability === null ? null : Math.max(0, normalizedProbability)
 
               return {
                 ...opp,
-                probabilityOfProfit: normalizePercent(opp.probabilityOfProfit) ?? 0,
+                probabilityOfProfit: probabilityOfProfit ?? 0,
                 breakevenMovePercent: normalizePercent(opp.breakevenMovePercent) ?? 0,
                 potentialReturn: normalizePercent(opp.potentialReturn) ?? 0,
                 maxReturn: normalizePercent(opp.maxReturn) ?? 0,
