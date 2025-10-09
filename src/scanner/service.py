@@ -326,10 +326,10 @@ class SmartOptionsScanner:
                     "optionType": option["type"],
                     "strike": round(float(option["strike"]), 2),
                     "expiration": option["expiration"],
-                    "premium": round(float(option["lastPrice"]), 2),
+                    "premium": round(float(option["lastPrice"]) * 100, 2),  # Per contract (100 shares)
                     "tradeSummary": trade_summary,
-                    "bid": round(float(option["bid"]), 2),
-                    "ask": round(float(option["ask"]), 2),
+                    "bid": round(float(option["bid"]) * 100, 2),  # Per contract
+                    "ask": round(float(option["ask"]) * 100, 2),  # Per contract
                     "volume": int(option["volume"]),
                     "openInterest": int(option["openInterest"]),
                     "impliedVolatility": round(float(option["impliedVolatility"]), 4) if pd.notna(option["impliedVolatility"]) else 0.0,
