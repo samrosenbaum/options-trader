@@ -349,6 +349,7 @@ export default function HomePage() {
   const [cryptoLoading, setCryptoLoading] = useState(false)
   const [sortOption, setSortOption] = useState<OpportunitySortOption>('promising')
   const [isStaleData, setIsStaleData] = useState(false)
+  const [expandedCards, setExpandedCards] = useState<Record<string, boolean>>({})
 
   const fetchOpportunities = async () => {
     try {
@@ -1420,7 +1421,9 @@ export default function HomePage() {
             </div>
 
             <div className="space-y-5">
-              {sortedOpportunities.map((opp, index) => {
+              {sortedOpportunities.map((opp) => {
+                const opportunityId = `${opp.symbol}-${opp.optionType}-${opp.strike}-${opp.expiration}`
+                const isExpanded = expandedCards[opportunityId] ?? false
                 const scenario = calculateInvestmentScenario(opp, investmentAmount)
                 const isPerContractView = scenario.basis === 'perContract'
                 const potentialReturnDisplay = isPerContractView
@@ -1435,7 +1438,7 @@ export default function HomePage() {
 
                 return (
                   <div
-                    key={index}
+                    key={opportunityId}
                     className="bg-zinc-900 rounded-2xl p-6 border border-zinc-800 hover:border-emerald-500/30 hover:shadow-xl hover:shadow-emerald-500/5 transition-all"
                   >
                     <div className="flex items-start justify-between mb-5">
@@ -1486,16 +1489,42 @@ export default function HomePage() {
                         </div>
                       </div>
 
-                      <div className="text-right space-y-1 ml-4">
-                        <div className="text-3xl font-bold text-emerald-400">
-                          {formatCurrency(opp.premium)}
+                      <div className="ml-4 flex flex-col items-end gap-3 text-right">
+                        <div>
+                          <div className="text-3xl font-bold text-emerald-400">
+                            {formatCurrency(opp.premium)}
+                          </div>
+                          <div className="text-sm text-zinc-500 font-semibold">Premium</div>
                         </div>
-                        <div className="text-sm text-zinc-500 font-semibold">Premium</div>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setExpandedCards((prev) => ({
+                              ...prev,
+                              [opportunityId]: !isExpanded,
+                            }))
+                          }
+                          aria-expanded={isExpanded}
+                          className="inline-flex items-center gap-2 rounded-lg border border-emerald-500/20 px-3 py-1.5 text-sm font-semibold text-emerald-400 transition-colors hover:border-emerald-500/40 hover:text-emerald-300"
+                        >
+                          {isExpanded ? 'Hide details' : 'Show details'}
+                          <svg
+                            className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </button>
                       </div>
                     </div>
 
-                    {/* Trade Summary */}
-                    {opp.tradeSummary && (
+                    {isExpanded && (
+                      <>
+                        {/* Trade Summary */}
+                        {opp.tradeSummary && (
                       <div className="mb-5 bg-gradient-to-r from-emerald-500/5 to-cyan-500/5 border border-emerald-500/20 rounded-xl p-5">
                         <div className="text-base font-medium text-white leading-relaxed">
                           {opp.tradeSummary}
@@ -1744,31 +1773,33 @@ export default function HomePage() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className="text-center">
-                        <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Delta</div>
-                        <div className="text-sm font-semibold text-slate-900 dark:text-white">{opp.greeks.delta.toFixed(3)}</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Gamma</div>
-                        <div className="text-sm font-semibold text-slate-900 dark:text-white">{opp.greeks.gamma.toFixed(3)}</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Theta</div>
-                        <div className="text-sm font-semibold text-slate-900 dark:text-white">{opp.greeks.theta.toFixed(3)}</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Vega</div>
-                        <div className="text-sm font-semibold text-slate-900 dark:text-white">{opp.greeks.vega.toFixed(3)}</div>
-                      </div>
-                    </div>
-                    <div className="mt-4 space-y-2">
-                      {getGreeksExplanation(opp).map((explanation, index) => (
-                        <p key={index} className="text-xs text-slate-600 dark:text-slate-400">
-                          {explanation}
-                        </p>
-                      ))}
-                    </div>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                          <div className="text-center">
+                            <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Delta</div>
+                            <div className="text-sm font-semibold text-slate-900 dark:text-white">{opp.greeks.delta.toFixed(3)}</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Gamma</div>
+                            <div className="text-sm font-semibold text-slate-900 dark:text-white">{opp.greeks.gamma.toFixed(3)}</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Theta</div>
+                            <div className="text-sm font-semibold text-slate-900 dark:text-white">{opp.greeks.theta.toFixed(3)}</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Vega</div>
+                            <div className="text-sm font-semibold text-slate-900 dark:text-white">{opp.greeks.vega.toFixed(3)}</div>
+                          </div>
+                        </div>
+                        <div className="mt-4 space-y-2">
+                          {getGreeksExplanation(opp).map((explanation, index) => (
+                            <p key={index} className="text-xs text-slate-600 dark:text-slate-400">
+                              {explanation}
+                            </p>
+                          ))}
+                        </div>
+                      </>
+                    )}
                   </div>
                 )
               })}
