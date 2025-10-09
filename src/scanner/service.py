@@ -424,6 +424,11 @@ class SmartOptionsScanner:
         target_scenario = None
         for scenario in returns_analysis:
             move_pct = scenario.get("movePct", 0)  # Numeric move percentage
+
+            # Ensure move_pct is numeric (defensive check)
+            if not isinstance(move_pct, (int, float)):
+                continue
+
             # Skip negative moves (wrong direction)
             if (option_type == "CALL" and move_pct < 0) or (option_type == "PUT" and move_pct > 0):
                 continue
