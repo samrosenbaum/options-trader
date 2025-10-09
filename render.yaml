@@ -3,7 +3,7 @@ services:
     name: options-trader
     runtime: node
     plan: free
-    buildCommand: python3 -m venv venv && . venv/bin/activate && pip install --upgrade pip && pip install -r requirements.txt && npm ci && npm run build
+    buildCommand: ./build.sh
     startCommand: . venv/bin/activate && npx next start -p $PORT
     envVars:
       - key: NODE_VERSION
