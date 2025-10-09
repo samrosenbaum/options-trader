@@ -4,10 +4,15 @@ services:
     runtime: node
     plan: free
     buildCommand: |
+      python3 -m venv venv
+      . venv/bin/activate
+      pip install --upgrade pip
       pip install -r requirements.txt
-      npm install --production=false
+      npm ci
       npm run build
-    startCommand: npx next start -p $PORT
+    startCommand: |
+      . venv/bin/activate
+      npm run start -- --hostname 0.0.0.0 --port $PORT
     envVars:
       - key: NODE_VERSION
         value: 18
@@ -15,5 +20,7 @@ services:
         value: 3.11
       - key: NODE_ENV
         value: production
+      - key: PYTHON_EXECUTABLE
+        value: ./venv/bin/python3
     healthCheckPath: /
     autoDeploy: true
