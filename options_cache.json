@@ -1,10 +1,22 @@
 {
-  "timestamp": "2025-10-08T15:00:56.180143",
-  "data_count": 1346,
+  "timestamp": "2025-10-08T22:00:28.456759",
+  "data_count": 3798,
   "symbols": [
-    "TSLA"
+    "MCD",
+    "JNJ",
+    "PG",
+    "PEP",
+    "KO",
+    "FVRR",
+    "PLUG",
+    "RUN",
+    "HD",
+    "GME",
+    "AMC",
+    "BYND",
+    "SPY"
   ],
   "options": [
     {
-      "contractSymbol": "TSLA251010C00100000",
+      "contractSymbol": "MCD251010C00160000",
       "lastTradeDate": 

@@ -357,24 +357,26 @@ export default function HomePage() {
       setLastUpdate(new Date())
 
       if (data.success) {
+        // Extract totalEvaluated regardless of whether we found opportunities
+        const evaluatedFromApi =
+          typeof data.totalEvaluated === 'number'
+            ? data.totalEvaluated
+            : typeof data.total_evaluated === 'number'
+              ? data.total_evaluated
+              : Array.isArray(data.opportunities)
+                ? data.opportunities.length
+                : 0
+
         // Only update if we got results, or if this is the initial load
         if (data.opportunities && data.opportunities.length > 0) {
           setOpportunities(data.opportunities)
-          const evaluatedFromApi =
-            typeof data.totalEvaluated === 'number'
-              ? data.totalEvaluated
-              : typeof data.total_evaluated === 'number'
-                ? data.total_evaluated
-                : Array.isArray(data.opportunities)
-                  ? data.opportunities.length
-                  : 0
           setTotalEvaluated(evaluatedFromApi)
           setLastSuccessfulUpdate(new Date())
           setIsStaleData(false)
         } else if (opportunities.length === 0) {
           // If we have no existing data, update even with empty results
           setOpportunities([])
-          setTotalEvaluated(0)
+          setTotalEvaluated(evaluatedFromApi) // Use actual count, not 0
           setIsStaleData(false)
         } else {
           // Keep existing data but mark as stale
@@ -1361,15 +1363,17 @@ export default function HomePage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
               </svg>
             </div>
-            <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">No opportunities found</h3>
+            <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">No strong opportunities found</h3>
               <p className="text-slate-600 dark:text-slate-400 mb-6">
-                The scanner is currently running but hasn&apos;t found any high-scoring opportunities yet.
+                {totalEvaluated > 0
+                  ? `Scanned ${totalEvaluated.toLocaleString()} options but found 0 strong opportunities meeting our criteria.`
+                  : "The scanner is currently running but hasn't found any high-scoring opportunities yet."}
               </p>
             <button
               onClick={fetchOpportunities}
               className="px-6 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-medium hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors"
             >
-              Try Again
+              Scan Again
             </button>
           </div>
         )}
