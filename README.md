@@ -104,11 +104,34 @@ Uses Black-Scholes approximations with scipy for:
 
 ## Deployment
 
-The dashboard can be deployed to Vercel with Python support:
+### Render
 
-1. Click "Publish" in the v0 interface
-2. Python scripts will run in Vercel's Node.js runtime using child_process
-3. No additional configuration needed
+This repository includes a `render.yaml` blueprint that provisions a single Node
+service capable of running both the Next.js application and the Python helper
+scripts. The build process creates a project-local virtual environment so the
+runtime can spawn Python processes reliably.
+
+1. Create a new **Blueprint** on [Render](https://render.com) and point it to
+   this repository.
+2. Render will detect `render.yaml` and provision the service automatically.
+3. During the build phase the commands defined in the blueprint will:
+   - Create a virtual environment in `./venv`
+   - Install the Python dependencies from `requirements.txt`
+   - Install the Node.js dependencies with `npm ci`
+   - Run `npm run build`
+4. On deploy, Render runs `npm run start` with the same virtual environment so
+   all API routes that shell out to Python continue to work.
+
+> **Tip:** If you run a manual deployment or need to debug locally, mimic the
+> blueprint by creating a venv in the repository root (`python3 -m venv venv`),
+> activating it, and installing the Python dependencies before starting the
+> Next.js server.
+
+### Other platforms
+
+Hosting providers without persistent access to a Python runtime (for example,
+serverless-only platforms) are not currently supported because several API
+routes rely on Python libraries such as `yfinance` and `pandas`.
 
 ## Disclaimer
 
