@@ -470,92 +470,132 @@ class SwingSignalAnalyzer:
         avg_sentiment = news_factor.details.get("average_sentiment", 0)
         spy_return = market_factor.details.get("spy_return_5d")
 
-        parts = []
+        sections: List[str] = []
 
-        # Overall assessment
+        def _format_sigma(value: float) -> str:
+            return f"{value:+.1f}σ"
+
+        calm_price = abs(momentum_zscore) < 0.5
+        calm_vol = 0.9 <= atr_ratio <= 1.1
+        calm_volume = abs(volume_zscore) < 0.5
+
+        # Market regime overview
         if classification == "elevated_swing_risk":
-            parts.append("⚠️ HIGH SWING POTENTIAL: This stock shows elevated risk of large price swings.")
+            sections.append(
+                "⚠️ **Regime:** High swing potential with conditions skewed toward outsized moves. "
+                f"ATR is running at {atr_ratio:.0%} of its baseline and price momentum sits at {_format_sigma(momentum_zscore)}, "
+                "so breakouts can travel quickly."
+            )
         elif classification == "watchlist":
-            parts.append("👀 MODERATE ACTIVITY: Stock shows some signs of potential movement worth monitoring.")
+            sections.append(
+                "👀 **Regime:** Building energy. Volatility or momentum is expanding, but conviction still needs confirmation."
+            )
         else:
-            parts.append("😌 CALM CONDITIONS: Stock is trading in a relatively stable pattern.")
+            if calm_price and calm_vol and calm_volume:
+                sections.append(
+                    "😌 **Regime:** Range-bound. Price is hugging its 20-day average, volatility is near baseline, and volume is muted."
+                )
+            else:
+                sections.append(
+                    "😌 **Regime:** Mixed but generally stable. Some metrics are near average, yet pockets of activity warrant monitoring."
+                )
 
         # Momentum explanation
-        if abs(momentum_zscore) > 1.5:
+        if abs(momentum_zscore) > 2.0:
             direction = "above" if momentum_zscore > 0 else "below"
-            strength = "significantly" if abs(momentum_zscore) > 2 else "moderately"
-            parts.append(
-                f"Price is {strength} {direction} its 20-day average ({abs(momentum_zscore):.1f} standard deviations), "
-                f"suggesting {'strong upward' if momentum_zscore > 0 else 'downward'} momentum."
+            sections.append(
+                "**Momentum:** Price sits well {direction} trend with extreme thrust "
+                f"({_format_sigma(momentum_zscore)}), flagging strong {'bullish' if momentum_zscore > 0 else 'bearish'} follow-through."
+            )
+        elif abs(momentum_zscore) > 1.0:
+            direction = "higher" if momentum_zscore > 0 else "lower"
+            sections.append(
+                "**Momentum:** Bias tilted {direction}; magnitude of {_format_sigma(momentum_zscore)} indicates an emerging directional move."
             )
         elif abs(momentum_zscore) > 0.5:
-            direction = "trending up" if momentum_zscore > 0 else "trending down"
-            parts.append(f"Price is {direction} but still within normal ranges.")
+            direction = "up" if momentum_zscore > 0 else "down"
+            sections.append(
+                f"**Momentum:** Gentle {direction} drift with {_format_sigma(momentum_zscore)} keeps price within familiar ranges."
+            )
         else:
-            parts.append("Price is trading near its recent average with no clear directional trend.")
+            sections.append("**Momentum:** Near equilibrium—little directional edge until price resolves out of its mean.")
 
         # Volatility explanation
-        if atr_ratio > 1.5:
-            parts.append(
-                f"Volatility is {atr_ratio:.0%} of baseline - expect larger than normal price swings. "
-                "This increases both risk and opportunity for options traders."
+        if atr_ratio > 1.6:
+            sections.append(
+                f"**Volatility:** ATR inflated to {atr_ratio:.0%} of baseline, so expect wider candles and faster P/L swings."
             )
         elif atr_ratio > 1.2:
-            parts.append(f"Volatility is slightly elevated at {atr_ratio:.0%} of baseline.")
-        elif atr_ratio < 0.8:
-            parts.append(
-                f"Volatility is compressed at {atr_ratio:.0%} of baseline - "
-                "the stock has been moving less than usual, which could precede a breakout."
+            sections.append(f"**Volatility:** Slightly elevated at {atr_ratio:.0%} of normal, hinting at a brewing expansion.")
+        elif atr_ratio < 0.75:
+            sections.append(
+                f"**Volatility:** Compressed to {atr_ratio:.0%} of baseline—quiet tape that often precedes a break."
             )
+        else:
+            sections.append(f"**Volatility:** Running near typical levels ({atr_ratio:.0%} of baseline).")
 
         # Volume explanation
-        if volume_zscore > 2:
-            parts.append(
-                "Volume is surging well above average - institutional activity or news-driven interest likely."
+        if volume_zscore > 2.0:
+            sections.append(
+                f"**Volume:** Participation is surging ({_format_sigma(volume_zscore)}) suggesting institutional interest."
             )
-        elif volume_zscore > 1:
-            parts.append("Volume is elevated, suggesting increased trader interest.")
-        elif volume_zscore < -1:
-            parts.append("Volume is below average - less conviction in current price levels.")
+        elif volume_zscore > 0.75:
+            sections.append(f"**Volume:** Activity above average ({_format_sigma(volume_zscore)}) provides confirmation to the move.")
+        elif volume_zscore < -1.0:
+            sections.append(
+                f"**Volume:** Light flow ({_format_sigma(volume_zscore)}) shows limited conviction at current prices."
+            )
+        else:
+            sections.append("**Volume:** Around typical levels—signals rely more on price/volatility cues.")
 
         # News sentiment (if meaningful)
         if avg_sentiment > 0.2:
-            parts.append(f"News sentiment is positive ({avg_sentiment:.2f}), potentially supporting upside.")
+            sections.append(
+                f"**News/Sentiment:** Positive tone ({avg_sentiment:.2f}) adds support to bullish setups."
+            )
         elif avg_sentiment < -0.2:
-            parts.append(f"News sentiment is negative ({avg_sentiment:.2f}), creating headwinds.")
+            sections.append(
+                f"**News/Sentiment:** Negative tone ({avg_sentiment:.2f}) may weigh on rallies."
+            )
 
-        # Directional cues
+        # Directional cues & market context
         if momentum_zscore >= 0.75:
-            parts.append("Directional bias skewed bullish – upside setups benefit from strong momentum.")
+            sections.append("**Directional Bias:** Skew bullish—momentum favors long deltas while strength persists.")
         elif momentum_zscore <= -0.75:
-            parts.append("Directional bias skewed bearish – downside setups align with current momentum.")
+            sections.append("**Directional Bias:** Skew bearish—momentum favors put spreads or protective hedges.")
         else:
-            parts.append("Directional momentum is muted, so confirmation from price action is important.")
+            sections.append("**Directional Bias:** Neutral—wait for a decisive push before leaning directional.")
 
         if spy_return is not None:
             if spy_return > 0.01:
-                parts.append("Broad market has positive 5-day drift, modestly supporting call positioning.")
+                sections.append(
+                    "**Market Context:** Broad market uptrend over the past week offers a modest tailwind to longs."
+                )
             elif spy_return < -0.01:
-                parts.append("Broad market weakness over 5 days provides a tailwind for protective puts.")
+                sections.append(
+                    "**Market Context:** Broad market pressure over the past week supports defensive positioning."
+                )
 
         # Trading implications
         if classification == "elevated_swing_risk":
-            parts.append(
-                "💡 TRADING IMPLICATION: Options premiums likely elevated. "
-                "Consider wider stops and position sizing for directional trades."
+            sections.append(
+                "💡 **Plan:** Prioritize directional trades or long premium strategies, but manage size for the higher volatility."
             )
         elif classification == "watchlist":
-            parts.append(
-                "💡 TRADING IMPLICATION: Watch for breakout confirmation. "
-                "Options may offer good risk/reward if direction becomes clearer."
+            sections.append(
+                "💡 **Plan:** Stalk breakout confirmation; consider staged entries or balanced spreads until volume expands."
             )
         else:
-            parts.append(
-                "💡 TRADING IMPLICATION: Low urgency. "
-                "Selling premium strategies (covered calls, cash-secured puts) may be favored in stable conditions."
-            )
+            if calm_price and calm_vol and calm_volume:
+                sections.append(
+                    "💡 **Plan:** Favor premium-selling approaches (covered calls, iron condors) while price oscillates around the mean."
+                )
+            else:
+                sections.append(
+                    "💡 **Plan:** Maintain flexibility—deploy defined-risk trades that can adapt if volatility begins to expand."
+                )
 
-        return " ".join(parts)
+        return "\n".join(sections)
 
     @staticmethod
     def _build_factor_breakdown(
