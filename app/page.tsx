@@ -1192,14 +1192,12 @@ export default function HomePage() {
           <div className="flex items-center justify-between">
             <div className="space-y-3">
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 bg-slate-900 dark:bg-white rounded-2xl flex items-center justify-center">
-                  <svg className="w-5 h-5 text-white dark:text-slate-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                  </svg>
+                <div className="w-14 h-14 rounded-2xl flex items-center justify-center overflow-hidden">
+                  <img src="/logo.png" alt="Money Printer" className="w-full h-full object-contain" />
                 </div>
                 <div>
                   <h1 className="text-4xl font-semibold text-slate-900 dark:text-white tracking-tight">
-                    Options Scanner
+                    Money Printer
                   </h1>
                   <p className="text-lg text-slate-600 dark:text-slate-400 font-normal">
                     Your second brain for finding explosive trading opportunities

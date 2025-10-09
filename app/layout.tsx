@@ -4,9 +4,12 @@ import "./globals.css"
 import { Suspense } from "react"
 
 export const metadata: Metadata = {
-  title: "Options Trading Dashboard",
+  title: "Money Printer",
   description: "Real-time options analysis and trading recommendations",
   generator: "v0.app",
+  icons: {
+    icon: '/logo.png',
+  },
 }
 
 export default function RootLayout({
