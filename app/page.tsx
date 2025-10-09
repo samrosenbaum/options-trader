@@ -1185,21 +1185,21 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
-      {/* Header - Modern, compact design */}
-      <div className="border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+    <div className="min-h-screen bg-[#0D0D0D]">
+      {/* Header - Robinhood-inspired dark design */}
+      <div className="border-b border-zinc-800 bg-black shadow-sm">
         <div className="max-w-7xl mx-auto px-6 py-6">
           <div className="flex items-center justify-between flex-wrap gap-6">
             {/* Logo and Title */}
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl flex items-center justify-center overflow-hidden">
-                <img src="/logo.png" alt="Money Printer" className="w-full h-full object-contain" />
+                <img src="/logo.svg" alt="Money Printer" className="w-full h-full object-contain" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+                <h1 className="text-2xl font-bold text-white">
                   Money Printer
                 </h1>
-                <p className="text-sm text-slate-600 dark:text-slate-400">
+                <p className="text-sm text-zinc-400">
                   Find explosive trading opportunities
                 </p>
               </div>
@@ -1207,36 +1207,36 @@ export default function HomePage() {
 
             <div className="flex items-center gap-4 flex-wrap">
               {/* Tab Navigation */}
-              <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-1">
+              <div className="flex items-center bg-zinc-900 rounded-lg p-1 border border-zinc-800">
                 <button
                   onClick={() => setActiveTab('options')}
-                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  className={`px-4 py-2 rounded-lg font-semibold transition-all ${
                     activeTab === 'options'
-                      ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                      ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30'
+                      : 'text-zinc-400 hover:text-white'
                   }`}
                 >
                   Options
                 </button>
                 <button
                   onClick={() => setActiveTab('crypto')}
-                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  className={`px-4 py-2 rounded-lg font-semibold transition-all ${
                     activeTab === 'crypto'
-                      ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                      ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30'
+                      : 'text-zinc-400 hover:text-white'
                   }`}
                 >
                   Crypto
                 </button>
               </div>
 
-              <div className="flex items-center gap-2 bg-white dark:bg-slate-800 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700">
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">$</span>
+              <div className="flex items-center gap-2 bg-zinc-900 px-4 py-2.5 rounded-lg border border-zinc-800">
+                <span className="text-sm font-semibold text-emerald-500">$</span>
                 <input
                   type="number"
                   value={investmentAmount}
                   onChange={(e) => setInvestmentAmount(Number(e.target.value))}
-                  className="w-28 text-base font-semibold bg-transparent text-slate-900 dark:text-white focus:outline-none"
+                  className="w-28 text-base font-bold bg-transparent text-white focus:outline-none placeholder-zinc-500"
                   min="100"
                   max="100000"
                   step="100"
@@ -1246,7 +1246,7 @@ export default function HomePage() {
               <button
                 onClick={activeTab === 'options' ? fetchOpportunities : fetchCryptoAlerts}
                 disabled={activeTab === 'options' ? isLoading : cryptoLoading}
-                className="px-6 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-lg font-semibold shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-2 disabled:opacity-50"
+                className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-bold shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40 transition-all duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {(activeTab === 'options' ? isLoading : cryptoLoading) ? (
                   <>
@@ -1266,21 +1266,21 @@ export default function HomePage() {
             </div>
 
           <div className="mt-4 flex items-center gap-4 flex-wrap text-sm">
-            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg font-medium ${
+            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg font-semibold border ${
               isMarketOpen()
-                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                : 'bg-zinc-900 text-zinc-400 border-zinc-800'
             }`}>
               <div className={`w-2 h-2 rounded-full ${
-                isMarketOpen() ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'
+                isMarketOpen() ? 'bg-emerald-500 animate-pulse shadow-lg shadow-emerald-500/50' : 'bg-zinc-600'
               }`}></div>
               {isMarketOpen() ? 'Market Open' : 'Market Closed'}
             </div>
             {lastSuccessfulUpdate && (
-              <div className="text-slate-600 dark:text-slate-400">
+              <div className="text-zinc-400">
                 Last scan: {lastSuccessfulUpdate.toLocaleTimeString()}
                 {isStaleData && (
-                  <span className="ml-2 px-2 py-1 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 text-xs rounded-md font-medium">
+                  <span className="ml-2 px-2 py-1 bg-amber-500/10 text-amber-400 border border-amber-500/30 text-xs rounded-md font-semibold">
                     Cached
                   </span>
                 )}
@@ -1305,40 +1305,40 @@ export default function HomePage() {
           }}
         />
 
-        {/* Stats Cards - Modern compact design */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
-          <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800">
+        {/* Stats Cards - Robinhood-inspired dark design */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-8">
+          <div className="bg-zinc-900 rounded-xl p-5 border border-zinc-800 hover:border-zinc-700 transition-colors">
             <div className="space-y-1">
-              <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">Scanned</p>
-              <p className="text-2xl font-bold text-slate-900 dark:text-white">{totalEvaluated}</p>
+              <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide">Scanned</p>
+              <p className="text-2xl font-bold text-white">{totalEvaluated}</p>
             </div>
           </div>
 
-          <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800">
+          <div className="bg-zinc-900 rounded-xl p-5 border border-zinc-800 hover:border-emerald-500/30 transition-colors">
             <div className="space-y-1">
-              <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">Found</p>
-              <p className="text-2xl font-bold text-slate-900 dark:text-white">{opportunities.length}</p>
+              <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide">Found</p>
+              <p className="text-2xl font-bold text-emerald-400">{opportunities.length}</p>
             </div>
           </div>
 
-          <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800">
+          <div className="bg-zinc-900 rounded-xl p-5 border border-zinc-800 hover:border-red-500/30 transition-colors">
             <div className="space-y-1">
-              <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">High Score</p>
-              <p className="text-2xl font-bold text-red-600 dark:text-red-500">{opportunities.filter(o => o.score >= 90).length}</p>
+              <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide">High Score</p>
+              <p className="text-2xl font-bold text-red-400">{opportunities.filter(o => o.score >= 90).length}</p>
             </div>
           </div>
 
-          <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800">
+          <div className="bg-zinc-900 rounded-xl p-5 border border-zinc-800 hover:border-orange-500/30 transition-colors">
             <div className="space-y-1">
-              <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">Volume</p>
-              <p className="text-2xl font-bold text-orange-600 dark:text-orange-500">{opportunities.filter(o => o.volumeRatio > 2).length}</p>
+              <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide">Volume</p>
+              <p className="text-2xl font-bold text-orange-400">{opportunities.filter(o => o.volumeRatio > 2).length}</p>
             </div>
           </div>
 
-          <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800">
+          <div className="bg-zinc-900 rounded-xl p-5 border border-zinc-800 hover:border-blue-500/30 transition-colors">
             <div className="space-y-1">
-              <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">Catalysts</p>
-              <p className="text-2xl font-bold text-blue-600 dark:text-blue-500">{opportunities.filter(o => o.catalysts && o.catalysts.length > 0).length}</p>
+              <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide">Catalysts</p>
+              <p className="text-2xl font-bold text-blue-400">{opportunities.filter(o => o.catalysts && o.catalysts.length > 0).length}</p>
             </div>
           </div>
         </div>
@@ -1432,50 +1432,50 @@ export default function HomePage() {
                 return (
                   <div
                     key={index}
-                    className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 hover:shadow-lg transition-all"
+                    className="bg-zinc-900 rounded-2xl p-6 border border-zinc-800 hover:border-emerald-500/30 hover:shadow-xl hover:shadow-emerald-500/5 transition-all"
                   >
                     <div className="flex items-start justify-between mb-5">
                       <div className="space-y-3 flex-1">
                         <div className="flex items-center gap-3 flex-wrap">
-                          <div className="text-3xl font-bold text-slate-900 dark:text-white">{opp.symbol}</div>
+                          <div className="text-3xl font-bold text-white">{opp.symbol}</div>
                           <div className={`px-4 py-1.5 rounded-lg text-base font-bold ${getScoreColor(opp.score)}`}>
                             {opp.score}
                           </div>
                           <div className="flex items-center gap-2 flex-wrap">
                             {opp.gammaSqueezeScore && opp.gammaSqueezeScore > 0 && (
-                              <span className="px-3 py-1 bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 rounded-lg text-sm font-semibold">
+                              <span className="px-3 py-1 bg-orange-500/10 text-orange-400 border border-orange-500/30 rounded-lg text-sm font-bold">
                                 GAMMA {opp.gammaSqueezeScore}
                               </span>
                             )}
                             {opp.unusualFlowScore && opp.unusualFlowScore > 0 && (
-                              <span className="px-3 py-1 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 rounded-lg text-sm font-semibold">
+                              <span className="px-3 py-1 bg-blue-500/10 text-blue-400 border border-blue-500/30 rounded-lg text-sm font-bold">
                                 FLOW {opp.unusualFlowScore}
                               </span>
                             )}
                             {opp.newsImpactScore && opp.newsImpactScore > 0 && (
-                              <span className="px-3 py-1 bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 rounded-lg text-sm font-semibold">
+                              <span className="px-3 py-1 bg-purple-500/10 text-purple-400 border border-purple-500/30 rounded-lg text-sm font-bold">
                                 NEWS {opp.newsImpactScore}
                               </span>
                             )}
                             {opp.riskRewardRatio && opp.riskRewardRatio >= 3 && (
-                              <span className="px-3 py-1 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 rounded-lg text-sm font-bold">
+                              <span className="px-3 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 rounded-lg text-sm font-bold shadow-lg shadow-emerald-500/10">
                                 {opp.riskRewardRatio.toFixed(1)}x EDGE
                               </span>
                             )}
                             {opp.probabilityOfProfit !== null && opp.probabilityOfProfit >= 55 && (
-                              <span className="px-3 py-1 bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400 rounded-lg text-sm font-bold">
+                              <span className="px-3 py-1 bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 rounded-lg text-sm font-bold">
                                 {opp.probabilityOfProfit.toFixed(0)}% WIN
                               </span>
                             )}
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-5 text-base text-slate-600 dark:text-slate-400 flex-wrap">
-                          <span className="font-semibold">
+                        <div className="flex items-center gap-5 text-base text-zinc-400 flex-wrap">
+                          <span className="font-bold text-white">
                             {opp.optionType.toUpperCase()} ${opp.strike}
                           </span>
                           <span>Exp: {opp.expiration}</span>
-                          <span className="font-medium">{opp.daysToExpiration}d</span>
+                          <span className="font-semibold">{opp.daysToExpiration}d</span>
                           <span className={`px-3 py-1 rounded-lg text-sm font-bold border ${getRiskColor(opp.riskLevel)}`}>
                             {opp.riskLevel.toUpperCase()}
                           </span>
@@ -1483,17 +1483,17 @@ export default function HomePage() {
                       </div>
 
                       <div className="text-right space-y-1 ml-4">
-                        <div className="text-3xl font-bold text-slate-900 dark:text-white">
+                        <div className="text-3xl font-bold text-emerald-400">
                           {formatCurrency(opp.premium)}
                         </div>
-                        <div className="text-sm text-slate-500 dark:text-slate-400 font-medium">Premium</div>
+                        <div className="text-sm text-zinc-500 font-semibold">Premium</div>
                       </div>
                     </div>
 
                     {/* Trade Summary */}
                     {opp.tradeSummary && (
-                      <div className="mb-5 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 border border-indigo-200 dark:border-indigo-800 rounded-xl p-5">
-                        <div className="text-base font-medium text-slate-900 dark:text-white leading-relaxed">
+                      <div className="mb-5 bg-gradient-to-r from-emerald-500/5 to-cyan-500/5 border border-emerald-500/20 rounded-xl p-5">
+                        <div className="text-base font-medium text-white leading-relaxed">
                           {opp.tradeSummary}
                         </div>
                       </div>

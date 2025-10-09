@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   description: "Real-time options analysis and trading recommendations",
   generator: "v0.app",
   icons: {
-    icon: '/logo.png',
+    icon: '/logo.svg',
   },
 }
 

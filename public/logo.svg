@@ -1,0 +1,20 @@
+<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Money Printer Icon -->
+  <rect x="20" y="35" width="80" height="50" rx="8" fill="#10b981" stroke="#059669" stroke-width="3"/>
+  <rect x="35" y="50" width="50" height="20" rx="4" fill="#34d399"/>
+  <circle cx="50" cy="60" r="8" fill="#059669"/>
+  <path d="M 50 52 L 50 68 M 42 60 L 58 60" stroke="#065f46" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Paper coming out -->
+  <rect x="40" y="15" width="40" height="25" rx="3" fill="#f0fdf4" stroke="#10b981" stroke-width="2"/>
+  <line x1="50" y1="20" x2="70" y2="20" stroke="#10b981" stroke-width="2" stroke-linecap="round"/>
+  <line x1="50" y1="27" x2="70" y2="27" stroke="#10b981" stroke-width="2" stroke-linecap="round"/>
+  <line x1="50" y1="34" x2="65" y2="34" stroke="#10b981" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Arrow pointing up -->
+  <path d="M 85 25 L 95 15 L 105 25" stroke="#059669" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="95" y1="15" x2="95" y2="35" stroke="#059669" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- Base -->
+  <rect x="15" y="85" width="90" height="10" rx="3" fill="#6b7280"/>
+</svg>
