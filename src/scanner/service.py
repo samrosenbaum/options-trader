@@ -244,17 +244,29 @@ class SmartOptionsScanner:
             probability_score = self.calculate_probability_score(option, metrics)
             score = self.calculate_opportunity_score(option, metrics, probability_score)
 
-            best_roi = metrics["bestRoiPercent"]
-            if best_roi <= 0:
+            # Focus on probability of profit rather than extreme upside
+            probability_percent = self.estimate_probability_percent(probability_score)
+            expected_roi = metrics["expectedMoveRoiPercent"]  # 1 SD move (realistic)
+
+            # Skip trades with negative expected returns or very low probability
+            if expected_roi <= 0 or probability_percent < 25:
                 continue
 
-            high_asymmetry = best_roi >= 300  # Raised from 220
-            high_conviction = probability_score >= 32 and metrics["tenMoveRoiPercent"] >= 50  # Raised thresholds
+            # Define quality thresholds - prioritize probable winners
+            high_probability = probability_percent >= 35  # Good chance of profit (lowered from 40)
+            reasonable_return = expected_roi >= 20  # 20% return on 1 SD move (lowered from 25)
 
-            if score >= 85 and (high_asymmetry or high_conviction):  # Raised from 75 to 85
+            # Quality criteria: High score + reasonable probability + decent expected returns
+            # Removed the "high_asymmetry" path that surfaced lottery tickets
+            quality_setup = (
+                score >= 65 and  # Lowered from 70
+                high_probability and
+                reasonable_return
+            )
+
+            if quality_setup:
                 volume_ratio = float(option["volume"] / max(option["openInterest"], 1))
                 spread_pct = (option["ask"] - option["bid"]) / max(option["lastPrice"], 0.01)
-                probability_percent = self.estimate_probability_percent(probability_score)
 
                 swing_signal, swing_error = self._swing_signal_for(option["symbol"])
 
@@ -284,12 +296,29 @@ class SmartOptionsScanner:
                     volume_ratio,
                     spread_pct,
                 )
-                catalysts = ["Volume/Flow Confirmation", "Favourable Risk-Reward Setup"]
-                patterns = ["Liquidity Analysis", "Risk/Reward Modeling"]
-                if best_roi >= 250:
-                    patterns.append("Asymmetrical Upside")
-                if probability_percent >= 70:
-                    catalysts.append("High Conviction Setup")
+
+                # Build catalysts/patterns based on new probability-focused criteria
+                catalysts = []
+                patterns = ["Liquidity Analysis", "Probability-Focused Analysis"]
+
+                if probability_percent >= 50:
+                    catalysts.append("High Probability Setup (>50%)")
+                elif probability_percent >= 40:
+                    catalysts.append("Good Probability (>40%)")
+
+                if expected_roi >= 50:
+                    catalysts.append("Strong Expected Returns")
+                elif expected_roi >= 30:
+                    catalysts.append("Solid Expected Returns")
+
+                if volume_ratio > 1.5:
+                    catalysts.append("Unusual Volume Activity")
+
+                if metrics["breakevenMovePercent"] < 4:
+                    patterns.append("Tight Breakeven")
+
+                if enhanced_bias and abs(enhanced_bias.get("score", 0)) > 30:
+                    patterns.append("Strong Directional Signal")
 
                 # Validate data quality before creating opportunity
                 quality_report = self.validator.validate_option(option.to_dict())
@@ -370,8 +399,17 @@ class SmartOptionsScanner:
                     opportunity["swingSignalError"] = swing_error
                 opportunities.append(opportunity)
 
-        # Sort by score and limit to top 20 to prevent JSON overflow
-        opportunities.sort(key=lambda item: item.get("score", 0), reverse=True)
+        # Sort by expected value: probability * expected return (most likely to profit)
+        # This replaces sorting by raw score which favored high-ROI lottery tickets
+        def expected_value_key(item):
+            prob = item.get("probabilityOfProfit", 0) / 100  # Convert to 0-1
+            expected_return = item.get("expectedMoveReturn", 0)
+            # Expected value = probability × return
+            # Also factor in score for tie-breaking
+            ev = (prob * expected_return) + (item.get("score", 0) * 0.1)
+            return ev
+
+        opportunities.sort(key=expected_value_key, reverse=True)
 
         # Limit to top 20 opportunities to keep JSON manageable
         max_opportunities = 20
@@ -386,25 +424,40 @@ class SmartOptionsScanner:
         enhanced_bias: Optional[Dict[str, Any]],
         directional_bias: Optional[Dict[str, Any]],
     ) -> Optional[str]:
-        """Determine the preferred option type based on directional signals."""
+        """Determine the preferred option type based on directional signals.
 
-        for bias in (enhanced_bias, directional_bias):
-            if not bias:
-                continue
+        Uses the enhanced signal framework (more sophisticated multi-signal analysis).
+        Returns "call" for bullish bias, "put" for bearish bias, or None for neutral.
+        """
 
-            direction = bias.get("direction")
+        # Prefer enhanced signal (it's more sophisticated with 4 signals vs legacy 1 signal)
+        if enhanced_bias:
+            direction = enhanced_bias.get("direction")
             if direction == "bullish":
                 return "call"
             if direction == "bearish":
                 return "put"
 
+        # Fall back to legacy directional bias if enhanced not available
+        if directional_bias:
+            direction = directional_bias.get("direction")
+            if direction == "bullish":
+                return "call"
+            if direction == "bearish":
+                return "put"
+
+        # No strong directional bias - allow all options through
         return None
 
     def calculate_opportunity_score(self, option: pd.Series, metrics: Mapping[str, float], probability_score: float) -> float:
-        """Calculate opportunity score based on liquidity, risk/reward and probability."""
+        """Calculate opportunity score prioritizing probability of profit over extreme upside.
+
+        Philosophy: We want trades that are LIKELY to make money, not lottery tickets.
+        """
 
         score = 0.0
 
+        # Liquidity scoring (max 18 points) - same as before
         volume_ratio = option["volume"] / max(option["openInterest"], 1)
         if volume_ratio > 4:
             score += 18
@@ -415,6 +468,7 @@ class SmartOptionsScanner:
         elif volume_ratio > 1.5:
             score += 8
 
+        # Spread quality (max 18 points) - same as before
         spread_pct = (option["ask"] - option["bid"]) / max(option["lastPrice"], 0.01)
         if spread_pct < 0.05:
             score += 18
@@ -423,19 +477,34 @@ class SmartOptionsScanner:
         elif spread_pct < 0.2:
             score += 6
 
-        best_roi = max(0.0, metrics["bestRoiPercent"])
-        short_term_roi = max(0.0, metrics["tenMoveRoiPercent"])
+        # CHANGED: Focus on EXPECTED returns (1 SD move), not theoretical max
+        # This is what we can realistically expect ~68% of the time
+        expected_roi = max(0.0, metrics["expectedMoveRoiPercent"])  # 1 SD move
 
-        score += min(35, best_roi / 4)
-        score += min(12, short_term_roi / 6)
-        score += probability_score
+        # Reward achievable returns (max 25 points, down from 35)
+        # 100% expected return = 25 points, 200% = 25 points (capped)
+        score += min(25, expected_roi / 4)
 
+        # CHANGED: Probability is now the MOST important factor (max 35 points, up from ~20)
+        # This is the core change - we want high-probability trades
+        score += probability_score * 0.35  # probability_score is 0-100, so this gives 0-35 points
+
+        # Bonus for tight breakeven (max 10 points) - new addition
+        breakeven_move = abs(metrics["breakevenMovePercent"])
+        if breakeven_move < 2:
+            score += 10  # Very close to ITM
+        elif breakeven_move < 4:
+            score += 7
+        elif breakeven_move < 6:
+            score += 4
+
+        # IV quality check (max 5 points)
         iv = option["impliedVolatility"]
         if pd.notna(iv):
             if 0.2 <= iv <= 0.6:
                 score += 5
             elif iv > 0.8:
-                score -= 3
+                score -= 3  # Penalize extremely high IV (usually means low prob of profit)
 
         return float(max(0.0, min(100.0, score)))
 
