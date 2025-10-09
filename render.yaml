@@ -1,15 +1,15 @@
 services:
   - type: web
     name: options-trader
-    runtime: node
+    runtime: python
     plan: free
-    buildCommand: ./build.sh
-    startCommand: . venv/bin/activate && npx next start -p $PORT
+    buildCommand: bash build.sh
+    startCommand: bash start.sh
     envVars:
       - key: NODE_VERSION
         value: 18
       - key: PYTHON_VERSION
-        value: 3.11
+        value: 3.12
       - key: NODE_ENV
         value: production
       - key: PYTHON_EXECUTABLE
