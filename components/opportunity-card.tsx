@@ -762,6 +762,7 @@ interface OpportunityCardProps {
 }
 
 const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps) => {
+  const [isExpanded, setIsExpanded] = React.useState(false)
   const scenario = calculateInvestmentScenario(opportunity, investmentAmount)
   const isPerContractView = scenario.basis === 'perContract'
 
@@ -784,6 +785,7 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
 
   return (
     <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 hover:shadow-lg transition-all">
+      {/* Header - Always Visible */}
       <div className="flex items-start justify-between mb-5">
         <div className="space-y-3 flex-1">
           <div className="flex items-center gap-3 flex-wrap">
@@ -840,7 +842,7 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
         </div>
       </div>
 
-      {/* Trade Summary */}
+      {/* Trade Summary - Always Visible */}
       {opportunity.tradeSummary ? (
         <div className="mb-5 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 border border-indigo-200 dark:border-indigo-800 rounded-xl p-5">
           <div className="text-base font-medium text-slate-900 dark:text-white leading-relaxed">
@@ -849,62 +851,81 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
         </div>
       ) : null}
 
-      {/* Data Quality Badge */}
-      {opportunity._dataQuality && (
-        <div className="mb-6">
-          <DataQualityBadge quality={opportunity._dataQuality} />
-        </div>
-      )}
+      {/* Expand/Collapse Button */}
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full mb-5 px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-bold shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40 transition-all duration-200 flex items-center justify-center gap-2"
+      >
+        <span>{isExpanded ? 'Hide Details' : 'Show Full Analysis'}</span>
+        <svg
+          className={`w-5 h-5 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
 
-      {opportunity.recentNews && opportunity.recentNews.length > 0 && (
-        <div className="mb-6">
-          <h4 className="font-semibold text-slate-900 dark:text-white mb-3">Recent News</h4>
-          <div className="space-y-3">
-            {opportunity.recentNews.map((news, i) => (
-              <div key={i} className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
-                <div className="flex items-start justify-between mb-2">
-                  <h5 className="text-sm font-medium text-slate-900 dark:text-white line-clamp-2">
-                    {news.headline}
-                  </h5>
-                  <span
-                    className={`px-2 py-1 rounded-lg text-xs font-medium ml-3 ${
-                      news.category === 'political'
-                        ? 'bg-red-100 text-red-700'
-                        : news.category === 'regulatory'
-                          ? 'bg-orange-100 text-orange-700'
-                          : news.category === 'earnings'
-                            ? 'bg-blue-100 text-blue-700'
-                            : 'bg-slate-100 text-slate-700'
-                    }`}
-                  >
-                    {news.category}
-                  </span>
-                </div>
-                <p className="text-xs text-slate-600 dark:text-slate-400 mb-3 line-clamp-2">{news.summary}</p>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-500 dark:text-slate-500">{news.source}</span>
-                  <div className="flex items-center gap-3">
-                    <span
-                      className={`text-xs font-medium ${
-                        news.sentiment.score > 0
-                          ? 'text-emerald-600'
-                          : news.sentiment.score < 0
-                            ? 'text-red-600'
-                            : 'text-slate-600'
-                      }`}
-                    >
-                      {news.sentiment.label}
-                    </span>
-                    <span className="text-xs text-slate-500">Impact: {news.impact_score}</span>
+      {/* Collapsible Content */}
+      {isExpanded && (
+        <div className="space-y-6">
+          {/* Data Quality Badge */}
+          {opportunity._dataQuality && (
+            <div>
+              <DataQualityBadge quality={opportunity._dataQuality} />
+            </div>
+          )}
+
+          {opportunity.recentNews && opportunity.recentNews.length > 0 && (
+            <div>
+              <h4 className="font-semibold text-slate-900 dark:text-white mb-3">Recent News</h4>
+              <div className="space-y-3">
+                {opportunity.recentNews.map((news, i) => (
+                  <div key={i} className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <h5 className="text-sm font-medium text-slate-900 dark:text-white line-clamp-2">
+                        {news.headline}
+                      </h5>
+                      <span
+                        className={`px-2 py-1 rounded-lg text-xs font-medium ml-3 ${
+                          news.category === 'political'
+                            ? 'bg-red-100 text-red-700'
+                            : news.category === 'regulatory'
+                              ? 'bg-orange-100 text-orange-700'
+                              : news.category === 'earnings'
+                                ? 'bg-blue-100 text-blue-700'
+                                : 'bg-slate-100 text-slate-700'
+                        }`}
+                      >
+                        {news.category}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 mb-3 line-clamp-2">{news.summary}</p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-slate-500 dark:text-slate-500">{news.source}</span>
+                      <div className="flex items-center gap-3">
+                        <span
+                          className={`text-xs font-medium ${
+                            news.sentiment.score > 0
+                              ? 'text-emerald-600'
+                              : news.sentiment.score < 0
+                                ? 'text-red-600'
+                                : 'text-slate-600'
+                          }`}
+                        >
+                          {news.sentiment.label}
+                        </span>
+                        <span className="text-xs text-slate-500">Impact: {news.impact_score}</span>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
-      )}
+            </div>
+          )}
 
-      <div className="space-y-6 mb-6">
+          <div className="space-y-6">
         {renderMoveThesis(opportunity)}
 
         <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
@@ -1104,13 +1125,16 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
           <div className="text-sm font-semibold text-slate-900 dark:text-white">{opportunity.greeks.vega.toFixed(3)}</div>
         </div>
       </div>
-      <div className="mt-4 space-y-2">
-        {getGreeksExplanation(opportunity).map((explanation, index) => (
-          <p key={index} className="text-xs text-slate-600 dark:text-slate-400">
-            {explanation}
-          </p>
-        ))}
-      </div>
+          <div className="mt-4 space-y-2">
+            {getGreeksExplanation(opportunity).map((explanation, index) => (
+              <p key={index} className="text-xs text-slate-600 dark:text-slate-400">
+                {explanation}
+              </p>
+            ))}
+          </div>
+        </div>
+        </div>
+      )}
     </div>
   )
 }
