@@ -11,13 +11,14 @@ from math import isfinite
 from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Tuple
 
 import pandas as pd
+import yfinance as yf
 
 from scripts.bulk_options_fetcher import BulkOptionsFetcher
 from src.analysis import SwingSignal, SwingSignalAnalyzer
 from src.config import AppSettings, get_settings
 from src.scanner.iv_rank_history import IVRankHistory
 from src.scanner.universe import build_scan_universe
-from src.signals import OptionsSkewAnalyzer, SmartMoneyFlowDetector, SignalAggregator
+from src.signals import OptionsSkewAnalyzer, SmartMoneyFlowDetector, RegimeDetector, SignalAggregator
 from src.validation import OptionsDataValidator, DataQuality
 
 
@@ -75,8 +76,9 @@ class SmartOptionsScanner:
 
         # Initialize directional signal framework
         self.signal_aggregator = SignalAggregator([
-            OptionsSkewAnalyzer(weight=0.55),  # 55% weight
-            SmartMoneyFlowDetector(weight=0.45),  # 45% weight
+            OptionsSkewAnalyzer(weight=0.40),  # 40% weight
+            SmartMoneyFlowDetector(weight=0.35),  # 35% weight
+            RegimeDetector(weight=0.25),  # 25% weight
         ])
 
     @property
@@ -751,8 +753,24 @@ class SmartOptionsScanner:
                 "put_volume_std": float(avg_put_volume * 0.3),
             }
 
-            # Calculate price change (simplified)
-            price_change = 0.0  # Could enhance with actual price history
+            # Fetch price history for regime detection (30 days of daily data)
+            price_history = pd.DataFrame()
+            price_change = 0.0
+            try:
+                price_history = yf.download(symbol, period="30d", interval="1d", progress=False, auto_adjust=True)
+                if not price_history.empty and len(price_history) >= 2:
+                    # Flatten MultiIndex columns if present
+                    if isinstance(price_history.columns, pd.MultiIndex):
+                        price_history.columns = price_history.columns.get_level_values(0)
+
+                    # Normalize column names to lowercase
+                    price_history.columns = [col.lower() for col in price_history.columns]
+
+                    # Calculate price change from previous close
+                    closes = price_history["close"].values
+                    price_change = ((closes[-1] - closes[-2]) / closes[-2]) * 100
+            except Exception as e:
+                print(f"Warning: Could not fetch price history for {symbol}: {e}")
 
             # Prepare data for signal aggregator
             signal_data = {
@@ -762,6 +780,7 @@ class SmartOptionsScanner:
                 "atm_iv": atm_iv,
                 "historical_volume": historical_volume,
                 "price_change": price_change,
+                "price_history": price_history,  # For regime detection
             }
 
             # Calculate directional score using signal aggregator
