@@ -324,42 +324,42 @@ class SmartOptionsScanner:
                 opportunity = {
                     "symbol": option["symbol"],
                     "optionType": option["type"],
-                    "strike": float(option["strike"]),
+                    "strike": round(float(option["strike"]), 2),
                     "expiration": option["expiration"],
-                    "premium": float(option["lastPrice"]),
+                    "premium": round(float(option["lastPrice"]), 2),
                     "tradeSummary": trade_summary,
-                    "bid": float(option["bid"]),
-                    "ask": float(option["ask"]),
+                    "bid": round(float(option["bid"]), 2),
+                    "ask": round(float(option["ask"]), 2),
                     "volume": int(option["volume"]),
                     "openInterest": int(option["openInterest"]),
-                    "impliedVolatility": float(option["impliedVolatility"]) if pd.notna(option["impliedVolatility"]) else 0.0,
-                    "stockPrice": float(option["stockPrice"]),
-                    "score": score,
-                    "confidence": min(95, (score * 0.35) + (probability_percent * 0.65)),
+                    "impliedVolatility": round(float(option["impliedVolatility"]), 4) if pd.notna(option["impliedVolatility"]) else 0.0,
+                    "stockPrice": round(float(option["stockPrice"]), 2),
+                    "score": round(score, 1),  # Round to 1 decimal place
+                    "confidence": round(min(95, (score * 0.35) + (probability_percent * 0.65)), 1),
                     "reasoning": reasoning,
                     "catalysts": catalysts,
                     "patterns": patterns,
                     "riskLevel": self.assess_risk_level(option, metrics, probability_score),
-                    "potentialReturn": metrics["tenMoveRoiPercent"],
-                    "potentialReturnAmount": metrics["tenMoveNetProfit"],
-                    "maxReturn": metrics["bestRoiPercent"],
-                    "maxReturnAmount": metrics["bestNetProfit"],
+                    "potentialReturn": round(metrics["tenMoveRoiPercent"], 1),
+                    "potentialReturnAmount": round(metrics["tenMoveNetProfit"], 2),
+                    "maxReturn": round(metrics["bestRoiPercent"], 1),
+                    "maxReturnAmount": round(metrics["bestNetProfit"], 2),
                     # New realistic scenario fields
-                    "expectedMoveReturn": metrics["expectedMoveRoiPercent"],
-                    "expectedMoveAmount": metrics["expectedMoveNetProfit"],
-                    "optimisticMoveReturn": metrics["optimisticMoveRoiPercent"],
-                    "optimisticMoveAmount": metrics["optimisticMoveNetProfit"],
-                    "expectedMove1SD": metrics["expectedMove1SD"],
-                    "expectedMove2SD": metrics["expectedMove2SD"],
+                    "expectedMoveReturn": round(metrics["expectedMoveRoiPercent"], 1),
+                    "expectedMoveAmount": round(metrics["expectedMoveNetProfit"], 2),
+                    "optimisticMoveReturn": round(metrics["optimisticMoveRoiPercent"], 1),
+                    "optimisticMoveAmount": round(metrics["optimisticMoveNetProfit"], 2),
+                    "expectedMove1SD": round(metrics["expectedMove1SD"], 2),
+                    "expectedMove2SD": round(metrics["expectedMove2SD"], 2),
                     "maxLossPercent": 100.0,
-                    "maxLossAmount": metrics["costBasis"],
-                    "maxLoss": metrics["costBasis"],
-                    "breakeven": metrics["breakevenPrice"],
-                    "breakevenPrice": metrics["breakevenPrice"],
-                    "breakevenMovePercent": metrics["breakevenMovePercent"],
-                    "ivRank": self.calculate_iv_rank(option),
-                    "volumeRatio": volume_ratio,
-                    "probabilityOfProfit": probability_percent,
+                    "maxLossAmount": round(metrics["costBasis"], 2),
+                    "maxLoss": round(metrics["costBasis"], 2),
+                    "breakeven": round(metrics["breakevenPrice"], 2),
+                    "breakevenPrice": round(metrics["breakevenPrice"], 2),
+                    "breakevenMovePercent": round(metrics["breakevenMovePercent"], 1),
+                    "ivRank": round(self.calculate_iv_rank(option), 1),
+                    "volumeRatio": round(volume_ratio, 2),
+                    "probabilityOfProfit": round(probability_percent, 1),
                     "profitProbabilityExplanation": self.build_probability_explanation(
                         option,
                         metrics,
@@ -688,11 +688,15 @@ class SmartOptionsScanner:
         return float(max(0.0, min(100.0, current_iv * 100.0)))
 
     def calculate_probability_score(self, option: pd.Series, metrics: Mapping[str, float]) -> float:
-        """Calculate real probability of profit using statistical methods."""
+        """Calculate real probability of profit using statistical methods.
+
+        Uses Black-Scholes assumptions with implied volatility to estimate
+        the probability that the option finishes in-the-money at expiration.
+        """
         import math
         from scipy import stats
 
-        breakeven_move_pct = abs(metrics["breakevenMovePercent"])
+        breakeven_move_pct = metrics["breakevenMovePercent"]  # Keep sign! Positive = up, negative = down
         dte = self.calculate_days_to_expiration(option["expiration"])
 
         if dte <= 0:
@@ -711,11 +715,14 @@ class SmartOptionsScanner:
         if expected_move_pct == 0:
             z_score = 0
         else:
-            z_score = breakeven_move_pct / expected_move_pct
+            # For calls: positive breakeven_move means stock needs to go UP
+            # For puts: negative breakeven_move means stock needs to go DOWN (but we need abs for puts)
+            # The key insight: we want probability of moving in the REQUIRED direction
+            z_score = abs(breakeven_move_pct) / expected_move_pct
 
-        # For calls: probability stock goes UP past breakeven = 1 - CDF(z_score)
-        # For puts: probability stock goes DOWN past breakeven = 1 - CDF(z_score)
-        # Using normal distribution (stock returns are approximately normal)
+        # Probability stock moves at least |breakeven_move_pct| in the required direction
+        # Since we're using abs(breakeven), this works for both calls and puts
+        # This is the probability the move is >= z_score standard deviations from mean
         probability = 1 - stats.norm.cdf(z_score)
 
         # Convert to percentage and clamp to reasonable range
