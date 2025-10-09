@@ -882,46 +882,57 @@ class SmartOptionsScanner:
         # This gives us the 1 standard deviation expected move
         expected_move_1sd = iv * math.sqrt(max(dte, 1) / 365.0)
 
+        # Cap scenarios at realistic levels based on time frame
+        # The longer the DTE, the more movement is possible, but we still need to be realistic
+        # This prevents showing 100%+ moves that would almost never happen
+        if dte <= 3:
+            max_reasonable_move = 0.05  # 5% max for 0-3 DTE (intraday/overnight)
+        elif dte <= 7:
+            max_reasonable_move = 0.10  # 10% max for weekly options
+        elif dte <= 30:
+            max_reasonable_move = 0.15  # 15% max for monthly options
+        else:
+            max_reasonable_move = 0.20  # 20% max for longer-dated (rare but possible)
+
         # For very short-dated options (0-3 DTE), use minimum realistic scenarios
         if dte <= 3:
             # Intraday/overnight scenarios - much smaller moves
             moves = [
-                -expected_move_1sd * 1.5,  # ~1.5 SD down
-                -expected_move_1sd,         # 1 SD down
-                -expected_move_1sd * 0.5,   # 0.5 SD down
-                -0.01,                       # Small move down
-                0.0,                         # No move
-                0.01,                        # Small move up
-                expected_move_1sd * 0.5,    # 0.5 SD up
-                expected_move_1sd,          # 1 SD up
-                expected_move_1sd * 1.5,    # ~1.5 SD up
+                max(-max_reasonable_move, -expected_move_1sd * 1.5),  # ~1.5 SD down (capped)
+                max(-max_reasonable_move, -expected_move_1sd),         # 1 SD down (capped)
+                max(-max_reasonable_move, -expected_move_1sd * 0.5),   # 0.5 SD down
+                -0.01,                                                  # Small move down
+                0.0,                                                    # No move
+                0.01,                                                   # Small move up
+                min(max_reasonable_move, expected_move_1sd * 0.5),     # 0.5 SD up
+                min(max_reasonable_move, expected_move_1sd),           # 1 SD up (capped)
+                min(max_reasonable_move, expected_move_1sd * 1.5),     # ~1.5 SD up (capped)
             ]
         elif dte <= 7:
             # Weekly scenarios - moderate moves
             moves = [
-                -expected_move_1sd * 2,     # 2 SD down
-                -expected_move_1sd * 1.5,   # 1.5 SD down
-                -expected_move_1sd,         # 1 SD down
-                -0.02,                       # Small move down
-                0.0,                         # No move
-                0.02,                        # Small move up
-                expected_move_1sd,          # 1 SD up
-                expected_move_1sd * 1.5,    # 1.5 SD up
-                expected_move_1sd * 2,      # 2 SD up
+                max(-max_reasonable_move, -expected_move_1sd * 2),     # 2 SD down (capped)
+                max(-max_reasonable_move, -expected_move_1sd * 1.5),   # 1.5 SD down (capped)
+                max(-max_reasonable_move, -expected_move_1sd),         # 1 SD down (capped)
+                -0.02,                                                  # Small move down
+                0.0,                                                    # No move
+                0.02,                                                   # Small move up
+                min(max_reasonable_move, expected_move_1sd),           # 1 SD up (capped)
+                min(max_reasonable_move, expected_move_1sd * 1.5),     # 1.5 SD up (capped)
+                min(max_reasonable_move, expected_move_1sd * 2),       # 2 SD up (capped)
             ]
         else:
-            # Monthly+ scenarios - can use broader ranges
+            # Monthly+ scenarios - cap at 2 SD max (no more 2.5 SD scenarios)
             moves = [
-                -expected_move_1sd * 2,     # 2 SD down
-                -expected_move_1sd * 1.5,   # 1.5 SD down
-                -expected_move_1sd,         # 1 SD down
-                -0.03,                       # Small move down
-                0.0,                         # No move
-                0.03,                        # Small move up
-                expected_move_1sd,          # 1 SD up
-                expected_move_1sd * 1.5,    # 1.5 SD up
-                expected_move_1sd * 2,      # 2 SD up
-                expected_move_1sd * 2.5,    # 2.5 SD up (rare but possible)
+                max(-max_reasonable_move, -expected_move_1sd * 2),     # 2 SD down (capped)
+                max(-max_reasonable_move, -expected_move_1sd * 1.5),   # 1.5 SD down (capped)
+                max(-max_reasonable_move, -expected_move_1sd),         # 1 SD down (capped)
+                -0.03,                                                  # Small move down
+                0.0,                                                    # No move
+                0.03,                                                   # Small move up
+                min(max_reasonable_move, expected_move_1sd),           # 1 SD up (capped)
+                min(max_reasonable_move, expected_move_1sd * 1.5),     # 1.5 SD up (capped)
+                min(max_reasonable_move, expected_move_1sd * 2),       # 2 SD up (capped - removed 2.5 SD)
             ]
 
         scenarios: List[Dict[str, Any]] = []
