@@ -3,8 +3,11 @@ services:
     name: options-trader
     runtime: node
     plan: free
-    buildCommand: pip install -r requirements.txt && npm ci && npm run build
-    startCommand: ./node_modules/.bin/next start
+    buildCommand: |
+      pip install -r requirements.txt
+      npm install --production=false
+      npm run build
+    startCommand: npx next start -p $PORT
     envVars:
       - key: NODE_VERSION
         value: 18
@@ -12,7 +15,5 @@ services:
         value: 3.11
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 10000
     healthCheckPath: /
     autoDeploy: true
