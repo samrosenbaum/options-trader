@@ -107,16 +107,14 @@ class SmartOptionsScanner:
         return market_open <= now <= market_close
 
     def should_refresh_data(self) -> bool:
-        """Determine if cached data should be refreshed."""
+        """Determine if cached data should be refreshed.
 
-        if not self.is_market_hours():
-            return False
+        Changed to NEVER auto-refresh to prevent UI churn.
+        Users must explicitly request refresh via force_refresh=True.
+        """
 
-        if self.last_fetch_time is None:
-            return True
-
-        time_since_fetch = (datetime.now() - self.last_fetch_time).total_seconds()
-        return time_since_fetch > 300  # 5 minutes
+        # Always return False - only refresh when explicitly requested
+        return False
 
     def get_current_options_data(
         self,
@@ -140,28 +138,23 @@ class SmartOptionsScanner:
             self.last_fetch_time = datetime.now()
             return data
 
-        if self.should_refresh_data():
-            print("🔄 Market is open and data needs refresh - fetching fresh data...", file=sys.stderr)
+        # Always use cache unless force_refresh is True
+        print("📂 Using cached data (auto-refresh disabled)", file=sys.stderr)
+        data = self.fetcher.get_fresh_options_data(
+            use_cache=True,
+            max_symbols=self.symbol_limit,
+            symbols=normalized_symbols,
+        )
+
+        # If no cache exists, fetch once but don't auto-refresh in future
+        if data is None:
+            print("⚠️  No cache found - fetching data once", file=sys.stderr)
             data = self.fetcher.get_fresh_options_data(
                 use_cache=False,
                 max_symbols=self.symbol_limit,
                 symbols=normalized_symbols,
             )
             self.last_fetch_time = datetime.now()
-        else:
-            print("📂 Using cached data (market closed or recent fetch)", file=sys.stderr)
-            data = self.fetcher.get_fresh_options_data(
-                use_cache=True,
-                max_symbols=self.symbol_limit,
-                symbols=normalized_symbols,
-            )
-            if data is None:
-                data = self.fetcher.get_fresh_options_data(
-                    use_cache=False,
-                    max_symbols=self.symbol_limit,
-                    symbols=normalized_symbols,
-                )
-                self.last_fetch_time = datetime.now()
 
         return data
 
