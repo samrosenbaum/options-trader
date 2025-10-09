@@ -453,6 +453,9 @@ class SmartOptionsScanner:
                 target_scenario = scenario
                 break
 
+        expected_move_1sd = metrics.get("expectedMove1SD")
+        expected_move_pct = float(expected_move_1sd) if expected_move_1sd else 0.0
+
         if not target_scenario:
             # Fallback to breakeven if no profitable scenario found
             breakeven_price = metrics["breakevenPrice"]
@@ -460,10 +463,13 @@ class SmartOptionsScanner:
             direction = "UP" if option_type == "CALL" else "DOWN"
             dollar_move_abs = abs(breakeven_price - stock_price)
 
-            return (
+            summary = (
                 f"📊 Stock needs to go {direction} by ${dollar_move_abs:.2f} ({breakeven_move_pct:.1f}%) "
                 f"to ${breakeven_price:.2f} {time_desc} to break even"
             )
+            if expected_move_pct > 0:
+                summary += f" (1σ ≈ {expected_move_pct:.1f}% move)"
+            return summary
 
         # Calculate target price and dollar move
         move_pct = abs(target_scenario.get("movePct", 0))
@@ -480,13 +486,13 @@ class SmartOptionsScanner:
         )
 
         # Add context about feasibility
-        expected_move_1sd = metrics.get("expectedMove1SD", 0) * 100  # Convert to percentage
-        if expected_move_1sd > 0:
-            if move_pct < expected_move_1sd * 0.5:
+        if expected_move_pct > 0:
+            summary += f" (1σ ≈ {expected_move_pct:.1f}% move)"
+            if move_pct <= expected_move_pct * 0.5:
                 summary += " ✓ Very achievable"
-            elif move_pct < expected_move_1sd:
+            elif move_pct <= expected_move_pct:
                 summary += " ✓ Achievable"
-            elif move_pct < expected_move_1sd * 1.5:
+            elif move_pct <= expected_move_pct * 1.5:
                 summary += " ⚠ Requires favorable conditions"
             else:
                 summary += " ⚠⚠ Requires exceptional move"
@@ -789,6 +795,7 @@ class SmartOptionsScanner:
         """
 
         signals = {}
+        relevant_metrics: List[Dict[str, object]] = []
         bullish_score = 0.0
         bearish_score = 0.0
 
@@ -804,15 +811,47 @@ class SmartOptionsScanner:
                 if momentum_zscore > 1.5:
                     bullish_score += 30
                     signals["momentum"] = f"Strong bullish momentum ({momentum_zscore:.2f} σ above mean)"
+                    relevant_metrics.append(
+                        {
+                            "factor": "Momentum Breakout",
+                            "reading": f"{momentum_zscore:.2f}σ",
+                            "supports": "calls",
+                            "implication": "Price is accelerating higher; call positions align with the prevailing trend.",
+                        }
+                    )
                 elif momentum_zscore > 0.5:
                     bullish_score += 15
                     signals["momentum"] = f"Moderate bullish momentum ({momentum_zscore:.2f} σ above mean)"
+                    relevant_metrics.append(
+                        {
+                            "factor": "Momentum Breakout",
+                            "reading": f"{momentum_zscore:.2f}σ",
+                            "supports": "calls",
+                            "implication": "Upward momentum is building, increasing odds the stock keeps rising.",
+                        }
+                    )
                 elif momentum_zscore < -1.5:
                     bearish_score += 30
                     signals["momentum"] = f"Strong bearish momentum ({momentum_zscore:.2f} σ below mean)"
+                    relevant_metrics.append(
+                        {
+                            "factor": "Momentum Breakout",
+                            "reading": f"{momentum_zscore:.2f}σ",
+                            "supports": "puts",
+                            "implication": "Momentum is sharply lower; put setups benefit if the downtrend continues.",
+                        }
+                    )
                 elif momentum_zscore < -0.5:
                     bearish_score += 15
                     signals["momentum"] = f"Moderate bearish momentum ({momentum_zscore:.2f} σ below mean)"
+                    relevant_metrics.append(
+                        {
+                            "factor": "Momentum Breakout",
+                            "reading": f"{momentum_zscore:.2f}σ",
+                            "supports": "puts",
+                            "implication": "Price is drifting lower; puts gain if weakness persists.",
+                        }
+                    )
                 else:
                     signals["momentum"] = f"Neutral momentum ({momentum_zscore:.2f} σ)"
 
@@ -824,15 +863,47 @@ class SmartOptionsScanner:
                 if avg_sentiment > 0.3:
                     bullish_score += 20
                     signals["news"] = f"Positive news sentiment ({avg_sentiment:.2f})"
+                    relevant_metrics.append(
+                        {
+                            "factor": "News & Catalysts",
+                            "reading": f"score {avg_sentiment:.2f}",
+                            "supports": "calls",
+                            "implication": "Recent headlines skew bullish, often preceding upward reactions.",
+                        }
+                    )
                 elif avg_sentiment > 0.1:
                     bullish_score += 10
                     signals["news"] = f"Slightly positive news ({avg_sentiment:.2f})"
+                    relevant_metrics.append(
+                        {
+                            "factor": "News & Catalysts",
+                            "reading": f"score {avg_sentiment:.2f}",
+                            "supports": "calls",
+                            "implication": "Mildly constructive news bias provides incremental support to bullish trades.",
+                        }
+                    )
                 elif avg_sentiment < -0.3:
                     bearish_score += 20
                     signals["news"] = f"Negative news sentiment ({avg_sentiment:.2f})"
+                    relevant_metrics.append(
+                        {
+                            "factor": "News & Catalysts",
+                            "reading": f"score {avg_sentiment:.2f}",
+                            "supports": "puts",
+                            "implication": "News flow is negative, which can pressure the stock lower in the near term.",
+                        }
+                    )
                 elif avg_sentiment < -0.1:
                     bearish_score += 10
                     signals["news"] = f"Slightly negative news ({avg_sentiment:.2f})"
+                    relevant_metrics.append(
+                        {
+                            "factor": "News & Catalysts",
+                            "reading": f"score {avg_sentiment:.2f}",
+                            "supports": "puts",
+                            "implication": "Headlines tilt bearish, adding weight to downside thesis.",
+                        }
+                    )
                 else:
                     signals["news"] = "Neutral news sentiment"
 
@@ -843,10 +914,65 @@ class SmartOptionsScanner:
 
                 if atr_ratio > 1.3:
                     signals["volatility"] = f"High volatility ({atr_ratio:.1f}x baseline) - favors strong moves"
+                    relevant_metrics.append(
+                        {
+                            "factor": "Volatility Expansion",
+                            "reading": f"{atr_ratio:.2f}x",
+                            "supports": "both",
+                            "implication": "Larger swings amplify both gains and losses—manage risk sizing carefully.",
+                        }
+                    )
                 elif atr_ratio > 1.1:
                     signals["volatility"] = f"Elevated volatility ({atr_ratio:.1f}x baseline)"
+                    relevant_metrics.append(
+                        {
+                            "factor": "Volatility Expansion",
+                            "reading": f"{atr_ratio:.2f}x",
+                            "supports": "both",
+                            "implication": "Somewhat larger moves expected; directional trades can reach targets faster.",
+                        }
+                    )
                 else:
                     signals["volatility"] = f"Normal volatility ({atr_ratio:.1f}x baseline)"
+                    relevant_metrics.append(
+                        {
+                            "factor": "Volatility Expansion",
+                            "reading": f"{atr_ratio:.2f}x",
+                            "supports": "either",
+                            "implication": "Volatility in line with norms; rely on directional signals for edge.",
+                        }
+                    )
+
+            if "Market Regime" in factors:
+                market_factor = factors["Market Regime"]
+                context = market_factor.get("details", {})
+                vix_ratio = context.get("vix_ratio")
+                spy_return = context.get("spy_return_5d")
+                parts = []
+                if vix_ratio is not None:
+                    parts.append(f"VIX {vix_ratio:.1f}x avg")
+                if spy_return is not None:
+                    parts.append(f"SPY {spy_return:+.2%} (5d)")
+
+                if spy_return is not None and spy_return > 0.01:
+                    market_supports = "calls"
+                    market_message = "Market tailwind for bullish trades"
+                elif spy_return is not None and spy_return < -0.01:
+                    market_supports = "puts"
+                    market_message = "Market selling pressure favors protective puts"
+                else:
+                    market_supports = "both"
+                    market_message = "Market backdrop neutral"
+
+                signals["market"] = f"{' / '.join(parts) if parts else 'Market data limited'} - {market_message}"
+                relevant_metrics.append(
+                    {
+                        "factor": "Market Regime",
+                        "reading": context,
+                        "supports": market_supports,
+                        "implication": market_message,
+                    }
+                )
 
         # 2. Price relative to strike (moneyness)
         stock_price = float(option["stockPrice"])
@@ -880,12 +1006,44 @@ class SmartOptionsScanner:
 
         if option_type == "call" and delta > 0.7:
             signals["delta"] = f"High delta ({delta:.2f}) - moves strongly with stock"
+            relevant_metrics.append(
+                {
+                    "factor": "Delta",
+                    "reading": f"{delta:.2f}",
+                    "supports": "calls",
+                    "implication": "Contract already behaves like stock; smaller moves can translate into gains.",
+                }
+            )
         elif option_type == "put" and delta < -0.7:
             signals["delta"] = f"High delta ({abs(delta):.2f}) - moves strongly with stock"
+            relevant_metrics.append(
+                {
+                    "factor": "Delta",
+                    "reading": f"{delta:.2f}",
+                    "supports": "puts",
+                    "implication": "Contract reacts sharply to downside moves, boosting put responsiveness.",
+                }
+            )
         elif abs(delta) > 0.3:
             signals["delta"] = f"Moderate delta ({abs(delta):.2f})"
+            relevant_metrics.append(
+                {
+                    "factor": "Delta",
+                    "reading": f"{delta:.2f}",
+                    "supports": "both",
+                    "implication": "Moderate delta provides balance between leverage and responsiveness.",
+                }
+            )
         else:
             signals["delta"] = f"Low delta ({abs(delta):.2f}) - needs large move"
+            relevant_metrics.append(
+                {
+                    "factor": "Delta",
+                    "reading": f"{delta:.2f}",
+                    "supports": "either",
+                    "implication": "Low delta requires substantial underlying movement before option reacts.",
+                }
+            )
 
         # Determine overall direction
         net_score = bullish_score - bearish_score
@@ -925,6 +1083,7 @@ class SmartOptionsScanner:
             "alignment": alignment,
             "recommendation": recommendation,
             "signals": signals,
+            "relevantMetrics": relevant_metrics,
             "scores": {
                 "bullish": round(bullish_score, 1),
                 "bearish": round(bearish_score, 1),

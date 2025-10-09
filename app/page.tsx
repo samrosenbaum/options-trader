@@ -365,6 +365,14 @@ export default function HomePage() {
   const [cryptoLoading, setCryptoLoading] = useState(false)
   const [sortOption, setSortOption] = useState<OpportunitySortOption>('promising')
   const [isStaleData, setIsStaleData] = useState(false)
+  const [expandedCards, setExpandedCards] = useState<Record<string, boolean>>({})
+
+  const toggleCard = (cardId: string) => {
+    setExpandedCards(prev => ({
+      ...prev,
+      [cardId]: !prev[cardId],
+    }))
+  }
 
   const fetchOpportunities = useCallback(async () => {
     try {
@@ -449,6 +457,10 @@ export default function HomePage() {
     fetchOpportunities()
     // Auto-refresh disabled - user must manually refresh to avoid API overuse
   }, [fetchOpportunities])
+
+  useEffect(() => {
+    setExpandedCards({})
+  }, [opportunities])
 
   const sortedOpportunities = useMemo(() => {
     if (opportunities.length === 0) {
@@ -1462,13 +1474,26 @@ export default function HomePage() {
                 const maxLossDisplay = isPerContractView
                   ? scenario.maxLossAmountPerContract
                   : scenario.maxLossAmount
+                const cardId = `${opp.symbol}-${opp.optionType}-${opp.strike}-${opp.expiration}`
+                const contentId = `${cardId}-details`
+                const isExpanded = Boolean(expandedCards[cardId])
+                const formatDisplayCurrency = (value: number | null | undefined) =>
+                  typeof value === 'number' && Number.isFinite(value) ? formatCurrency(value) : '—'
+                const probabilitySummary =
+                  typeof opp.probabilityOfProfit === 'number' && Number.isFinite(opp.probabilityOfProfit)
+                    ? `${opp.probabilityOfProfit.toFixed(1)}%`
+                    : '—'
+                const maxLossPercentDisplay =
+                  typeof opp.maxLossPercent === 'number' && Number.isFinite(opp.maxLossPercent)
+                    ? opp.maxLossPercent
+                    : 100
 
                 return (
                   <div
                     key={index}
                     className="bg-zinc-900 rounded-2xl p-6 border border-zinc-800 hover:border-emerald-500/30 hover:shadow-xl hover:shadow-emerald-500/5 transition-all"
                   >
-                    <div className="flex items-start justify-between mb-5">
+                    <div className="flex items-start justify-between gap-4 mb-4">
                       <div className="space-y-3 flex-1">
                         <div className="flex items-center gap-3 flex-wrap">
                           <div className="text-3xl font-bold text-white">{opp.symbol}</div>
@@ -1516,19 +1541,63 @@ export default function HomePage() {
                         </div>
                       </div>
 
-                      <div className="text-right space-y-1 ml-4">
-                        <div className="text-3xl font-bold text-emerald-400">
-                          {formatCurrency(opp.premium)}
+                      <div className="ml-4 flex flex-col items-end gap-3">
+                        <div className="text-right">
+                          <div className="text-3xl font-bold text-emerald-400">
+                            {formatCurrency(opp.premium)}
+                          </div>
+                          <div className="text-sm text-zinc-500 font-semibold">Premium</div>
                         </div>
-                        <div className="text-sm text-zinc-500 font-semibold">Premium</div>
+                        <button
+                          type="button"
+                          onClick={() => toggleCard(cardId)}
+                          aria-expanded={isExpanded}
+                          aria-controls={contentId}
+                          className="inline-flex items-center gap-2 rounded-full border border-emerald-500/40 px-4 py-2 text-sm font-semibold text-emerald-300 transition-colors hover:border-emerald-400 hover:text-emerald-200"
+                        >
+                          <svg
+                            className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                            viewBox="0 0 20 20"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                          >
+                            <path d="M5 8l5 5 5-5" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                          {isExpanded ? 'Hide details' : 'Show details'}
+                        </button>
                       </div>
                     </div>
 
-                    {/* Trade Summary */}
-                    {opp.tradeSummary && (
-                      <div className="mb-5 bg-gradient-to-r from-emerald-500/5 to-cyan-500/5 border border-emerald-500/20 rounded-xl p-5">
-                        <div className="text-base font-medium text-white leading-relaxed">
-                          {opp.tradeSummary}
+                    {!isExpanded && (
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4">
+                          <div className="text-xs font-semibold uppercase tracking-wide text-emerald-300">
+                            Potential Upside
+                          </div>
+                          <div className="text-lg font-bold text-emerald-200">
+                            {Number.isFinite(opp.potentialReturn) ? `${opp.potentialReturn.toFixed(1)}%` : '—'}
+                          </div>
+                          <div className="text-xs text-emerald-200/80">
+                            ≈ {formatDisplayCurrency(potentialReturnDisplay)}
+                          </div>
+                        </div>
+                        <div className="rounded-xl border border-zinc-700 bg-zinc-800/60 p-4">
+                          <div className="text-xs font-semibold uppercase tracking-wide text-zinc-400">Max Loss</div>
+                          <div className="text-lg font-bold text-red-300">{maxLossPercentDisplay.toFixed(1)}%</div>
+                          <div className="text-xs text-zinc-400">≈ {formatDisplayCurrency(maxLossDisplay)}</div>
+                        </div>
+                        <div className="rounded-xl border border-cyan-500/30 bg-cyan-500/5 p-4">
+                          <div className="text-xs font-semibold uppercase tracking-wide text-cyan-300">
+                            Win Probability
+                          </div>
+                          <div className="text-lg font-bold text-cyan-200">{probabilitySummary}</div>
+                          {(() => {
+                            const breakevenText = formatBreakevenRequirement(opp)
+                            return breakevenText ? (
+                              <div className="text-xs text-cyan-200/80">{breakevenText}</div>
+                            ) : null
+                          })()}
                         </div>
                       </div>
                     )}
@@ -1599,60 +1668,70 @@ export default function HomePage() {
                       </div>
                     )}
 
-                    {opp.recentNews && opp.recentNews.length > 0 && (
-                      <div className="mb-6">
-                        <h4 className="font-semibold text-slate-900 dark:text-white mb-3">Recent News</h4>
-                        <div className="space-y-3">
-                          {opp.recentNews.map((news, i) => (
-                            <div key={i} className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
-                              <div className="flex items-start justify-between mb-2">
-                                <h5 className="text-sm font-medium text-slate-900 dark:text-white line-clamp-2">
-                                  {news.headline}
-                                </h5>
-                                <span
-                                  className={`px-2 py-1 rounded-lg text-xs font-medium ml-3 ${
-                                    news.category === 'political'
-                                      ? 'bg-red-100 text-red-700'
-                                      : news.category === 'regulatory'
-                                        ? 'bg-orange-100 text-orange-700'
-                                        : news.category === 'earnings'
-                                          ? 'bg-blue-100 text-blue-700'
-                                          : 'bg-slate-100 text-slate-700'
-                                  }`}
-                                >
-                                  {news.category}
-                                </span>
-                              </div>
-                              <p className="text-xs text-slate-600 dark:text-slate-400 mb-3 line-clamp-2">{news.summary}</p>
-                              <div className="flex items-center justify-between">
-                                <span className="text-xs text-slate-500 dark:text-slate-500">{news.source}</span>
-                                <div className="flex items-center gap-3">
+                    <div id={contentId} className={`${isExpanded ? 'space-y-6' : 'hidden'} mt-4`}>
+                      {/* Trade Summary */}
+                      {opp.tradeSummary && (
+                        <div className="bg-gradient-to-r from-emerald-500/5 to-cyan-500/5 border border-emerald-500/20 rounded-xl p-5">
+                          <div className="text-base font-medium text-white leading-relaxed">
+                            {opp.tradeSummary}
+                          </div>
+                        </div>
+                      )}
+
+                      {opp.recentNews && opp.recentNews.length > 0 && (
+                        <div>
+                          <h4 className="mb-3 font-semibold text-slate-900 dark:text-white">Recent News</h4>
+                          <div className="space-y-3">
+                            {opp.recentNews.map((news, i) => (
+                              <div key={i} className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
+                                <div className="mb-2 flex items-start justify-between">
+                                  <h5 className="text-sm font-medium text-slate-900 dark:text-white line-clamp-2">
+                                    {news.headline}
+                                  </h5>
                                   <span
-                                    className={`text-xs font-medium ${
-                                      news.sentiment.score > 0
-                                        ? 'text-emerald-600'
-                                        : news.sentiment.score < 0
-                                          ? 'text-red-600'
-                                          : 'text-slate-600'
+                                    className={`px-2 py-1 rounded-lg text-xs font-medium ml-3 ${
+                                      news.category === 'political'
+                                        ? 'bg-red-100 text-red-700'
+                                        : news.category === 'regulatory'
+                                          ? 'bg-orange-100 text-orange-700'
+                                          : news.category === 'earnings'
+                                            ? 'bg-blue-100 text-blue-700'
+                                            : 'bg-slate-100 text-slate-700'
                                     }`}
                                   >
-                                    {news.sentiment.label}
+                                    {news.category}
                                   </span>
-                                  <span className="text-xs text-slate-500">Impact: {news.impact_score}</span>
+                                </div>
+                                <p className="mb-3 text-xs text-slate-600 dark:text-slate-400 line-clamp-2">{news.summary}</p>
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs text-slate-500 dark:text-slate-500">{news.source}</span>
+                                  <div className="flex items-center gap-3">
+                                    <span
+                                      className={`text-xs font-medium ${
+                                        news.sentiment.score > 0
+                                          ? 'text-emerald-600'
+                                          : news.sentiment.score < 0
+                                            ? 'text-red-600'
+                                            : 'text-slate-600'
+                                      }`}
+                                    >
+                                      {news.sentiment.label}
+                                    </span>
+                                    <span className="text-xs text-slate-500">Impact: {news.impact_score}</span>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          ))}
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
 
-                    <div className="space-y-6 mb-6">
-                      {renderMoveThesis(opp)}
+                      <div className="space-y-6">
+                        {renderMoveThesis(opp)}
 
-                      {/* Risk Assessment */}
-                      <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
-                        <h5 className="font-medium text-slate-900 dark:text-white mb-2">Risk & Reward Profile</h5>
+                        {/* Risk Assessment */}
+                        <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
+                          <h5 className="font-medium text-slate-900 dark:text-white mb-2">Risk & Reward Profile</h5>
                         <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
                           {getRiskRewardExplanation(opp)}
                         </p>
@@ -1684,11 +1763,11 @@ export default function HomePage() {
                           </p>
                         </div>
                       )}
-                    </div>
+                      </div>
 
-                    <div className="mb-6">
-                      <h4 className="font-semibold text-slate-900 dark:text-white mb-3">Investment Calculator</h4>
-                      <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-6">
+                      <div>
+                        <h4 className="font-semibold text-slate-900 dark:text-white mb-3">Investment Calculator</h4>
+                        <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-6">
                         <div className="space-y-4">
                           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-4 bg-white dark:bg-slate-700 rounded-xl">
                             <div>
@@ -1784,7 +1863,7 @@ export default function HomePage() {
                               <div>
                                 <div className="font-medium text-amber-800 dark:text-amber-200 mb-1">Risk Warning</div>
                                 <div className="text-sm text-amber-700 dark:text-amber-300">
-                                  Maximum loss: {formatCurrency(opp.maxLossAmount || opp.premium * 100)} ({(opp.maxLossPercent || 100).toFixed(1)}% of investment).
+                                  Maximum loss: {formatCurrency(opp.maxLossAmount || opp.premium * 100)} ({maxLossPercentDisplay.toFixed(1)}% of investment).
                                   Options can expire worthless, and you could lose your entire investment.
                                 </div>
                               </div>
@@ -1794,7 +1873,7 @@ export default function HomePage() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+                      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                       <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
                         <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Potential Return</div>
                         <div className="text-lg font-semibold text-emerald-600">{opp.potentialReturn.toFixed(1)}%</div>
@@ -1807,7 +1886,7 @@ export default function HomePage() {
                       </div>
                       <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
                         <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Max Loss</div>
-                        <div className="text-lg font-semibold text-red-600">{(opp.maxLossPercent || 100).toFixed(1)}%</div>
+                        <div className="text-lg font-semibold text-red-600">{maxLossPercentDisplay.toFixed(1)}%</div>
                         <div className="text-xs text-slate-500 dark:text-slate-400">≈ {formatCurrency(maxLossDisplay)}</div>
                         {opp.riskRewardRatio && opp.riskRewardRatio >= 3 && (
                           <div className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-emerald-600">
@@ -1839,7 +1918,7 @@ export default function HomePage() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       <div className="text-center">
                         <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Delta</div>
                         <div className="text-sm font-semibold text-slate-900 dark:text-white">{opp.greeks.delta.toFixed(3)}</div>
@@ -1857,12 +1936,13 @@ export default function HomePage() {
                         <div className="text-sm font-semibold text-slate-900 dark:text-white">{opp.greeks.vega.toFixed(3)}</div>
                       </div>
                     </div>
-                    <div className="mt-4 space-y-2">
+                      <div className="space-y-2">
                       {getGreeksExplanation(opp).map((explanation, index) => (
                         <p key={index} className="text-xs text-slate-600 dark:text-slate-400">
                           {explanation}
                         </p>
                       ))}
+                      </div>
                     </div>
                   </div>
                 )
