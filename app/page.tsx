@@ -212,10 +212,12 @@ function ProfitLossSlider({
   // Safely extract values with fallbacks
   const stockPrice = typeof opportunity.stockPrice === 'number' && opportunity.stockPrice > 0 ? opportunity.stockPrice : 0
   const strike = typeof opportunity.strike === 'number' && opportunity.strike > 0 ? opportunity.strike : 0
-  const premium = typeof opportunity.premium === 'number' && opportunity.premium > 0 ? opportunity.premium : 0
+  const premiumPerContract =
+    typeof opportunity.premium === 'number' && opportunity.premium > 0 ? opportunity.premium : 0
+  const premiumPerShare = premiumPerContract / 100
   const optionType = opportunity.optionType
   const breakevenPrice = opportunity.breakevenPrice || (
-    optionType === 'call' ? strike + premium : strike - premium
+    optionType === 'call' ? strike + premiumPerShare : strike - premiumPerShare
   )
 
   // Calculate the range for the slider (±50% or ±2x expected move, whichever is larger)
@@ -235,7 +237,7 @@ function ProfitLossSlider({
   }
 
   // Calculate P/L with safety checks
-  const costBasis = premium * 100 * contractsToTrade
+  const costBasis = premiumPerContract * contractsToTrade
   const currentValue = optionValue * 100 * contractsToTrade
   const profitLoss = currentValue - costBasis
   const profitLossPercent = costBasis > 0 ? (profitLoss / costBasis) * 100 : 0
@@ -1090,7 +1092,7 @@ export default function HomePage() {
     const maxReturn = sanitizeNumber(opp.maxReturn, 0)
     // For long options, max loss is always 100% of premium paid
     const maxLossPercent = sanitizeNumber(opp.maxLossPercent, 100)
-    const premiumPerContract = sanitizeNumber(opp.premium, 0) * 100
+    const premiumPerContract = sanitizeNumber(opp.premium, 0)
     const maxLossAmount = sanitizeNumber(opp.maxLossAmount, premiumPerContract)
     const potentialReturn = sanitizeNumber(opp.potentialReturn, 0)
     const daysToExp = sanitizeNumber(opp.daysToExpiration, 0)
@@ -1137,8 +1139,8 @@ export default function HomePage() {
   }
 
   const calculateInvestmentScenario = (opp: Opportunity, amount: number): InvestmentScenario => {
-    const optionPrice = opp.premium || 0
-    const contractCost = Math.max(optionPrice * 100, 0)
+    const premiumPerContract = opp.premium || 0
+    const contractCost = Math.max(premiumPerContract, 0)
 
     // Calculate per-contract returns with proper null/undefined handling
     const potentialReturnPercent = typeof opp.potentialReturn === 'number' && Number.isFinite(opp.potentialReturn) ? opp.potentialReturn : 0
@@ -1487,6 +1489,7 @@ export default function HomePage() {
                   typeof opp.maxLossPercent === 'number' && Number.isFinite(opp.maxLossPercent)
                     ? opp.maxLossPercent
                     : 100
+                const premiumPerShareDisplay = scenario.contractCost / 100
 
                 return (
                   <div
@@ -1796,7 +1799,7 @@ export default function HomePage() {
                             <div className="text-right">
                               <div className="text-sm font-medium text-slate-600 dark:text-slate-400">Option Price</div>
                               <div className="text-lg font-semibold text-slate-900 dark:text-white">
-                                {formatCurrency(opp.premium)} per share
+                                {formatCurrency(premiumPerShareDisplay)} per share
                               </div>
                               <div className="text-sm text-slate-500 dark:text-slate-400">
                                 {formatCurrency(scenario.contractCost)} per contract
@@ -1863,7 +1866,7 @@ export default function HomePage() {
                               <div>
                                 <div className="font-medium text-amber-800 dark:text-amber-200 mb-1">Risk Warning</div>
                                 <div className="text-sm text-amber-700 dark:text-amber-300">
-                                  Maximum loss: {formatCurrency(opp.maxLossAmount || opp.premium * 100)} ({maxLossPercentDisplay.toFixed(1)}% of investment).
+                                  Maximum loss: {formatCurrency(opp.maxLossAmount || scenario.contractCost)} ({maxLossPercentDisplay.toFixed(1)}% of investment).
                                   Options can expire worthless, and you could lose your entire investment.
                                 </div>
                               </div>
