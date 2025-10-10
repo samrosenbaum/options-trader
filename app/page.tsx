@@ -1618,12 +1618,14 @@ export default function HomePage() {
                                 ? 'bg-red-500/20 text-red-300 border border-red-500/50'
                                 : 'bg-zinc-500/20 text-zinc-300 border border-zinc-500/50'
                             }`}>
-                              {opp.enhancedDirectionalBias.direction.toUpperCase()}
+                              {(opp.enhancedDirectionalBias.direction ?? '').toUpperCase() || 'N/A'}
                             </span>
                           </div>
                           <div className="text-right">
                             <div className="text-2xl font-bold text-purple-300">
-                              {opp.enhancedDirectionalBias.confidence.toFixed(0)}%
+                              {typeof opp.enhancedDirectionalBias.confidence === 'number'
+                                ? opp.enhancedDirectionalBias.confidence.toFixed(0)
+                                : '--'}%
                             </div>
                             <div className="text-xs text-zinc-400">Confidence</div>
                           </div>
