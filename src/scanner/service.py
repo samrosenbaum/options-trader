@@ -281,15 +281,23 @@ class SmartOptionsScanner:
                     continue
 
                 # Calculate historical move context for validation
-                dte = self.calculate_days_to_expiration(option["expiration"])
-                direction = "up" if option["type"] == "call" else "down"
-                target_move = abs(metrics["breakevenMovePercent"])
-                historical_context = self.historical_moves.get_move_context(
-                    symbol=option["symbol"],
-                    target_move_pct=target_move,
-                    timeframe_days=dte,
-                    direction=direction,
-                )
+                try:
+                    dte = self.calculate_days_to_expiration(option["expiration"])
+                    direction = "up" if option["type"] == "call" else "down"
+                    target_move = abs(metrics["breakevenMovePercent"])
+                    historical_context = self.historical_moves.get_move_context(
+                        symbol=option["symbol"],
+                        target_move_pct=target_move,
+                        timeframe_days=dte,
+                        direction=direction,
+                    )
+                except Exception as e:
+                    # If historical analysis fails, continue without it
+                    print(f"Warning: Historical analysis failed for {option['symbol']}: {e}")
+                    historical_context = {
+                        "available": False,
+                        "message": f"Historical data unavailable: {str(e)}"
+                    }
 
                 # Generate clear trade summary
                 trade_summary = self.generate_trade_summary(option, metrics, returns_analysis)

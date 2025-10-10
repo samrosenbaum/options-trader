@@ -229,18 +229,27 @@ class BulkOptionsFetcher:
             # Convert DataFrame to JSON-serializable format
             data_dict = data.to_dict('records')
 
+            # Custom JSON encoder to handle pandas Timestamp objects
+            def json_serializer(obj):
+                """JSON serializer for objects not serializable by default json code"""
+                if isinstance(obj, pd.Timestamp):
+                    return obj.isoformat()
+                elif hasattr(obj, 'isoformat'):
+                    return obj.isoformat()
+                raise TypeError(f"Type {type(obj)} not serializable")
+
             cache_data = {
                 'timestamp': datetime.now().isoformat(),
                 'data_count': len(data_dict),
                 'symbols': data['symbol'].unique().tolist(),
                 'options': data_dict
             }
-            
+
             with open(filename, 'w') as f:
-                json.dump(cache_data, f, indent=2)
-            
+                json.dump(cache_data, f, indent=2, default=json_serializer)
+
             print(f"💾 Cached {len(data_dict)} options to {filename}")
-            
+
         except Exception as e:
             print(f"Error saving cache: {e}")
     

@@ -121,6 +121,10 @@ class HistoricalMoveAnalyzer:
                     return None  # Stale cache
 
                 df.set_index("date", inplace=True)
+
+                # Normalize column names to match yfinance format (capitalized)
+                df.columns = [col.capitalize() for col in df.columns]
+
                 return df
 
         except Exception as e:
