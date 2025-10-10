@@ -7,7 +7,7 @@ probability data that complements the theoretical IV-based calculations.
 from __future__ import annotations
 
 import sqlite3
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -23,6 +23,7 @@ class HistoricalMoveStats:
 
     symbol: str
     target_move_pct: float
+    target_move_amount: Optional[float]
     timeframe_days: int
     occurrences: int
     close_occurrences: int
@@ -33,11 +34,14 @@ class HistoricalMoveStats:
     close_confidence_interval: Tuple[float, float]
     last_occurrence: Optional[datetime]
     last_close_occurrence: Optional[datetime]
+    last_occurrence_days_to_target: Optional[int]
+    last_close_occurrence_days_to_target: Optional[int]
     avg_days_to_target: Optional[float]
     data_start_date: datetime
     data_end_date: datetime
     quality_score: float
     quality_label: str
+    recent_occurrence_samples: List[Tuple[datetime, int]] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, any]:
         """Convert to dictionary for JSON serialization."""
@@ -51,6 +55,7 @@ class HistoricalMoveStats:
         return {
             "symbol": self.symbol,
             "targetMovePct": self.target_move_pct,
+            "targetMoveAmount": round(self.target_move_amount, 2) if self.target_move_amount is not None else None,
             "timeframeDays": self.timeframe_days,
             "occurrences": self.occurrences,
             "closeOccurrences": self.close_occurrences,
@@ -61,11 +66,20 @@ class HistoricalMoveStats:
             "closeConfidenceInterval": _round_interval(self.close_confidence_interval),
             "lastOccurrence": self.last_occurrence.isoformat() if self.last_occurrence else None,
             "lastCloseOccurrence": self.last_close_occurrence.isoformat() if self.last_close_occurrence else None,
+            "lastOccurrenceDaysToTarget": self.last_occurrence_days_to_target,
+            "lastCloseOccurrenceDaysToTarget": self.last_close_occurrence_days_to_target,
             "avgDaysToTarget": round(self.avg_days_to_target, 2) if self.avg_days_to_target else None,
             "dataStartDate": self.data_start_date.isoformat(),
             "dataEndDate": self.data_end_date.isoformat(),
             "qualityScore": round(self.quality_score, 1),
             "qualityLabel": self.quality_label,
+            "recentOccurrences": [
+                {
+                    "date": occurrence.isoformat(),
+                    "daysToTarget": days,
+                }
+                for occurrence, days in self.recent_occurrence_samples
+            ],
         }
 
 
@@ -232,6 +246,7 @@ class HistoricalMoveAnalyzer:
         target_move_pct: float,
         timeframe_days: int,
         direction: str = "up",
+        current_price: Optional[float] = None,
     ) -> Optional[HistoricalMoveStats]:
         """Analyze historical frequency of a specific price move.
 
@@ -240,6 +255,7 @@ class HistoricalMoveAnalyzer:
             target_move_pct: Target move percentage (absolute value, e.g., 3.0 for 3%)
             timeframe_days: Number of days for the move to occur
             direction: "up" for bullish moves, "down" for bearish moves
+            current_price: Optional current price to translate percentages to dollar moves
 
         Returns:
             HistoricalMoveStats with empirical probability data, or None if insufficient data
@@ -254,8 +270,8 @@ class HistoricalMoveAnalyzer:
 
         occurrences = 0
         close_occurrences = 0
-        occurrence_dates: List[datetime] = []
-        close_occurrence_dates: List[datetime] = []
+        occurrence_details: List[Tuple[datetime, int]] = []
+        close_occurrence_details: List[Tuple[datetime, int]] = []
         days_to_target: List[float] = []
 
         # For each day, check if target move occurred within timeframe
@@ -276,7 +292,7 @@ class HistoricalMoveAnalyzer:
 
                 if target_achieved:
                     occurrences += 1
-                    occurrence_dates.append(dates[i + days_ahead])
+                    occurrence_details.append((dates[i + days_ahead], days_ahead))
                     days_to_target.append(days_ahead)
                     break  # Count once per rolling window
 
@@ -290,7 +306,7 @@ class HistoricalMoveAnalyzer:
 
             if finish_hit:
                 close_occurrences += 1
-                close_occurrence_dates.append(dates[i + timeframe_days])
+                close_occurrence_details.append((dates[i + timeframe_days], timeframe_days))
 
         total_periods = len(closes) - timeframe_days
         if total_periods <= 0:
@@ -316,8 +332,23 @@ class HistoricalMoveAnalyzer:
             beta.ppf(0.95, close_posterior_alpha, close_posterior_beta) * 100,
         )
 
-        last_occurrence = max(occurrence_dates) if occurrence_dates else None
-        last_close_occurrence = max(close_occurrence_dates) if close_occurrence_dates else None
+        last_occurrence_detail = (
+            max(occurrence_details, key=lambda item: item[0]) if occurrence_details else None
+        )
+        last_occurrence = last_occurrence_detail[0] if last_occurrence_detail else None
+        last_occurrence_days = last_occurrence_detail[1] if last_occurrence_detail else None
+
+        last_close_detail = (
+            max(close_occurrence_details, key=lambda item: item[0]) if close_occurrence_details else None
+        )
+        last_close_occurrence = last_close_detail[0] if last_close_detail else None
+        last_close_days = last_close_detail[1] if last_close_detail else None
+
+        recent_occurrence_samples = sorted(
+            occurrence_details,
+            key=lambda item: item[0],
+            reverse=True,
+        )[:3]
         avg_days = sum(days_to_target) / len(days_to_target) if days_to_target else None
 
         # Data quality weighting considers sample size and recency of data
@@ -333,9 +364,17 @@ class HistoricalMoveAnalyzer:
         else:
             quality_label = "medium"
 
+        target_move_amount = None
+        if current_price is not None:
+            try:
+                target_move_amount = abs(target_move_pct) / 100.0 * float(current_price)
+            except Exception:
+                target_move_amount = None
+
         return HistoricalMoveStats(
             symbol=symbol,
             target_move_pct=abs(target_move_pct),
+            target_move_amount=target_move_amount,
             timeframe_days=timeframe_days,
             occurrences=occurrences,
             close_occurrences=close_occurrences,
@@ -346,11 +385,14 @@ class HistoricalMoveAnalyzer:
             close_confidence_interval=close_ci,
             last_occurrence=last_occurrence,
             last_close_occurrence=last_close_occurrence,
+            last_occurrence_days_to_target=last_occurrence_days,
+            last_close_occurrence_days_to_target=last_close_days,
             avg_days_to_target=avg_days,
             data_start_date=dates[0],
             data_end_date=dates[-1],
             quality_score=quality_score,
             quality_label=quality_label,
+            recent_occurrence_samples=recent_occurrence_samples,
         )
 
     def get_move_context(
@@ -359,12 +401,19 @@ class HistoricalMoveAnalyzer:
         target_move_pct: float,
         timeframe_days: int,
         direction: str = "up",
+        current_price: Optional[float] = None,
     ) -> Dict[str, any]:
         """Get human-readable context about a target move.
 
         Returns a dictionary with analysis text suitable for display in UI.
         """
-        stats = self.analyze_move_probability(symbol, target_move_pct, timeframe_days, direction)
+        stats = self.analyze_move_probability(
+            symbol,
+            target_move_pct,
+            timeframe_days,
+            direction,
+            current_price=current_price,
+        )
 
         if stats is None:
             return {
@@ -375,12 +424,31 @@ class HistoricalMoveAnalyzer:
         # Build human-readable analysis
         analysis_parts: List[str] = []
 
+        move_direction_text = "gain" if direction == "up" else "drop"
+        if stats.target_move_amount is not None:
+            move_requirement_sentence = (
+                f"Requires a ${abs(stats.target_move_amount):.2f} ({abs(target_move_pct):.1f}% {move_direction_text}) move "
+                f"within {stats.timeframe_days} trading days to break even"
+            )
+        else:
+            move_requirement_sentence = (
+                f"Requires a {abs(target_move_pct):.1f}% {move_direction_text} within "
+                f"{stats.timeframe_days} trading days to break even"
+            )
+        analysis_parts.append(move_requirement_sentence)
+
         touch_sentence = (
             f"Touched the {abs(target_move_pct):.1f}% breakeven move within {stats.timeframe_days}d in "
             f"{stats.empirical_probability:.1f}% of {stats.total_periods} similar periods "
             f"(95% CI {stats.touch_confidence_interval[0]:.1f}-{stats.touch_confidence_interval[1]:.1f}%)"
         )
         analysis_parts.append(touch_sentence)
+
+        frequency_sentence = (
+            f"Historical sample includes {stats.occurrences} touches and {stats.close_occurrences} full finishes "
+            f"across {stats.total_periods} rolling windows"
+        )
+        analysis_parts.append(frequency_sentence)
 
         if stats.close_occurrences:
             finish_sentence = (
@@ -410,6 +478,11 @@ class HistoricalMoveAnalyzer:
             else:
                 months_ago = days_ago // 30
                 recency_text = f"Last touch occurred {months_ago} month{'s' if months_ago > 1 else ''} ago"
+            if stats.last_occurrence_days_to_target is not None:
+                recency_text += (
+                    f" (took {stats.last_occurrence_days_to_target} trading day"
+                    f"{'s' if stats.last_occurrence_days_to_target != 1 else ''} to reach breakeven)"
+                )
             analysis_parts.append(recency_text)
 
         if stats.last_close_occurrence and stats.last_close_occurrence != stats.last_occurrence:
@@ -421,21 +494,29 @@ class HistoricalMoveAnalyzer:
             )
             days_ago_close = (now - last_close).days
             if days_ago_close == 0:
-                analysis_parts.append("Last full expiration win occurred today")
+                close_recency_text = "Last full expiration win occurred today"
             elif days_ago_close == 1:
-                analysis_parts.append("Last full expiration win occurred yesterday")
+                close_recency_text = "Last full expiration win occurred yesterday"
             elif days_ago_close < 7:
-                analysis_parts.append(f"Last full expiration win occurred {days_ago_close} days ago")
+                close_recency_text = f"Last full expiration win occurred {days_ago_close} days ago"
             elif days_ago_close < 30:
                 weeks_ago_close = days_ago_close // 7
-                analysis_parts.append(
-                    f"Last full expiration win occurred {weeks_ago_close} week{'s' if weeks_ago_close > 1 else ''} ago"
+                close_recency_text = (
+                    f"Last full expiration win occurred {weeks_ago_close} week"
+                    f"{'s' if weeks_ago_close > 1 else ''} ago"
                 )
             else:
                 months_ago_close = days_ago_close // 30
-                analysis_parts.append(
-                    f"Last full expiration win occurred {months_ago_close} month{'s' if months_ago_close > 1 else ''} ago"
+                close_recency_text = (
+                    f"Last full expiration win occurred {months_ago_close} month"
+                    f"{'s' if months_ago_close > 1 else ''} ago"
                 )
+            if stats.last_close_occurrence_days_to_target is not None:
+                close_recency_text += (
+                    f" (took {stats.last_close_occurrence_days_to_target} trading day"
+                    f"{'s' if stats.last_close_occurrence_days_to_target != 1 else ''} to finish)"
+                )
+            analysis_parts.append(close_recency_text)
 
         # Average time to target (touch probability)
         if stats.avg_days_to_target:
@@ -462,9 +543,37 @@ class HistoricalMoveAnalyzer:
             "totalPeriods": stats.total_periods,
             "lastOccurrence": stats.last_occurrence.isoformat() if stats.last_occurrence else None,
             "lastCloseOccurrence": stats.last_close_occurrence.isoformat() if stats.last_close_occurrence else None,
+            "lastTouch": {
+                "date": stats.last_occurrence.isoformat() if stats.last_occurrence else None,
+                "daysToTarget": stats.last_occurrence_days_to_target,
+            },
+            "lastFinish": {
+                "date": stats.last_close_occurrence.isoformat() if stats.last_close_occurrence else None,
+                "daysToTarget": stats.last_close_occurrence_days_to_target,
+            },
+            "recentTouches": [
+                {
+                    "date": occurrence.isoformat(),
+                    "daysToTarget": days,
+                }
+                for occurrence, days in stats.recent_occurrence_samples
+            ],
             "avgDaysToTarget": stats.avg_days_to_target,
             "qualityScore": stats.quality_score,
             "qualityLabel": stats.quality_label,
+            "moveRequirement": {
+                "percent": stats.target_move_pct,
+                "amount": stats.target_move_amount,
+                "direction": direction,
+                "timeframeDays": stats.timeframe_days,
+            },
+            "historicalFrequency": {
+                "occurrences": stats.occurrences,
+                "closeOccurrences": stats.close_occurrences,
+                "totalPeriods": stats.total_periods,
+                "touchProbability": stats.empirical_probability,
+                "finishProbability": stats.close_probability,
+            },
             "analysis": ". ".join(analysis_parts) + ".",
             "raw": stats.to_dict(),
         }

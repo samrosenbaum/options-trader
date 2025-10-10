@@ -88,11 +88,37 @@ export interface HistoricalContext {
   avgDaysToTarget?: number
   qualityScore?: number
   qualityLabel?: string
+  moveRequirement?: {
+    percent?: number
+    amount?: number | null
+    direction?: 'up' | 'down' | string
+    timeframeDays?: number
+  }
+  historicalFrequency?: {
+    occurrences?: number
+    closeOccurrences?: number
+    totalPeriods?: number
+    touchProbability?: number
+    finishProbability?: number
+  }
+  lastTouch?: {
+    date?: string | null
+    daysToTarget?: number | null
+  }
+  lastFinish?: {
+    date?: string | null
+    daysToTarget?: number | null
+  }
+  recentTouches?: Array<{
+    date?: string | null
+    daysToTarget?: number | null
+  }>
   analysis?: string
   message?: string
   raw?: {
     symbol: string
     targetMovePct: number
+    targetMoveAmount: number | null
     timeframeDays: number
     occurrences: number
     closeOccurrences: number
@@ -109,11 +135,17 @@ export interface HistoricalContext {
     }
     lastOccurrence: string | null
     lastCloseOccurrence: string | null
+    lastOccurrenceDaysToTarget: number | null
+    lastCloseOccurrenceDaysToTarget: number | null
     avgDaysToTarget: number | null
     dataStartDate: string
     dataEndDate: string
     qualityScore: number
     qualityLabel: string
+    recentOccurrences: Array<{
+      date: string | null
+      daysToTarget: number | null
+    }>
   }
 }
 
