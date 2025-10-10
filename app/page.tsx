@@ -1462,7 +1462,7 @@ export default function HomePage() {
             </div>
 
             <div className="space-y-5">
-              {sortedOpportunities.map((opp, index) => {
+              {sortedOpportunities.map((opp) => {
                 const scenario = calculateInvestmentScenario(opp, investmentAmount)
                 const isPerContractView = scenario.basis === 'perContract'
                 const potentialReturnDisplay = isPerContractView
@@ -1490,7 +1490,7 @@ export default function HomePage() {
 
                 return (
                   <div
-                    key={index}
+                    key={cardId}
                     className="bg-zinc-900 rounded-2xl p-6 border border-zinc-800 hover:border-emerald-500/30 hover:shadow-xl hover:shadow-emerald-500/5 transition-all"
                   >
                     <div className="flex items-start justify-between gap-4 mb-4">
