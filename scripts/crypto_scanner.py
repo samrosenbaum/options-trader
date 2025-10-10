@@ -10,7 +10,7 @@ import time
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 import sys
 import math
 from pathlib import Path
@@ -26,6 +26,7 @@ from src.signals import (  # type: ignore
     SmartMoneyFlowDetector,
     RegimeDetector,
     VolumeProfileAnalyzer,
+    CryptoQuantSignal,
 )
 
 class CryptoScanner:
@@ -55,10 +56,11 @@ class CryptoScanner:
 
         # Directional signal framework reused from equities
         self.signal_aggregator = SignalAggregator([
-            OptionsSkewAnalyzer(weight=0.30),
-            SmartMoneyFlowDetector(weight=0.30),
+            OptionsSkewAnalyzer(weight=0.25),
+            SmartMoneyFlowDetector(weight=0.25),
             RegimeDetector(weight=0.20),
-            VolumeProfileAnalyzer(weight=0.20),
+            VolumeProfileAnalyzer(weight=0.15),
+            CryptoQuantSignal(weight=0.15),
         ])
 
         # Empty options frame placeholder for non-derivative assets
@@ -165,6 +167,411 @@ class CryptoScanner:
         price_history_df = self._build_price_history_dataframe(raw_data if isinstance(raw_data, dict) else None)
         return price_history, price_history_df
 
+    def fetch_news_sentiment(self, symbol: str) -> Dict:
+        """Pull latest crypto headlines and derive a directional sentiment score."""
+
+        default = {
+            'sentiment_score': 0.0,
+            'momentum_score': 0.0,
+            'buzz_score': 0.0,
+            'article_count': 0,
+            'recent_count': 0,
+            'positive': 0,
+            'negative': 0,
+            'neutral': 0,
+            'top_headlines': [],
+            'articles': [],
+        }
+
+        try:
+            params = {
+                'lang': 'EN',
+                'categories': symbol.upper(),
+                'excludeCategories': 'ICO',
+                'sortOrder': 'latest',
+            }
+            response = self.session.get(
+                'https://min-api.cryptocompare.com/data/v2/news/',
+                params=params,
+                timeout=10,
+            )
+            if response.status_code != 200:
+                return default
+
+            payload = response.json()
+            articles = payload.get('Data', []) if isinstance(payload, dict) else []
+            if not articles:
+                return default
+
+            positive_keywords = [
+                'surge', 'rally', 'partnership', 'adoption', 'upgrade', 'integration',
+                'support', 'institutional', 'bull', 'record', 'etf approval', 'launch'
+            ]
+            negative_keywords = [
+                'hack', 'exploit', 'lawsuit', 'ban', 'sell-off', 'bear', 'crash', 'liquidation',
+                'bankrupt', 'regulation', 'delist', 'security breach'
+            ]
+
+            now = datetime.utcnow()
+            weighted_total = 0.0
+            total_weight = 0.0
+            recent_scores: List[float] = []
+            older_scores: List[float] = []
+            positive = negative = neutral = 0
+            recent_count = 0
+            top_headlines: List[str] = []
+            processed_articles: List[Dict[str, Any]] = []
+
+            for article in articles[:40]:
+                title = str(article.get('title', '') or '').strip()
+                body = str(article.get('body', '') or '')
+                text = f"{title}. {body}".lower()
+
+                base_score = 0
+                for keyword in positive_keywords:
+                    if keyword in text:
+                        base_score += 1
+                for keyword in negative_keywords:
+                    if keyword in text:
+                        base_score -= 1
+
+                # Incorporate community reaction if available
+                upvotes = float(article.get('upvotes', 0) or 0)
+                downvotes = float(article.get('downvotes', 0) or 0)
+                reaction = upvotes - downvotes
+                base_score += math.tanh(reaction / 10.0)
+
+                published_on = article.get('published_on') or article.get('published_at')
+                try:
+                    published_dt = datetime.utcfromtimestamp(published_on) if published_on else now
+                except Exception:
+                    published_dt = now
+
+                hours_old = max((now - published_dt).total_seconds() / 3600.0, 0.0)
+                recency_weight = max(0.2, 1.0 - min(hours_old, 72.0) / 72.0)
+                buzz_weight = 1.0 + min((upvotes / 20.0), 1.5)
+                weight = recency_weight * buzz_weight
+
+                article_score = max(min(base_score, 3.0), -3.0)
+                weighted_total += article_score * weight
+                total_weight += weight
+
+                if hours_old <= 12:
+                    recent_scores.append(article_score)
+                    recent_count += 1
+                else:
+                    older_scores.append(article_score)
+
+                if article_score > 0.4:
+                    positive += 1
+                elif article_score < -0.4:
+                    negative += 1
+                else:
+                    neutral += 1
+
+                if title:
+                    top_headlines.append(title)
+
+                processed_articles.append({
+                    'title': title,
+                    'url': article.get('url'),
+                    'source': article.get('source_info', {}).get('name') if isinstance(article.get('source_info'), dict) else None,
+                    'published_at': published_dt.isoformat(),
+                    'score': article_score,
+                })
+
+            sentiment_score = (weighted_total / total_weight) if total_weight else 0.0
+            sentiment_score = float(np.clip(sentiment_score / 3.0, -1.0, 1.0))
+
+            recent_avg = np.mean(recent_scores) if recent_scores else 0.0
+            older_avg = np.mean(older_scores) if older_scores else 0.0
+            momentum_score = float(np.clip((recent_avg - older_avg) / 3.0, -1.0, 1.0))
+
+            article_count = len(processed_articles)
+            buzz_score = 0.0
+            if article_count:
+                buzz_score = float(np.clip(((article_count / 12.0) + (recent_count / max(article_count, 1))) / 2.0, 0.0, 1.0))
+
+            return {
+                'sentiment_score': sentiment_score,
+                'momentum_score': momentum_score,
+                'buzz_score': buzz_score,
+                'article_count': article_count,
+                'recent_count': recent_count,
+                'positive': positive,
+                'negative': negative,
+                'neutral': neutral,
+                'top_headlines': top_headlines[:5],
+                'articles': processed_articles,
+            }
+
+        except Exception as exc:
+            print(f"Error fetching news sentiment for {symbol}: {exc}")
+            return default
+
+    def fetch_derivatives_metrics(self, coin_id: str, market_data: Dict) -> Dict:
+        """Collect futures and perpetual positioning clues for the asset."""
+
+        default = {
+            'tickers_analyzed': 0,
+            'avg_basis': 0.0,
+            'basis_score': 0.0,
+            'avg_funding_rate': 0.0,
+            'funding_score': 0.0,
+            'open_interest_score': 0.0,
+            'open_interest_ratio': 0.0,
+            'total_open_interest': 0.0,
+            'total_volume': 0.0,
+            'long_short_bias': 'balanced',
+            'dominant_expiry': 'perpetual focus',
+        }
+
+        market_cap = float(market_data.get('market_cap', {}).get('usd', 0) or 0)
+
+        try:
+            params = {
+                'include_exchange_logo': 'false',
+                'exchange_ids': 'binance_futures,bybit,okex,deribit',
+                'depth': 'false',
+            }
+            url = f"{self.base_url}/coins/{coin_id}/tickers"
+            response = self.session.get(url, params=params, timeout=10)
+            if response.status_code != 200:
+                return default
+
+            payload = response.json()
+            tickers = payload.get('tickers', []) if isinstance(payload, dict) else []
+            if not tickers:
+                return default
+
+            basis_values: List[float] = []
+            funding_rates: List[float] = []
+            open_interest_usd = 0.0
+            total_volume = 0.0
+            expiries: List[Tuple[datetime, float]] = []
+            analyzed = 0
+            long_bias_votes = 0
+            short_bias_votes = 0
+
+            index_price = float(market_data.get('current_price', {}).get('usd', 0) or 0)
+
+            for ticker in tickers:
+                last_price = ticker.get('last')
+                if last_price is None:
+                    continue
+
+                analyzed += 1
+                try:
+                    last_price = float(last_price)
+                except (TypeError, ValueError):
+                    continue
+
+                index_ref = ticker.get('index_price')
+                if index_ref is None:
+                    converted_last = ticker.get('converted_last', {})
+                    if isinstance(converted_last, dict):
+                        index_ref = converted_last.get('usd')
+                try:
+                    index_ref = float(index_ref) if index_ref is not None else (index_price or last_price)
+                except (TypeError, ValueError):
+                    index_ref = index_price or last_price
+
+                if index_ref:
+                    basis = (last_price - index_ref) / index_ref
+                    basis_values.append(basis)
+                    if basis > 0:
+                        long_bias_votes += 1
+                    elif basis < 0:
+                        short_bias_votes += 1
+
+                funding_rate = None
+                for key in ('funding_rate', 'funding_rate_percentage'):
+                    if key in ticker and ticker[key] is not None:
+                        funding_rate = float(ticker[key])
+                        if key == 'funding_rate_percentage':
+                            funding_rate /= 100.0
+                        break
+                if funding_rate is not None:
+                    funding_rates.append(funding_rate)
+                    if funding_rate > 0:
+                        long_bias_votes += 0.5
+                    elif funding_rate < 0:
+                        short_bias_votes += 0.5
+
+                oi = ticker.get('open_interest_usd') or ticker.get('open_interest')
+                try:
+                    oi = float(oi) if oi is not None else 0.0
+                except (TypeError, ValueError):
+                    oi = 0.0
+                open_interest_usd += oi
+
+                converted_volume = ticker.get('converted_volume', {})
+                if isinstance(converted_volume, dict):
+                    try:
+                        total_volume += float(converted_volume.get('usd', 0) or 0)
+                    except (TypeError, ValueError):
+                        pass
+
+                contract_type = ticker.get('contract_type')
+                expiry = ticker.get('expires_at') or ticker.get('expired_at')
+                if contract_type and contract_type.lower() != 'perpetual' and expiry:
+                    try:
+                        expiry_dt = datetime.fromisoformat(expiry.replace('Z', '+00:00'))
+                    except Exception:
+                        expiry_dt = None
+                    if expiry_dt:
+                        expiries.append((expiry_dt, oi))
+
+            if analyzed == 0:
+                return default
+
+            avg_basis = float(np.mean(basis_values)) if basis_values else 0.0
+            avg_funding = float(np.mean(funding_rates)) if funding_rates else 0.0
+
+            basis_score = float(np.clip(avg_basis * 20.0, -1.0, 1.0))
+            funding_score = float(np.clip(avg_funding * 400.0, -1.0, 1.0))
+
+            open_interest_ratio = (open_interest_usd / market_cap) if market_cap else 0.0
+            open_interest_score = float(np.clip((open_interest_ratio - 0.05) * 5.0, -1.0, 1.0))
+
+            dominant_expiry = 'perpetual focus'
+            if expiries:
+                expiries.sort(key=lambda item: (item[0], -item[1]))
+                nearest = expiries[0][0]
+                dominant_expiry = nearest.date().isoformat()
+
+            bias = 'balanced'
+            if long_bias_votes > short_bias_votes * 1.2:
+                bias = 'long'
+            elif short_bias_votes > long_bias_votes * 1.2:
+                bias = 'short'
+
+            return {
+                'tickers_analyzed': analyzed,
+                'avg_basis': avg_basis,
+                'basis_score': basis_score,
+                'avg_funding_rate': avg_funding,
+                'funding_score': funding_score,
+                'open_interest_score': open_interest_score,
+                'open_interest_ratio': open_interest_ratio,
+                'total_open_interest': open_interest_usd,
+                'total_volume': total_volume,
+                'long_short_bias': bias,
+                'dominant_expiry': dominant_expiry,
+            }
+
+        except Exception as exc:
+            print(f"Error fetching derivatives metrics for {coin_id}: {exc}")
+            return default
+
+    def fetch_macro_context(self) -> Dict:
+        """Retrieve broader crypto macro sentiment such as fear & greed."""
+
+        try:
+            response = self.session.get('https://api.alternative.me/fng/', timeout=10)
+            if response.status_code != 200:
+                return {}
+
+            payload = response.json()
+            data = payload.get('data', []) if isinstance(payload, dict) else []
+            if not data:
+                return {}
+
+            latest = data[0]
+            value = float(latest.get('value')) if latest.get('value') is not None else None
+            if value is None:
+                return {}
+
+            score = float(np.clip((value - 50.0) / 50.0, -1.0, 1.0))
+            classification = latest.get('value_classification')
+            timestamp = latest.get('timestamp')
+
+            return {
+                'fear_greed_value': value,
+                'macro_bias': score,
+                'classification': classification,
+                'timestamp': timestamp,
+            }
+
+        except Exception as exc:
+            print(f"Error fetching macro context: {exc}")
+            return {}
+
+    def build_onchain_metrics(self, market_data: Dict, price_history_df: pd.DataFrame, macro_context: Dict) -> Dict:
+        """Synthesize on-chain style metrics from market data and price history."""
+
+        volume_24h = float(market_data.get('total_volume', {}).get('usd', 0) or 0)
+        market_cap = float(market_data.get('market_cap', {}).get('usd', 0) or 0)
+        circulating = float(market_data.get('circulating_supply') or 0)
+        total_supply = float(market_data.get('total_supply') or 0)
+
+        volume_ratio = (volume_24h / market_cap) if market_cap else 0.0
+        volume_score = float(np.clip((volume_ratio - 0.05) * 10.0, -1.0, 1.0))
+
+        momentum_score = 0.0
+        volatility_bias = 0.0
+        data_points = 0
+
+        if not price_history_df.empty and len(price_history_df) >= 10:
+            closes = price_history_df['close'].astype(float)
+            returns = closes.pct_change().dropna()
+            if len(closes) >= 8:
+                window_return = (closes.iloc[-1] / closes.iloc[-8]) - 1.0
+                momentum_score = float(np.clip(window_return * 5.0, -1.0, 1.0))
+                data_points += 1
+
+            if len(returns) >= 20:
+                recent_vol = returns.iloc[-20:].std()
+                longer_vol = returns.std()
+                if longer_vol and not np.isnan(longer_vol):
+                    ratio = recent_vol / longer_vol if longer_vol != 0 else 1.0
+                    volatility_bias = float(np.clip((ratio - 1.0) * 2.0, -1.0, 1.0))
+                    data_points += 1
+
+        supply_pressure = 0.0
+        if total_supply:
+            supply_pressure = float(np.clip(((circulating / total_supply) - 0.7) * 2.0, -1.0, 1.0))
+            data_points += 1
+
+        macro_bias = float(macro_context.get('macro_bias', 0.0)) if macro_context else 0.0
+
+        return {
+            'volume_market_cap_ratio': volume_ratio,
+            'volume_score': volume_score,
+            'momentum_score': momentum_score,
+            'volatility_bias': volatility_bias,
+            'supply_pressure': supply_pressure,
+            'macro_bias': macro_bias,
+            'macro_context': macro_context,
+            'data_points': data_points,
+        }
+
+    def build_quant_insights(
+        self,
+        symbol: str,
+        coin_id: str,
+        coin_data: Dict,
+        price_history_df: pd.DataFrame,
+    ) -> Dict:
+        """Combine alternative data inputs used by quant crypto desks."""
+
+        market_data = coin_data.get('market_data', {}) or {}
+        news = self.fetch_news_sentiment(symbol)
+        derivatives = self.fetch_derivatives_metrics(coin_id, market_data)
+        macro_context = self.fetch_macro_context()
+        onchain = self.build_onchain_metrics(market_data, price_history_df, macro_context)
+
+        insights = {
+            'news': news,
+            'derivatives': derivatives,
+            'onchain': onchain,
+        }
+
+        if macro_context:
+            insights['macro'] = macro_context
+
+        return insights
+
     def calculate_directional_bias(
         self, coin_id: str, coin_data: Dict, price_history_df: pd.DataFrame
     ) -> Optional[Dict]:
@@ -198,6 +605,11 @@ class CryptoScanner:
                 'price_history': df[['open', 'high', 'low', 'close', 'volume']].copy(),
             }
 
+            quant_insights = self.build_quant_insights(symbol, coin_id, coin_data, df)
+            signal_data['quant_insights'] = quant_insights
+            signal_data['news_sentiment'] = quant_insights.get('news', {})
+            signal_data['derivatives_metrics'] = quant_insights.get('derivatives', {})
+
             symbol = coin_data.get('symbol', coin_id).upper()
             directional_score = self.signal_aggregator.aggregate(symbol, signal_data)
             breakdown = self.signal_aggregator.get_signal_breakdown(directional_score)
@@ -208,6 +620,7 @@ class CryptoScanner:
                 'score': round(directional_score.score, 2),
                 'recommendation': directional_score.recommendation,
                 'signals': breakdown['signals'],
+                'insights': quant_insights,
                 'timestamp': directional_score.timestamp.isoformat(),
             }
 
