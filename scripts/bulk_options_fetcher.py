@@ -286,9 +286,20 @@ class BulkOptionsFetcher:
                     print("⚠️  Cache symbols mismatch – using stale cache dataset")
 
             if age_minutes <= max_age_minutes:
-                print(f"📂 Using cached data ({age_minutes:.1f} minutes old)")
-                cache_frame.attrs["cache_source"] = "adapter-cache"
-                cache_frame.attrs["cache_stale"] = False
+                cache_source = "adapter-cache"
+                cache_stale = False
+
+                if symbol_mismatch and allow_stale:
+                    cache_source = "adapter-cache-stale"
+                    cache_stale = True
+                    print(
+                        f"📂 Using cached data despite symbol mismatch ({age_minutes:.1f} minutes old)"
+                    )
+                else:
+                    print(f"📂 Using cached data ({age_minutes:.1f} minutes old)")
+
+                cache_frame.attrs["cache_source"] = cache_source
+                cache_frame.attrs["cache_stale"] = cache_stale
                 return cache_frame
 
             print(f"🕐 Cache too old ({age_minutes:.1f} minutes), will fetch fresh data")
