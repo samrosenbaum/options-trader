@@ -1,5 +1,7 @@
 import React from 'react'
 
+import { formatDistanceToNowStrict } from 'date-fns'
+
 import { Opportunity, SwingSignalNewsHeadline } from '../lib/types/opportunity'
 import { DataQualityBadge } from './data-quality-badge'
 
@@ -56,6 +58,32 @@ const safeToFixed = (value: number | null | undefined, digits = 1) => {
   }
 
   return value.toFixed(digits)
+}
+
+const formatRelativeDate = (value?: string | null) => {
+  if (!value) {
+    return null
+  }
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return null
+  }
+
+  try {
+    return formatDistanceToNowStrict(date, { addSuffix: true })
+  } catch {
+    return null
+  }
+}
+
+const formatTradingDays = (value: number | null | undefined) => {
+  if (!isFiniteNumber(value)) {
+    return null
+  }
+
+  const rounded = Math.round(value)
+  return `${rounded} trading day${rounded === 1 ? '' : 's'}`
 }
 
 const formatSwingClassification = (classification?: string | null) => {
@@ -475,8 +503,6 @@ const formatBreakevenRequirement = (opp: Opportunity) => {
 
 const renderMoveThesis = (opp: Opportunity) => {
   const thesisPoints = (opp.reasoning || []).filter(Boolean)
-  const catalysts = (opp.catalysts || []).filter(Boolean)
-  const patterns = (opp.patterns || []).filter(Boolean)
   const moveAnalysis = opp.moveAnalysis
   const tradeLogic = getTradeLogic(opp)
 
@@ -805,6 +831,122 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
         ? historical.raw.qualityScore
         : null
   const qualityLabel = historical?.qualityLabel ?? historical?.raw?.qualityLabel ?? null
+  const moveRequirement = historical?.moveRequirement
+  const movePercentRaw = isFiniteNumber(moveRequirement?.percent)
+    ? Math.abs(moveRequirement.percent as number)
+    : isFiniteNumber(historical?.raw?.targetMovePct)
+      ? Math.abs(historical.raw.targetMovePct)
+      : null
+  const movePercentText = movePercentRaw !== null ? `${movePercentRaw.toFixed(1)}%` : null
+  const moveAmountRaw = isFiniteNumber(moveRequirement?.amount)
+    ? Math.abs(moveRequirement.amount as number)
+    : isFiniteNumber(historical?.raw?.targetMoveAmount)
+      ? Math.abs(historical.raw.targetMoveAmount as number)
+      : null
+  const moveAmountTextRaw = moveAmountRaw !== null ? formatCurrency(moveAmountRaw) : null
+  const moveAmountText = moveAmountTextRaw && moveAmountTextRaw !== '—' ? moveAmountTextRaw : null
+  const moveRequirementHeadline =
+    moveAmountText && movePercentText
+      ? `${moveAmountText} (${movePercentText})`
+      : moveAmountText ?? movePercentText ?? '—'
+  const moveTimeframe =
+    typeof moveRequirement?.timeframeDays === 'number'
+      ? moveRequirement.timeframeDays
+      : typeof historical?.raw?.timeframeDays === 'number'
+        ? historical.raw.timeframeDays
+        : null
+  const moveDirectionWord = moveRequirement?.direction === 'down' ? 'drop' : 'gain'
+  const moveRequirementSubtextParts: string[] = []
+  if (moveDirectionWord) {
+    moveRequirementSubtextParts.push(`Needs a ${moveDirectionWord}`)
+  }
+  if (moveTimeframe !== null) {
+    moveRequirementSubtextParts.push(`within ${moveTimeframe} trading days`)
+  }
+  const moveRequirementSubtext =
+    moveRequirementSubtextParts.length > 0
+      ? `${moveRequirementSubtextParts.join(' ')} to breakeven`
+      : 'Breakeven move requirement'
+  const frequency = historical?.historicalFrequency
+  const touchesCount =
+    typeof frequency?.occurrences === 'number'
+      ? frequency.occurrences
+      : typeof historical?.occurrences === 'number'
+        ? historical.occurrences
+        : typeof historical?.raw?.occurrences === 'number'
+          ? historical.raw.occurrences
+          : null
+  const totalPeriodsCount =
+    typeof frequency?.totalPeriods === 'number'
+      ? frequency.totalPeriods
+      : sampleSize
+  const touchProbabilityPct = isFiniteNumber(frequency?.touchProbability)
+    ? (frequency?.touchProbability as number)
+    : touchProbability
+  const touchProbabilityLabel =
+    isFiniteNumber(touchProbabilityPct) ? `${Math.round(touchProbabilityPct as number)}% touch odds` : null
+  const avgDaysToTouch = isFiniteNumber(historical?.avgDaysToTarget)
+    ? (historical?.avgDaysToTarget as number)
+    : isFiniteNumber(historical?.raw?.avgDaysToTarget)
+      ? (historical?.raw?.avgDaysToTarget as number)
+      : null
+  const avgDaysLabel =
+    isFiniteNumber(avgDaysToTouch)
+      ? `${avgDaysToTouch.toFixed(1)} trading day${avgDaysToTouch === 1 ? '' : 's'} avg`
+      : null
+  const historicalHitHeadline =
+    typeof touchesCount === 'number' && typeof totalPeriodsCount === 'number'
+      ? `${touchesCount.toLocaleString()}/${totalPeriodsCount.toLocaleString()}`
+      : typeof touchesCount === 'number'
+        ? touchesCount.toLocaleString()
+        : '—'
+  const historicalHitSubtextParts = [touchProbabilityLabel, avgDaysLabel].filter(Boolean) as string[]
+  const historicalHitSubtext = historicalHitSubtextParts.length > 0 ? historicalHitSubtextParts.join(' • ') : null
+  const historicalHitContext =
+    typeof totalPeriodsCount === 'number'
+      ? moveTimeframe !== null
+        ? `Across ${totalPeriodsCount.toLocaleString()} rolling ${moveTimeframe}d windows`
+        : `Across ${totalPeriodsCount.toLocaleString()} rolling windows`
+      : null
+  const touchesObserved = typeof touchesCount === 'number' && touchesCount > 0
+  const lastTouchData = historical?.lastTouch
+  const rawLastOccurrence = historical?.lastOccurrence ?? historical?.raw?.lastOccurrence ?? null
+  const lastTouchDate = lastTouchData?.date ?? rawLastOccurrence
+  const lastTouchRelative = formatRelativeDate(lastTouchDate)
+  const lastTouchDaysRaw = isFiniteNumber(lastTouchData?.daysToTarget)
+    ? (lastTouchData?.daysToTarget as number)
+    : isFiniteNumber(historical?.raw?.lastOccurrenceDaysToTarget)
+      ? (historical?.raw?.lastOccurrenceDaysToTarget as number)
+      : null
+  const lastTouchDurationLabel = formatTradingDays(lastTouchDaysRaw)
+  const recentTouchesSource =
+    Array.isArray(historical?.recentTouches) && historical.recentTouches.length > 0
+      ? historical.recentTouches
+      : Array.isArray(historical?.raw?.recentOccurrences)
+        ? historical.raw.recentOccurrences
+        : []
+  const recentTouchSummaries = recentTouchesSource
+    .slice(0, 3)
+    .map((touch) => {
+      const relative = formatRelativeDate(touch?.date ?? null)
+      const duration = formatTradingDays(touch?.daysToTarget)
+      if (!relative && !duration) {
+        return null
+      }
+      if (relative && duration) {
+        return `${relative} (${duration})`
+      }
+      return relative ?? duration
+    })
+    .filter(Boolean) as string[]
+  const recentTouchesText = recentTouchSummaries.length > 0 ? recentTouchSummaries.join(' • ') : null
+  const lastTouchHeadline = touchesObserved
+    ? lastTouchRelative ?? 'Date unavailable'
+    : 'No touches in sample'
+  const lastTouchSubtext = touchesObserved
+    ? lastTouchDurationLabel ?? 'Time-to-target unavailable'
+    : 'Never reached breakeven in lookback window'
+  const lastTouchAdditional = touchesObserved && recentTouchesText ? `Recent touches: ${recentTouchesText}` : null
   const comparisonSourceLabel = finishProbability !== null ? 'finish odds' : 'touch odds'
 
   return (
@@ -891,6 +1033,40 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
                   {historical.analysis}
                 </p>
               ) : null}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div className="bg-white/70 dark:bg-slate-900/50 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
+              <div className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1 uppercase tracking-wide">
+                Required Move
+              </div>
+              <div className="text-xl font-bold text-slate-900 dark:text-white">{moveRequirementHeadline}</div>
+              <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">{moveRequirementSubtext}</div>
+            </div>
+
+            <div className="bg-white/70 dark:bg-slate-900/50 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
+              <div className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1 uppercase tracking-wide">
+                Historical Hits
+              </div>
+              <div className="text-xl font-bold text-slate-900 dark:text-white">{historicalHitHeadline}</div>
+              <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                {historicalHitSubtext ?? (touchesObserved ? 'Historical hit data available' : 'No touches recorded in sample')}
+              </div>
+              {historicalHitContext && (
+                <div className="text-xs text-slate-500 dark:text-slate-400 mt-2">{historicalHitContext}</div>
+              )}
+            </div>
+
+            <div className="bg-white/70 dark:bg-slate-900/50 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
+              <div className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1 uppercase tracking-wide">
+                Last Time It Moved
+              </div>
+              <div className="text-xl font-bold text-slate-900 dark:text-white">{lastTouchHeadline}</div>
+              <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">{lastTouchSubtext}</div>
+              {lastTouchAdditional && (
+                <div className="text-xs text-slate-500 dark:text-slate-400 mt-2">{lastTouchAdditional}</div>
+              )}
             </div>
           </div>
 

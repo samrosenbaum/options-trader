@@ -359,6 +359,7 @@ class SmartOptionsScanner:
                     target_move_pct=target_move,
                     timeframe_days=dte,
                     direction=direction,
+                    current_price=float(option["stockPrice"]) if pd.notna(option["stockPrice"]) else None,
                 )
             except Exception as e:
                 # If historical analysis fails, continue without it
