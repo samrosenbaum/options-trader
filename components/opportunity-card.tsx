@@ -221,7 +221,7 @@ const renderSwingInsights = (opp: Opportunity) => {
           {/* Plain-English Summary */}
           {swingSignal.metadata?.summary && (
             <div className="mb-4 bg-white/70 dark:bg-slate-900/60 border border-indigo-100/60 dark:border-indigo-900/40 rounded-xl px-4 py-3">
-              <div className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+              <div className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">
                 {swingSignal.metadata.summary}
               </div>
             </div>
@@ -554,66 +554,6 @@ const renderMoveThesis = (opp: Opportunity) => {
         </div>
       )}
 
-      {/* Historical Move Analysis */}
-      {opportunity.historicalContext?.available && (
-        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border border-blue-200 dark:border-blue-800 rounded-2xl p-4">
-          <div className="flex items-start gap-3 mb-3">
-            <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
-              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-            </div>
-            <div className="flex-1">
-              <h5 className="font-semibold text-blue-900 dark:text-blue-100 mb-1">Historical Move Analysis</h5>
-              <p className="text-sm text-blue-800 dark:text-blue-200 leading-relaxed">
-                {opportunity.historicalContext.analysis}
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3 mt-3">
-            <div className="bg-white/60 dark:bg-slate-900/40 rounded-xl p-3">
-              <div className="text-xs font-medium text-blue-600 dark:text-blue-400 mb-1">Theoretical Probability</div>
-              <div className="text-2xl font-bold text-slate-900 dark:text-white">
-                {opportunity.probabilityOfProfit?.toFixed(0) || '—'}%
-              </div>
-              <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">Based on IV model</div>
-            </div>
-
-            <div className="bg-white/60 dark:bg-slate-900/40 rounded-xl p-3">
-              <div className="text-xs font-medium text-blue-600 dark:text-blue-400 mb-1">Empirical Probability</div>
-              <div className="text-2xl font-bold text-slate-900 dark:text-white">
-                {opportunity.historicalContext.empiricalProbability?.toFixed(0) || '—'}%
-              </div>
-              <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">Based on past year</div>
-            </div>
-          </div>
-
-          {opportunity.historicalContext.empiricalProbability && opportunity.probabilityOfProfit && (
-            <div className="mt-3 p-2 bg-white/60 dark:bg-slate-900/40 rounded-lg">
-              {opportunity.historicalContext.empiricalProbability > opportunity.probabilityOfProfit + 10 ? (
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="text-green-600 dark:text-green-400 font-semibold">✓ Potentially Underpriced</span>
-                  <span className="text-slate-600 dark:text-slate-400">
-                    Historical odds {(opportunity.historicalContext.empiricalProbability - opportunity.probabilityOfProfit).toFixed(0)}% better than market pricing
-                  </span>
-                </div>
-              ) : opportunity.historicalContext.empiricalProbability < opportunity.probabilityOfProfit - 10 ? (
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="text-amber-600 dark:text-amber-400 font-semibold">⚠ Potentially Overpriced</span>
-                  <span className="text-slate-600 dark:text-slate-400">
-                    Market pricing {(opportunity.probabilityOfProfit - opportunity.historicalContext.empiricalProbability).toFixed(0)}% higher than historical frequency
-                  </span>
-                </div>
-              ) : (
-                <div className="text-sm text-slate-600 dark:text-slate-400">
-                  <span className="font-semibold text-blue-600 dark:text-blue-400">Well Calibrated</span> — Market pricing aligns with historical data
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      )}
     </div>
   )
 }
@@ -882,7 +822,7 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
           <div className="text-3xl font-bold text-slate-900 dark:text-white">
             {formatCurrency(opportunity.premium)}
           </div>
-          <div className="text-sm text-slate-500 dark:text-slate-400 font-medium">Premium</div>
+          <div className="text-sm text-slate-500 dark:text-slate-400 font-medium">Contract Price</div>
         </div>
       </div>
 
@@ -894,6 +834,68 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
           </div>
         </div>
       ) : null}
+
+      {/* Historical Move Analysis - Always Visible (MOST VALUABLE!) */}
+      {opportunity.historicalContext?.available && (
+        <div className="mb-5 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-2 border-blue-300 dark:border-blue-700 rounded-2xl p-5 shadow-lg">
+          <div className="flex items-start gap-3 mb-4">
+            <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center flex-shrink-0">
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <h5 className="text-lg font-bold text-blue-900 dark:text-blue-100 mb-2">📊 Historical Probability Check</h5>
+              <p className="text-base text-blue-800 dark:text-blue-200 leading-relaxed font-medium">
+                {opportunity.historicalContext.analysis}
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-white/70 dark:bg-slate-900/50 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
+              <div className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1 uppercase tracking-wide">Market Expects</div>
+              <div className="text-3xl font-bold text-slate-900 dark:text-white">
+                {opportunity.probabilityOfProfit?.toFixed(0) || '—'}%
+              </div>
+              <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">Based on IV pricing</div>
+            </div>
+
+            <div className="bg-white/70 dark:bg-slate-900/50 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
+              <div className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1 uppercase tracking-wide">History Shows</div>
+              <div className="text-3xl font-bold text-slate-900 dark:text-white">
+                {opportunity.historicalContext.empiricalProbability?.toFixed(0) || '—'}%
+              </div>
+              <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">Actual past year data</div>
+            </div>
+          </div>
+
+          {opportunity.historicalContext.empiricalProbability && opportunity.probabilityOfProfit && (
+            <div className="mt-4 p-3 bg-white/70 dark:bg-slate-900/50 rounded-xl border border-blue-200 dark:border-blue-800">
+              {opportunity.historicalContext.empiricalProbability > opportunity.probabilityOfProfit + 10 ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-lg font-bold text-green-600 dark:text-green-400">✓ Potentially Underpriced</span>
+                  <span className="text-sm text-slate-700 dark:text-slate-300">
+                    — Historical odds {(opportunity.historicalContext.empiricalProbability - opportunity.probabilityOfProfit).toFixed(0)}% better than market pricing!
+                  </span>
+                </div>
+              ) : opportunity.historicalContext.empiricalProbability < opportunity.probabilityOfProfit - 10 ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-lg font-bold text-amber-600 dark:text-amber-400">⚠ Potentially Overpriced</span>
+                  <span className="text-sm text-slate-700 dark:text-slate-300">
+                    — Market pricing {(opportunity.probabilityOfProfit - opportunity.historicalContext.empiricalProbability).toFixed(0)}% higher than historical frequency
+                  </span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span className="text-lg font-bold text-blue-600 dark:text-blue-400">↔️ Well Calibrated</span>
+                  <span className="text-sm text-slate-700 dark:text-slate-300">— Market pricing aligns with historical data</span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Expand/Collapse Button */}
       <button

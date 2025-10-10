@@ -78,7 +78,7 @@ interface ScannerResponse {
 }
 
 export const runtime = "nodejs"
-export const maxDuration = 60
+export const maxDuration = 300 // Increased to 5 minutes to accommodate historical analysis
 
 const normalizePercent = (value: unknown): number | null => {
   if (typeof value !== "number" || Number.isNaN(value)) {
@@ -217,9 +217,9 @@ export async function GET() {
                 option_type: opp.optionType as "call" | "put",
                 strike: opp.strike,
                 expiration: opp.expiration,
-                last_price: opp.premium,
-                bid: opp.bid,
-                ask: opp.ask,
+                last_price: opp.premium / 100, // Convert from per-contract to per-share for calculations
+                bid: opp.bid / 100,             // Convert from per-contract to per-share for calculations
+                ask: opp.ask / 100,             // Convert from per-contract to per-share for calculations
                 volume: opp.volume,
                 open_interest: opp.openInterest,
                 implied_volatility: opp.impliedVolatility,
