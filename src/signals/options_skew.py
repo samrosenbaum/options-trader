@@ -108,8 +108,8 @@ class OptionsSkewAnalyzer(Signal):
             puts["moneyness"] = (stock_price - puts["strike"]) / stock_price
 
             # Get OTM options (5-15% OTM is most liquid and informative)
-            otm_calls = calls[(calls["moneyness"] > 0.05) & (calls["moneyness"] < 0.15)]
-            otm_puts = puts[(puts["moneyness"] > 0.05) & (puts["moneyness"] < 0.15)]
+            otm_calls = calls[(calls["moneyness"] >= 0.05) & (calls["moneyness"] <= 0.15)]
+            otm_puts = puts[(puts["moneyness"] >= 0.05) & (puts["moneyness"] <= 0.15)]
 
             # Need minimum sample size
             if len(otm_calls) < 2 or len(otm_puts) < 2:
@@ -129,8 +129,8 @@ class OptionsSkewAnalyzer(Signal):
             # Risk reversal: Classic metric used by professionals
             # Find options closest to 25-delta (roughly 25% probability of expiring ITM)
             # For simplicity, use 10-15% OTM as proxy
-            rr_puts = puts[(puts["moneyness"] > 0.10) & (puts["moneyness"] < 0.15)]
-            rr_calls = calls[(calls["moneyness"] > 0.10) & (calls["moneyness"] < 0.15)]
+            rr_puts = puts[(puts["moneyness"] >= 0.10) & (puts["moneyness"] <= 0.15)]
+            rr_calls = calls[(calls["moneyness"] >= 0.10) & (calls["moneyness"] <= 0.15)]
 
             risk_reversal = None
             if not rr_puts.empty and not rr_calls.empty:

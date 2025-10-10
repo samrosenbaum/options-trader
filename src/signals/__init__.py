@@ -6,6 +6,7 @@ from .smart_money_flow import SmartMoneyFlowDetector
 from .regime_detection import RegimeDetector
 from .volume_profile import VolumeProfileAnalyzer
 from .signal_aggregator import SignalAggregator
+from .crypto_quant_signal import CryptoQuantSignal
 
 __all__ = [
     "Signal",
@@ -17,4 +18,5 @@ __all__ = [
     "RegimeDetector",
     "VolumeProfileAnalyzer",
     "SignalAggregator",
+    "CryptoQuantSignal",
 ]
