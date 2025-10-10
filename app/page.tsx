@@ -188,6 +188,7 @@ interface CryptoAlert {
   reasons: string[]
   urgency: number
   timestamp: string
+  directional_bias?: EnhancedDirectionalBias | null
 }
 
 type InvestmentScenario = {
@@ -2198,6 +2199,79 @@ export default function HomePage() {
                           </div>
                         </div>
                       </div>
+
+                      {alert.directional_bias && (
+                        <div className="mb-6 rounded-3xl border border-purple-200/60 bg-purple-50/40 p-6 dark:border-purple-500/40 dark:bg-purple-900/20">
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-3">
+                              <h4 className="text-lg font-semibold text-purple-900 dark:text-purple-200">
+                                Crypto Directional Signals
+                              </h4>
+                              <span
+                                className={`px-3 py-1 text-sm font-semibold rounded-lg border ${
+                                  alert.directional_bias.direction === 'bullish'
+                                    ? 'bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-500/20 dark:text-emerald-200 dark:border-emerald-400/50'
+                                    : alert.directional_bias.direction === 'bearish'
+                                    ? 'bg-red-100 text-red-700 border-red-300 dark:bg-red-500/20 dark:text-red-200 dark:border-red-400/50'
+                                    : 'bg-slate-200 text-slate-700 border-slate-300 dark:bg-slate-700/50 dark:text-slate-200 dark:border-slate-600/60'
+                                }`}
+                              >
+                                {alert.directional_bias.direction.toUpperCase()}
+                              </span>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-2xl font-bold text-purple-900 dark:text-purple-200">
+                                {alert.directional_bias.confidence.toFixed(0)}%
+                              </div>
+                              <div className="text-xs text-purple-700/70 dark:text-purple-300/70">Confidence</div>
+                            </div>
+                          </div>
+
+                          <div className="text-sm text-purple-900/80 dark:text-purple-100/80 mb-4 leading-relaxed">
+                            {alert.directional_bias.recommendation}
+                          </div>
+
+                          <div className="space-y-2">
+                            <div className="text-xs font-semibold uppercase tracking-wide text-purple-700/70 dark:text-purple-200/60">
+                              Signal Breakdown
+                            </div>
+                            {(alert.directional_bias.signals ?? []).map((signal, signalIndex) => (
+                              <div
+                                key={signalIndex}
+                                className="rounded-2xl border border-purple-200/70 bg-white/70 p-4 text-sm dark:border-purple-500/40 dark:bg-purple-950/30"
+                              >
+                                <div className="flex items-center justify-between mb-2">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-semibold text-purple-900 dark:text-purple-100">{signal.name}</span>
+                                    <span
+                                      className={`px-2 py-0.5 text-xs font-medium rounded ${
+                                        signal.direction === 'bullish'
+                                          ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-200'
+                                          : signal.direction === 'bearish'
+                                          ? 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-200'
+                                          : 'bg-slate-200 text-slate-700 dark:bg-slate-700/60 dark:text-slate-200'
+                                      }`}
+                                    >
+                                      {signal.direction}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-4 text-xs text-purple-700/70 dark:text-purple-200/70">
+                                    <span>
+                                      Score: <span className="font-semibold text-purple-900 dark:text-purple-100">{signal.score.toFixed(0)}</span>
+                                    </span>
+                                    <span>
+                                      Conf: <span className="font-semibold text-purple-900 dark:text-purple-100">{signal.confidence.toFixed(0)}%</span>
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="text-xs leading-relaxed text-purple-800/80 dark:text-purple-100/70">
+                                  {signal.rationale}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
 
                       {/* Trading Strategy */}
                       <div className="mb-6">
