@@ -63,6 +63,7 @@ class SmartOptionsScanner:
         self.current_batch_symbols: List[str] = []
         self.cache_file = "options_cache.json"
         self.last_fetch_time: datetime | None = None
+        self.data_freshness: Dict[str, Any] | None = None
         self.validator = OptionsDataValidator()
         sqlite_path: Optional[str] = None
         try:
@@ -138,6 +139,7 @@ class SmartOptionsScanner:
                 symbols=normalized_symbols,
             )
             self.last_fetch_time = datetime.now()
+            self._capture_data_freshness(data, normalized_symbols)
             return data
 
         # Always use cache unless force_refresh is True
@@ -157,8 +159,67 @@ class SmartOptionsScanner:
                 symbols=normalized_symbols,
             )
             self.last_fetch_time = datetime.now()
+            self._capture_data_freshness(data, normalized_symbols)
+            return data
+
+        self._capture_data_freshness(data, normalized_symbols)
 
         return data
+
+    def _capture_data_freshness(self, data: pd.DataFrame | None, symbols: Sequence[str]) -> None:
+        if data is None:
+            self.data_freshness = None
+            return
+
+        attrs = getattr(data, "attrs", {})
+        freshness: Dict[str, Any] = {}
+
+        age = attrs.get("cache_age_minutes")
+        if isinstance(age, (int, float)) and isfinite(age):
+            freshness["cacheAgeMinutes"] = float(age)
+
+        timestamp = attrs.get("cache_timestamp")
+        if isinstance(timestamp, str):
+            freshness["cacheTimestamp"] = timestamp
+
+        source = attrs.get("cache_source")
+        if isinstance(source, str):
+            freshness["dataSource"] = source
+
+        stale = attrs.get("cache_stale")
+        if isinstance(stale, bool):
+            freshness["cacheStale"] = stale
+
+        cache_hit = attrs.get("cache_used")
+        if isinstance(cache_hit, bool):
+            freshness["cacheHit"] = cache_hit
+
+        if symbols:
+            freshness["requestedSymbols"] = list(symbols)
+
+        self.data_freshness = freshness if freshness else None
+
+    def _apply_freshness_metadata(self, metadata: Dict[str, Any]) -> None:
+        if not self.data_freshness:
+            return
+
+        metadata["dataFreshness"] = dict(self.data_freshness)
+
+        source = self.data_freshness.get("dataSource")
+        if isinstance(source, str):
+            metadata["source"] = source
+
+        age = self.data_freshness.get("cacheAgeMinutes")
+        if isinstance(age, (int, float)) and isfinite(age):
+            metadata["cacheAgeMinutes"] = float(age)
+
+        stale = self.data_freshness.get("cacheStale")
+        if isinstance(stale, bool):
+            metadata["cacheStale"] = stale
+
+        cache_hit = self.data_freshness.get("cacheHit")
+        if isinstance(cache_hit, bool):
+            metadata["cacheHit"] = cache_hit
 
     def _serialize_swing_signal(self, signal: SwingSignal) -> Dict[str, Any]:
         return {
@@ -1434,6 +1495,7 @@ class SmartOptionsScanner:
                 "symbolLimit": self.symbol_limit,
                 "rotationState": dict(self.rotation_state or {}),
             }
+            self._apply_freshness_metadata(metadata)
             return ScanResult([], metadata)
 
         opportunities = self.analyze_opportunities(options_data)
@@ -1457,6 +1519,7 @@ class SmartOptionsScanner:
             "opportunityCount": len(opportunities),
             "rotationState": dict(self.rotation_state or {}),
         }
+        self._apply_freshness_metadata(metadata)
         return ScanResult(opportunities, metadata)
 
 

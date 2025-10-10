@@ -258,6 +258,8 @@ class BulkOptionsFetcher:
         filename="options_cache.json",
         max_age_minutes=15,
         symbols: list[str] | None = None,
+        *,
+        allow_stale: bool = False,
     ):
         """Load options data from cache if it's recent enough"""
         try:
@@ -267,19 +269,38 @@ class BulkOptionsFetcher:
             cache_time = datetime.fromisoformat(cache_data['timestamp'])
             age_minutes = (datetime.now() - cache_time).total_seconds() / 60
 
-            if age_minutes <= max_age_minutes:
-                cached_symbols = [str(sym).upper() for sym in cache_data.get('symbols', [])]
-                if symbols is not None:
-                    requested = [str(sym).upper() for sym in symbols if sym]
-                    if sorted(requested) != sorted(cached_symbols):
+            cache_frame = pd.DataFrame(cache_data['options'])
+            cache_frame.attrs["cache_timestamp"] = cache_time.isoformat()
+            cache_frame.attrs["cache_age_minutes"] = age_minutes
+            cache_frame.attrs["cache_used"] = True
+
+            cached_symbols = [str(sym).upper() for sym in cache_data.get('symbols', [])]
+            symbol_mismatch = False
+            if symbols is not None:
+                requested = [str(sym).upper() for sym in symbols if sym]
+                if sorted(requested) != sorted(cached_symbols):
+                    symbol_mismatch = True
+                    if not allow_stale:
                         print("📂 Cache symbols mismatch, refreshing data")
                         return None
+                    print("⚠️  Cache symbols mismatch – using stale cache dataset")
+
+            if age_minutes <= max_age_minutes:
                 print(f"📂 Using cached data ({age_minutes:.1f} minutes old)")
-                return pd.DataFrame(cache_data['options'])
-            else:
-                print(f"🕐 Cache too old ({age_minutes:.1f} minutes), will fetch fresh data")
-                return None
-                
+                cache_frame.attrs["cache_source"] = "adapter-cache"
+                cache_frame.attrs["cache_stale"] = False
+                return cache_frame
+
+            print(f"🕐 Cache too old ({age_minutes:.1f} minutes), will fetch fresh data")
+
+            if allow_stale:
+                print("⚠️  Falling back to stale cache - live fetch failed")
+                cache_frame.attrs["cache_source"] = "adapter-cache-stale"
+                cache_frame.attrs["cache_stale"] = True
+                return cache_frame
+
+            return None
+
         except FileNotFoundError:
             print("📂 No cache file found")
             return None
@@ -319,7 +340,22 @@ class BulkOptionsFetcher:
             fresh_data = self.fetch_bulk_options_parallel(max_symbols=max_symbols)
 
         if fresh_data is not None:
+            fresh_data.attrs["cache_timestamp"] = datetime.now().isoformat()
+            fresh_data.attrs["cache_age_minutes"] = 0.0
+            fresh_data.attrs["cache_source"] = "adapter-live"
+            fresh_data.attrs["cache_stale"] = False
+            fresh_data.attrs["cache_used"] = False
             self.save_to_cache(fresh_data)
+
+            return fresh_data
+
+        if use_cache:
+            stale_cache = self.load_from_cache(
+                symbols=normalized_symbols,
+                allow_stale=True,
+            )
+            if stale_cache is not None:
+                return stale_cache
 
         return fresh_data
 
