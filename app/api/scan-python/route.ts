@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server"
-import { readFile } from "fs/promises"
-import path from "path"
+import fallbackScanData from "@/configs/fallback-scan.json"
 
 import { resolvePythonExecutable } from "@/lib/server/python"
 import { ensureOptionGreeks } from "@/lib/math/greeks"
@@ -104,7 +103,7 @@ export const runtime = "nodejs"
 export const maxDuration = 300 // Increased to 5 minutes to accommodate historical analysis
 
 const FALLBACK_TIMEOUT_MS = 45_000
-const FALLBACK_DATA_PATH = path.join(process.cwd(), "configs", "fallback-scan.json")
+const FALLBACK_DATA = fallbackScanData as ScannerResponse | null
 
 const normalizePercent = (value: unknown): number | null => {
   if (typeof value !== "number" || Number.isNaN(value)) {
@@ -284,12 +283,14 @@ const buildSuccessResponse = (payload: SanitizedPayload) => {
 
 const loadFallbackResponse = async (): Promise<ScannerResponse | null> => {
   try {
-    const contents = await readFile(FALLBACK_DATA_PATH, "utf-8")
-    const parsed = JSON.parse(contents) as ScannerResponse
-    if (!parsed || !Array.isArray(parsed.opportunities) || parsed.opportunities.length === 0) {
+    if (
+      !FALLBACK_DATA ||
+      !Array.isArray(FALLBACK_DATA.opportunities) ||
+      FALLBACK_DATA.opportunities.length === 0
+    ) {
       return null
     }
-    return parsed
+    return JSON.parse(JSON.stringify(FALLBACK_DATA)) as ScannerResponse
   } catch (error) {
     console.error("Failed to load fallback scan payload:", error)
     return null
