@@ -1640,7 +1640,7 @@ export default function HomePage() {
                           <div className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">
                             Contributing Signals:
                           </div>
-                          {opp.enhancedDirectionalBias.signals.map((signal, idx) => (
+                          {(opp.enhancedDirectionalBias.signals ?? []).map((signal, idx) => (
                             <div key={idx} className="bg-black/30 rounded-lg p-3 border border-zinc-700/50">
                               <div className="flex items-center justify-between mb-2">
                                 <div className="flex items-center gap-2">
