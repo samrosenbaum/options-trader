@@ -234,6 +234,7 @@ class SmartOptionsScanner:
         print(f"📊 Analyzing {len(liquid_options)} liquid options...", file=sys.stderr)
 
         opportunities: List[Dict[str, Any]] = []
+        fallback_candidates: List[Dict[str, Any]] = []
         for _, option in liquid_options.iterrows():
             returns_analysis, metrics = self.calculate_returns_analysis(option)
             probability_score = self.calculate_probability_score(option, metrics)
@@ -243,10 +244,6 @@ class SmartOptionsScanner:
             probability_percent = self.estimate_probability_percent(probability_score)
             expected_roi = metrics["expectedMoveRoiPercent"]  # 1 SD move (realistic)
 
-            # Skip trades with negative expected returns or very low probability
-            if expected_roi <= 0 or probability_percent < 25:
-                continue
-
             # Define quality thresholds - prioritize probable winners
             high_probability = probability_percent >= 35  # Good chance of profit (lowered from 40)
             reasonable_return = expected_roi >= 20  # 20% return on 1 SD move (lowered from 25)
@@ -254,164 +251,180 @@ class SmartOptionsScanner:
             # Quality criteria: High score + reasonable probability + decent expected returns
             # Removed the "high_asymmetry" path that surfaced lottery tickets
             quality_setup = (
-                score >= 65 and  # Lowered from 70
-                high_probability and
-                reasonable_return
+                expected_roi > 0
+                and score >= 65  # Lowered from 70
+                and high_probability
+                and reasonable_return
             )
 
-            if quality_setup:
-                volume_ratio = float(option["volume"] / max(option["openInterest"], 1))
-                spread_pct = (option["ask"] - option["bid"]) / max(option["lastPrice"], 0.01)
+            # Relaxed criteria used as a safety net when nothing meets the strict filter
+            relaxed_setup = (
+                not quality_setup
+                and expected_roi >= 10
+                and probability_percent >= 18
+                and score >= 60
+            )
 
-                swing_signal, swing_error = self._swing_signal_for(option["symbol"])
+            if not quality_setup and not relaxed_setup:
+                continue
 
-                # Calculate directional bias to help choose between calls and puts
-                directional_bias = self.calculate_directional_bias(option, swing_signal)
+            volume_ratio = float(option["volume"] / max(option["openInterest"], 1))
+            spread_pct = (option["ask"] - option["bid"]) / max(option["lastPrice"], 0.01)
 
-                # Calculate ENHANCED directional bias using new signal framework
-                # Get full options chain for this symbol
-                symbol_options_chain = working_data[working_data["symbol"] == option["symbol"]].copy()
-                enhanced_bias = self.calculate_enhanced_directional_bias(
-                    option["symbol"], option, symbol_options_chain
+            swing_signal, swing_error = self._swing_signal_for(option["symbol"])
+
+            # Calculate directional bias to help choose between calls and puts
+            directional_bias = self.calculate_directional_bias(option, swing_signal)
+
+            # Calculate ENHANCED directional bias using new signal framework
+            # Get full options chain for this symbol
+            symbol_options_chain = working_data[working_data["symbol"] == option["symbol"]].copy()
+            enhanced_bias = self.calculate_enhanced_directional_bias(
+                option["symbol"], option, symbol_options_chain
+            )
+
+            preferred_option_type = self._preferred_option_type(enhanced_bias, directional_bias)
+            if preferred_option_type and option["type"] != preferred_option_type:
+                # Skip opportunities that conflict with the directional view
+                continue
+
+            # Calculate historical move context for validation
+            try:
+                dte = self.calculate_days_to_expiration(option["expiration"])
+                direction = "up" if option["type"] == "call" else "down"
+                target_move = abs(metrics["breakevenMovePercent"])
+                historical_context = self.historical_moves.get_move_context(
+                    symbol=option["symbol"],
+                    target_move_pct=target_move,
+                    timeframe_days=dte,
+                    direction=direction,
                 )
-
-                preferred_option_type = self._preferred_option_type(enhanced_bias, directional_bias)
-                if preferred_option_type and option["type"] != preferred_option_type:
-                    # Skip opportunities that conflict with the directional view
-                    continue
-
-                # Calculate historical move context for validation
-                try:
-                    dte = self.calculate_days_to_expiration(option["expiration"])
-                    direction = "up" if option["type"] == "call" else "down"
-                    target_move = abs(metrics["breakevenMovePercent"])
-                    historical_context = self.historical_moves.get_move_context(
-                        symbol=option["symbol"],
-                        target_move_pct=target_move,
-                        timeframe_days=dte,
-                        direction=direction,
-                    )
-                except Exception as e:
-                    # If historical analysis fails, continue without it
-                    print(f"Warning: Historical analysis failed for {option['symbol']}: {e}")
-                    historical_context = {
-                        "available": False,
-                        "message": f"Historical data unavailable: {str(e)}"
-                    }
-
-                # Generate clear trade summary
-                trade_summary = self.generate_trade_summary(option, metrics, returns_analysis)
-
-                reasoning = self.generate_reasoning(
-                    option,
-                    score,
-                    metrics,
-                    probability_score,
-                    volume_ratio,
-                    spread_pct,
-                )
-
-                # Build catalysts/patterns based on new probability-focused criteria
-                catalysts = []
-                patterns = ["Liquidity Analysis", "Probability-Focused Analysis"]
-
-                if probability_percent >= 50:
-                    catalysts.append("High Probability Setup (>50%)")
-                elif probability_percent >= 40:
-                    catalysts.append("Good Probability (>40%)")
-
-                if expected_roi >= 50:
-                    catalysts.append("Strong Expected Returns")
-                elif expected_roi >= 30:
-                    catalysts.append("Solid Expected Returns")
-
-                if volume_ratio > 1.5:
-                    catalysts.append("Unusual Volume Activity")
-
-                if metrics["breakevenMovePercent"] < 4:
-                    patterns.append("Tight Breakeven")
-
-                if enhanced_bias and abs(enhanced_bias.get("score", 0)) > 30:
-                    patterns.append("Strong Directional Signal")
-
-                # Validate data quality before creating opportunity
-                quality_report = self.validator.validate_option(option.to_dict())
-
-                # Skip rejected AND low quality options - only HIGH/MEDIUM pass
-                if quality_report.quality in [DataQuality.REJECTED, DataQuality.LOW]:
-                    print(f"⚠️  Rejected {option['symbol']} {option['type']} ${option['strike']} - Quality: {quality_report.quality.value}, Issues: {quality_report.issues}, Warnings: {quality_report.warnings}", file=sys.stderr)
-                    continue
-
-                opportunity = {
-                    "symbol": option["symbol"],
-                    "optionType": option["type"],
-                    "strike": round(float(option["strike"]), 2),
-                    "expiration": option["expiration"],
-                    "premium": round(float(option["lastPrice"]) * 100, 2),  # Per contract (100 shares)
-                    "tradeSummary": trade_summary,
-                    "bid": round(float(option["bid"]) * 100, 2),  # Per contract
-                    "ask": round(float(option["ask"]) * 100, 2),  # Per contract
-                    "volume": int(option["volume"]),
-                    "openInterest": int(option["openInterest"]),
-                    "impliedVolatility": round(float(option["impliedVolatility"]), 4) if pd.notna(option["impliedVolatility"]) else 0.0,
-                    "stockPrice": round(float(option["stockPrice"]), 2),
-                    "score": round(score, 1),  # Round to 1 decimal place
-                    "confidence": round(min(95, (score * 0.35) + (probability_percent * 0.65)), 1),
-                    "reasoning": reasoning,
-                    "catalysts": catalysts,
-                    "patterns": patterns,
-                    "riskLevel": self.assess_risk_level(option, metrics, probability_score),
-                    "potentialReturn": round(metrics["tenMoveRoiPercent"], 1),
-                    "potentialReturnAmount": round(metrics["tenMoveNetProfit"], 2),
-                    "maxReturn": round(metrics["bestRoiPercent"], 1),
-                    "maxReturnAmount": round(metrics["bestNetProfit"], 2),
-                    # New realistic scenario fields
-                    "expectedMoveReturn": round(metrics["expectedMoveRoiPercent"], 1),
-                    "expectedMoveAmount": round(metrics["expectedMoveNetProfit"], 2),
-                    "optimisticMoveReturn": round(metrics["optimisticMoveRoiPercent"], 1),
-                    "optimisticMoveAmount": round(metrics["optimisticMoveNetProfit"], 2),
-                    "expectedMove1SD": round(metrics["expectedMove1SD"], 2),
-                    "expectedMove2SD": round(metrics["expectedMove2SD"], 2),
-                    "maxLossPercent": 100.0,
-                    "maxLossAmount": round(metrics["costBasis"], 2),
-                    "maxLoss": round(metrics["costBasis"], 2),
-                    "breakeven": round(metrics["breakevenPrice"], 2),
-                    "breakevenPrice": round(metrics["breakevenPrice"], 2),
-                    "breakevenMovePercent": round(metrics["breakevenMovePercent"], 1),
-                    "ivRank": round(self.calculate_iv_rank(option), 1),
-                    "volumeRatio": round(volume_ratio, 2),
-                    "probabilityOfProfit": round(probability_percent, 1),
-                    "profitProbabilityExplanation": self.build_probability_explanation(
-                        option,
-                        metrics,
-                        probability_percent,
-                        volume_ratio,
-                    ),
-                    "riskRewardRatio": metrics["bestRoiPercent"] / 100 if metrics["bestRoiPercent"] > 0 else None,
-                    "shortTermRiskRewardRatio": (
-                        metrics["tenMoveRoiPercent"] / 100 if metrics["tenMoveRoiPercent"] > 0 else None
-                    ),
-                    "greeks": self.calculate_greeks_approximation(option),
-                    "daysToExpiration": self.calculate_days_to_expiration(option["expiration"]),
-                    "returnsAnalysis": returns_analysis,
-                    "directionalBias": directional_bias,
-                    "enhancedDirectionalBias": enhanced_bias,  # New proprietary signal framework
-                    "historicalContext": historical_context,  # Empirical probability validation
-                    # Add data quality metadata
-                    "_dataQuality": {
-                        "quality": quality_report.quality.value,
-                        "score": quality_report.score,
-                        "issues": quality_report.issues,
-                        "warnings": quality_report.warnings,
-                        "priceSource": option.get("_price_source", "unknown"),
-                        "priceTimestamp": option.get("_price_timestamp"),
-                        "priceAgeSeconds": option.get("_price_age_seconds"),
-                    },
+            except Exception as e:
+                # If historical analysis fails, continue without it
+                print(f"Warning: Historical analysis failed for {option['symbol']}: {e}")
+                historical_context = {
+                    "available": False,
+                    "message": f"Historical data unavailable: {str(e)}"
                 }
-                if swing_signal is not None:
-                    opportunity["swingSignal"] = swing_signal
-                if swing_error is not None:
-                    opportunity["swingSignalError"] = swing_error
+
+            # Generate clear trade summary
+            trade_summary = self.generate_trade_summary(option, metrics, returns_analysis)
+
+            reasoning = self.generate_reasoning(
+                option,
+                score,
+                metrics,
+                probability_score,
+                volume_ratio,
+                spread_pct,
+            )
+
+            # Build catalysts/patterns based on new probability-focused criteria
+            catalysts = []
+            patterns = ["Liquidity Analysis", "Probability-Focused Analysis"]
+
+            if probability_percent >= 50:
+                catalysts.append("High Probability Setup (>50%)")
+            elif probability_percent >= 40:
+                catalysts.append("Good Probability (>40%)")
+
+            if expected_roi >= 50:
+                catalysts.append("Strong Expected Returns")
+            elif expected_roi >= 30:
+                catalysts.append("Solid Expected Returns")
+
+            if volume_ratio > 1.5:
+                catalysts.append("Unusual Volume Activity")
+
+            if metrics["breakevenMovePercent"] < 4:
+                patterns.append("Tight Breakeven")
+
+            if enhanced_bias and abs(enhanced_bias.get("score", 0)) > 30:
+                patterns.append("Strong Directional Signal")
+
+            # Validate data quality before creating opportunity
+            quality_report = self.validator.validate_option(option.to_dict())
+
+            # Skip rejected AND low quality options - only HIGH/MEDIUM pass
+            if quality_report.quality in [DataQuality.REJECTED, DataQuality.LOW]:
+                print(f"⚠️  Rejected {option['symbol']} {option['type']} ${option['strike']} - Quality: {quality_report.quality.value}, Issues: {quality_report.issues}, Warnings: {quality_report.warnings}", file=sys.stderr)
+                continue
+
+            opportunity = {
+                "symbol": option["symbol"],
+                "optionType": option["type"],
+                "strike": round(float(option["strike"]), 2),
+                "expiration": option["expiration"],
+                "premium": round(float(option["lastPrice"]) * 100, 2),  # Per contract (100 shares)
+                "tradeSummary": trade_summary,
+                "bid": round(float(option["bid"]) * 100, 2),  # Per contract
+                "ask": round(float(option["ask"]) * 100, 2),  # Per contract
+                "volume": int(option["volume"]),
+                "openInterest": int(option["openInterest"]),
+                "impliedVolatility": round(float(option["impliedVolatility"]), 4) if pd.notna(option["impliedVolatility"]) else 0.0,
+                "stockPrice": round(float(option["stockPrice"]), 2),
+                "score": round(score, 1),  # Round to 1 decimal place
+                "confidence": round(min(95, (score * 0.35) + (probability_percent * 0.65)), 1),
+                "reasoning": reasoning,
+                "catalysts": catalysts,
+                "patterns": patterns,
+                "riskLevel": self.assess_risk_level(option, metrics, probability_score),
+                "potentialReturn": round(metrics["tenMoveRoiPercent"], 1),
+                "potentialReturnAmount": round(metrics["tenMoveNetProfit"], 2),
+                "maxReturn": round(metrics["bestRoiPercent"], 1),
+                "maxReturnAmount": round(metrics["bestNetProfit"], 2),
+                # New realistic scenario fields
+                "expectedMoveReturn": round(metrics["expectedMoveRoiPercent"], 1),
+                "expectedMoveAmount": round(metrics["expectedMoveNetProfit"], 2),
+                "optimisticMoveReturn": round(metrics["optimisticMoveRoiPercent"], 1),
+                "optimisticMoveAmount": round(metrics["optimisticMoveNetProfit"], 2),
+                "expectedMove1SD": round(metrics["expectedMove1SD"], 2),
+                "expectedMove2SD": round(metrics["expectedMove2SD"], 2),
+                "maxLossPercent": 100.0,
+                "maxLossAmount": round(metrics["costBasis"], 2),
+                "maxLoss": round(metrics["costBasis"], 2),
+                "breakeven": round(metrics["breakevenPrice"], 2),
+                "breakevenPrice": round(metrics["breakevenPrice"], 2),
+                "breakevenMovePercent": round(metrics["breakevenMovePercent"], 1),
+                "ivRank": round(self.calculate_iv_rank(option), 1),
+                "volumeRatio": round(volume_ratio, 2),
+                "probabilityOfProfit": round(probability_percent, 1),
+                "profitProbabilityExplanation": self.build_probability_explanation(
+                    option,
+                    metrics,
+                    probability_percent,
+                    volume_ratio,
+                ),
+                "riskRewardRatio": metrics["bestRoiPercent"] / 100 if metrics["bestRoiPercent"] > 0 else None,
+                "shortTermRiskRewardRatio": (
+                    metrics["tenMoveRoiPercent"] / 100 if metrics["tenMoveRoiPercent"] > 0 else None
+                ),
+                "greeks": self.calculate_greeks_approximation(option),
+                "daysToExpiration": self.calculate_days_to_expiration(option["expiration"]),
+                "returnsAnalysis": returns_analysis,
+                "directionalBias": directional_bias,
+                "enhancedDirectionalBias": enhanced_bias,  # New proprietary signal framework
+                "historicalContext": historical_context,  # Empirical probability validation
+                # Add data quality metadata
+                "_dataQuality": {
+                    "quality": quality_report.quality.value,
+                    "score": quality_report.score,
+                    "issues": quality_report.issues,
+                    "warnings": quality_report.warnings,
+                    "priceSource": option.get("_price_source", "unknown"),
+                    "priceTimestamp": option.get("_price_timestamp"),
+                    "priceAgeSeconds": option.get("_price_age_seconds"),
+                },
+            }
+            if swing_signal is not None:
+                opportunity["swingSignal"] = swing_signal
+            if swing_error is not None:
+                opportunity["swingSignalError"] = swing_error
+            if not quality_setup:
+                opportunity.setdefault("metadata", {})
+                opportunity["metadata"]["selectionMode"] = "relaxed"
+                fallback_candidates.append(opportunity)
+            else:
                 opportunities.append(opportunity)
 
         # Sort by expected value: probability * expected return (most likely to profit)
@@ -425,6 +438,15 @@ class SmartOptionsScanner:
             return ev
 
         opportunities.sort(key=expected_value_key, reverse=True)
+
+        if not opportunities and fallback_candidates:
+            print(
+                f"ℹ️  No opportunities met the strict filter – returning {len(fallback_candidates)} relaxed candidates",
+                file=sys.stderr,
+            )
+            fallback_candidates.sort(key=expected_value_key, reverse=True)
+            max_relaxed = 10
+            opportunities = fallback_candidates[:max_relaxed]
 
         # Limit to top 20 opportunities to keep JSON manageable
         max_opportunities = 20

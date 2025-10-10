@@ -13,6 +13,17 @@ vi.mock("@/lib/server/python", () => ({
   resolvePythonExecutable: resolvePythonExecutableMock,
 }))
 
+class MockProcess extends EventEmitter {
+  stdout: EventEmitter
+  stderr: EventEmitter
+
+  constructor() {
+    super()
+    this.stdout = new EventEmitter()
+    this.stderr = new EventEmitter()
+  }
+}
+
 describe("/api/scan-python route", () => {
   beforeEach(() => {
     vi.resetModules()
@@ -106,17 +117,6 @@ describe("/api/scan-python route", () => {
       },
     }
 
-    class MockProcess extends EventEmitter {
-      stdout: EventEmitter
-      stderr: EventEmitter
-
-      constructor() {
-        super()
-        this.stdout = new EventEmitter()
-        this.stderr = new EventEmitter()
-      }
-    }
-
     resolvePythonExecutableMock.mockResolvedValue("python")
     spawnMock.mockImplementation(() => {
       const proc = new MockProcess()
@@ -141,5 +141,60 @@ describe("/api/scan-python route", () => {
     expect(opportunity.swingSignal.metadata.atr_ratio).toBe(1.4)
     expect(opportunity.swingSignal.factors[0].name).toBe("Volatility Expansion")
     expect(opportunity.swingSignalError).toBeUndefined()
+  })
+
+  it("serves bundled fallback opportunities when python returns no qualifying results", async () => {
+    const emptyPayload = {
+      opportunities: [],
+      metadata: {
+        fetchedAt: "2024-01-01T00:00:00Z",
+        source: "unit-test",
+      },
+      totalEvaluated: 12,
+    }
+
+    resolvePythonExecutableMock.mockResolvedValue("python")
+    spawnMock.mockImplementation(() => {
+      const proc = new MockProcess()
+      setTimeout(() => {
+        proc.stdout.emit("data", Buffer.from(`${JSON.stringify(emptyPayload)}\n`))
+        proc.emit("close", 0)
+      }, 0)
+      return proc as unknown as ChildProcessWithoutNullStreams
+    })
+
+    const { GET } = await import("@/app/api/scan-python/route")
+    const response = await GET()
+    expect(response.status).toBe(200)
+
+    const body = await response.json()
+    expect(body.success).toBe(true)
+    expect(body.metadata.fallback).toBe(true)
+    expect(body.metadata.fallbackReason).toBe("no_python_results")
+    expect(body.metadata.source).toBe("fallback-cache")
+    expect(Array.isArray(body.opportunities)).toBe(true)
+    expect(body.opportunities.length).toBeGreaterThan(0)
+    expect(body.opportunities[0].symbol).toBeDefined()
+  })
+
+  it("uses fallback results if the python process fails to spawn", async () => {
+    resolvePythonExecutableMock.mockResolvedValue("python")
+    spawnMock.mockImplementation(() => {
+      const proc = new MockProcess()
+      setTimeout(() => {
+        proc.emit("error", new Error("spawn ENOENT"))
+      }, 0)
+      return proc as unknown as ChildProcessWithoutNullStreams
+    })
+
+    const { GET } = await import("@/app/api/scan-python/route")
+    const response = await GET()
+    expect(response.status).toBe(200)
+
+    const body = await response.json()
+    expect(body.success).toBe(true)
+    expect(body.metadata.fallback).toBe(true)
+    expect(body.metadata.fallbackReason).toBe("spawn_error")
+    expect(body.opportunities.length).toBeGreaterThan(0)
   })
 })
