@@ -155,6 +155,19 @@ interface Opportunity {
   enhancedDirectionalBias?: EnhancedDirectionalBias | null
 }
 
+interface ScanMetadata {
+  fallback?: boolean
+  fallbackReason?: string
+  fallbackDetails?: string
+  cacheStale?: boolean
+  cacheAgeMinutes?: number
+  cacheHit?: boolean
+  cacheTimestamp?: string
+  dataFreshness?: Record<string, unknown>
+  source?: string
+  [key: string]: unknown
+}
+
 interface CryptoAlert {
   symbol: string
   name: string
@@ -367,6 +380,7 @@ export default function HomePage() {
   const [cryptoLoading, setCryptoLoading] = useState(false)
   const [sortOption, setSortOption] = useState<OpportunitySortOption>('promising')
   const [isStaleData, setIsStaleData] = useState(false)
+  const [scanMetadata, setScanMetadata] = useState<ScanMetadata | null>(null)
   const [expandedCards, setExpandedCards] = useState<Record<string, boolean>>({})
 
   const toggleCard = (cardId: string) => {
@@ -376,13 +390,51 @@ export default function HomePage() {
     }))
   }
 
+  const extractFreshnessField = (field: string): unknown => {
+    if (!scanMetadata || !scanMetadata.dataFreshness || typeof scanMetadata.dataFreshness !== 'object') {
+      return null
+    }
+    const record = scanMetadata.dataFreshness as Record<string, unknown>
+    return field in record ? record[field] : null
+  }
+
+  const fallbackActive = scanMetadata?.fallback === true
+  const staleCacheActive = !fallbackActive && scanMetadata?.cacheStale === true
+  const fallbackReason = typeof scanMetadata?.fallbackReason === 'string' ? scanMetadata.fallbackReason : null
+  const fallbackDetails = typeof scanMetadata?.fallbackDetails === 'string' ? scanMetadata.fallbackDetails : null
+  const cacheAgeDescription = formatAgeDescription(
+    typeof scanMetadata?.cacheAgeMinutes === 'number' ? scanMetadata.cacheAgeMinutes : (extractFreshnessField('cacheAgeMinutes') as number | null | undefined),
+  )
+  const cacheTimestampRaw = (() => {
+    if (typeof scanMetadata?.cacheTimestamp === 'string') {
+      return scanMetadata.cacheTimestamp
+    }
+    const extracted = extractFreshnessField('cacheTimestamp')
+    return typeof extracted === 'string' ? extracted : null
+  })()
+  const cacheTimestamp = (() => {
+    if (!cacheTimestampRaw) {
+      return null
+    }
+    const parsed = new Date(cacheTimestampRaw)
+    return Number.isNaN(parsed.getTime()) ? null : parsed
+  })()
+
   const fetchOpportunities = useCallback(async () => {
     try {
       const response = await fetch('/api/scan-python')
       const data = await response.json()
 
       if (data.success) {
-        // Extract totalEvaluated regardless of whether we found opportunities
+        const metadata: ScanMetadata | null =
+          data.metadata && typeof data.metadata === 'object'
+            ? (data.metadata as ScanMetadata)
+            : null
+        setScanMetadata(metadata)
+
+        const usedFallback = metadata?.fallback === true
+        const staleCache = metadata?.cacheStale === true
+
         const evaluatedFromApi =
           typeof data.totalEvaluated === 'number'
             ? data.totalEvaluated
@@ -392,22 +444,21 @@ export default function HomePage() {
                 ? data.opportunities.length
                 : 0
 
-        // Only update if we got results, or if this is the initial load
         if (data.opportunities && data.opportunities.length > 0) {
           setOpportunities(data.opportunities)
           setTotalEvaluated(evaluatedFromApi)
           setLastSuccessfulUpdate(new Date())
-          setIsStaleData(false)
+          setIsStaleData(usedFallback || staleCache)
         } else if (opportunities.length === 0) {
-          // If we have no existing data, update even with empty results
           setOpportunities([])
-          setTotalEvaluated(evaluatedFromApi) // Use actual count, not 0
-          setIsStaleData(false)
+          setTotalEvaluated(evaluatedFromApi)
+          setIsStaleData(usedFallback || staleCache)
         } else {
-          // Keep existing data but mark as stale
           setIsStaleData(true)
           console.warn('Scan returned no results - keeping previous data visible')
         }
+      } else {
+        setScanMetadata(null)
       }
     } catch (error) {
       console.error('Error fetching opportunities:', error)
@@ -565,6 +616,27 @@ export default function HomePage() {
     if (score >= 80) return 'bg-orange-500 text-white'
     if (score >= 70) return 'bg-amber-500 text-white'
     return 'bg-slate-400 text-white'
+  }
+
+  function formatAgeDescription(minutes?: number | null) {
+    if (typeof minutes !== 'number' || !Number.isFinite(minutes) || minutes < 0) {
+      return null
+    }
+
+    if (minutes < 60) {
+      const rounded = Math.max(1, Math.round(minutes))
+      return `${rounded} minute${rounded === 1 ? '' : 's'}`
+    }
+
+    if (minutes < 1440) {
+      const hours = Math.round((minutes / 60) * 10) / 10
+      const display = Number.isInteger(hours) ? hours.toString() : hours.toFixed(1)
+      return `${display} hour${Math.abs(hours - 1) < 1e-9 ? '' : 's'}`
+    }
+
+    const days = Math.round((minutes / 1440) * 10) / 10
+    const display = Number.isInteger(days) ? days.toString() : days.toFixed(1)
+    return `${display} day${Math.abs(days - 1) < 1e-9 ? '' : 's'}`
   }
 
   const formatCurrency = (amount: number) => {
@@ -1329,6 +1401,44 @@ export default function HomePage() {
                   <span className="ml-2 px-2 py-1 bg-amber-500/10 text-amber-400 border border-amber-500/30 text-xs rounded-md font-semibold">
                     Cached
                   </span>
+                )}
+              </div>
+            )}
+            {activeTab === 'options' && (fallbackActive || staleCacheActive) && (
+              <div className="w-full mt-3 space-y-2">
+                {fallbackActive && (
+                  <div className="flex items-start gap-3 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-amber-100">
+                    <svg className="mt-1 h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div className="space-y-1">
+                      <p className="font-semibold">Fallback recommendations</p>
+                      <p className="text-sm leading-relaxed text-amber-100/80">
+                        Live scanning failed{fallbackReason ? ` (${fallbackReason})` : ''}, so we are showing the bundled backup trade ideas.
+                        Expect pricing and probabilities to deviate from current market conditions.
+                      </p>
+                      {fallbackDetails && (
+                        <p className="text-xs text-amber-100/70">Details: {fallbackDetails}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {staleCacheActive && (
+                  <div className="flex items-start gap-3 rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-yellow-100">
+                    <svg className="mt-1 h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M12 3a9 9 0 100 18 9 9 0 000-18z" />
+                    </svg>
+                    <div className="space-y-1">
+                      <p className="font-semibold">Using cached market data</p>
+                      <p className="text-sm leading-relaxed text-yellow-100/80">
+                        Live data sources were unavailable, so these results come from cached quotes
+                        {cacheAgeDescription ? ` that are roughly ${cacheAgeDescription} old` : ''}. Please confirm pricing before trading.
+                      </p>
+                      {cacheTimestamp && (
+                        <p className="text-xs text-yellow-100/70">Last cache update: {cacheTimestamp.toLocaleString()}</p>
+                      )}
+                    </div>
+                  </div>
                 )}
               </div>
             )}
