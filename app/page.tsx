@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import Image from 'next/image'
 import RealTimeProgress from '../components/real-time-progress'
 import LiveTicker from '../components/live-ticker'
@@ -383,6 +383,7 @@ export default function HomePage() {
   const [isStaleData, setIsStaleData] = useState(false)
   const [scanMetadata, setScanMetadata] = useState<ScanMetadata | null>(null)
   const [expandedCards, setExpandedCards] = useState<Record<string, boolean>>({})
+  const previousTabRef = useRef<'options' | 'crypto' | null>(null)
 
   const toggleCard = (cardId: string) => {
     setExpandedCards(prev => ({
@@ -472,7 +473,7 @@ export default function HomePage() {
     }
   }, [opportunities])
 
-  const fetchCryptoAlerts = async () => {
+  const fetchCryptoAlerts = useCallback(async () => {
     try {
       setCryptoLoading(true)
       const response = await fetch('/api/crypto-scan')
@@ -485,7 +486,7 @@ export default function HomePage() {
     } finally {
       setCryptoLoading(false)
     }
-  }
+  }, [])
 
   const isMarketOpen = () => {
     const now = new Date()
@@ -511,6 +512,13 @@ export default function HomePage() {
     fetchOpportunities()
     // Auto-refresh disabled - user must manually refresh to avoid API overuse
   }, [fetchOpportunities])
+
+  useEffect(() => {
+    if (activeTab === 'crypto' && previousTabRef.current !== 'crypto') {
+      fetchCryptoAlerts()
+    }
+    previousTabRef.current = activeTab
+  }, [activeTab, fetchCryptoAlerts])
 
   useEffect(() => {
     setExpandedCards({})
