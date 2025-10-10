@@ -1,11 +1,23 @@
 {
-  "timestamp": "2025-10-09T10:00:07.799302",
-  "data_count": 629,
+  "timestamp": "2025-10-09T17:32:59.570966",
+  "data_count": 6239,
   "symbols": [
-    "RIVN",
-    "LCID"
+    "ROKU",
+    "DOCU",
+    "ZM",
+    "SNOW",
+    "UBER",
+    "PLTR",
+    "SOFI",
+    "HOOD",
+    "AFRM",
+    "COIN",
+    "UPST",
+    "XPEV",
+    "LCID",
+    "RIVN"
   ],
   "options": [
     {
-      "contractSymbol": "RIVN251010C00005000",
+      "contractSymbol": "ROKU251010C00050000",
       "lastTradeDate": 

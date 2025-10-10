@@ -554,21 +554,64 @@ const renderMoveThesis = (opp: Opportunity) => {
         </div>
       )}
 
-      {(catalysts.length > 0 || patterns.length > 0) && (
-        <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
-          <h5 className="font-medium text-slate-900 dark:text-white mb-2">Supporting Signals</h5>
-          <div className="flex flex-wrap gap-2">
-            {patterns.map((pattern, index) => (
-              <span key={`pattern-${index}`} className="px-3 py-1 bg-slate-200 dark:bg-slate-700 text-xs font-medium rounded-xl">
-                {pattern}
-              </span>
-            ))}
-            {catalysts.map((catalyst, index) => (
-              <span key={`catalyst-${index}`} className="px-3 py-1 bg-emerald-200/80 dark:bg-emerald-900/40 text-xs font-medium text-emerald-900 dark:text-emerald-100 rounded-xl">
-                {catalyst}
-              </span>
-            ))}
+      {/* Historical Move Analysis */}
+      {opportunity.historicalContext?.available && (
+        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border border-blue-200 dark:border-blue-800 rounded-2xl p-4">
+          <div className="flex items-start gap-3 mb-3">
+            <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <h5 className="font-semibold text-blue-900 dark:text-blue-100 mb-1">Historical Move Analysis</h5>
+              <p className="text-sm text-blue-800 dark:text-blue-200 leading-relaxed">
+                {opportunity.historicalContext.analysis}
+              </p>
+            </div>
           </div>
+
+          <div className="grid grid-cols-2 gap-3 mt-3">
+            <div className="bg-white/60 dark:bg-slate-900/40 rounded-xl p-3">
+              <div className="text-xs font-medium text-blue-600 dark:text-blue-400 mb-1">Theoretical Probability</div>
+              <div className="text-2xl font-bold text-slate-900 dark:text-white">
+                {opportunity.probabilityOfProfit?.toFixed(0) || '—'}%
+              </div>
+              <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">Based on IV model</div>
+            </div>
+
+            <div className="bg-white/60 dark:bg-slate-900/40 rounded-xl p-3">
+              <div className="text-xs font-medium text-blue-600 dark:text-blue-400 mb-1">Empirical Probability</div>
+              <div className="text-2xl font-bold text-slate-900 dark:text-white">
+                {opportunity.historicalContext.empiricalProbability?.toFixed(0) || '—'}%
+              </div>
+              <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">Based on past year</div>
+            </div>
+          </div>
+
+          {opportunity.historicalContext.empiricalProbability && opportunity.probabilityOfProfit && (
+            <div className="mt-3 p-2 bg-white/60 dark:bg-slate-900/40 rounded-lg">
+              {opportunity.historicalContext.empiricalProbability > opportunity.probabilityOfProfit + 10 ? (
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-green-600 dark:text-green-400 font-semibold">✓ Potentially Underpriced</span>
+                  <span className="text-slate-600 dark:text-slate-400">
+                    Historical odds {(opportunity.historicalContext.empiricalProbability - opportunity.probabilityOfProfit).toFixed(0)}% better than market pricing
+                  </span>
+                </div>
+              ) : opportunity.historicalContext.empiricalProbability < opportunity.probabilityOfProfit - 10 ? (
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-amber-600 dark:text-amber-400 font-semibold">⚠ Potentially Overpriced</span>
+                  <span className="text-slate-600 dark:text-slate-400">
+                    Market pricing {(opportunity.probabilityOfProfit - opportunity.historicalContext.empiricalProbability).toFixed(0)}% higher than historical frequency
+                  </span>
+                </div>
+              ) : (
+                <div className="text-sm text-slate-600 dark:text-slate-400">
+                  <span className="font-semibold text-blue-600 dark:text-blue-400">Well Calibrated</span> — Market pricing aligns with historical data
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -679,7 +722,8 @@ const getRiskRewardExplanation = (opp: Opportunity) => {
 
 const calculateInvestmentScenario = (opp: Opportunity, amount: number): InvestmentScenario => {
   const optionPrice = opp.premium || 0
-  const contractCost = Math.max(optionPrice * 100, 0)
+  // premium is already per-contract (multiplied by 100 in Python scanner)
+  const contractCost = Math.max(optionPrice, 0)
   const perContractPotentialReturn = opp.potentialReturnAmount || ((opp.potentialReturn / 100) * contractCost)
   const perContractMaxReturn = opp.maxReturnAmount || ((opp.maxReturn / 100) * contractCost)
   const perContractMaxLoss = opp.maxLossAmount || contractCost
@@ -994,10 +1038,10 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
               <div className="text-right">
                 <div className="text-sm font-medium text-slate-600 dark:text-slate-400">Option Price</div>
                 <div className="text-lg font-semibold text-slate-900 dark:text-white">
-                  {formatCurrency(opportunity.premium)} per share
+                  {formatCurrency(opportunity.premium / 100)} per share
                 </div>
                 <div className="text-sm text-slate-500 dark:text-slate-400">
-                  {formatCurrency(scenario.contractCost)} per contract
+                  {formatCurrency(opportunity.premium)} per contract
                 </div>
               </div>
             </div>

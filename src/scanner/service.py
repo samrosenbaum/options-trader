@@ -16,6 +16,7 @@ import yfinance as yf
 from scripts.bulk_options_fetcher import BulkOptionsFetcher
 from src.analysis import SwingSignal, SwingSignalAnalyzer
 from src.config import AppSettings, get_settings
+from src.scanner.historical_moves import HistoricalMoveAnalyzer
 from src.scanner.iv_rank_history import IVRankHistory
 from src.scanner.universe import build_scan_universe
 from src.signals import OptionsSkewAnalyzer, SmartMoneyFlowDetector, RegimeDetector, VolumeProfileAnalyzer, SignalAggregator
@@ -70,6 +71,7 @@ class SmartOptionsScanner:
         except Exception:
             sqlite_path = None
         self.iv_history = IVRankHistory(sqlite_path)
+        self.historical_moves = HistoricalMoveAnalyzer(db_path=sqlite_path, lookback_days=365)
         self.swing_analyzer: SwingSignalAnalyzer | None = None
         self._swing_signal_cache: Dict[str, Optional[Dict[str, Any]]] = {}
         self._swing_error_cache: Dict[str, str] = {}
@@ -278,6 +280,17 @@ class SmartOptionsScanner:
                     # Skip opportunities that conflict with the directional view
                     continue
 
+                # Calculate historical move context for validation
+                dte = self.calculate_days_to_expiration(option["expiration"])
+                direction = "up" if option["type"] == "call" else "down"
+                target_move = abs(metrics["breakevenMovePercent"])
+                historical_context = self.historical_moves.get_move_context(
+                    symbol=option["symbol"],
+                    target_move_pct=target_move,
+                    timeframe_days=dte,
+                    direction=direction,
+                )
+
                 # Generate clear trade summary
                 trade_summary = self.generate_trade_summary(option, metrics, returns_analysis)
 
@@ -375,6 +388,7 @@ class SmartOptionsScanner:
                     "returnsAnalysis": returns_analysis,
                     "directionalBias": directional_bias,
                     "enhancedDirectionalBias": enhanced_bias,  # New proprietary signal framework
+                    "historicalContext": historical_context,  # Empirical probability validation
                     # Add data quality metadata
                     "_dataQuality": {
                         "quality": quality_report.quality.value,

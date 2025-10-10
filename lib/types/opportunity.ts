@@ -67,6 +67,29 @@ export interface DataQualityInfo {
   priceAgeSeconds: number | null
 }
 
+export interface HistoricalContext {
+  available: boolean
+  empiricalProbability?: number
+  occurrences?: number
+  totalPeriods?: number
+  lastOccurrence?: string
+  avgDaysToTarget?: number
+  analysis?: string
+  message?: string
+  raw?: {
+    symbol: string
+    targetMovePct: number
+    timeframeDays: number
+    occurrences: number
+    totalPeriods: number
+    empiricalProbability: number
+    lastOccurrence: string | null
+    avgDaysToTarget: number | null
+    dataStartDate: string
+    dataEndDate: string
+  }
+}
+
 export interface Opportunity {
   symbol: string
   optionType: string
@@ -130,6 +153,7 @@ export interface Opportunity {
   }>
   swingSignal?: SwingSignalInsight | null
   swingSignalError?: string
+  historicalContext?: HistoricalContext
   _dataQuality?: DataQualityInfo
 }
 
