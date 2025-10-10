@@ -70,10 +70,24 @@ export interface DataQualityInfo {
 export interface HistoricalContext {
   available: boolean
   empiricalProbability?: number
+  touchProbability?: number
+  finishProbability?: number
+  touchConfidence?: {
+    lower: number
+    upper: number
+  }
+  finishConfidence?: {
+    lower: number
+    upper: number
+  }
   occurrences?: number
+  closeOccurrences?: number
   totalPeriods?: number
   lastOccurrence?: string
+  lastCloseOccurrence?: string | null
   avgDaysToTarget?: number
+  qualityScore?: number
+  qualityLabel?: string
   analysis?: string
   message?: string
   raw?: {
@@ -81,12 +95,25 @@ export interface HistoricalContext {
     targetMovePct: number
     timeframeDays: number
     occurrences: number
+    closeOccurrences: number
     totalPeriods: number
     empiricalProbability: number
+    closeProbability: number
+    touchConfidenceInterval: {
+      lower: number
+      upper: number
+    }
+    closeConfidenceInterval: {
+      lower: number
+      upper: number
+    }
     lastOccurrence: string | null
+    lastCloseOccurrence: string | null
     avgDaysToTarget: number | null
     dataStartDate: string
     dataEndDate: string
+    qualityScore: number
+    qualityLabel: string
   }
 }
 

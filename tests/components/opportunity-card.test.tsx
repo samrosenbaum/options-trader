@@ -1,5 +1,5 @@
 import React from "react"
-import renderer from "react-test-renderer"
+import renderer, { act } from "react-test-renderer"
 
 import OpportunityCard from "@/components/opportunity-card"
 import { Opportunity } from "@/lib/types/opportunity"
@@ -130,6 +130,11 @@ describe("OpportunityCard", () => {
     const component = renderer.create(
       <OpportunityCard opportunity={opportunity} investmentAmount={1000} />,
     )
+
+    act(() => {
+      const expandButton = component.root.findByType("button")
+      expandButton.props.onClick()
+    })
 
     const tree = component.toJSON()
     expect(tree).toBeTruthy()
