@@ -1,0 +1,278 @@
+{
+  "opportunities": [
+    {
+      "symbol": "TSLA",
+      "optionType": "call",
+      "strike": 250,
+      "expiration": "2024-09-20",
+      "premium": 420,
+      "bid": 410,
+      "ask": 430,
+      "volume": 5200,
+      "openInterest": 8700,
+      "impliedVolatility": 0.45,
+      "stockPrice": 248.65,
+      "score": 91.3,
+      "confidence": 88.1,
+      "tradeSummary": "Buy-to-open TSLA 250C expiring 2024-09-20 targeting momentum continuation.",
+      "reasoning": [
+        "Trend continuation with strong momentum",
+        "Support from institutional flow and liquidity",
+        "Breakeven within 2% move"
+      ],
+      "catalysts": [
+        "Good Probability (>40%)",
+        "Solid Expected Returns",
+        "Unusual Volume Activity"
+      ],
+      "patterns": [
+        "Liquidity Analysis",
+        "Probability-Focused Analysis",
+        "Strong Directional Signal"
+      ],
+      "riskLevel": "medium",
+      "potentialReturn": 2.5,
+      "potentialReturnAmount": 250,
+      "maxReturn": 4.8,
+      "maxReturnAmount": 480,
+      "expectedMoveReturn": 1.8,
+      "expectedMoveAmount": 180,
+      "optimisticMoveReturn": 3.6,
+      "optimisticMoveAmount": 360,
+      "expectedMove1SD": 12.4,
+      "expectedMove2SD": 24.9,
+      "maxLoss": 420,
+      "maxLossPercent": 100,
+      "maxLossAmount": 420,
+      "breakeven": 254.2,
+      "breakevenPrice": 254.2,
+      "breakevenMovePercent": 0.018,
+      "ivRank": 55,
+      "volumeRatio": 2.1,
+      "probabilityOfProfit": 0.62,
+      "profitProbabilityExplanation": "Needs 1.8% gain with 2.1x volume support",
+      "riskRewardRatio": 3.2,
+      "shortTermRiskRewardRatio": 1.6,
+      "greeks": {
+        "delta": 0.54,
+        "gamma": 0.02,
+        "theta": -0.03,
+        "vega": 0.12
+      },
+      "daysToExpiration": 21,
+      "returnsAnalysis": [
+        { "move": "+5%", "return": 1.9 },
+        { "move": "+10%", "return": 4.2 },
+        { "move": "-5%", "return": -1.0 }
+      ],
+      "swingSignal": {
+        "symbol": "TSLA",
+        "compositeScore": 78.5,
+        "classification": "elevated_swing_risk",
+        "factors": [
+          {
+            "name": "Volatility Expansion",
+            "score": 0.82,
+            "rationale": "ATR expansion is 1.4x its 30 day average",
+            "details": {
+              "atr_ratio": 1.4
+            }
+          },
+          {
+            "name": "Momentum Confirmation",
+            "score": 0.74,
+            "rationale": "RSI trend holding above 60",
+            "details": {
+              "rsi": 64.2
+            }
+          }
+        ],
+        "metadata": {
+          "generated_at": "2024-06-01T14:30:00Z",
+          "atr_ratio": 1.4,
+          "momentum_zscore": 1.1,
+          "volume_zscore": 1.3,
+          "news_sample": [
+            {
+              "title": "TSLA extends breakout on heavy volume",
+              "summary": "Options flow continues to favor upside bets following delivery update.",
+              "publisher": "Newswire",
+              "sentiment_score": 0.6,
+              "sentiment_label": "bullish"
+            }
+          ],
+          "market_context": {
+            "vix_ratio": 0.82,
+            "spy_return_5d": 0.015
+          }
+        }
+      },
+      "historicalContext": {
+        "available": true,
+        "empiricalProbability": 0.58,
+        "occurrences": 19,
+        "totalPeriods": 33,
+        "avgDaysToTarget": 9,
+        "analysis": "Historical rallies of 2% or more within 21 days occurred 58% of the time.",
+        "lastOccurrence": "2024-04-26"
+      },
+      "directionalBias": {
+        "direction": "bullish",
+        "score": 36
+      },
+      "enhancedDirectionalBias": {
+        "direction": "bullish",
+        "score": 48,
+        "drivers": [
+          "Volume profile breakout",
+          "Smart money accumulation"
+        ]
+      },
+      "_dataQuality": {
+        "quality": "high",
+        "score": 92,
+        "issues": [],
+        "warnings": [],
+        "priceSource": "fallback-cache",
+        "priceTimestamp": "2024-06-01T14:25:00Z",
+        "priceAgeSeconds": 300
+      }
+    },
+    {
+      "symbol": "NVDA",
+      "optionType": "put",
+      "strike": 950,
+      "expiration": "2024-09-20",
+      "premium": 560,
+      "bid": 545,
+      "ask": 575,
+      "volume": 4100,
+      "openInterest": 10200,
+      "impliedVolatility": 0.39,
+      "stockPrice": 988.41,
+      "score": 87.4,
+      "confidence": 83.6,
+      "tradeSummary": "Buy-to-open NVDA 950P expiring 2024-09-20 as a defined-risk pullback hedge.",
+      "reasoning": [
+        "Momentum is stalling near key resistance",
+        "Pullback hedge with defined risk",
+        "Historical pullbacks favor mean reversion"
+      ],
+      "catalysts": [
+        "High Probability Setup (>50%)",
+        "Tight Breakeven"
+      ],
+      "patterns": [
+        "Liquidity Analysis",
+        "Probability-Focused Analysis"
+      ],
+      "riskLevel": "medium",
+      "potentialReturn": 2.1,
+      "potentialReturnAmount": 310,
+      "maxReturn": 4.1,
+      "maxReturnAmount": 615,
+      "expectedMoveReturn": 1.5,
+      "expectedMoveAmount": 225,
+      "optimisticMoveReturn": 3.2,
+      "optimisticMoveAmount": 480,
+      "expectedMove1SD": 9.8,
+      "expectedMove2SD": 21.4,
+      "maxLoss": 560,
+      "maxLossPercent": 100,
+      "maxLossAmount": 560,
+      "breakeven": 944.4,
+      "breakevenPrice": 944.4,
+      "breakevenMovePercent": -0.044,
+      "ivRank": 47,
+      "volumeRatio": 1.8,
+      "probabilityOfProfit": 0.58,
+      "profitProbabilityExplanation": "Needs 4.4% drop with 1.8x put/call skew support",
+      "riskRewardRatio": 2.4,
+      "shortTermRiskRewardRatio": 1.2,
+      "greeks": {
+        "delta": -0.47,
+        "gamma": 0.018,
+        "theta": -0.027,
+        "vega": 0.102
+      },
+      "daysToExpiration": 21,
+      "returnsAnalysis": [
+        { "move": "-5%", "return": 2.3 },
+        { "move": "-10%", "return": 4.6 },
+        { "move": "+5%", "return": -1.4 }
+      ],
+      "swingSignal": {
+        "symbol": "NVDA",
+        "compositeScore": 64.2,
+        "classification": "watchlist",
+        "factors": [
+          {
+            "name": "Distribution Signals",
+            "score": 0.58,
+            "rationale": "Volume divergence at highs",
+            "details": {
+              "distribution_days": 3
+            }
+          },
+          {
+            "name": "Mean Reversion Setup",
+            "score": 0.61,
+            "rationale": "Price extended 2.3σ above 20d mean",
+            "details": {
+              "zscore": 2.3
+            }
+          }
+        ],
+        "metadata": {
+          "generated_at": "2024-06-01T14:30:00Z",
+          "atr_ratio": 1.2,
+          "momentum_zscore": 0.4,
+          "volume_zscore": 0.9,
+          "summary": "Momentum cooling as breadth deteriorates"
+        }
+      },
+      "historicalContext": {
+        "available": true,
+        "empiricalProbability": 0.54,
+        "occurrences": 15,
+        "totalPeriods": 28,
+        "avgDaysToTarget": 11,
+        "analysis": "Pullbacks of 4% within 21 days occurred 54% historically.",
+        "lastOccurrence": "2024-05-08"
+      },
+      "directionalBias": {
+        "direction": "bearish",
+        "score": -28
+      },
+      "enhancedDirectionalBias": {
+        "direction": "bearish",
+        "score": -39,
+        "drivers": [
+          "Volume profile exhaustion",
+          "Gamma positioning neutral"
+        ]
+      },
+      "_dataQuality": {
+        "quality": "medium",
+        "score": 84,
+        "issues": [],
+        "warnings": ["Wider than ideal spread (5.4%)"],
+        "priceSource": "fallback-cache",
+        "priceTimestamp": "2024-06-01T14:24:00Z",
+        "priceAgeSeconds": 360
+      },
+      "metadata": {
+        "selectionMode": "relaxed"
+      }
+    }
+  ],
+  "metadata": {
+    "fetchedAt": "2024-06-01T14:32:00Z",
+    "source": "fallback-cache",
+    "symbolLimit": 15,
+    "totalEvaluated": 42,
+    "symbols": ["TSLA", "NVDA"],
+    "note": "Bundled fallback opportunities served when live scan fails"
+  },
+  "totalEvaluated": 42
+}

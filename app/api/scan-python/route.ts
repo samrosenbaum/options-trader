@@ -1,4 +1,7 @@
 import { NextResponse } from "next/server"
+import { readFile } from "fs/promises"
+import path from "path"
+
 import { resolvePythonExecutable } from "@/lib/server/python"
 import { ensureOptionGreeks } from "@/lib/math/greeks"
 
@@ -16,6 +19,7 @@ interface ScannerOpportunity {
   stockPrice: number
   score: number
   confidence: number
+  tradeSummary?: string
   reasoning: string[]
   catalysts: string[]
   patterns: string[]
@@ -24,6 +28,12 @@ interface ScannerOpportunity {
   potentialReturnAmount: number
   maxReturn: number
   maxReturnAmount: number
+  expectedMoveReturn?: number
+  expectedMoveAmount?: number
+  optimisticMoveReturn?: number
+  optimisticMoveAmount?: number
+  expectedMove1SD?: number
+  expectedMove2SD?: number
   maxLoss: number
   maxLossPercent: number
   maxLossAmount: number
@@ -47,6 +57,18 @@ interface ScannerOpportunity {
     move: string
     return: number
   }>
+  historicalContext?: Record<string, unknown>
+  directionalBias?: Record<string, unknown>
+  enhancedDirectionalBias?: Record<string, unknown>
+  _dataQuality?: {
+    quality: string
+    score: number
+    issues: string[]
+    warnings: string[]
+    priceSource?: string
+    priceTimestamp?: string | null
+    priceAgeSeconds?: number | null
+  }
   swingSignal?: {
     symbol: string
     compositeScore: number
@@ -60,6 +82,7 @@ interface ScannerOpportunity {
     metadata: Record<string, unknown>
   } | null
   swingSignalError?: string
+  metadata?: Record<string, unknown>
 }
 
 interface ScannerMetadata {
@@ -79,6 +102,9 @@ interface ScannerResponse {
 
 export const runtime = "nodejs"
 export const maxDuration = 300 // Increased to 5 minutes to accommodate historical analysis
+
+const FALLBACK_TIMEOUT_MS = 45_000
+const FALLBACK_DATA_PATH = path.join(process.cwd(), "configs", "fallback-scan.json")
 
 const normalizePercent = (value: unknown): number | null => {
   if (typeof value !== "number" || Number.isNaN(value)) {
@@ -142,6 +168,182 @@ const parseScannerJson = (stdout: string, stderr: string): ScannerResponse | nul
   return attemptParse(stdout) ?? attemptParse(`${stdout}\n${stderr}`)
 }
 
+interface SanitizedPayload {
+  opportunities: ScannerOpportunity[]
+  metadata: ScannerMetadata & Record<string, unknown>
+  timestamp: string
+  totalEvaluated: number
+}
+
+const sanitizeScannerResponse = (parsed: ScannerResponse): SanitizedPayload => {
+  const metadata: ScannerMetadata & Record<string, unknown> = {
+    ...(parsed.metadata ?? {}),
+  }
+
+  const rawOpportunities = Array.isArray(parsed.opportunities) ? parsed.opportunities : []
+  const opportunities: ScannerOpportunity[] = []
+  const fallbackCandidates: ScannerOpportunity[] = []
+
+  for (const opp of rawOpportunities) {
+    const probability = normalizePercent(opp.probabilityOfProfit)
+    if (probability !== null && probability <= 0) {
+      continue
+    }
+
+    const contract = {
+      option_type: opp.optionType as "call" | "put",
+      strike: opp.strike,
+      expiration: opp.expiration,
+      last_price: opp.premium / 100,
+      bid: opp.bid / 100,
+      ask: opp.ask / 100,
+      volume: opp.volume,
+      open_interest: opp.openInterest,
+      implied_volatility: opp.impliedVolatility,
+      stock_price: opp.stockPrice,
+    }
+
+    const greeks = ensureOptionGreeks(opp.greeks, contract)
+
+    const sanitized: ScannerOpportunity = {
+      ...opp,
+      probabilityOfProfit: normalizePercent(opp.probabilityOfProfit) ?? 0,
+      breakevenMovePercent: normalizePercent(opp.breakevenMovePercent) ?? 0,
+      potentialReturn: normalizePercent(opp.potentialReturn) ?? 0,
+      maxReturn: normalizePercent(opp.maxReturn) ?? 0,
+      returnsAnalysis: sanitizeReturns(opp.returnsAnalysis ?? []),
+      greeks,
+    }
+
+    const selectionMode = typeof sanitized.metadata?.selectionMode === "string"
+      ? sanitized.metadata.selectionMode
+      : null
+
+    if (selectionMode === "relaxed") {
+      fallbackCandidates.push(sanitized)
+    } else {
+      opportunities.push(sanitized)
+    }
+  }
+
+  const expectedValueKey = (item: ScannerOpportunity) => {
+    const prob = (typeof item.probabilityOfProfit === "number" ? item.probabilityOfProfit : 0) / 100
+    const expectedReturn = typeof item.expectedMoveReturn === "number" ? item.expectedMoveReturn : item.potentialReturn || 0
+    const scoreComponent = typeof item.score === "number" ? item.score * 0.1 : 0
+    return prob * expectedReturn + scoreComponent
+  }
+
+  opportunities.sort((a, b) => expectedValueKey(b) - expectedValueKey(a))
+
+  if (!opportunities.length && fallbackCandidates.length) {
+    console.warn(
+      `ℹ️  No opportunities met the strict filter – returning ${fallbackCandidates.length} relaxed candidates`,
+    )
+    fallbackCandidates.sort((a, b) => expectedValueKey(b) - expectedValueKey(a))
+    const maxRelaxed = 10
+    opportunities.push(...fallbackCandidates.slice(0, maxRelaxed))
+  }
+
+  const maxOpportunities = 20
+  if (opportunities.length > maxOpportunities) {
+    console.warn(`📊 Limiting output to top ${maxOpportunities} of ${opportunities.length} opportunities`)
+    opportunities.length = maxOpportunities
+  }
+
+  const timestamp = typeof metadata.fetchedAt === "string" ? metadata.fetchedAt : new Date().toISOString()
+  const totalEvaluated =
+    typeof parsed.totalEvaluated === "number" && Number.isFinite(parsed.totalEvaluated)
+      ? parsed.totalEvaluated
+      : typeof metadata.totalEvaluated === "number" && Number.isFinite(metadata.totalEvaluated)
+        ? metadata.totalEvaluated
+        : opportunities.length
+
+  return {
+    opportunities,
+    metadata,
+    timestamp,
+    totalEvaluated,
+  }
+}
+
+const buildSuccessResponse = (payload: SanitizedPayload) => {
+  const metadata = {
+    ...payload.metadata,
+  }
+  const source = typeof metadata.source === "string" ? metadata.source : "adapter"
+
+  return NextResponse.json({
+    success: true,
+    timestamp: payload.timestamp,
+    opportunities: payload.opportunities,
+    source,
+    totalEvaluated: payload.totalEvaluated,
+    metadata,
+  })
+}
+
+const loadFallbackResponse = async (): Promise<ScannerResponse | null> => {
+  try {
+    const contents = await readFile(FALLBACK_DATA_PATH, "utf-8")
+    const parsed = JSON.parse(contents) as ScannerResponse
+    if (!parsed || !Array.isArray(parsed.opportunities) || parsed.opportunities.length === 0) {
+      return null
+    }
+    return parsed
+  } catch (error) {
+    console.error("Failed to load fallback scan payload:", error)
+    return null
+  }
+}
+
+const buildFallbackResponse = async (reason: string, details?: string) => {
+  const fallback = await loadFallbackResponse()
+
+  if (!fallback) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Failed to execute scan",
+        details: details ? `${reason}: ${details}` : reason,
+      },
+      { status: 500 },
+    )
+  }
+
+  const payload = sanitizeScannerResponse(fallback)
+
+  if (!payload.opportunities.length) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Failed to execute scan",
+        details: "Fallback dataset is empty",
+      },
+      { status: 500 },
+    )
+  }
+
+  const metadata = {
+    ...payload.metadata,
+    source: typeof payload.metadata.source === "string" ? payload.metadata.source : "fallback",
+    fallback: true,
+    fallbackReason: reason,
+  }
+
+  if (details) {
+    metadata.fallbackDetails = details
+  }
+
+  return NextResponse.json({
+    success: true,
+    timestamp: payload.timestamp,
+    opportunities: payload.opportunities,
+    source: metadata.source,
+    totalEvaluated: payload.totalEvaluated,
+    metadata,
+  })
+}
+
 export async function GET() {
   try {
     // Execute Python script to scan for opportunities
@@ -150,11 +352,37 @@ export async function GET() {
 
     return await new Promise<NextResponse>((resolve) => {
       const python = spawn(pythonPath, ["-m", "src.scanner.service"], {
-        env: { ...process.env, PYTHONPATH: process.cwd() }
+        env: { ...process.env, PYTHONPATH: process.cwd() },
       })
 
       let stdoutBuffer = ""
       let stderrBuffer = ""
+      let settled = false
+
+      const settle = (response: NextResponse) => {
+        if (!settled) {
+          settled = true
+          clearTimeout(timeoutId)
+          resolve(response)
+        }
+      }
+
+      const fallbackAndSettle = async (reason: string, details?: string) => {
+        const response = await buildFallbackResponse(reason, details)
+        settle(response)
+      }
+
+      const timeoutId = setTimeout(() => {
+        console.warn(
+          `Python scan exceeded ${FALLBACK_TIMEOUT_MS / 1000} seconds. Terminating process and serving fallback results.`,
+        )
+        try {
+          python.kill("SIGKILL")
+        } catch (killError) {
+          console.error("Failed to terminate python process after timeout:", killError)
+        }
+        void fallbackAndSettle("timeout", `Scanner exceeded ${FALLBACK_TIMEOUT_MS / 1000} seconds`)
+      }, FALLBACK_TIMEOUT_MS)
 
       python.stdout.on("data", (data) => {
         stdoutBuffer += data.toString()
@@ -166,23 +394,13 @@ export async function GET() {
 
       python.on("error", (error) => {
         console.error("Failed to start python process:", error)
-        resolve(
-          NextResponse.json(
-            { success: false, error: "Failed to execute scan", details: error instanceof Error ? error.message : String(error) },
-            { status: 500 },
-          ),
-        )
+        void fallbackAndSettle("spawn_error", error instanceof Error ? error.message : String(error))
       })
 
       python.on("close", (code) => {
         if (code !== 0) {
           console.error("Python script error:", stderrBuffer)
-          resolve(
-            NextResponse.json(
-              { success: false, error: "Failed to scan options", details: stderrBuffer },
-              { status: 500 },
-            ),
-          )
+          void fallbackAndSettle("exit_non_zero", stderrBuffer || `Python exited with code ${code}`)
           return
         }
 
@@ -191,114 +409,32 @@ export async function GET() {
 
           if (!parsedOutput) {
             console.warn("Scanner produced no JSON payload", { stdout: stdoutBuffer, stderr: stderrBuffer })
-            resolve(
-              NextResponse.json({
-                success: true,
-                timestamp: new Date().toISOString(),
-                opportunities: [],
-                source: "adapter",
-                totalEvaluated: 0,
-              }),
-            )
+            void fallbackAndSettle("no_payload", "Python emitted no JSON payload")
             return
           }
 
-          const parsed = parsedOutput
-          const metadata = parsed.metadata ?? {}
-          const rawOpportunities = Array.isArray(parsed.opportunities) ? parsed.opportunities : []
+          const payload = sanitizeScannerResponse(parsedOutput)
 
-          const sanitized = rawOpportunities
-            .filter((opp) => {
-              const probability = normalizePercent(opp.probabilityOfProfit)
-              return probability === null || probability > 0
-            })
-            .map((opp) => {
-              const contract = {
-                option_type: opp.optionType as "call" | "put",
-                strike: opp.strike,
-                expiration: opp.expiration,
-                last_price: opp.premium / 100, // Convert from per-contract to per-share for calculations
-                bid: opp.bid / 100,             // Convert from per-contract to per-share for calculations
-                ask: opp.ask / 100,             // Convert from per-contract to per-share for calculations
-                volume: opp.volume,
-                open_interest: opp.openInterest,
-                implied_volatility: opp.impliedVolatility,
-                stock_price: opp.stockPrice,
-              }
+          if (!payload.opportunities.length) {
+            console.warn("Scanner returned zero qualifying opportunities. Serving fallback dataset.")
+            void fallbackAndSettle("no_python_results", "Python scan returned no qualifying opportunities")
+            return
+          }
 
-              const greeks = ensureOptionGreeks(opp.greeks, contract)
-
-              return {
-                ...opp,
-                probabilityOfProfit: normalizePercent(opp.probabilityOfProfit) ?? 0,
-                breakevenMovePercent: normalizePercent(opp.breakevenMovePercent) ?? 0,
-                potentialReturn: normalizePercent(opp.potentialReturn) ?? 0,
-                maxReturn: normalizePercent(opp.maxReturn) ?? 0,
-                returnsAnalysis: sanitizeReturns(opp.returnsAnalysis ?? []),
-                greeks,
-              }
-            })
-
-          sanitized.sort((a, b) => {
-            const scoreA = Number.isFinite(a.score) ? a.score : -Infinity
-            const scoreB = Number.isFinite(b.score) ? b.score : -Infinity
-            if (scoreA !== scoreB) {
-              return scoreB - scoreA
-            }
-
-            const riskA = Number.isFinite(a.riskRewardRatio ?? NaN) ? (a.riskRewardRatio as number) : -Infinity
-            const riskB = Number.isFinite(b.riskRewardRatio ?? NaN) ? (b.riskRewardRatio as number) : -Infinity
-            if (riskA !== riskB) {
-              return riskB - riskA
-            }
-
-            const probA = Number.isFinite(a.probabilityOfProfit) ? a.probabilityOfProfit : -Infinity
-            const probB = Number.isFinite(b.probabilityOfProfit) ? b.probabilityOfProfit : -Infinity
-            if (probA !== probB) {
-              return probB - probA
-            }
-
-            return (Number.isFinite(b.potentialReturn) ? b.potentialReturn : -Infinity) -
-              (Number.isFinite(a.potentialReturn) ? a.potentialReturn : -Infinity)
-          })
-
-          const timestamp = typeof metadata.fetchedAt === "string" ? metadata.fetchedAt : new Date().toISOString()
-          const totalEvaluated =
-            typeof parsed.totalEvaluated === "number" && Number.isFinite(parsed.totalEvaluated)
-              ? parsed.totalEvaluated
-              : typeof metadata.totalEvaluated === "number" && Number.isFinite(metadata.totalEvaluated)
-                ? metadata.totalEvaluated
-                : sanitized.length
-
-          resolve(
-            NextResponse.json({
-              success: true,
-              timestamp,
-              opportunities: sanitized,
-              source: metadata.source ?? "adapter",
-              totalEvaluated,
-              metadata,
-            }),
-          )
+          settle(buildSuccessResponse(payload))
         } catch (error) {
           console.error("Error parsing Python output:", error)
           console.error("Raw stdout:", stdoutBuffer)
           console.error("Raw stderr:", stderrBuffer)
-          resolve(
-            NextResponse.json(
-              {
-                success: false,
-                error: "Failed to parse scan results",
-                details: error instanceof Error ? error.message : String(error),
-              },
-              { status: 500 },
-            ),
-          )
+          void fallbackAndSettle("parse_error", error instanceof Error ? error.message : String(error))
         }
       })
     })
   } catch (error) {
     console.error("Error executing Python script:", error)
-    return NextResponse.json({ success: false, error: "Failed to execute scan" }, { status: 500 })
+    return await buildFallbackResponse(
+      "handler_failure",
+      error instanceof Error ? error.message : String(error),
+    )
   }
 }
