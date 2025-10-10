@@ -10,9 +10,23 @@ import time
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 import sys
 import math
+from pathlib import Path
+
+# Ensure project root is on path for signal imports
+ROOT_DIR = Path(__file__).resolve().parents[1]
+if str(ROOT_DIR) not in sys.path:
+    sys.path.append(str(ROOT_DIR))
+
+from src.signals import (  # type: ignore
+    SignalAggregator,
+    OptionsSkewAnalyzer,
+    SmartMoneyFlowDetector,
+    RegimeDetector,
+    VolumeProfileAnalyzer,
+)
 
 class CryptoScanner:
     def __init__(self):
@@ -38,7 +52,29 @@ class CryptoScanner:
             'shiba-inu', 'pepe', 'floki', 'bonk', 'bittensor', 'injective',
             'sei-network', 'sui', 'aptos', 'arbitrum', 'optimism', 'mantle'
         ]
-        
+
+        # Directional signal framework reused from equities
+        self.signal_aggregator = SignalAggregator([
+            OptionsSkewAnalyzer(weight=0.30),
+            SmartMoneyFlowDetector(weight=0.30),
+            RegimeDetector(weight=0.20),
+            VolumeProfileAnalyzer(weight=0.20),
+        ])
+
+        # Empty options frame placeholder for non-derivative assets
+        self._empty_options_frame = pd.DataFrame(
+            columns=[
+                'type',
+                'strike',
+                'impliedVolatility',
+                'volume',
+                'openInterest',
+                'bid',
+                'ask',
+                'lastPrice',
+            ]
+        )
+
     def get_crypto_data(self, coin_id: str) -> Optional[Dict]:
         """Fetch comprehensive crypto data for a coin"""
         try:
@@ -64,7 +100,9 @@ class CryptoScanner:
             print(f"Error fetching data for {coin_id}: {e}")
             return None
     
-    def get_price_history(self, coin_id: str, days: int = 30) -> Optional[List]:
+    def get_price_history(
+        self, coin_id: str, days: int = 30, *, return_raw: bool = False
+    ) -> Optional[Union[List, Dict]]:
         """Get price history for technical analysis"""
         try:
             url = f"{self.base_url}/coins/{coin_id}/market_chart"
@@ -77,11 +115,104 @@ class CryptoScanner:
             response = self.session.get(url, params=params, timeout=10)
             if response.status_code == 200:
                 data = response.json()
+                if return_raw:
+                    return data
                 return data.get('prices', [])
             return None
-            
+
         except Exception as e:
             print(f"Error fetching price history for {coin_id}: {e}")
+            return None
+
+    def _build_price_history_dataframe(self, market_chart: Optional[Dict]) -> pd.DataFrame:
+        """Convert CoinGecko market chart data into OHLCV DataFrame."""
+        if not market_chart:
+            return pd.DataFrame()
+
+        prices = market_chart.get('prices', []) if isinstance(market_chart, dict) else []
+        if not prices:
+            return pd.DataFrame()
+
+        df = pd.DataFrame(prices, columns=['timestamp', 'close'])
+        df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
+        df['close'] = pd.to_numeric(df['close'], errors='coerce')
+        df = df.dropna(subset=['close']).sort_values('timestamp').reset_index(drop=True)
+
+        volumes = market_chart.get('total_volumes', []) if isinstance(market_chart, dict) else []
+        if volumes:
+            volume_df = pd.DataFrame(volumes, columns=['timestamp', 'volume'])
+            volume_df['timestamp'] = pd.to_datetime(volume_df['timestamp'], unit='ms')
+            df = df.merge(volume_df, on='timestamp', how='left')
+        else:
+            df['volume'] = np.nan
+
+        df['volume'] = df['volume'].fillna(method='ffill').fillna(method='bfill').fillna(0.0)
+        df['open'] = df['close'].shift(1).fillna(df['close'])
+        df['high'] = df[['open', 'close']].max(axis=1)
+        df['low'] = df[['open', 'close']].min(axis=1)
+
+        return df[['timestamp', 'open', 'high', 'low', 'close', 'volume']]
+
+    def get_price_history_with_dataframe(
+        self, coin_id: str, days: int = 30
+    ) -> Tuple[List, pd.DataFrame]:
+        """Fetch raw price history list alongside OHLCV DataFrame."""
+        raw_data = self.get_price_history(coin_id, days=days, return_raw=True)
+        if not raw_data:
+            return [], pd.DataFrame()
+
+        price_history = raw_data.get('prices', []) if isinstance(raw_data, dict) else []
+        price_history_df = self._build_price_history_dataframe(raw_data if isinstance(raw_data, dict) else None)
+        return price_history, price_history_df
+
+    def calculate_directional_bias(
+        self, coin_id: str, coin_data: Dict, price_history_df: pd.DataFrame
+    ) -> Optional[Dict]:
+        """Apply directional influencer framework to crypto assets."""
+
+        try:
+            market_data = coin_data.get('market_data', {})
+            current_price = market_data.get('current_price', {}).get('usd', 0)
+
+            if current_price is None or current_price <= 0 or price_history_df.empty:
+                return None
+
+            df = price_history_df.copy()
+            df = df.dropna(subset=['close'])
+            if df.empty or len(df) < 20:
+                return None
+
+            price_change = market_data.get('price_change_percentage_24h', 0) or 0
+            if len(df) >= 2:
+                prev_close = df['close'].iloc[-2]
+                if prev_close:
+                    price_change = ((df['close'].iloc[-1] - prev_close) / prev_close) * 100
+
+            signal_data = {
+                'options_chain': self._empty_options_frame.copy(),
+                'options_data': self._empty_options_frame.copy(),
+                'stock_price': current_price,
+                'atm_iv': 0.0,
+                'historical_volume': {},
+                'price_change': price_change,
+                'price_history': df[['open', 'high', 'low', 'close', 'volume']].copy(),
+            }
+
+            symbol = coin_data.get('symbol', coin_id).upper()
+            directional_score = self.signal_aggregator.aggregate(symbol, signal_data)
+            breakdown = self.signal_aggregator.get_signal_breakdown(directional_score)
+
+            return {
+                'direction': directional_score.direction.value,
+                'confidence': round(directional_score.confidence, 2),
+                'score': round(directional_score.score, 2),
+                'recommendation': directional_score.recommendation,
+                'signals': breakdown['signals'],
+                'timestamp': directional_score.timestamp.isoformat(),
+            }
+
+        except Exception as e:
+            print(f"Error calculating directional bias for {coin_id}: {e}")
             return None
     
     def analyze_volume_patterns(self, market_data: Dict) -> Dict:
@@ -382,14 +513,15 @@ class CryptoScanner:
                     break
                 continue
             
-            # Get price history
-            price_history = self.get_price_history(coin_id, days=30)
-            
+            # Get price history (list + OHLCV DataFrame)
+            price_history, price_history_df = self.get_price_history_with_dataframe(coin_id, days=90)
+
             # Analyze different aspects
             volume_analysis = self.analyze_volume_patterns(coin_data)
             technical_analysis = self.analyze_technical_indicators(price_history)
             fundamentals_analysis = self.analyze_fundamentals(coin_data)
             sentiment_analysis = self.analyze_market_sentiment(coin_data)
+            directional_bias = self.calculate_directional_bias(coin_id, coin_data, price_history_df)
             
             # Calculate total score
             total_score = (
@@ -431,9 +563,12 @@ class CryptoScanner:
                     'price_change_7d': technical_analysis.get('price_change_7d', 0),
                     'volatility': technical_analysis.get('volatility', 0),
                     'supply_ratio': fundamentals_analysis['supply_ratio'],
-                    'ath_percentage': sentiment_analysis['ath_percentage']
+                    'ath_percentage': sentiment_analysis['ath_percentage'],
                 }
-                
+
+                if directional_bias:
+                    opportunity['directional_bias'] = directional_bias
+
                 opportunities.append(opportunity)
         
         # No sample data - only real market opportunities
@@ -971,8 +1106,9 @@ class CryptoScanner:
             if not coin_data:
                 continue
             
-            price_history = self.get_price_history(opp['coin_id'], days=30)
+            price_history, price_history_df = self.get_price_history_with_dataframe(opp['coin_id'], days=90)
             signals = self.calculate_trading_signals(coin_data, price_history)
+            directional_bias = self.calculate_directional_bias(opp['coin_id'], coin_data, price_history_df)
             
             # Only create alerts for actionable signals
             if signals['action'] != 'HOLD' and signals['confidence'] > 60:
@@ -993,7 +1129,10 @@ class CryptoScanner:
                     'urgency': self._calculate_urgency(signals, opp),
                     'timestamp': datetime.now().isoformat()
                 }
-                
+
+                if directional_bias:
+                    alert['directional_bias'] = directional_bias
+
                 alerts.append(alert)
         
         # Sort by urgency and confidence
