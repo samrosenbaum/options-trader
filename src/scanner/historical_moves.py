@@ -14,6 +14,7 @@ from typing import Dict, List, Optional, Tuple
 
 import pandas as pd
 import yfinance as yf
+from scipy.stats import beta
 
 
 @dataclass(slots=True)
@@ -24,26 +25,47 @@ class HistoricalMoveStats:
     target_move_pct: float
     timeframe_days: int
     occurrences: int
+    close_occurrences: int
     total_periods: int
     empirical_probability: float
+    close_probability: float
+    touch_confidence_interval: Tuple[float, float]
+    close_confidence_interval: Tuple[float, float]
     last_occurrence: Optional[datetime]
+    last_close_occurrence: Optional[datetime]
     avg_days_to_target: Optional[float]
     data_start_date: datetime
     data_end_date: datetime
+    quality_score: float
+    quality_label: str
 
     def to_dict(self) -> Dict[str, any]:
         """Convert to dictionary for JSON serialization."""
+
+        def _round_interval(interval: Tuple[float, float]) -> Dict[str, float]:
+            return {
+                "lower": round(interval[0], 2),
+                "upper": round(interval[1], 2),
+            }
+
         return {
             "symbol": self.symbol,
             "targetMovePct": self.target_move_pct,
             "timeframeDays": self.timeframe_days,
             "occurrences": self.occurrences,
+            "closeOccurrences": self.close_occurrences,
             "totalPeriods": self.total_periods,
             "empiricalProbability": round(self.empirical_probability, 2),
+            "closeProbability": round(self.close_probability, 2),
+            "touchConfidenceInterval": _round_interval(self.touch_confidence_interval),
+            "closeConfidenceInterval": _round_interval(self.close_confidence_interval),
             "lastOccurrence": self.last_occurrence.isoformat() if self.last_occurrence else None,
+            "lastCloseOccurrence": self.last_close_occurrence.isoformat() if self.last_close_occurrence else None,
             "avgDaysToTarget": round(self.avg_days_to_target, 2) if self.avg_days_to_target else None,
             "dataStartDate": self.data_start_date.isoformat(),
             "dataEndDate": self.data_end_date.isoformat(),
+            "qualityScore": round(self.quality_score, 1),
+            "qualityLabel": self.quality_label,
         }
 
 
@@ -231,13 +253,15 @@ class HistoricalMoveAnalyzer:
         dates = df.index.to_pydatetime()
 
         occurrences = 0
+        close_occurrences = 0
         occurrence_dates: List[datetime] = []
+        close_occurrence_dates: List[datetime] = []
         days_to_target: List[float] = []
 
         # For each day, check if target move occurred within timeframe
         for i in range(len(closes) - timeframe_days):
             start_price = closes[i]
-            future_prices = closes[i+1:i+1+timeframe_days]
+            future_prices = closes[i + 1 : i + 1 + timeframe_days]
 
             # Check each day in the window
             for days_ahead, future_price in enumerate(future_prices, start=1):
@@ -252,27 +276,81 @@ class HistoricalMoveAnalyzer:
 
                 if target_achieved:
                     occurrences += 1
-                    occurrence_dates.append(dates[i])
+                    occurrence_dates.append(dates[i + days_ahead])
                     days_to_target.append(days_ahead)
                     break  # Count once per rolling window
 
+            closing_price = closes[i + timeframe_days]
+            closing_move_pct = ((closing_price - start_price) / start_price) * 100
+            finish_hit = False
+            if direction == "up" and closing_move_pct >= target_move_pct:
+                finish_hit = True
+            elif direction == "down" and closing_move_pct <= -target_move_pct:
+                finish_hit = True
+
+            if finish_hit:
+                close_occurrences += 1
+                close_occurrence_dates.append(dates[i + timeframe_days])
+
         total_periods = len(closes) - timeframe_days
-        empirical_probability = (occurrences / total_periods * 100) if total_periods > 0 else 0.0
+        if total_periods <= 0:
+            return None
+
+        prior_alpha = 0.5  # Jeffreys prior for binomial proportion
+        prior_beta = 0.5
+
+        touch_posterior_alpha = occurrences + prior_alpha
+        touch_posterior_beta = (total_periods - occurrences) + prior_beta
+        close_posterior_alpha = close_occurrences + prior_alpha
+        close_posterior_beta = (total_periods - close_occurrences) + prior_beta
+
+        empirical_probability = (touch_posterior_alpha / (touch_posterior_alpha + touch_posterior_beta)) * 100
+        close_probability = (close_posterior_alpha / (close_posterior_alpha + close_posterior_beta)) * 100
+
+        touch_ci = (
+            beta.ppf(0.05, touch_posterior_alpha, touch_posterior_beta) * 100,
+            beta.ppf(0.95, touch_posterior_alpha, touch_posterior_beta) * 100,
+        )
+        close_ci = (
+            beta.ppf(0.05, close_posterior_alpha, close_posterior_beta) * 100,
+            beta.ppf(0.95, close_posterior_alpha, close_posterior_beta) * 100,
+        )
 
         last_occurrence = max(occurrence_dates) if occurrence_dates else None
+        last_close_occurrence = max(close_occurrence_dates) if close_occurrence_dates else None
         avg_days = sum(days_to_target) / len(days_to_target) if days_to_target else None
+
+        # Data quality weighting considers sample size and recency of data
+        sample_factor = min(total_periods / 200, 1.0)
+        recency_days = max((datetime.now() - dates[-1]).days, 0)
+        recency_factor = max(0.0, 1 - (recency_days / 120))
+        quality_score = (sample_factor * 0.6 + recency_factor * 0.4) * 100
+
+        if total_periods < 40 or recency_days > 180:
+            quality_label = "low"
+        elif quality_score >= 70 and total_periods >= 120:
+            quality_label = "high"
+        else:
+            quality_label = "medium"
 
         return HistoricalMoveStats(
             symbol=symbol,
             target_move_pct=abs(target_move_pct),
             timeframe_days=timeframe_days,
             occurrences=occurrences,
+            close_occurrences=close_occurrences,
             total_periods=total_periods,
             empirical_probability=empirical_probability,
+            close_probability=close_probability,
+            touch_confidence_interval=touch_ci,
+            close_confidence_interval=close_ci,
             last_occurrence=last_occurrence,
+            last_close_occurrence=last_close_occurrence,
             avg_days_to_target=avg_days,
             data_start_date=dates[0],
             data_end_date=dates[-1],
+            quality_score=quality_score,
+            quality_label=quality_label,
         )
 
     def get_move_context(
@@ -295,54 +373,98 @@ class HistoricalMoveAnalyzer:
             }
 
         # Build human-readable analysis
-        analysis_parts = []
+        analysis_parts: List[str] = []
 
-        # Frequency
-        if stats.occurrences == 0:
-            freq_text = f"No {abs(target_move_pct):.1f}% moves in past {self.lookback_days} days"
-        elif stats.occurrences == 1:
-            freq_text = f"Only happened once in past {self.lookback_days} days"
+        touch_sentence = (
+            f"Touched the {abs(target_move_pct):.1f}% breakeven move within {stats.timeframe_days}d in "
+            f"{stats.empirical_probability:.1f}% of {stats.total_periods} similar periods "
+            f"(95% CI {stats.touch_confidence_interval[0]:.1f}-{stats.touch_confidence_interval[1]:.1f}%)"
+        )
+        analysis_parts.append(touch_sentence)
+
+        if stats.close_occurrences:
+            finish_sentence = (
+                f"Closed beyond breakeven by expiration in {stats.close_probability:.1f}% of periods "
+                f"(95% CI {stats.close_confidence_interval[0]:.1f}-{stats.close_confidence_interval[1]:.1f}%)"
+            )
         else:
-            # Convert to monthly frequency
-            months = self.lookback_days / 30
-            per_month = stats.occurrences / months
-            freq_text = f"Happens ~{per_month:.1f}x per month ({stats.occurrences} times in {self.lookback_days} days)"
+            finish_sentence = (
+                "No historical periods closed beyond breakeven by expiration; use touch probability for exit planning"
+            )
+        analysis_parts.append(finish_sentence)
 
-        analysis_parts.append(freq_text)
-
-        # Last occurrence
+        # Last occurrence details (touch)
         if stats.last_occurrence:
-            # Make both timezone-naive for comparison
             now = datetime.now()
             last_occ = stats.last_occurrence.replace(tzinfo=None) if stats.last_occurrence.tzinfo else stats.last_occurrence
             days_ago = (now - last_occ).days
             if days_ago == 0:
-                recency_text = "Last occurred today"
+                recency_text = "Last touch occurred today"
             elif days_ago == 1:
-                recency_text = "Last occurred yesterday"
+                recency_text = "Last touch occurred yesterday"
             elif days_ago < 7:
-                recency_text = f"Last occurred {days_ago} days ago"
+                recency_text = f"Last touch occurred {days_ago} days ago"
             elif days_ago < 30:
                 weeks_ago = days_ago // 7
-                recency_text = f"Last occurred {weeks_ago} week{'s' if weeks_ago > 1 else ''} ago"
+                recency_text = f"Last touch occurred {weeks_ago} week{'s' if weeks_ago > 1 else ''} ago"
             else:
                 months_ago = days_ago // 30
-                recency_text = f"Last occurred {months_ago} month{'s' if months_ago > 1 else ''} ago"
-
+                recency_text = f"Last touch occurred {months_ago} month{'s' if months_ago > 1 else ''} ago"
             analysis_parts.append(recency_text)
 
-        # Average time to target
+        if stats.last_close_occurrence and stats.last_close_occurrence != stats.last_occurrence:
+            now = datetime.now()
+            last_close = (
+                stats.last_close_occurrence.replace(tzinfo=None)
+                if stats.last_close_occurrence.tzinfo
+                else stats.last_close_occurrence
+            )
+            days_ago_close = (now - last_close).days
+            if days_ago_close == 0:
+                analysis_parts.append("Last full expiration win occurred today")
+            elif days_ago_close == 1:
+                analysis_parts.append("Last full expiration win occurred yesterday")
+            elif days_ago_close < 7:
+                analysis_parts.append(f"Last full expiration win occurred {days_ago_close} days ago")
+            elif days_ago_close < 30:
+                weeks_ago_close = days_ago_close // 7
+                analysis_parts.append(
+                    f"Last full expiration win occurred {weeks_ago_close} week{'s' if weeks_ago_close > 1 else ''} ago"
+                )
+            else:
+                months_ago_close = days_ago_close // 30
+                analysis_parts.append(
+                    f"Last full expiration win occurred {months_ago_close} month{'s' if months_ago_close > 1 else ''} ago"
+                )
+
+        # Average time to target (touch probability)
         if stats.avg_days_to_target:
-            avg_text = f"Average {stats.avg_days_to_target:.1f} days to reach target"
-            analysis_parts.append(avg_text)
+            analysis_parts.append(f"Average {stats.avg_days_to_target:.1f} days to first touch")
+
+        if stats.quality_label == "low":
+            analysis_parts.append("Warning: limited or stale sample – treat estimates cautiously")
 
         return {
             "available": True,
             "empiricalProbability": stats.empirical_probability,
+            "touchProbability": stats.empirical_probability,
+            "finishProbability": stats.close_probability,
+            "touchConfidence": {
+                "lower": stats.touch_confidence_interval[0],
+                "upper": stats.touch_confidence_interval[1],
+            },
+            "finishConfidence": {
+                "lower": stats.close_confidence_interval[0],
+                "upper": stats.close_confidence_interval[1],
+            },
             "occurrences": stats.occurrences,
+            "closeOccurrences": stats.close_occurrences,
             "totalPeriods": stats.total_periods,
             "lastOccurrence": stats.last_occurrence.isoformat() if stats.last_occurrence else None,
+            "lastCloseOccurrence": stats.last_close_occurrence.isoformat() if stats.last_close_occurrence else None,
             "avgDaysToTarget": stats.avg_days_to_target,
+            "qualityScore": stats.quality_score,
+            "qualityLabel": stats.quality_label,
             "analysis": ". ".join(analysis_parts) + ".",
             "raw": stats.to_dict(),
         }

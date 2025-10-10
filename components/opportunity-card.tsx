@@ -767,6 +767,46 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
   const maxLossPercentLabel = safeToFixed(opportunity.maxLossPercent, 1)
   const maxLossWarning = `Maximum loss: ${formatCurrency(opportunity.maxLossAmount)}${maxLossPercentLabel ? ` (${maxLossPercentLabel}% of investment)` : ''}. Options can expire worthless, and you could lose your entire investment.`
 
+  const historical = opportunity.historicalContext
+  const touchProbabilitySource = historical?.touchProbability
+  const fallbackTouchProbability = historical?.empiricalProbability
+  const touchProbability = isFiniteNumber(touchProbabilitySource)
+    ? touchProbabilitySource
+    : isFiniteNumber(fallbackTouchProbability)
+      ? fallbackTouchProbability
+      : null
+  const finishProbabilitySource = historical?.finishProbability
+  const finishProbability = isFiniteNumber(finishProbabilitySource) ? finishProbabilitySource : null
+  const comparisonProbability = isFiniteNumber(finishProbability)
+    ? finishProbability
+    : touchProbability
+  const formatConfidenceRange = (range?: { lower: number; upper: number } | null) => {
+    if (!range || !isFiniteNumber(range.lower) || !isFiniteNumber(range.upper)) {
+      return null
+    }
+
+    return `${range.lower.toFixed(0)}-${range.upper.toFixed(0)}%`
+  }
+
+  const touchConfidenceText = formatConfidenceRange(historical?.touchConfidence ?? historical?.raw?.touchConfidenceInterval)
+  const finishConfidenceText = formatConfidenceRange(
+    historical?.finishConfidence ?? historical?.raw?.closeConfidenceInterval,
+  )
+  const sampleSize =
+    typeof historical?.totalPeriods === 'number'
+      ? historical.totalPeriods
+      : typeof historical?.raw?.totalPeriods === 'number'
+        ? historical.raw.totalPeriods
+        : null
+  const qualityScore =
+    typeof historical?.qualityScore === 'number'
+      ? historical.qualityScore
+      : typeof historical?.raw?.qualityScore === 'number'
+        ? historical.raw.qualityScore
+        : null
+  const qualityLabel = historical?.qualityLabel ?? historical?.raw?.qualityLabel ?? null
+  const comparisonSourceLabel = finishProbability !== null ? 'finish odds' : 'touch odds'
+
   return (
     <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 hover:shadow-lg transition-all">
       {/* Header - Always Visible */}
@@ -836,7 +876,7 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
       ) : null}
 
       {/* Historical Move Analysis - Always Visible (MOST VALUABLE!) */}
-      {opportunity.historicalContext?.available && (
+      {historical?.available && (
         <div className="mb-5 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-2 border-blue-300 dark:border-blue-700 rounded-2xl p-5 shadow-lg">
           <div className="flex items-start gap-3 mb-4">
             <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -846,13 +886,15 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
             </div>
             <div className="flex-1">
               <h5 className="text-lg font-bold text-blue-900 dark:text-blue-100 mb-2">📊 Historical Probability Check</h5>
-              <p className="text-base text-blue-800 dark:text-blue-200 leading-relaxed font-medium">
-                {opportunity.historicalContext.analysis}
-              </p>
+              {historical.analysis ? (
+                <p className="text-base text-blue-800 dark:text-blue-200 leading-relaxed font-medium">
+                  {historical.analysis}
+                </p>
+              ) : null}
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-white/70 dark:bg-slate-900/50 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
               <div className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1 uppercase tracking-wide">Market Expects</div>
               <div className="text-3xl font-bold text-slate-900 dark:text-white">
@@ -862,34 +904,68 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
             </div>
 
             <div className="bg-white/70 dark:bg-slate-900/50 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
-              <div className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1 uppercase tracking-wide">History Shows</div>
+              <div className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1 uppercase tracking-wide">History Touches</div>
               <div className="text-3xl font-bold text-slate-900 dark:text-white">
-                {opportunity.historicalContext.empiricalProbability?.toFixed(0) || '—'}%
+                {touchProbability !== null ? touchProbability.toFixed(0) : '—'}%
               </div>
-              <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">Actual past year data</div>
+              <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                Breakeven tagged before expiry
+              </div>
+              {touchConfidenceText && (
+                <div className="text-xs text-slate-500 dark:text-slate-400 mt-2">95% CI {touchConfidenceText}</div>
+              )}
+            </div>
+
+            <div className="bg-white/70 dark:bg-slate-900/50 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
+              <div className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1 uppercase tracking-wide">History Finishes</div>
+              <div className="text-3xl font-bold text-slate-900 dark:text-white">
+                {finishProbability !== null ? finishProbability.toFixed(0) : '—'}%
+              </div>
+              <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                Closed beyond breakeven by expiry
+              </div>
+              {finishConfidenceText && (
+                <div className="text-xs text-slate-500 dark:text-slate-400 mt-2">95% CI {finishConfidenceText}</div>
+              )}
             </div>
           </div>
 
-          {opportunity.historicalContext.empiricalProbability && opportunity.probabilityOfProfit && (
+          {(sampleSize !== null || qualityLabel || qualityScore !== null) && (
+            <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300">
+              {sampleSize !== null && (
+                <span className="px-3 py-1 bg-white/60 dark:bg-slate-900/40 border border-blue-200 dark:border-blue-800 rounded-lg">
+                  Sample Size: {sampleSize.toLocaleString()} periods
+                </span>
+              )}
+              {qualityLabel && (
+                <span className="px-3 py-1 bg-white/60 dark:bg-slate-900/40 border border-blue-200 dark:border-blue-800 rounded-lg">
+                  Data Quality: {qualityLabel.toUpperCase()}
+                  {qualityScore !== null ? ` (${qualityScore.toFixed(0)})` : ''}
+                </span>
+              )}
+            </div>
+          )}
+
+          {comparisonProbability !== null && opportunity.probabilityOfProfit !== null && (
             <div className="mt-4 p-3 bg-white/70 dark:bg-slate-900/50 rounded-xl border border-blue-200 dark:border-blue-800">
-              {opportunity.historicalContext.empiricalProbability > opportunity.probabilityOfProfit + 10 ? (
+              {comparisonProbability > opportunity.probabilityOfProfit + 10 ? (
                 <div className="flex items-center gap-2">
                   <span className="text-lg font-bold text-green-600 dark:text-green-400">✓ Potentially Underpriced</span>
                   <span className="text-sm text-slate-700 dark:text-slate-300">
-                    — Historical odds {(opportunity.historicalContext.empiricalProbability - opportunity.probabilityOfProfit).toFixed(0)}% better than market pricing!
+                    — Historical {comparisonSourceLabel} {(comparisonProbability - opportunity.probabilityOfProfit).toFixed(0)}% better than market pricing!
                   </span>
                 </div>
-              ) : opportunity.historicalContext.empiricalProbability < opportunity.probabilityOfProfit - 10 ? (
+              ) : comparisonProbability < opportunity.probabilityOfProfit - 10 ? (
                 <div className="flex items-center gap-2">
                   <span className="text-lg font-bold text-amber-600 dark:text-amber-400">⚠ Potentially Overpriced</span>
                   <span className="text-sm text-slate-700 dark:text-slate-300">
-                    — Market pricing {(opportunity.probabilityOfProfit - opportunity.historicalContext.empiricalProbability).toFixed(0)}% higher than historical frequency
+                    — Market pricing {(opportunity.probabilityOfProfit - comparisonProbability).toFixed(0)}% higher than historical {comparisonSourceLabel}
                   </span>
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
                   <span className="text-lg font-bold text-blue-600 dark:text-blue-400">↔️ Well Calibrated</span>
-                  <span className="text-sm text-slate-700 dark:text-slate-300">— Market pricing aligns with historical data</span>
+                  <span className="text-sm text-slate-700 dark:text-slate-300">— Market pricing aligns with historical {comparisonSourceLabel}</span>
                 </div>
               )}
             </div>
