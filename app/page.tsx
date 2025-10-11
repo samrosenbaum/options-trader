@@ -183,7 +183,9 @@ const DEFAULT_FETCH_TIMEOUT_MS = 45_000
 
 async function fetchWithTimeout(input: RequestInfo | URL, init?: RequestInit, timeoutMs = DEFAULT_FETCH_TIMEOUT_MS) {
   const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
+  const timeoutId = setTimeout(() => {
+    controller.abort(new DOMException('Request timed out', 'TimeoutError'))
+  }, timeoutMs)
 
   const { signal: externalSignal, ...rest } = init ?? {}
 
@@ -201,6 +203,15 @@ async function fetchWithTimeout(input: RequestInfo | URL, init?: RequestInit, ti
 
   try {
     return await fetch(input, { ...rest, signal: controller.signal })
+  } catch (error) {
+    if (controller.signal.aborted && error === controller.signal.reason) {
+      const timeoutError =
+        error instanceof DOMException && error.name === 'TimeoutError'
+          ? error
+          : new DOMException('Request timed out', 'TimeoutError')
+      throw timeoutError
+    }
+    throw error
   } finally {
     clearTimeout(timeoutId)
   }
