@@ -92,6 +92,9 @@ interface ScannerMetadata {
   symbolLimit?: number
   opportunityCount?: number
   symbols?: string[]
+  fallback?: boolean
+  fallbackReason?: string
+  fallbackDetails?: string
 }
 
 interface ScannerResponse {
@@ -328,10 +331,7 @@ const buildFallbackResponse = async (reason: string, details?: string) => {
     source: typeof payload.metadata.source === "string" ? payload.metadata.source : "fallback",
     fallback: true,
     fallbackReason: reason,
-  }
-
-  if (details) {
-    metadata.fallbackDetails = details
+    ...(details ? { fallbackDetails: details } : {}),
   }
 
   return NextResponse.json({
