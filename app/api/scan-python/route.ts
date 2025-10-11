@@ -344,8 +344,27 @@ const buildFallbackResponse = async (reason: string, details?: string) => {
   })
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const url = new URL(request.url)
+    const fallbackParam = url.searchParams.get("fallback") ?? url.searchParams.get("mode")
+    const normalizedFallback = fallbackParam?.toLowerCase()
+    const fallbackOnly =
+      normalizedFallback === "1" ||
+      normalizedFallback === "true" ||
+      normalizedFallback === "yes" ||
+      normalizedFallback === "only" ||
+      normalizedFallback === "fallback"
+
+    if (fallbackOnly) {
+      const reasonParam = url.searchParams.get("reason")
+      const detailsParam = url.searchParams.get("details")
+      return await buildFallbackResponse(
+        reasonParam && reasonParam.trim().length > 0 ? reasonParam : "client_requested",
+        detailsParam && detailsParam.trim().length > 0 ? detailsParam : "Client requested fallback dataset",
+      )
+    }
+
     // Execute Python script to scan for opportunities
     const { spawn } = await import("child_process")
     const pythonPath = await resolvePythonExecutable()
