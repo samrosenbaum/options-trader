@@ -415,6 +415,7 @@ export default function HomePage() {
   const [lastSuccessfulUpdate, setLastSuccessfulUpdate] = useState<Date | null>(null)
   const [investmentAmount, setInvestmentAmount] = useState(1000)
   const [activeTab, setActiveTab] = useState<'options' | 'crypto'>('options')
+  const [useEnhancedScanner, setUseEnhancedScanner] = useState(false)
   const [cryptoAlerts, setCryptoAlerts] = useState<CryptoAlert[]>([])
   const [cryptoLoading, setCryptoLoading] = useState(false)
   const [sortOption, setSortOption] = useState<OpportunitySortOption>('promising')
@@ -536,7 +537,9 @@ export default function HomePage() {
     try {
       setIsLoading(true)
 
-      const response = await fetchWithTimeout('/api/scan-python')
+      // Use enhanced scanner endpoint if toggle is enabled
+      const endpoint = useEnhancedScanner ? '/api/scan-enhanced' : '/api/scan-python'
+      const response = await fetchWithTimeout(endpoint)
 
       if (!response.ok) {
         console.error('Scan request failed with status', response.status)
@@ -583,7 +586,7 @@ export default function HomePage() {
     } finally {
       setIsLoading(false)
     }
-  }, [attemptFallbackFetch, handleScanPayload, opportunities])
+  }, [attemptFallbackFetch, handleScanPayload, opportunities, useEnhancedScanner])
 
   const fetchCryptoAlerts = useCallback(async () => {
     try {
@@ -1469,6 +1472,35 @@ export default function HomePage() {
                 </button>
               </div>
 
+              {/* Enhanced Scanner Toggle (only for options) */}
+              {activeTab === 'options' && (
+                <div className="flex items-center gap-2 bg-zinc-900 px-3 py-2 rounded-lg border border-zinc-800">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={useEnhancedScanner}
+                      onChange={(e) => setUseEnhancedScanner(e.target.checked)}
+                      className="sr-only"
+                    />
+                    <div className={`w-9 h-5 rounded-full transition-colors ${
+                      useEnhancedScanner ? 'bg-emerald-500' : 'bg-zinc-700'
+                    }`}>
+                      <div className={`w-4 h-4 bg-white rounded-full shadow-md transform transition-transform ${
+                        useEnhancedScanner ? 'translate-x-4' : 'translate-x-0.5'
+                      } mt-0.5`}></div>
+                    </div>
+                    <span className="text-sm font-medium text-zinc-300">
+                      Institutional
+                      {useEnhancedScanner && (
+                        <span className="ml-1 px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-xs rounded-full font-bold">
+                          PRO
+                        </span>
+                      )}
+                    </span>
+                  </label>
+                </div>
+              )}
+
               <div className="flex items-center gap-2 bg-zinc-900 px-4 py-2.5 rounded-lg border border-zinc-800">
                 <span className="text-sm font-semibold text-emerald-500">$</span>
                 <input
@@ -2156,320 +2188,4 @@ export default function HomePage() {
 
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       <div className="text-center">
-                        <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Delta</div>
-                        <div className="text-sm font-semibold text-slate-900 dark:text-white">{opp.greeks.delta.toFixed(3)}</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Gamma</div>
-                        <div className="text-sm font-semibold text-slate-900 dark:text-white">{opp.greeks.gamma.toFixed(3)}</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Theta</div>
-                        <div className="text-sm font-semibold text-slate-900 dark:text-white">{opp.greeks.theta.toFixed(3)}</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Vega</div>
-                        <div className="text-sm font-semibold text-slate-900 dark:text-white">{opp.greeks.vega.toFixed(3)}</div>
-                      </div>
-                    </div>
-                      <div className="space-y-2">
-                      {getGreeksExplanation(opp).map((explanation, index) => (
-                        <p key={index} className="text-xs text-slate-600 dark:text-slate-400">
-                          {explanation}
-                        </p>
-                      ))}
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
-
-            </div>
-          </div>
-        )}
-
-        {/* Crypto Section */}
-        {activeTab === 'crypto' && (
-          <div className="space-y-8">
-            {/* Crypto Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-100 dark:border-slate-800">
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Total Alerts</p>
-                  <p className="text-3xl font-semibold text-slate-900 dark:text-white">{cryptoAlerts.length}</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-500">Trading signals</p>
-                </div>
-              </div>
-
-              <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-100 dark:border-slate-800">
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Buy Signals</p>
-                  <p className="text-3xl font-semibold text-emerald-600">{cryptoAlerts.filter(a => a.action === 'BUY').length}</p>
-                  <p className="text-xs text-emerald-600">Buy opportunities</p>
-                </div>
-              </div>
-
-              <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-100 dark:border-slate-800">
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Sell Signals</p>
-                  <p className="text-3xl font-semibold text-red-600">{cryptoAlerts.filter(a => a.action === 'SELL').length}</p>
-                  <p className="text-xs text-red-600">Sell opportunities</p>
-                </div>
-              </div>
-
-              <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-100 dark:border-slate-800">
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">High Urgency</p>
-                  <p className="text-3xl font-semibold text-orange-600">{cryptoAlerts.filter(a => a.urgency >= 8).length}</p>
-                  <p className="text-xs text-orange-600">Urgent alerts</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Crypto Loading State */}
-            {cryptoLoading && (
-              <div className="text-center py-16">
-                <div className="inline-flex items-center gap-3 text-slate-600 dark:text-slate-400">
-                  <div className="w-5 h-5 border-2 border-slate-300 border-t-slate-900 dark:border-slate-600 dark:border-t-white rounded-full animate-spin"></div>
-                  <span className="font-medium">Scanning crypto markets...</span>
-                </div>
-              </div>
-            )}
-
-            {/* Crypto Empty State */}
-            {!cryptoLoading && cryptoAlerts.length === 0 && (
-              <div className="text-center py-16">
-                <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-3xl flex items-center justify-center mx-auto mb-6">
-                  <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">No crypto alerts found</h3>
-                <p className="text-slate-600 dark:text-slate-400 mb-6">
-                  Click &quot;Scan Crypto&quot; to find coins with explosive potential based on volume, momentum, and fundamentals.
-                </p>
-                <button
-                  onClick={fetchCryptoAlerts}
-                  className="px-6 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-medium hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors"
-                >
-                  Scan Crypto Markets
-                </button>
-              </div>
-            )}
-
-            {/* Crypto Alerts */}
-            {!cryptoLoading && cryptoAlerts.length > 0 && (
-              <div className="space-y-8">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">
-                    Crypto Trading Alerts
-                  </h2>
-                  <span className="text-sm text-slate-500 dark:text-slate-400">
-                    {cryptoAlerts.length} alerts found
-                  </span>
-                </div>
-                
-                <div className="grid gap-6">
-                  {cryptoAlerts.map((alert, index) => (
-                    <div key={index} className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-100 dark:border-slate-800 hover:border-slate-200 dark:hover:border-slate-700 transition-colors">
-                      <div className="flex items-start justify-between mb-6">
-                        <div className="space-y-3">
-                          <div className="flex items-center gap-4">
-                            <div className="text-2xl font-bold text-slate-900 dark:text-white">
-                              {alert.symbol}
-                            </div>
-                            <div className={`px-4 py-2 rounded-xl text-sm font-semibold ${
-                              alert.action === 'BUY' 
-                                ? 'bg-emerald-500 text-white' 
-                                : 'bg-red-500 text-white'
-                            }`}>
-                              {alert.action}
-                            </div>
-                            <div className="px-3 py-1 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-medium">
-                              {alert.confidence.toFixed(0)}% confidence
-                            </div>
-                            <div className={`px-3 py-1 rounded-xl text-xs font-medium ${
-                              alert.urgency >= 8 ? 'bg-red-100 text-red-700' :
-                              alert.urgency >= 6 ? 'bg-orange-100 text-orange-700' :
-                              'bg-blue-100 text-blue-700'
-                            }`}>
-                              Urgency: {alert.urgency}/10
-                            </div>
-                          </div>
-                          
-                          <div className="flex items-center gap-6 text-sm text-slate-600 dark:text-slate-400">
-                            <span>{alert.name}</span>
-                            <span>Market Cap: ${(alert.market_cap / 1_000_000).toFixed(1)}M</span>
-                            <span className={`px-2 py-1 rounded-lg text-xs font-medium border ${
-                              alert.risk_level === 'low' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                              alert.risk_level === 'medium' ? 'bg-amber-50 text-amber-700 border-amber-200' :
-                              'bg-red-50 text-red-700 border-red-200'
-                            }`}>
-                              {alert.risk_level.toUpperCase()} RISK
-                            </span>
-                          </div>
-                        </div>
-                        
-                        <div className="text-right space-y-1">
-                          <div className="text-2xl font-semibold text-slate-900 dark:text-white">
-                            ${alert.current_price.toFixed(6)}
-                          </div>
-                          <div className="text-sm text-slate-600 dark:text-slate-400">
-                            Current Price
-                          </div>
-                        </div>
-                      </div>
-
-                      {alert.directional_bias && (
-                        <div className="mb-6 rounded-3xl border border-purple-200/60 bg-purple-50/40 p-6 dark:border-purple-500/40 dark:bg-purple-900/20">
-                          <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center gap-3">
-                              <h4 className="text-lg font-semibold text-purple-900 dark:text-purple-200">
-                                Crypto Directional Signals
-                              </h4>
-                              <span
-                                className={`px-3 py-1 text-sm font-semibold rounded-lg border ${
-                                  alert.directional_bias.direction === 'bullish'
-                                    ? 'bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-500/20 dark:text-emerald-200 dark:border-emerald-400/50'
-                                    : alert.directional_bias.direction === 'bearish'
-                                    ? 'bg-red-100 text-red-700 border-red-300 dark:bg-red-500/20 dark:text-red-200 dark:border-red-400/50'
-                                    : 'bg-slate-200 text-slate-700 border-slate-300 dark:bg-slate-700/50 dark:text-slate-200 dark:border-slate-600/60'
-                                }`}
-                              >
-                                {alert.directional_bias.direction.toUpperCase()}
-                              </span>
-                            </div>
-                            <div className="text-right">
-                              <div className="text-2xl font-bold text-purple-900 dark:text-purple-200">
-                                {alert.directional_bias.confidence.toFixed(0)}%
-                              </div>
-                              <div className="text-xs text-purple-700/70 dark:text-purple-300/70">Confidence</div>
-                            </div>
-                          </div>
-
-                          <div className="text-sm text-purple-900/80 dark:text-purple-100/80 mb-4 leading-relaxed">
-                            {alert.directional_bias.recommendation}
-                          </div>
-
-                          <div className="space-y-2">
-                            <div className="text-xs font-semibold uppercase tracking-wide text-purple-700/70 dark:text-purple-200/60">
-                              Signal Breakdown
-                            </div>
-                            {(alert.directional_bias.signals ?? []).map((signal, signalIndex) => (
-                              <div
-                                key={signalIndex}
-                                className="rounded-2xl border border-purple-200/70 bg-white/70 p-4 text-sm dark:border-purple-500/40 dark:bg-purple-950/30"
-                              >
-                                <div className="flex items-center justify-between mb-2">
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-semibold text-purple-900 dark:text-purple-100">{signal.name}</span>
-                                    <span
-                                      className={`px-2 py-0.5 text-xs font-medium rounded ${
-                                        signal.direction === 'bullish'
-                                          ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-200'
-                                          : signal.direction === 'bearish'
-                                          ? 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-200'
-                                          : 'bg-slate-200 text-slate-700 dark:bg-slate-700/60 dark:text-slate-200'
-                                      }`}
-                                    >
-                                      {signal.direction}
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center gap-4 text-xs text-purple-700/70 dark:text-purple-200/70">
-                                    <span>
-                                      Score: <span className="font-semibold text-purple-900 dark:text-purple-100">{signal.score.toFixed(0)}</span>
-                                    </span>
-                                    <span>
-                                      Conf: <span className="font-semibold text-purple-900 dark:text-purple-100">{signal.confidence.toFixed(0)}%</span>
-                                    </span>
-                                  </div>
-                                </div>
-                                <div className="text-xs leading-relaxed text-purple-800/80 dark:text-purple-100/70">
-                                  {signal.rationale}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Trading Strategy */}
-                      <div className="mb-6">
-                        <h4 className="font-semibold text-slate-900 dark:text-white mb-3">Trading Strategy: {alert.strategy}</h4>
-                        <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div className="text-center">
-                              <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Entry Price</div>
-                              <div className="text-lg font-semibold text-slate-900 dark:text-white">
-                                ${alert.entry_price.toFixed(6)}
-                              </div>
-                            </div>
-                            <div className="text-center">
-                              <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Target Price</div>
-                              <div className="text-lg font-semibold text-emerald-600">
-                                ${alert.target_price.toFixed(6)}
-                              </div>
-                            </div>
-                            <div className="text-center">
-                              <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Stop Loss</div>
-                              <div className="text-lg font-semibold text-red-600">
-                                ${alert.stop_loss.toFixed(6)}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Position Sizing */}
-                      <div className="mb-6">
-                        <h4 className="font-semibold text-slate-900 dark:text-white mb-3">Position Sizing</h4>
-                        <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
-                          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                            {Object.entries(alert.position_size.position_amounts).map(([portfolio, data]) => (
-                              <div key={portfolio} className="text-center">
-                                <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{portfolio}</div>
-                                <div className="text-sm font-semibold text-slate-900 dark:text-white">
-                                  ${data.amount}
-                                </div>
-                                <div className="text-xs text-slate-500 dark:text-slate-500">
-                                  ({data.percentage}%)
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Reasons */}
-                      <div className="mb-6">
-                        <h4 className="font-semibold text-slate-900 dark:text-white mb-3">Why {alert.action}?</h4>
-                        <div className="space-y-2">
-                          {alert.reasons.slice(0, 5).map((reason, i) => (
-                            <p key={i} className="text-sm text-slate-700 dark:text-slate-300">
-                              • {reason}
-                            </p>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Footer */}
-                      <div className="flex items-center justify-between pt-4 border-t border-slate-200/60 dark:border-slate-700/60">
-                        <span className="text-xs text-slate-500 dark:text-slate-500">
-                          Alert generated: {new Date(alert.timestamp).toLocaleString()}
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-slate-500 dark:text-slate-500">Strategy:</span>
-                          <span className="text-xs font-medium text-slate-700 dark:text-slate-300">{alert.strategy}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
+           

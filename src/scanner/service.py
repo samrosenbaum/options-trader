@@ -23,7 +23,7 @@ from src.signals import OptionsSkewAnalyzer, SmartMoneyFlowDetector, RegimeDetec
 from src.validation import OptionsDataValidator, DataQuality
 
 
-@dataclass(slots=True)
+@dataclass
 class ScanResult:
     """Container holding serialized scan opportunities and metadata."""
 

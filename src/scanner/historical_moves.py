@@ -17,7 +17,7 @@ import yfinance as yf
 from scipy.stats import beta
 
 
-@dataclass(slots=True)
+@dataclass
 class HistoricalMoveStats:
     """Statistics about historical price movements for a symbol."""
 
