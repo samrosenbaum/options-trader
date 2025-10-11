@@ -128,7 +128,7 @@ describe("/api/scan-python route", () => {
     })
 
     const { GET } = await import("@/app/api/scan-python/route")
-    const response = await GET()
+    const response = await GET(new Request("https://example.com/api/scan-python"))
     expect(response.status).toBe(200)
 
     const body = await response.json()
@@ -164,7 +164,7 @@ describe("/api/scan-python route", () => {
     })
 
     const { GET } = await import("@/app/api/scan-python/route")
-    const response = await GET()
+    const response = await GET(new Request("https://example.com/api/scan-python"))
     expect(response.status).toBe(200)
 
     const body = await response.json()
@@ -188,7 +188,7 @@ describe("/api/scan-python route", () => {
     })
 
     const { GET } = await import("@/app/api/scan-python/route")
-    const response = await GET()
+    const response = await GET(new Request("https://example.com/api/scan-python"))
     expect(response.status).toBe(200)
 
     const body = await response.json()
@@ -196,5 +196,28 @@ describe("/api/scan-python route", () => {
     expect(body.metadata.fallback).toBe(true)
     expect(body.metadata.fallbackReason).toBe("spawn_error")
     expect(body.opportunities.length).toBeGreaterThan(0)
+  })
+
+  it("returns cached fallback data immediately when requested via query parameter", async () => {
+    resolvePythonExecutableMock.mockResolvedValue("python")
+    spawnMock.mockImplementation(() => {
+      throw new Error("spawn should not be invoked for explicit fallback requests")
+    })
+
+    const { GET } = await import("@/app/api/scan-python/route")
+    const response = await GET(
+      new Request("https://example.com/api/scan-python?mode=fallback&reason=test_reason&details=test_details"),
+    )
+    expect(response.status).toBe(200)
+
+    const body = await response.json()
+    expect(body.success).toBe(true)
+    expect(body.metadata.fallback).toBe(true)
+    expect(body.metadata.fallbackReason).toBe("test_reason")
+    expect(body.metadata.fallbackDetails).toBe("test_details")
+    expect(Array.isArray(body.opportunities)).toBe(true)
+    expect(body.opportunities.length).toBeGreaterThan(0)
+    expect(spawnMock).not.toHaveBeenCalled()
+    expect(resolvePythonExecutableMock).not.toHaveBeenCalled()
   })
 })

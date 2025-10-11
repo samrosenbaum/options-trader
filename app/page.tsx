@@ -168,6 +168,44 @@ interface ScanMetadata {
   [key: string]: unknown
 }
 
+interface ScanApiResponse {
+  success: boolean
+  timestamp?: string
+  opportunities?: Opportunity[]
+  metadata?: ScanMetadata | (ScanMetadata & Record<string, unknown>)
+  totalEvaluated?: number
+  total_evaluated?: number
+  error?: string
+  details?: string
+}
+
+const DEFAULT_FETCH_TIMEOUT_MS = 45_000
+
+async function fetchWithTimeout(input: RequestInfo | URL, init?: RequestInit, timeoutMs = DEFAULT_FETCH_TIMEOUT_MS) {
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
+
+  const { signal: externalSignal, ...rest } = init ?? {}
+
+  if (externalSignal instanceof AbortSignal) {
+    if (externalSignal.aborted) {
+      controller.abort()
+    } else {
+      const abortListener = () => controller.abort()
+      externalSignal.addEventListener('abort', abortListener, { once: true })
+      controller.signal.addEventListener('abort', () => {
+        externalSignal.removeEventListener('abort', abortListener)
+      })
+    }
+  }
+
+  try {
+    return await fetch(input, { ...rest, signal: controller.signal })
+  } finally {
+    clearTimeout(timeoutId)
+  }
+}
+
 interface CryptoAlert {
   symbol: string
   name: string
@@ -422,56 +460,130 @@ export default function HomePage() {
     return Number.isNaN(parsed.getTime()) ? null : parsed
   })()
 
+  const handleScanPayload = useCallback(
+    (payload: ScanApiResponse, options?: { forcedStale?: boolean }) => {
+      if (!payload || typeof payload !== 'object' || payload.success !== true) {
+        return false
+      }
+
+      const metadata: ScanMetadata | null =
+        payload.metadata && typeof payload.metadata === 'object'
+          ? (payload.metadata as ScanMetadata)
+          : null
+
+      setScanMetadata(metadata)
+
+      const usedFallback = metadata?.fallback === true
+      const staleCache = metadata?.cacheStale === true
+
+      const evaluatedFromApi =
+        typeof payload.totalEvaluated === 'number'
+          ? payload.totalEvaluated
+          : typeof payload.total_evaluated === 'number'
+            ? payload.total_evaluated
+            : Array.isArray(payload.opportunities)
+              ? payload.opportunities.length
+              : 0
+
+      if (Array.isArray(payload.opportunities) && payload.opportunities.length > 0) {
+        setOpportunities(payload.opportunities)
+        setTotalEvaluated(evaluatedFromApi)
+        setLastSuccessfulUpdate(new Date())
+        setIsStaleData(options?.forcedStale === true || usedFallback || staleCache)
+      } else if (opportunities.length === 0) {
+        setOpportunities([])
+        setTotalEvaluated(evaluatedFromApi)
+        setIsStaleData(options?.forcedStale === true || usedFallback || staleCache)
+      } else {
+        setIsStaleData(true)
+        console.warn('Scan returned no results - keeping previous data visible')
+      }
+
+      return true
+    },
+    [opportunities],
+  )
+
+  const attemptFallbackFetch = useCallback(
+    async (reason: string, details?: string) => {
+      try {
+        const params = new URLSearchParams({ mode: 'fallback', reason })
+        if (details && details.trim().length > 0) {
+          params.set('details', details)
+        }
+
+        const response = await fetch(`/api/scan-python?${params.toString()}`)
+        if (!response.ok) {
+          console.error('Fallback scan request failed with status', response.status)
+          return false
+        }
+
+        const data = (await response.json()) as ScanApiResponse
+        const handled = handleScanPayload(data, { forcedStale: true })
+        if (!handled) {
+          console.warn('Fallback scan response did not include usable opportunities')
+        }
+        return handled
+      } catch (fallbackError) {
+        console.error('Error fetching fallback opportunities:', fallbackError)
+        return false
+      }
+    },
+    [handleScanPayload],
+  )
+
   const fetchOpportunities = useCallback(async () => {
     try {
-      const response = await fetch('/api/scan-python')
-      const data = await response.json()
+      setIsLoading(true)
 
-      if (data.success) {
-        const metadata: ScanMetadata | null =
-          data.metadata && typeof data.metadata === 'object'
-            ? (data.metadata as ScanMetadata)
-            : null
-        setScanMetadata(metadata)
+      const response = await fetchWithTimeout('/api/scan-python')
 
-        const usedFallback = metadata?.fallback === true
-        const staleCache = metadata?.cacheStale === true
-
-        const evaluatedFromApi =
-          typeof data.totalEvaluated === 'number'
-            ? data.totalEvaluated
-            : typeof data.total_evaluated === 'number'
-              ? data.total_evaluated
-              : Array.isArray(data.opportunities)
-                ? data.opportunities.length
-                : 0
-
-        if (data.opportunities && data.opportunities.length > 0) {
-          setOpportunities(data.opportunities)
-          setTotalEvaluated(evaluatedFromApi)
-          setLastSuccessfulUpdate(new Date())
-          setIsStaleData(usedFallback || staleCache)
-        } else if (opportunities.length === 0) {
-          setOpportunities([])
-          setTotalEvaluated(evaluatedFromApi)
-          setIsStaleData(usedFallback || staleCache)
-        } else {
-          setIsStaleData(true)
-          console.warn('Scan returned no results - keeping previous data visible')
+      if (!response.ok) {
+        console.error('Scan request failed with status', response.status)
+        const fallbackHandled = await attemptFallbackFetch('http_error', `Received status ${response.status}`)
+        if (!fallbackHandled) {
+          setScanMetadata(null)
+          if (opportunities.length === 0) {
+            setOpportunities([])
+          } else {
+            setIsStaleData(true)
+          }
         }
-      } else {
-        setScanMetadata(null)
+        return
+      }
+
+      const data = (await response.json()) as ScanApiResponse
+
+      const handled = handleScanPayload(data)
+      if (!handled) {
+        const fallbackHandled = await attemptFallbackFetch(
+          'invalid_payload',
+          data && typeof data === 'object' && 'error' in data && typeof data.error === 'string'
+            ? data.error
+            : undefined,
+        )
+
+        if (!fallbackHandled) {
+          setScanMetadata(null)
+        }
       }
     } catch (error) {
       console.error('Error fetching opportunities:', error)
-      // On error, keep existing data and mark as stale
-      if (opportunities.length > 0) {
-        setIsStaleData(true)
+      const fallbackHandled = await attemptFallbackFetch(
+        'network_error',
+        error instanceof Error ? error.message : undefined,
+      )
+
+      if (!fallbackHandled) {
+        // On error, keep existing data and mark as stale
+        if (opportunities.length > 0) {
+          setIsStaleData(true)
+        }
       }
     } finally {
       setIsLoading(false)
     }
-  }, [opportunities])
+  }, [attemptFallbackFetch, handleScanPayload, opportunities])
 
   const fetchCryptoAlerts = useCallback(async () => {
     try {
