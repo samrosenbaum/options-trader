@@ -246,51 +246,78 @@ class BacktestEngine:
         """
         
         logger.info(f"Starting backtest from {self.config.start_date} to {self.config.end_date}")
-        
+
         # Initialize tracking
         self.trades.clear()
         self.open_positions.clear()
         self.current_capital = self.config.initial_capital
         self.peak_capital = self.config.initial_capital
-        self.equity_curve = [(self.config.start_date, self.current_capital)]
-        
-        # Filter data to backtest period
-        opportunities = historical_opportunities[
-            (historical_opportunities['date'] >= self.config.start_date) &
-            (historical_opportunities['date'] <= self.config.end_date)
-        ].copy()
-        
-        # Group by date for daily processing
-        daily_opportunities = opportunities.groupby('date')
-        
-        current_date = self.config.start_date
-        
-        while current_date <= self.config.end_date:
-            # Process this day's opportunities
-            if current_date.strftime('%Y-%m-%d') in daily_opportunities.groups:
-                daily_opps = daily_opportunities.get_group(current_date)
+
+        start = pd.Timestamp(self.config.start_date).normalize()
+        end = pd.Timestamp(self.config.end_date).normalize()
+        self.equity_curve = [(start, self.current_capital)]
+
+        opportunities = historical_opportunities.copy()
+        prices = historical_prices.copy()
+
+        if opportunities.empty and prices.empty:
+            return PerformanceMetrics()
+
+        if not opportunities.empty:
+            opportunities['date'] = pd.to_datetime(opportunities['date']).dt.normalize()
+            opportunities = opportunities[
+                (opportunities['date'] >= start) &
+                (opportunities['date'] <= end)
+            ]
+
+        if not prices.empty:
+            prices['date'] = pd.to_datetime(prices['date'])
+            prices = prices[
+                (prices['date'] >= start) &
+                (prices['date'] <= end + timedelta(days=1))
+            ]
+
+        if opportunities.empty and prices.empty:
+            return PerformanceMetrics()
+
+        opportunity_groups = None
+        opportunity_dates: set[pd.Timestamp] = set()
+        if not opportunities.empty:
+            opportunity_groups = opportunities.groupby('date')
+            opportunity_dates = set(opportunity_groups.groups.keys())
+
+        trading_day_candidates: set[pd.Timestamp] = set()
+        if opportunity_dates:
+            trading_day_candidates.update(opportunity_dates)
+        if not prices.empty:
+            price_dates = prices['date'].dt.normalize()
+            trading_day_candidates.update(price_dates[(price_dates >= start) & (price_dates <= end)].unique())
+
+        trading_days = sorted(td for td in trading_day_candidates if start <= td <= end)
+        if not trading_days:
+            trading_days = list(pd.bdate_range(start, end))
+
+        if not trading_days:
+            return PerformanceMetrics()
+
+        for current_date in trading_days:
+            if opportunity_groups is not None and current_date in opportunity_dates:
+                daily_opps = opportunity_groups.get_group(current_date)
                 self._process_daily_opportunities(daily_opps, current_date)
-            
-            # Update open positions with current prices
-            self._update_open_positions(current_date, historical_prices)
-            
-            # Check exit conditions
-            self._check_exit_conditions(current_date, historical_prices, custom_exit_logic)
-            
-            # Update equity curve
-            portfolio_value = self._calculate_portfolio_value(current_date, historical_prices)
+
+            self._update_open_positions(current_date, prices)
+            self._check_exit_conditions(current_date, prices, custom_exit_logic)
+
+            portfolio_value = self._calculate_portfolio_value(current_date, prices)
             self.equity_curve.append((current_date, portfolio_value))
             self.current_capital = portfolio_value
-            
+
             if portfolio_value > self.peak_capital:
                 self.peak_capital = portfolio_value
-                
-            current_date += timedelta(days=1)
-            
-        # Close any remaining open positions
-        self._close_remaining_positions(self.config.end_date, historical_prices)
-        
-        # Calculate final performance metrics
+
+        final_date = trading_days[-1]
+        self._close_remaining_positions(final_date, prices)
+
         return self._calculate_performance_metrics()
     
     def run_walk_forward_analysis(
