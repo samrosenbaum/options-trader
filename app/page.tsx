@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useCallback, useRef, type ReactNode } fro
 import Image from 'next/image'
 import RealTimeProgress from '../components/real-time-progress'
 import LiveTicker from '../components/live-ticker'
+import type { PositionSizingRecommendation } from '@/lib/types/opportunity'
 
 interface MoveAnalysisFactor {
   label: string
@@ -89,6 +90,49 @@ type OpportunitySortOption =
   | 'safety'
   | 'expiration'
 
+const formatFractionAsPercent = (value: number | null | undefined, digits = 1) => {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return '—'
+  }
+
+  return `${(value * 100).toFixed(digits)}%`
+}
+
+const getRiskBudgetMeta = (tier?: PositionSizingRecommendation['riskBudgetTier'] | string | null) => {
+  switch (tier) {
+    case 'aggressive':
+      return {
+        label: 'Aggressive Risk Budget',
+        className:
+          'bg-amber-100 text-amber-700 border border-amber-200 dark:bg-amber-500/10 dark:text-amber-200 dark:border-amber-500/40',
+      }
+    case 'balanced':
+      return {
+        label: 'Balanced Risk Budget',
+        className:
+          'bg-sky-100 text-sky-700 border border-sky-200 dark:bg-sky-500/10 dark:text-sky-200 dark:border-sky-500/40',
+      }
+    case 'conservative':
+      return {
+        label: 'Conservative Risk Budget',
+        className:
+          'bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-200 dark:border-emerald-500/40',
+      }
+    case 'capital_preservation':
+      return {
+        label: 'Capital Preservation',
+        className:
+          'bg-slate-200 text-slate-700 border border-slate-300 dark:bg-slate-800/50 dark:text-slate-200 dark:border-slate-700/50',
+      }
+    default:
+      return {
+        label: 'Risk Budget',
+        className:
+          'bg-slate-100 text-slate-700 border border-slate-200 dark:bg-slate-700/40 dark:text-slate-200 dark:border-slate-600/50',
+      }
+  }
+}
+
 interface Opportunity {
   symbol: string
   optionType: string
@@ -153,6 +197,7 @@ interface Opportunity {
   swingSignal?: SwingSignalInsight | null
   swingSignalError?: string
   enhancedDirectionalBias?: EnhancedDirectionalBias | null
+  positionSizing?: PositionSizingRecommendation | null
 }
 
 interface ScanMetadata {
@@ -450,6 +495,21 @@ const renderOpportunityCard = (
     : scenario.maxLossAmount
   const maxLossPercentDisplay = Math.abs(opp.maxLossPercent ?? 0)
 
+  const positionSizing = opp.positionSizing ?? null
+  const hasPositionSizing = Boolean(positionSizing)
+  const riskBudgetMeta = getRiskBudgetMeta(positionSizing?.riskBudgetTier)
+  const recommendedFractionDisplay = formatFractionAsPercent(positionSizing?.recommendedFraction ?? null)
+  const conservativeFractionDisplay = formatFractionAsPercent(positionSizing?.conservativeFraction ?? null)
+  const aggressiveFractionDisplay = formatFractionAsPercent(positionSizing?.aggressiveFraction ?? null)
+  const kellyFractionDisplay = formatFractionAsPercent(positionSizing?.kellyFraction ?? null)
+  const expectedLogGrowthDisplay = formatFractionAsPercent(positionSizing?.expectedLogGrowth ?? null, 2)
+  const expectedEdgeDisplay = formatFractionAsPercent(positionSizing?.expectedEdge ?? null, 1)
+  const maxPerTradeDisplay = formatFractionAsPercent(positionSizing?.limits?.maxPerTrade ?? null)
+  const maxDrawdownDisplay = formatFractionAsPercent(positionSizing?.limits?.maxDrawdown95 ?? null, 1)
+  const losingStreak95 = positionSizing?.limits?.losingStreak95 ?? null
+  const capitalExamples = positionSizing?.capitalAllocationExamples ?? []
+  const sizingRationales = positionSizing?.rationale ?? []
+
   const {
     isExpanded,
     onToggle,
@@ -529,7 +589,109 @@ const renderOpportunityCard = (
           )}
         </div>
       </div>
-      
+
+      {hasPositionSizing && (
+        <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50/60 p-5 dark:border-emerald-800/40 dark:bg-emerald-900/20">
+          <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <h4 className="text-base font-semibold text-emerald-900 dark:text-emerald-100">Institutional Position Sizing</h4>
+              <p className="text-xs text-emerald-800/80 dark:text-emerald-200/80">
+                Kelly sizing blended with volatility and drawdown controls to protect the book while leaning into edge.
+              </p>
+            </div>
+            <div
+              className={`px-3 py-1 rounded-lg text-[11px] font-semibold uppercase tracking-wide ${riskBudgetMeta.className}`}
+            >
+              {riskBudgetMeta.label}
+            </div>
+          </div>
+
+          <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="rounded-lg border border-emerald-200/60 bg-white/70 p-4 dark:border-emerald-800/50 dark:bg-slate-900/60">
+              <div className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-300">
+                Recommended Allocation
+              </div>
+              <div className="mt-1 text-2xl font-bold text-slate-900 dark:text-white">{recommendedFractionDisplay}</div>
+              {expectedLogGrowthDisplay !== '—' && (
+                <div className="mt-1 text-xs text-slate-600 dark:text-slate-400">Expected log growth {expectedLogGrowthDisplay}</div>
+              )}
+            </div>
+
+            <div className="rounded-lg border border-emerald-200/60 bg-white/70 p-4 dark:border-emerald-800/50 dark:bg-slate-900/60">
+              <div className="text-xs font-semibold uppercase tracking-wide text-sky-600 dark:text-sky-300">
+                Conservative Risk-Off
+              </div>
+              <div className="mt-1 text-2xl font-bold text-slate-900 dark:text-white">{conservativeFractionDisplay}</div>
+              <div className="mt-1 text-xs text-slate-600 dark:text-slate-400">Deploy during headline or regime stress</div>
+            </div>
+
+            <div className="rounded-lg border border-emerald-200/60 bg-white/70 p-4 dark:border-emerald-800/50 dark:bg-slate-900/60">
+              <div className="text-xs font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-300">
+                Aggressive Upside
+              </div>
+              <div className="mt-1 text-2xl font-bold text-slate-900 dark:text-white">{aggressiveFractionDisplay}</div>
+              <div className="mt-1 text-xs text-slate-600 dark:text-slate-400">Hard cap {maxPerTradeDisplay}</div>
+            </div>
+
+            <div className="rounded-lg border border-emerald-200/60 bg-white/70 p-4 dark:border-emerald-800/50 dark:bg-slate-900/60">
+              <div className="text-xs font-semibold uppercase tracking-wide text-purple-600 dark:text-purple-300">
+                Raw Kelly Fraction
+              </div>
+              <div className="mt-1 text-2xl font-bold text-slate-900 dark:text-white">{kellyFractionDisplay}</div>
+              {expectedEdgeDisplay !== '—' && (
+                <div className="mt-1 text-xs text-slate-600 dark:text-slate-400">Net edge {expectedEdgeDisplay}</div>
+              )}
+            </div>
+          </div>
+
+          <div className="mb-3 flex flex-wrap gap-3 text-xs font-medium text-emerald-900/80 dark:text-emerald-100/80">
+            <span>Per-trade cap {maxPerTradeDisplay}</span>
+            {maxDrawdownDisplay !== '—' && <span>95% drawdown limit {maxDrawdownDisplay}</span>}
+            {typeof losingStreak95 === 'number' && Number.isFinite(losingStreak95) && (
+              <span>Calibrated for {losingStreak95}-trade losing streak</span>
+            )}
+          </div>
+
+          {capitalExamples.length > 0 && (
+            <div className="mb-4">
+              <div className="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+                Portfolio Impact Examples
+              </div>
+              <div className="mt-2 grid grid-cols-1 gap-3 md:grid-cols-3">
+                {capitalExamples.map(example => (
+                  <div
+                    key={example.portfolio}
+                    className="rounded-lg border border-emerald-200/40 bg-white/60 p-3 dark:border-emerald-800/40 dark:bg-slate-900/40"
+                  >
+                    <div className="text-sm font-semibold text-slate-900 dark:text-white">
+                      ${example.portfolio.toLocaleString()}
+                    </div>
+                    <div className="text-xs text-slate-600 dark:text-slate-400">Portfolio size</div>
+                    <div className="mt-1 text-lg font-bold text-emerald-600 dark:text-emerald-300">
+                      {formatFractionAsPercent(example.allocationPercent)}
+                    </div>
+                    <div className="mt-1 text-xs text-slate-600 dark:text-slate-400">
+                      ≈ {example.contracts} contract{example.contracts === 1 ? '' : 's'} at {formatCurrency(example.capitalAtRisk)} risk
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {sizingRationales.length > 0 && (
+            <ul className="mt-2 space-y-2 text-sm text-slate-700 dark:text-slate-300">
+              {sizingRationales.map((reason, index) => (
+                <li key={`${reason}-${index}`} className="flex items-start gap-2">
+                  <span className="mt-1 h-2 w-2 flex-shrink-0 rounded-full bg-emerald-500 dark:bg-emerald-300" />
+                  <span>{reason}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
       {/* Additional opportunity details */}
       <div className="mt-4 space-y-3">
         <div className="bg-white/80 dark:bg-slate-900/80 rounded-xl p-4 border border-slate-200/60 dark:border-slate-700/40">
