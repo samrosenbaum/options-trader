@@ -1951,9 +1951,7 @@ export default function HomePage() {
                       {/* Trade Summary */}
                       {opp.tradeSummary && (
                         <div className="bg-gradient-to-r from-emerald-500/5 to-cyan-500/5 border border-emerald-500/20 rounded-xl p-5">
-                          <div className="text-base font-medium text-white leading-relaxed">
-                            {opp.tradeSummary}
-                          </div>
+                          <div className="text-base font-medium text-white leading-relaxed">{opp.tradeSummary}</div>
                         </div>
                       )}
 
@@ -1964,9 +1962,7 @@ export default function HomePage() {
                             {opp.recentNews.map((news, i) => (
                               <div key={i} className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
                                 <div className="mb-2 flex items-start justify-between">
-                                  <h5 className="text-sm font-medium text-slate-900 dark:text-white line-clamp-2">
-                                    {news.headline}
-                                  </h5>
+                                  <h5 className="text-sm font-medium text-slate-900 dark:text-white line-clamp-2">{news.headline}</h5>
                                   <span
                                     className={`px-2 py-1 rounded-lg text-xs font-medium ml-3 ${
                                       news.category === 'political'
@@ -2011,198 +2007,198 @@ export default function HomePage() {
                         {/* Risk Assessment */}
                         <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
                           <h5 className="font-medium text-slate-900 dark:text-white mb-2">Risk & Reward Profile</h5>
-                        <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
-                          {getRiskRewardExplanation(opp)}
-                        </p>
-                      </div>
-
-                      {opp.probabilityOfProfit !== null && (
-                        <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl p-4 border border-emerald-200 dark:border-emerald-800">
-                          <div className="flex items-center justify-between mb-3">
-                            <h5 className="font-medium text-emerald-900 dark:text-emerald-100">Likelihood of Profit</h5>
-                            <span className="text-lg font-semibold text-emerald-700 dark:text-emerald-200">
-                              {opp.probabilityOfProfit.toFixed(1)}%
-                            </span>
-                          </div>
-                          <div className="w-full h-2 bg-emerald-100 dark:bg-emerald-900/40 rounded-full overflow-hidden mb-2">
-                            <div
-                              className="h-full bg-emerald-500"
-                              style={{ width: `${Math.max(0, Math.min(opp.probabilityOfProfit, 100)).toFixed(1)}%` }}
-                            />
-                          </div>
-                          <div className="flex items-center justify-between text-xs text-emerald-800 dark:text-emerald-200 mb-3">
-                            {(() => {
-                              const breakevenText = formatBreakevenRequirement(opp)
-                              return breakevenText ? <span>{breakevenText}</span> : <span>Breakeven move unavailable</span>
-                            })()}
-                            {opp.breakevenPrice !== null && <span>Breakeven ${opp.breakevenPrice.toFixed(2)}</span>}
-                          </div>
-                          <p className="text-sm text-emerald-900 dark:text-emerald-100 leading-relaxed">
-                            {opp.profitProbabilityExplanation || 'Probability estimate unavailable for this contract.'}
+                          <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                            {getRiskRewardExplanation(opp)}
                           </p>
                         </div>
-                      )}
+
+                        {opp.probabilityOfProfit !== null && (
+                          <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl p-4 border border-emerald-200 dark:border-emerald-800">
+                            <div className="flex items-center justify-between mb-3">
+                              <h5 className="font-medium text-emerald-900 dark:text-emerald-100">Likelihood of Profit</h5>
+                              <span className="text-lg font-semibold text-emerald-700 dark:text-emerald-200">
+                                {opp.probabilityOfProfit.toFixed(1)}%
+                              </span>
+                            </div>
+                            <div className="w-full h-2 bg-emerald-100 dark:bg-emerald-900/40 rounded-full overflow-hidden mb-2">
+                              <div
+                                className="h-full bg-emerald-500"
+                                style={{ width: `${Math.max(0, Math.min(opp.probabilityOfProfit, 100)).toFixed(1)}%` }}
+                              />
+                            </div>
+                            <div className="flex items-center justify-between text-xs text-emerald-800 dark:text-emerald-200 mb-3">
+                              {(() => {
+                                const breakevenText = formatBreakevenRequirement(opp)
+                                return breakevenText ? <span>{breakevenText}</span> : <span>Breakeven move unavailable</span>
+                              })()}
+                              {opp.breakevenPrice !== null && <span>Breakeven ${opp.breakevenPrice.toFixed(2)}</span>}
+                            </div>
+                            <p className="text-sm text-emerald-900 dark:text-emerald-100 leading-relaxed">
+                              {opp.profitProbabilityExplanation || 'Probability estimate unavailable for this contract.'}
+                            </p>
+                          </div>
+                        )}
                       </div>
 
                       <div>
                         <h4 className="font-semibold text-slate-900 dark:text-white mb-3">Investment Calculator</h4>
                         <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-6">
-                        <div className="space-y-4">
-                          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-4 bg-white dark:bg-slate-700 rounded-xl">
-                            <div>
-                              <div className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                                {scenario.basis === 'position' ? 'Your Position' : 'Per-Contract Preview'}
-                              </div>
-                              <div className="text-lg font-semibold text-slate-900 dark:text-white">
-                                {scenario.basis === 'position'
-                                  ? `${formatCurrency(scenario.totalCost)} for ${scenario.contractsToBuy} contract${scenario.contractsToBuy !== 1 ? 's' : ''}`
-                                  : `${formatCurrency(scenario.displayCost)} per contract`}
-                              </div>
-                              {scenario.basis === 'position' ? (
-                                <div className="text-xs text-slate-500 dark:text-slate-300 mt-1">
-                                  Remaining capital: {formatCurrency(scenario.remainingCapital)}
-                                </div>
-                              ) : scenario.requiredCapital > 0 ? (
-                                <div className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-                                  Add {formatCurrency(scenario.shortfall)} more to control one contract (requires {formatCurrency(scenario.requiredCapital)}).
-                                </div>
-                              ) : (
-                                <div className="text-xs text-slate-500 dark:text-slate-300 mt-1">
-                                  Waiting for pricing data to size this trade.
-                                </div>
-                              )}
-                            </div>
-                            <div className="text-right">
-                              <div className="text-sm font-medium text-slate-600 dark:text-slate-400">Option Price</div>
-                              <div className="text-lg font-semibold text-slate-900 dark:text-white">
-                                {formatCurrency(premiumPerShareDisplay)} per share
-                              </div>
-                              <div className="text-sm text-slate-500 dark:text-slate-400">
-                                {formatCurrency(scenario.contractCost)} per contract
-                              </div>
-                            </div>
-                          </div>
-
-                          <div>
-                            {/* Interactive Profit/Loss Slider */}
-                            <ProfitLossSlider
-                              opportunity={opp}
-                              contractsToTrade={isPerContractView ? 1 : scenario.contractsToBuy}
-                            />
-
-                            <div className="flex items-center justify-between mb-3 mt-6">
-                              <h5 className="font-medium text-slate-900 dark:text-white">Potential Profits</h5>
-                              {isPerContractView && (
-                                <span className="text-xs font-medium text-amber-600 dark:text-amber-300">
-                                  Showing per-contract economics
-                                </span>
-                              )}
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                              {scenario.scenarios.map((scenarioItem, i) => (
-                                <div key={i} className="bg-white dark:bg-slate-700 rounded-xl p-4">
-                                  <div className="flex items-center justify-between mb-2">
-                                    <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                                      {scenarioItem.move || `${scenarioItem.return.toFixed(0)}%`} Stock Move
-                                    </span>
-                                    <span
-                                      className={`text-xs font-semibold ${scenarioItem.return >= 0 ? 'text-emerald-600' : 'text-red-600'}`}
-                                    >
-                                      {scenarioItem.return >= 0
-                                        ? `+${scenarioItem.return.toFixed(1)}%`
-                                        : `${scenarioItem.return.toFixed(1)}%`}
-                                    </span>
-                                  </div>
-                                  <div className="space-y-1">
-                                    <div className="flex justify-between text-sm">
-                                      <span className="text-slate-600 dark:text-slate-400">Profit:</span>
-                                      <span
-                                        className={`font-semibold ${scenarioItem.profit >= 0 ? 'text-emerald-600' : 'text-red-600'}`}
-                                      >
-                                        {formatCurrency(scenarioItem.profit)}
-                                      </span>
-                                    </div>
-                                    <div className="flex justify-between text-sm">
-                                      <span className="text-slate-600 dark:text-slate-400">Total Value:</span>
-                                      <span className="font-semibold text-slate-900 dark:text-white">
-                                        {formatCurrency(scenarioItem.totalValue)}
-                                      </span>
-                                    </div>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-
-                          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
-                            <div className="flex items-start gap-3">
-                              <div className="w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center mt-0.5">
-                                <span className="text-xs text-white font-bold">!</span>
-                              </div>
+                          <div className="space-y-4">
+                            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-4 bg-white dark:bg-slate-700 rounded-xl">
                               <div>
-                                <div className="font-medium text-amber-800 dark:text-amber-200 mb-1">Risk Warning</div>
-                                <div className="text-sm text-amber-700 dark:text-amber-300">
-                                  Maximum loss: {formatCurrency(opp.maxLossAmount || scenario.contractCost)} ({maxLossPercentDisplay.toFixed(1)}% of investment).
-                                  Options can expire worthless, and you could lose your entire investment.
+                                <div className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                                  {scenario.basis === 'position' ? 'Your Position' : 'Per-Contract Preview'}
+                                </div>
+                                <div className="text-lg font-semibold text-slate-900 dark:text-white">
+                                  {scenario.basis === 'position'
+                                    ? `${formatCurrency(scenario.totalCost)} for ${scenario.contractsToBuy} contract${scenario.contractsToBuy !== 1 ? 's' : ''}`
+                                    : `${formatCurrency(scenario.displayCost)} per contract`}
+                                </div>
+                                {scenario.basis === 'position' ? (
+                                  <div className="text-xs text-slate-500 dark:text-slate-300 mt-1">
+                                    Remaining capital: {formatCurrency(scenario.remainingCapital)}
+                                  </div>
+                                ) : scenario.requiredCapital > 0 ? (
+                                  <div className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                                    Add {formatCurrency(scenario.shortfall)} more to control one contract (requires {formatCurrency(scenario.requiredCapital)}).
+                                  </div>
+                                ) : (
+                                  <div className="text-xs text-slate-500 dark:text-slate-300 mt-1">
+                                    Waiting for pricing data to size this trade.
+                                  </div>
+                                )}
+                              </div>
+                              <div className="text-right">
+                                <div className="text-sm font-medium text-slate-600 dark:text-slate-400">Option Price</div>
+                                <div className="text-lg font-semibold text-slate-900 dark:text-white">
+                                  {formatCurrency(premiumPerShareDisplay)} per share
+                                </div>
+                                <div className="text-sm text-slate-500 dark:text-slate-400">
+                                  {formatCurrency(scenario.contractCost)} per contract
+                                </div>
+                              </div>
+                            </div>
+
+                            <div>
+                              {/* Interactive Profit/Loss Slider */}
+                              <ProfitLossSlider opportunity={opp} contractsToTrade={isPerContractView ? 1 : scenario.contractsToBuy} />
+
+                              <div className="flex items-center justify-between mb-3 mt-6">
+                                <h5 className="font-medium text-slate-900 dark:text-white">Potential Profits</h5>
+                                {isPerContractView && (
+                                  <span className="text-xs font-medium text-amber-600 dark:text-amber-300">Showing per-contract economics</span>
+                                )}
+                              </div>
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                {scenario.scenarios.map((scenarioItem, i) => (
+                                  <div key={i} className="bg-white dark:bg-slate-700 rounded-xl p-4">
+                                    <div className="flex items-center justify-between mb-2">
+                                      <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                                        {scenarioItem.move || `${scenarioItem.return.toFixed(0)}%`} Stock Move
+                                      </span>
+                                      <span className={`text-xs font-semibold ${scenarioItem.return >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                                        {scenarioItem.return >= 0 ? `+${scenarioItem.return.toFixed(1)}%` : `${scenarioItem.return.toFixed(1)}%`}
+                                      </span>
+                                    </div>
+                                    <div className="space-y-1">
+                                      <div className="flex justify-between text-sm">
+                                        <span className="text-slate-600 dark:text-slate-400">Profit:</span>
+                                        <span className={`font-semibold ${scenarioItem.profit >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                                          {formatCurrency(scenarioItem.profit)}
+                                        </span>
+                                      </div>
+                                      <div className="flex justify-between text-sm">
+                                        <span className="text-slate-600 dark:text-slate-400">Total Value:</span>
+                                        <span className="font-semibold text-slate-900 dark:text-white">{formatCurrency(scenarioItem.totalValue)}</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
+                              <div className="flex items-start gap-3">
+                                <div className="w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center mt-0.5">
+                                  <span className="text-xs text-white font-bold">!</span>
+                                </div>
+                                <div>
+                                  <div className="font-medium text-amber-800 dark:text-amber-200 mb-1">Risk Warning</div>
+                                  <div className="text-sm text-amber-700 dark:text-amber-300">
+                                    Maximum loss: {formatCurrency(opp.maxLossAmount || scenario.contractCost)} ({maxLossPercentDisplay.toFixed(1)}% of investment). Options can expire worthless, and you could lose your entire investment.
+                                  </div>
                                 </div>
                               </div>
                             </div>
                           </div>
                         </div>
-                    </div>
 
-                      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                      <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
-                        <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Potential Return</div>
-                        <div className="text-lg font-semibold text-emerald-600">{opp.potentialReturn.toFixed(1)}%</div>
-                        <div className="text-xs text-slate-500 dark:text-slate-400">≈ {formatCurrency(potentialReturnDisplay)}</div>
-                      </div>
-                      <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
-                        <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Max Return</div>
-                        <div className="text-lg font-semibold text-emerald-600">{opp.maxReturn.toFixed(1)}%</div>
-                        <div className="text-xs text-slate-500 dark:text-slate-400">≈ {formatCurrency(maxReturnDisplay)}</div>
-                      </div>
-                      <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
-                        <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Max Loss</div>
-                        <div className="text-lg font-semibold text-red-600">{maxLossPercentDisplay.toFixed(1)}%</div>
-                        <div className="text-xs text-slate-500 dark:text-slate-400">≈ {formatCurrency(maxLossDisplay)}</div>
-                        {opp.riskRewardRatio && opp.riskRewardRatio >= 3 && (
-                          <div className="mt-1 inline-flex items-center gap-1 px-2 py-1 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 rounded-full text-xs font-medium">
-                            <span>R:R {opp.riskRewardRatio.toFixed(1)}:1</span>
+                        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-6">
+                          <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
+                            <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Potential Return</div>
+                            <div className="text-lg font-semibold text-emerald-600">{opp.potentialReturn.toFixed(1)}%</div>
+                            <div className="text-xs text-slate-500 dark:text-slate-400">≈ {formatCurrency(potentialReturnDisplay)}</div>
                           </div>
-                        )}
-                      </div>
-                    </div>
-                    
-                    {/* Additional opportunity details */}
-                    <div className="mt-4 space-y-3">
-                      <div className="bg-white/80 dark:bg-slate-900/80 rounded-xl p-4 border border-slate-200/60 dark:border-slate-700/40">
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <span className="text-slate-600 dark:text-slate-400">Strike:</span>
-                            <span className="ml-2 font-medium">${opp.strikePrice}</span>
+                          <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
+                            <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Max Return</div>
+                            <div className="text-lg font-semibold text-emerald-600">{opp.maxReturn.toFixed(1)}%</div>
+                            <div className="text-xs text-slate-500 dark:text-slate-400">≈ {formatCurrency(maxReturnDisplay)}</div>
                           </div>
-                          <div>
-                            <span className="text-slate-600 dark:text-slate-400">Type:</span>
-                            <span className="ml-2 font-medium capitalize">{opp.optionType}</span>
+                          <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
+                            <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Max Loss</div>
+                            <div className="text-lg font-semibold text-red-600">{maxLossPercentDisplay.toFixed(1)}%</div>
+                            <div className="text-xs text-slate-500 dark:text-slate-400">≈ {formatCurrency(maxLossDisplay)}</div>
+                            {opp.riskRewardRatio && opp.riskRewardRatio >= 3 && (
+                              <div className="mt-1 inline-flex items-center gap-1 px-2 py-1 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 rounded-full text-xs font-medium">
+                                <span>R:R {opp.riskRewardRatio.toFixed(1)}:1</span>
+                              </div>
+                            )}
                           </div>
-                          <div>
-                            <span className="text-slate-600 dark:text-slate-400">Expiry:</span>
-                            <span className="ml-2 font-medium">{new Date(opp.expiryDate).toLocaleDateString()}</span>
+                          <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
+                            <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Breakeven</div>
+                            <div className="text-lg font-semibold text-slate-900 dark:text-white">
+                              {formatDisplayCurrency(opp.breakevenPrice)}
+                            </div>
+                            <div className="text-xs text-slate-500 dark:text-slate-400">Move needed to breakeven</div>
                           </div>
-                          <div>
-                            <span className="text-slate-600 dark:text-slate-400">DTE:</span>
-                            <span className="ml-2 font-medium">{opp.daysToExpiry} days</span>
+                          <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
+                            <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Win Probability</div>
+                            <div className="text-lg font-semibold text-cyan-600">{probabilitySummary}</div>
+                            <div className="text-xs text-slate-500 dark:text-slate-400">Model-estimated probability</div>
+                          </div>
+                        </div>
+
+                        {/* Additional opportunity details */}
+                        <div className="mt-4 space-y-3">
+                          <div className="bg-white/80 dark:bg-slate-900/80 rounded-xl p-4 border border-slate-200/60 dark:border-slate-700/40">
+                            <div className="grid grid-cols-2 gap-4 text-sm">
+                              <div>
+                                <span className="text-slate-600 dark:text-slate-400">Strike:</span>
+                                <span className="ml-2 font-medium">${opp.strikePrice}</span>
+                              </div>
+                              <div>
+                                <span className="text-slate-600 dark:text-slate-400">Type:</span>
+                                <span className="ml-2 font-medium capitalize">{opp.optionType}</span>
+                              </div>
+                              <div>
+                                <span className="text-slate-600 dark:text-slate-400">Expiry:</span>
+                                <span className="ml-2 font-medium">{new Date(opp.expiryDate).toLocaleDateString()}</span>
+                              </div>
+                              <div>
+                                <span className="text-slate-600 dark:text-slate-400">DTE:</span>
+                                <span className="ml-2 font-medium">{opp.daysToExpiry} days</span>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
+                )
               })}
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Crypto Section */}
         {activeTab === 'crypto' && (
