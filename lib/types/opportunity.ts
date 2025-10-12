@@ -149,6 +149,43 @@ export interface HistoricalContext {
   }
 }
 
+export interface PositionSizingExample {
+  portfolio: number
+  contracts: number
+  capitalAtRisk: number
+  allocationPercent: number
+}
+
+export interface PositionSizingRecommendation {
+  recommendedFraction: number
+  conservativeFraction: number
+  aggressiveFraction: number
+  kellyFraction: number
+  expectedLogGrowth?: number
+  expectedEdge?: number
+  riskBudgetTier: 'conservative' | 'balanced' | 'aggressive' | 'capital_preservation'
+  rationale: string[]
+  inputs?: {
+    winProbability?: number
+    lossProbability?: number
+    payoffRatio?: number
+    volatility?: number
+    scoreFactor?: number
+    probabilityFactor?: number
+    volatilityFactor?: number
+    rewardFactor?: number
+    riskLevel?: string
+    costBasis?: number
+    expectedRoi?: number
+  }
+  limits?: {
+    maxPerTrade: number
+    maxDrawdown95?: number
+    losingStreak95?: number
+  }
+  capitalAllocationExamples?: PositionSizingExample[]
+}
+
 export interface Opportunity {
   symbol: string
   optionType: string
@@ -213,6 +250,7 @@ export interface Opportunity {
   swingSignal?: SwingSignalInsight | null
   swingSignalError?: string
   historicalContext?: HistoricalContext
+  positionSizing?: PositionSizingRecommendation
   _dataQuality?: DataQualityInfo
 }
 

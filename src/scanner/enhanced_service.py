@@ -99,19 +99,39 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
         """Enhance a legacy opportunity with institutional-grade analysis."""
         
         try:
-            # Build enhanced opportunity from legacy data
+            # Build enhanced opportunity using the field names expected by the
+            # institutional-grade scanner.  The enhanced scanner operates on the
+            # raw option schema (``type``, ``stockPrice`` etc.) whereas the
+            # legacy scanner exposes a user-facing schema (``optionType``,
+            # ``stock_price`` ...).  The previous implementation mixed these
+            # conventions which meant the enhanced scanner never saw the fields
+            # it required (``type`` in particular), so every opportunity was
+            # silently discarded during analysis.  Mapping the legacy result back
+            # to the raw schema ensures the new pipeline receives the correct
+            # inputs while we continue to surface the existing, user-friendly
+            # structure to the rest of the app.
+
+            option_type = legacy_opp['optionType']
+            # Probability/greeks calculations work with per-share pricing.  The
+            # legacy scanner stores contract values (per 100 shares), so convert
+            # back to per-share amounts before handing off to the enhanced
+            # components.
+            bid_per_share = legacy_opp['bid'] / 100
+            ask_per_share = legacy_opp['ask'] / 100
+            last_price_per_share = legacy_opp['premium'] / 100
+
             enhanced_opp_data = {
                 'symbol': legacy_opp['symbol'],
-                'option_type': legacy_opp['optionType'],
+                'type': option_type.lower() if isinstance(option_type, str) else option_type,
                 'strike': legacy_opp['strike'],
                 'expiration': legacy_opp['expiration'],
-                'bid': legacy_opp['bid'] / 100,  # Convert back to per-share pricing
-                'ask': legacy_opp['ask'] / 100,
-                'last_price': legacy_opp['premium'] / 100,
+                'bid': bid_per_share,
+                'ask': ask_per_share,
+                'lastPrice': last_price_per_share,
                 'volume': legacy_opp['volume'],
-                'open_interest': legacy_opp['openInterest'],
-                'implied_volatility': legacy_opp['impliedVolatility'],
-                'stock_price': legacy_opp['stockPrice'],
+                'openInterest': legacy_opp['openInterest'],
+                'impliedVolatility': legacy_opp['impliedVolatility'],
+                'stockPrice': legacy_opp['stockPrice'],
                 'score': legacy_opp['score'],
                 # Include data quality metadata if available
                 '_price_source': legacy_opp.get('_dataQuality', {}).get('priceSource'),
