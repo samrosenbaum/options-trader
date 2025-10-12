@@ -32,11 +32,11 @@ interface AdvancedGreeksDisplayProps {
   compact?: boolean
 }
 
-export function AdvancedGreeksDisplay({ 
-  greeks, 
-  symbol, 
-  spotPrice, 
-  strike, 
+export function AdvancedGreeksDisplay({
+  greeks,
+  symbol,
+  spotPrice,
+  strike,
   timeToExpiry,
   compact = false 
 }: AdvancedGreeksDisplayProps) {
@@ -79,6 +79,9 @@ export function AdvancedGreeksDisplay({
             </h4>
             <p className="text-xs text-purple-700 dark:text-purple-300">
               Risk Score: {greeks.totalRisk.toFixed(1)}
+            </p>
+            <p className="text-[11px] text-purple-600 dark:text-purple-400">
+              Spot ${spotPrice.toFixed(2)} · Strike ${strike.toFixed(2)}
             </p>
           </div>
         </div>
@@ -124,9 +127,17 @@ export function AdvancedGreeksDisplay({
             Advanced Greeks Analysis
           </h3>
           <p className="text-sm text-purple-800 dark:text-purple-200">
-            Comprehensive sensitivity analysis including second and third-order Greeks for {symbol} 
+            Comprehensive sensitivity analysis including second and third-order Greeks for {symbol}
             ${strike} options with {timeToExpiry.toFixed(1)} days to expiry.
           </p>
+          <div className="mt-2 inline-flex flex-wrap items-center gap-2 text-xs text-purple-700 dark:text-purple-300">
+            <span className="rounded-full bg-purple-100 px-2 py-1 font-medium uppercase tracking-wide dark:bg-purple-900/40">
+              Spot {spotPrice.toFixed(2)}
+            </span>
+            <span className="rounded-full bg-purple-100 px-2 py-1 font-medium uppercase tracking-wide dark:bg-purple-900/40">
+              Strike {strike.toFixed(2)}
+            </span>
+          </div>
         </div>
         <div className="text-right">
           <div className="text-sm font-medium text-purple-600 dark:text-purple-400">Total Risk</div>
