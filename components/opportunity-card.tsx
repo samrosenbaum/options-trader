@@ -1006,6 +1006,64 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
     : 'Never reached breakeven in lookback window'
   const lastTouchAdditional = touchesObserved && recentTouchesText ? `Recent touches: ${recentTouchesText}` : null
   const comparisonSourceLabel = finishProbability !== null ? 'finish odds' : 'touch odds'
+  const marketProbability = isFiniteNumber(opportunity.probabilityOfProfit)
+    ? opportunity.probabilityOfProfit
+    : null
+  const probabilityGap =
+    comparisonProbability !== null && marketProbability !== null
+      ? comparisonProbability - marketProbability
+      : null
+  const edgeCallout = (() => {
+    if (probabilityGap === null || marketProbability === null || comparisonProbability === null) {
+      return {
+        tone: 'neutral' as const,
+        title: 'Edge Calibration Pending',
+        message: 'Historical sample still validating against implied pricing.',
+        className:
+          'bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800/40 dark:text-slate-200 dark:border-slate-700/60',
+      }
+    }
+
+    if (probabilityGap > 10) {
+      return {
+        tone: 'positive' as const,
+        title: '✓ Potentially Underpriced',
+        message: `Historical ${comparisonSourceLabel} ${(probabilityGap).toFixed(0)}% stronger than market pricing.`,
+        className:
+          'bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-200 dark:border-emerald-500/40',
+      }
+    }
+
+    if (probabilityGap < -10) {
+      return {
+        tone: 'caution' as const,
+        title: '⚠ Potentially Overpriced',
+        message: `Market pricing ${Math.abs(probabilityGap).toFixed(0)}% richer than historical ${comparisonSourceLabel}.`,
+        className:
+          'bg-amber-50 text-amber-800 border border-amber-200 dark:bg-amber-500/10 dark:text-amber-200 dark:border-amber-500/40',
+      }
+    }
+
+    return {
+      tone: 'neutral' as const,
+      title: '↔️ Well Calibrated',
+      message: `Market and historical ${comparisonSourceLabel} are aligned within ±10%.`,
+      className:
+        'bg-blue-50 text-blue-800 border border-blue-200 dark:bg-blue-500/10 dark:text-blue-200 dark:border-blue-500/40',
+    }
+  })()
+  const dataQuality = opportunity._dataQuality ?? null
+  const fallbackSignalsActive = dataQuality
+    ? [
+        dataQuality.priceSource,
+        ...(dataQuality.warnings ?? []),
+        ...(dataQuality.issues ?? []),
+      ]
+        .filter(Boolean)
+        .some((entry) =>
+          typeof entry === 'string' ? entry.toLowerCase().includes('fallback') || entry.toLowerCase().includes('delayed') : false,
+        )
+    : false
 
   return (
     <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 hover:shadow-lg transition-all">
@@ -1058,11 +1116,21 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
           </div>
         </div>
 
-        <div className="text-right space-y-1 ml-4">
+        <div className="text-right space-y-2 ml-4 min-w-[12rem]">
+          {dataQuality && (
+            <div className="flex justify-end">
+              <DataQualityBadge quality={dataQuality} compact />
+            </div>
+          )}
           <div className="text-3xl font-bold text-slate-900 dark:text-white">
             {formatCurrency(opportunity.premium)}
           </div>
           <div className="text-sm text-slate-500 dark:text-slate-400 font-medium">Contract Price</div>
+          {fallbackSignalsActive && (
+            <div className="text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
+              Institutional fallback data active — sanitized for pre-market review.
+            </div>
+          )}
         </div>
       </div>
 
@@ -1075,168 +1143,19 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
         </div>
       ) : null}
 
-      {hasPositionSizing && (
-        <div className="mb-6 bg-gradient-to-r from-emerald-50 to-blue-50 dark:from-emerald-950/30 dark:to-blue-950/30 border border-emerald-200/60 dark:border-emerald-800/60 rounded-xl p-5">
-          <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
-            <div>
-              <h4 className="text-lg font-semibold text-emerald-900 dark:text-emerald-100">
-                Institutional Position Sizing
-              </h4>
-              <p className="text-sm text-emerald-800/80 dark:text-emerald-200/80">
-                Kelly sizing blended with volatility and drawdown controls to protect the fund while maximizing edge.
-              </p>
-            </div>
-            <div className={`px-3 py-1 rounded-lg text-xs font-semibold uppercase tracking-wide ${riskBudgetMeta.className}`}>
-              {riskBudgetMeta.label}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-            <div className="bg-white/70 dark:bg-slate-900/60 rounded-lg p-4 border border-emerald-200/60 dark:border-emerald-800/50">
-              <div className="text-xs font-semibold text-emerald-600 dark:text-emerald-300 uppercase tracking-wide mb-1">
-                Recommended Allocation
-              </div>
-              <div className="text-2xl font-bold text-slate-900 dark:text-white">{recommendedFractionDisplay}</div>
-              {expectedLogGrowthDisplay !== '—' && (
-                <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                  Expected log growth {expectedLogGrowthDisplay}
-                </div>
-              )}
-            </div>
-
-            <div className="bg-white/70 dark:bg-slate-900/60 rounded-lg p-4 border border-emerald-200/60 dark:border-emerald-800/50">
-              <div className="text-xs font-semibold text-sky-600 dark:text-sky-300 uppercase tracking-wide mb-1">
-                Conservative Risk-Off
-              </div>
-              <div className="text-2xl font-bold text-slate-900 dark:text-white">{conservativeFractionDisplay}</div>
-              <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                Use during elevated volatility or headline risk
-              </div>
-            </div>
-
-            <div className="bg-white/70 dark:bg-slate-900/60 rounded-lg p-4 border border-emerald-200/60 dark:border-emerald-800/50">
-              <div className="text-xs font-semibold text-amber-600 dark:text-amber-300 uppercase tracking-wide mb-1">
-                Aggressive Upside
-              </div>
-              <div className="text-2xl font-bold text-slate-900 dark:text-white">{aggressiveFractionDisplay}</div>
-              <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                Hard cap {maxPerTradeDisplay}
-              </div>
-            </div>
-
-            <div className="bg-white/70 dark:bg-slate-900/60 rounded-lg p-4 border border-emerald-200/60 dark:border-emerald-800/50">
-              <div className="text-xs font-semibold text-purple-600 dark:text-purple-300 uppercase tracking-wide mb-1">
-                Raw Kelly Fraction
-              </div>
-              <div className="text-2xl font-bold text-slate-900 dark:text-white">{kellyFractionDisplay}</div>
-              {expectedEdgeDisplay !== '—' && (
-                <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                  Net edge {expectedEdgeDisplay}
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="flex flex-wrap gap-3 text-xs font-medium text-slate-600 dark:text-slate-400 mb-4">
-            <span>Per-trade cap {maxPerTradeDisplay}</span>
-            {maxDrawdownDisplay !== '—' && <span>95% drawdown limit {maxDrawdownDisplay}</span>}
-            {typeof losingStreak95 === 'number' && Number.isFinite(losingStreak95) && (
-              <span>Designed to survive {losingStreak95}-trade losing streak</span>
-            )}
-          </div>
-
-          {capitalExamples.length > 0 && (
-            <div className="mb-4">
-              <div className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 uppercase tracking-wide">
-                Portfolio Impact Examples
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-2">
-                {capitalExamples.map((example) => (
-                  <div
-                    key={example.portfolio}
-                    className="bg-white/60 dark:bg-slate-900/40 border border-emerald-200/40 dark:border-emerald-800/40 rounded-lg p-3"
-                  >
-                    <div className="text-sm font-semibold text-slate-900 dark:text-white">
-                      ${example.portfolio.toLocaleString()}
-                    </div>
-                    <div className="text-xs text-slate-600 dark:text-slate-400">Portfolio size</div>
-                    <div className="text-lg font-bold text-emerald-600 dark:text-emerald-300 mt-1">
-                      {formatFractionAsPercent(example.allocationPercent)}
-                    </div>
-                    <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                      ≈ {example.contracts} contract{example.contracts === 1 ? '' : 's'} at
-                      {' '}
-                      {formatCurrency(example.capitalAtRisk)} risk
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {sizingRationales.length > 0 && (
-            <ul className="mt-4 space-y-2 text-sm text-slate-700 dark:text-slate-300">
-              {sizingRationales.map((reason, index) => (
-                <li key={`${reason}-${index}`} className="flex items-start gap-2">
-                  <span className="mt-1 h-2 w-2 rounded-full bg-emerald-500 dark:bg-emerald-300 flex-shrink-0" />
-                  <span>{reason}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
-
-      {/* Historical Move Analysis - Always Visible (MOST VALUABLE!) */}
       {historical?.available && (
-        <div className="mb-5 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-2 border-blue-300 dark:border-blue-700 rounded-2xl p-5 shadow-lg">
-          <div className="flex items-start gap-3 mb-4">
-            <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center flex-shrink-0">
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-            </div>
-            <div className="flex-1">
-              <h5 className="text-lg font-bold text-blue-900 dark:text-blue-100 mb-2">📊 Historical Probability Check</h5>
-              {historical.analysis ? (
-                <p className="text-base text-blue-800 dark:text-blue-200 leading-relaxed font-medium">
-                  {historical.analysis}
-                </p>
-              ) : null}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-            <div className="bg-white/70 dark:bg-slate-900/50 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
-              <div className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1 uppercase tracking-wide">
-                Required Move
+        <div className="mb-5 space-y-4">
+          <div className={`rounded-2xl border p-4 flex flex-col gap-3 ${edgeCallout.className}`}>
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <h5 className="text-base font-semibold">{edgeCallout.title}</h5>
+                <p className="text-sm opacity-90">{edgeCallout.message}</p>
               </div>
-              <div className="text-xl font-bold text-slate-900 dark:text-white">{moveRequirementHeadline}</div>
-              <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">{moveRequirementSubtext}</div>
-            </div>
-
-            <div className="bg-white/70 dark:bg-slate-900/50 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
-              <div className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1 uppercase tracking-wide">
-                Historical Hits
+              <div className="hidden sm:flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">
+                <span>Market {marketProbability !== null ? `${marketProbability.toFixed(0)}%` : '—'}</span>
+                <span className="opacity-40">|</span>
+                <span>History {comparisonProbability !== null ? `${comparisonProbability.toFixed(0)}%` : '—'}</span>
               </div>
-              <div className="text-xl font-bold text-slate-900 dark:text-white">{historicalHitHeadline}</div>
-              <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                {historicalHitSubtext ?? (touchesObserved ? 'Historical hit data available' : 'No touches recorded in sample')}
-              </div>
-              {historicalHitContext && (
-                <div className="text-xs text-slate-500 dark:text-slate-400 mt-2">{historicalHitContext}</div>
-              )}
-            </div>
-
-            <div className="bg-white/70 dark:bg-slate-900/50 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
-              <div className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1 uppercase tracking-wide">
-                Last Time It Moved
-              </div>
-              <div className="text-xl font-bold text-slate-900 dark:text-white">{lastTouchHeadline}</div>
-              <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">{lastTouchSubtext}</div>
-              {lastTouchAdditional && (
-                <div className="text-xs text-slate-500 dark:text-slate-400 mt-2">{lastTouchAdditional}</div>
-              )}
             </div>
           </div>
 
@@ -1244,7 +1163,7 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
             <div className="bg-white/70 dark:bg-slate-900/50 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
               <div className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1 uppercase tracking-wide">Market Expects</div>
               <div className="text-3xl font-bold text-slate-900 dark:text-white">
-                {opportunity.probabilityOfProfit?.toFixed(0) || '—'}%
+                {marketProbability !== null ? marketProbability.toFixed(0) : '—'}%
               </div>
               <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">Based on IV pricing</div>
             </div>
@@ -1254,12 +1173,7 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
               <div className="text-3xl font-bold text-slate-900 dark:text-white">
                 {touchProbability !== null ? touchProbability.toFixed(0) : '—'}%
               </div>
-              <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                Breakeven tagged before expiry
-              </div>
-              {touchConfidenceText && (
-                <div className="text-xs text-slate-500 dark:text-slate-400 mt-2">95% CI {touchConfidenceText}</div>
-              )}
+              <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">Breakeven tagged before expiry</div>
             </div>
 
             <div className="bg-white/70 dark:bg-slate-900/50 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
@@ -1267,55 +1181,9 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
               <div className="text-3xl font-bold text-slate-900 dark:text-white">
                 {finishProbability !== null ? finishProbability.toFixed(0) : '—'}%
               </div>
-              <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                Closed beyond breakeven by expiry
-              </div>
-              {finishConfidenceText && (
-                <div className="text-xs text-slate-500 dark:text-slate-400 mt-2">95% CI {finishConfidenceText}</div>
-              )}
+              <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">Closed beyond breakeven by expiry</div>
             </div>
           </div>
-
-          {(sampleSize !== null || qualityLabel || qualityScore !== null) && (
-            <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300">
-              {sampleSize !== null && (
-                <span className="px-3 py-1 bg-white/60 dark:bg-slate-900/40 border border-blue-200 dark:border-blue-800 rounded-lg">
-                  Sample Size: {sampleSize.toLocaleString()} periods
-                </span>
-              )}
-              {qualityLabel && (
-                <span className="px-3 py-1 bg-white/60 dark:bg-slate-900/40 border border-blue-200 dark:border-blue-800 rounded-lg">
-                  Data Quality: {qualityLabel.toUpperCase()}
-                  {qualityScore !== null ? ` (${qualityScore.toFixed(0)})` : ''}
-                </span>
-              )}
-            </div>
-          )}
-
-          {comparisonProbability !== null && opportunity.probabilityOfProfit !== null && (
-            <div className="mt-4 p-3 bg-white/70 dark:bg-slate-900/50 rounded-xl border border-blue-200 dark:border-blue-800">
-              {comparisonProbability > opportunity.probabilityOfProfit + 10 ? (
-                <div className="flex items-center gap-2">
-                  <span className="text-lg font-bold text-green-600 dark:text-green-400">✓ Potentially Underpriced</span>
-                  <span className="text-sm text-slate-700 dark:text-slate-300">
-                    — Historical {comparisonSourceLabel} {(comparisonProbability - opportunity.probabilityOfProfit).toFixed(0)}% better than market pricing!
-                  </span>
-                </div>
-              ) : comparisonProbability < opportunity.probabilityOfProfit - 10 ? (
-                <div className="flex items-center gap-2">
-                  <span className="text-lg font-bold text-amber-600 dark:text-amber-400">⚠ Potentially Overpriced</span>
-                  <span className="text-sm text-slate-700 dark:text-slate-300">
-                    — Market pricing {(opportunity.probabilityOfProfit - comparisonProbability).toFixed(0)}% higher than historical {comparisonSourceLabel}
-                  </span>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <span className="text-lg font-bold text-blue-600 dark:text-blue-400">↔️ Well Calibrated</span>
-                  <span className="text-sm text-slate-700 dark:text-slate-300">— Market pricing aligns with historical {comparisonSourceLabel}</span>
-                </div>
-              )}
-            </div>
-          )}
         </div>
       )}
 
@@ -1338,23 +1206,218 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
       {/* Collapsible Content */}
       {isExpanded && (
         <div className="space-y-6">
-          {/* Data Quality Badge */}
-          {opportunity._dataQuality && (
+          {dataQuality && (
             <div>
-              <DataQualityBadge quality={opportunity._dataQuality} />
+              <DataQualityBadge quality={dataQuality} />
             </div>
           )}
 
+          {hasPositionSizing && (
+            <section className="bg-gradient-to-r from-emerald-50 to-blue-50 dark:from-emerald-950/30 dark:to-blue-950/30 border border-emerald-200/60 dark:border-emerald-800/60 rounded-xl p-5">
+              <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
+                <div>
+                  <h4 className="text-lg font-semibold text-emerald-900 dark:text-emerald-100">Institutional Position Sizing</h4>
+                  <p className="text-sm text-emerald-800/80 dark:text-emerald-200/80">
+                    Kelly sizing blended with volatility and drawdown controls to protect the fund while maximizing edge.
+                  </p>
+                </div>
+                <div className={`px-3 py-1 rounded-lg text-xs font-semibold uppercase tracking-wide ${riskBudgetMeta.className}`}>
+                  {riskBudgetMeta.label}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                <div className="bg-white/70 dark:bg-slate-900/60 rounded-lg p-4 border border-emerald-200/60 dark:border-emerald-800/50">
+                  <div className="text-xs font-semibold text-emerald-600 dark:text-emerald-300 uppercase tracking-wide mb-1">
+                    Recommended Allocation
+                  </div>
+                  <div className="text-2xl font-bold text-slate-900 dark:text-white">{recommendedFractionDisplay}</div>
+                  {expectedLogGrowthDisplay !== '—' && (
+                    <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">Expected log growth {expectedLogGrowthDisplay}</div>
+                  )}
+                </div>
+
+                <div className="bg-white/70 dark:bg-slate-900/60 rounded-lg p-4 border border-emerald-200/60 dark:border-emerald-800/50">
+                  <div className="text-xs font-semibold text-sky-600 dark:text-sky-300 uppercase tracking-wide mb-1">
+                    Conservative Risk-Off
+                  </div>
+                  <div className="text-2xl font-bold text-slate-900 dark:text-white">{conservativeFractionDisplay}</div>
+                  <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">Use during elevated volatility or headline risk</div>
+                </div>
+
+                <div className="bg-white/70 dark:bg-slate-900/60 rounded-lg p-4 border border-emerald-200/60 dark:border-emerald-800/50">
+                  <div className="text-xs font-semibold text-amber-600 dark:text-amber-300 uppercase tracking-wide mb-1">
+                    Aggressive Upside
+                  </div>
+                  <div className="text-2xl font-bold text-slate-900 dark:text-white">{aggressiveFractionDisplay}</div>
+                  <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">Hard cap {maxPerTradeDisplay}</div>
+                </div>
+
+                <div className="bg-white/70 dark:bg-slate-900/60 rounded-lg p-4 border border-emerald-200/60 dark:border-emerald-800/50">
+                  <div className="text-xs font-semibold text-purple-600 dark:text-purple-300 uppercase tracking-wide mb-1">
+                    Raw Kelly Fraction
+                  </div>
+                  <div className="text-2xl font-bold text-slate-900 dark:text-white">{kellyFractionDisplay}</div>
+                  {expectedEdgeDisplay !== '—' && (
+                    <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">Net edge {expectedEdgeDisplay}</div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-3 text-xs font-medium text-slate-600 dark:text-slate-400 mb-4">
+                <span>Per-trade cap {maxPerTradeDisplay}</span>
+                {maxDrawdownDisplay !== '—' && <span>95% drawdown limit {maxDrawdownDisplay}</span>}
+                {typeof losingStreak95 === 'number' && Number.isFinite(losingStreak95) && (
+                  <span>Designed to survive {losingStreak95}-trade losing streak</span>
+                )}
+              </div>
+
+              {capitalExamples.length > 0 && (
+                <div className="mb-4">
+                  <div className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 uppercase tracking-wide">
+                    Portfolio Impact Examples
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-2">
+                    {capitalExamples.map((example) => (
+                      <div
+                        key={example.portfolio}
+                        className="bg-white/60 dark:bg-slate-900/40 border border-emerald-200/40 dark:border-emerald-800/40 rounded-lg p-3"
+                      >
+                        <div className="text-sm font-semibold text-slate-900 dark:text-white">
+                          ${example.portfolio.toLocaleString()}
+                        </div>
+                        <div className="text-xs text-slate-600 dark:text-slate-400">Portfolio size</div>
+                        <div className="text-lg font-bold text-emerald-600 dark:text-emerald-300 mt-1">
+                          {formatFractionAsPercent(example.allocationPercent)}
+                        </div>
+                        <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                          ≈ {example.contracts} contract{example.contracts === 1 ? '' : 's'} at {formatCurrency(example.capitalAtRisk)} risk
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {sizingRationales.length > 0 && (
+                <ul className="mt-4 space-y-2 text-sm text-slate-700 dark:text-slate-300">
+                  {sizingRationales.map((reason, index) => (
+                    <li key={`${reason}-${index}`} className="flex items-start gap-2">
+                      <span className="mt-1 h-2 w-2 rounded-full bg-emerald-500 dark:bg-emerald-300 flex-shrink-0" />
+                      <span>{reason}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          )}
+
+          {historical?.available && (
+            <section className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-2 border-blue-300 dark:border-blue-700 rounded-2xl p-5 shadow-lg space-y-5">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                </div>
+                <div className="flex-1 space-y-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h5 className="text-lg font-bold text-blue-900 dark:text-blue-100">📊 Historical Probability Check</h5>
+                    <span className={`px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide ${edgeCallout.className}`}>
+                      {edgeCallout.title}
+                    </span>
+                  </div>
+                  {historical.analysis && (
+                    <p className="text-sm text-blue-800 dark:text-blue-200 leading-relaxed font-medium">{historical.analysis}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-white/70 dark:bg-slate-900/50 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
+                  <div className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1 uppercase tracking-wide">Required Move</div>
+                  <div className="text-xl font-bold text-slate-900 dark:text-white">{moveRequirementHeadline}</div>
+                  <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">{moveRequirementSubtext}</div>
+                </div>
+
+                <div className="bg-white/70 dark:bg-slate-900/50 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
+                  <div className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1 uppercase tracking-wide">Historical Hits</div>
+                  <div className="text-xl font-bold text-slate-900 dark:text-white">{historicalHitHeadline}</div>
+                  <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                    {historicalHitSubtext ?? (touchesObserved ? 'Historical hit data available' : 'No touches recorded in sample')}
+                  </div>
+                  {historicalHitContext && (
+                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-2">{historicalHitContext}</div>
+                  )}
+                </div>
+
+                <div className="bg-white/70 dark:bg-slate-900/50 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
+                  <div className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1 uppercase tracking-wide">Last Time It Moved</div>
+                  <div className="text-xl font-bold text-slate-900 dark:text-white">{lastTouchHeadline}</div>
+                  <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">{lastTouchSubtext}</div>
+                  {lastTouchAdditional && (
+                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-2">{lastTouchAdditional}</div>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-white/70 dark:bg-slate-900/50 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
+                  <div className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1 uppercase tracking-wide">Market Expects</div>
+                  <div className="text-3xl font-bold text-slate-900 dark:text-white">{marketProbability !== null ? marketProbability.toFixed(0) : '—'}%</div>
+                  <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">Based on IV pricing</div>
+                </div>
+
+                <div className="bg-white/70 dark:bg-slate-900/50 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
+                  <div className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1 uppercase tracking-wide">History Touches</div>
+                  <div className="text-3xl font-bold text-slate-900 dark:text-white">{touchProbability !== null ? touchProbability.toFixed(0) : '—'}%</div>
+                  <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">Breakeven tagged before expiry</div>
+                  {touchConfidenceText && <div className="text-xs text-slate-500 dark:text-slate-400 mt-2">95% CI {touchConfidenceText}</div>}
+                </div>
+
+                <div className="bg-white/70 dark:bg-slate-900/50 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
+                  <div className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1 uppercase tracking-wide">History Finishes</div>
+                  <div className="text-3xl font-bold text-slate-900 dark:text-white">{finishProbability !== null ? finishProbability.toFixed(0) : '—'}%</div>
+                  <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">Closed beyond breakeven by expiry</div>
+                  {finishConfidenceText && <div className="text-xs text-slate-500 dark:text-slate-400 mt-2">95% CI {finishConfidenceText}</div>}
+                </div>
+              </div>
+
+              {(sampleSize !== null || qualityLabel || qualityScore !== null) && (
+                <div className="flex flex-wrap gap-2 text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300">
+                  {sampleSize !== null && (
+                    <span className="px-3 py-1 bg-white/60 dark:bg-slate-900/40 border border-blue-200 dark:border-blue-800 rounded-lg">
+                      Sample Size: {sampleSize.toLocaleString()} periods
+                    </span>
+                  )}
+                  {qualityLabel && (
+                    <span className="px-3 py-1 bg-white/60 dark:bg-slate-900/40 border border-blue-200 dark:border-blue-800 rounded-lg">
+                      Data Quality: {qualityLabel.toUpperCase()}
+                      {qualityScore !== null ? ` (${qualityScore.toFixed(0)})` : ''}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {probabilityGap !== null && marketProbability !== null && comparisonProbability !== null && (
+                <div className={`rounded-xl border p-3 ${edgeCallout.className}`}>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm font-semibold">{edgeCallout.title}</span>
+                    <span className="text-sm">{edgeCallout.message}</span>
+                  </div>
+                </div>
+              )}
+            </section>
+          )}
+
           {opportunity.recentNews && opportunity.recentNews.length > 0 && (
-            <div>
+            <section>
               <h4 className="font-semibold text-slate-900 dark:text-white mb-3">Recent News</h4>
               <div className="space-y-3">
                 {opportunity.recentNews.map((news, i) => (
                   <div key={i} className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
                     <div className="flex items-start justify-between mb-2">
-                      <h5 className="text-sm font-medium text-slate-900 dark:text-white line-clamp-2">
-                        {news.headline}
-                      </h5>
+                      <h5 className="text-sm font-medium text-slate-900 dark:text-white line-clamp-2">{news.headline}</h5>
                       <span
                         className={`px-2 py-1 rounded-lg text-xs font-medium ml-3 ${
                           news.category === 'political'
@@ -1390,216 +1453,198 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
                   </div>
                 ))}
               </div>
-            </div>
+            </section>
           )}
 
-          <div className="space-y-6">
-        {renderMoveThesis(opportunity)}
+          <section className="space-y-6">
+            {renderMoveThesis(opportunity)}
 
-        <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
-          <h5 className="font-medium text-slate-900 dark:text-white mb-2">Risk &amp; Reward Profile</h5>
-          <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
-            {getRiskRewardExplanation(opportunity)}
-          </p>
-        </div>
+            <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
+              <h5 className="font-medium text-slate-900 dark:text-white mb-2">Risk &amp; Reward Profile</h5>
+              <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">{getRiskRewardExplanation(opportunity)}</p>
+            </div>
 
-        {opportunity.probabilityOfProfit !== null && (
-          <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl p-4 border border-emerald-200 dark:border-emerald-800">
-            <div className="flex items-center justify-between mb-3">
-              <h5 className="font-medium text-emerald-900 dark:text-emerald-100">Likelihood of Profit</h5>
-              <span className="text-lg font-semibold text-emerald-700 dark:text-emerald-200">
-                {opportunity.probabilityOfProfit.toFixed(1)}%
-              </span>
+            {opportunity.probabilityOfProfit !== null && (
+              <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl p-4 border border-emerald-200 dark:border-emerald-800">
+                <div className="flex items-center justify-between mb-3">
+                  <h5 className="font-medium text-emerald-900 dark:text-emerald-100">Likelihood of Profit</h5>
+                  <span className="text-lg font-semibold text-emerald-700 dark:text-emerald-200">
+                    {opportunity.probabilityOfProfit.toFixed(1)}%
+                  </span>
+                </div>
+                <div className="w-full h-2 bg-emerald-100 dark:bg-emerald-900/40 rounded-full overflow-hidden mb-2">
+                  <div
+                    className="h-full bg-emerald-500"
+                    style={{ width: `${Math.max(0, Math.min(opportunity.probabilityOfProfit, 100)).toFixed(1)}%` }}
+                  />
+                </div>
+                <div className="flex items-center justify-between text-xs text-emerald-800 dark:text-emerald-200 mb-3">
+                  {(() => {
+                    const breakevenText = formatBreakevenRequirement(opportunity)
+                    return breakevenText ? <span>{breakevenText}</span> : <span>Breakeven move unavailable</span>
+                  })()}
+                  {opportunity.breakevenPrice !== null && <span>Breakeven ${opportunity.breakevenPrice.toFixed(2)}</span>}
+                </div>
+                <p className="text-sm text-emerald-900 dark:text-emerald-100 leading-relaxed">
+                  {opportunity.profitProbabilityExplanation || 'Probability estimate unavailable for this contract.'}
+                </p>
+              </div>
+            )}
+          </section>
+
+          <section className="mb-6">
+            <h4 className="font-semibold text-slate-900 dark:text-white mb-3">Investment Calculator</h4>
+            <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-6">
+              <div className="space-y-4">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-4 bg-white dark:bg-slate-700 rounded-xl">
+                  <div>
+                    <div className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                      {scenario.basis === 'position' ? 'Your Position' : 'Per-Contract Preview'}
+                    </div>
+                    <div className="text-lg font-semibold text-slate-900 dark:text-white">
+                      {scenario.basis === 'position'
+                        ? `${formatCurrency(scenario.totalCost)} for ${scenario.contractsToBuy} contract${scenario.contractsToBuy !== 1 ? 's' : ''}`
+                        : `${formatCurrency(scenario.displayCost)} per contract`}
+                    </div>
+                    {scenario.basis === 'position' ? (
+                      <div className="text-xs text-slate-500 dark:text-slate-300 mt-1">
+                        Remaining capital: {formatCurrency(scenario.remainingCapital)}
+                      </div>
+                    ) : scenario.requiredCapital > 0 ? (
+                      <div className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                        Add {formatCurrency(scenario.shortfall)} more to control one contract (requires {formatCurrency(scenario.requiredCapital)}).
+                      </div>
+                    ) : (
+                      <div className="text-xs text-slate-500 dark:text-slate-300 mt-1">
+                        Waiting for pricing data to size this trade.
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm font-medium text-slate-600 dark:text-slate-400">Option Price</div>
+                    <div className="text-lg font-semibold text-slate-900 dark:text-white">{formatCurrency(opportunity.premium / 100)} per share</div>
+                    <div className="text-sm text-slate-500 dark:text-slate-400">{formatCurrency(opportunity.premium)} per contract</div>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <h5 className="font-medium text-slate-900 dark:text-white">Potential Profits</h5>
+                    {isPerContractView && (
+                      <span className="text-xs font-medium text-amber-600 dark:text-amber-300">Showing per-contract economics</span>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {scenario.scenarios.map((scenarioItem, i) => (
+                      <div key={i} className="bg-white dark:bg-slate-700 rounded-xl p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                            {scenarioItem.move || `${scenarioItem.return.toFixed(0)}%`} Stock Move
+                          </span>
+                          <span className={`text-xs font-semibold ${scenarioItem.return >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                            {scenarioItem.return >= 0 ? `+${scenarioItem.return.toFixed(1)}%` : `${scenarioItem.return.toFixed(1)}%`}
+                          </span>
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-slate-600 dark:text-slate-400">Profit:</span>
+                            <span className={`font-semibold ${scenarioItem.profit >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                              {formatCurrency(scenarioItem.profit)}
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-slate-600 dark:text-slate-400">Total Value:</span>
+                            <span className="font-semibold text-slate-900 dark:text-white">{formatCurrency(scenarioItem.totalValue)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center mt-0.5">
+                      <span className="text-xs text-white font-bold">!</span>
+                    </div>
+                    <div>
+                      <div className="font-medium text-amber-800 dark:text-amber-200 mb-1">Risk Warning</div>
+                      <div className="text-sm text-amber-700 dark:text-amber-300">{maxLossWarning}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="w-full h-2 bg-emerald-100 dark:bg-emerald-900/40 rounded-full overflow-hidden mb-2">
-              <div
-                className="h-full bg-emerald-500"
-                style={{ width: `${Math.max(0, Math.min(opportunity.probabilityOfProfit, 100)).toFixed(1)}%` }}
-              />
+          </section>
+
+          <section className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
+              <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Potential Return</div>
+              <div className="text-lg font-semibold text-emerald-600">{formatPercent(opportunity.potentialReturn, 1)}</div>
+              <div className="text-xs text-slate-500 dark:text-slate-400">≈ {formatCurrency(potentialReturnDisplay)}</div>
             </div>
-            <div className="flex items-center justify-between text-xs text-emerald-800 dark:text-emerald-200 mb-3">
+            <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
+              <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Max Return</div>
+              <div className="text-lg font-semibold text-emerald-600">{formatPercent(opportunity.maxReturn, 1)}</div>
+              <div className="text-xs text-slate-500 dark:text-slate-400">≈ {formatCurrency(maxReturnDisplay)}</div>
+            </div>
+            <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
+              <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Max Loss</div>
+              <div className="text-lg font-semibold text-red-600">{formatPercent(opportunity.maxLossPercent, 1)}</div>
+              <div className="text-xs text-slate-500 dark:text-slate-400">≈ {formatCurrency(maxLossDisplay)}</div>
+              {showAsymmetricEdge && (
+                <div className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-emerald-600">
+                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                  {riskRewardRatioLabel}x upside vs risk
+                </div>
+              )}
+            </div>
+            <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
+              <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Profit Probability</div>
+              <div className="text-lg font-semibold text-slate-900 dark:text-white">
+                {opportunity.probabilityOfProfit !== null ? `${opportunity.probabilityOfProfit.toFixed(1)}%` : '—'}
+              </div>
               {(() => {
                 const breakevenText = formatBreakevenRequirement(opportunity)
-                return breakevenText ? <span>{breakevenText}</span> : <span>Breakeven move unavailable</span>
+                return breakevenText ? <div className="text-xs text-slate-500 dark:text-slate-400">{breakevenText}</div> : null
               })()}
-              {opportunity.breakevenPrice !== null && <span>Breakeven ${opportunity.breakevenPrice.toFixed(2)}</span>}
             </div>
-            <p className="text-sm text-emerald-900 dark:text-emerald-100 leading-relaxed">
-              {opportunity.profitProbabilityExplanation || 'Probability estimate unavailable for this contract.'}
-            </p>
-          </div>
-        )}
-      </div>
-
-      <div className="mb-6">
-        <h4 className="font-semibold text-slate-900 dark:text-white mb-3">Investment Calculator</h4>
-        <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-6">
-          <div className="space-y-4">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-4 bg-white dark:bg-slate-700 rounded-xl">
-              <div>
-                <div className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                  {scenario.basis === 'position' ? 'Your Position' : 'Per-Contract Preview'}
-                </div>
-                <div className="text-lg font-semibold text-slate-900 dark:text-white">
-                  {scenario.basis === 'position'
-                    ? `${formatCurrency(scenario.totalCost)} for ${scenario.contractsToBuy} contract${scenario.contractsToBuy !== 1 ? 's' : ''}`
-                    : `${formatCurrency(scenario.displayCost)} per contract`}
-                </div>
-                {scenario.basis === 'position' ? (
-                  <div className="text-xs text-slate-500 dark:text-slate-300 mt-1">
-                    Remaining capital: {formatCurrency(scenario.remainingCapital)}
-                  </div>
-                ) : scenario.requiredCapital > 0 ? (
-                  <div className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-                    Add {formatCurrency(scenario.shortfall)} more to control one contract (requires {formatCurrency(scenario.requiredCapital)}).
-                  </div>
-                ) : (
-                  <div className="text-xs text-slate-500 dark:text-slate-300 mt-1">
-                    Waiting for pricing data to size this trade.
-                  </div>
-                )}
+            <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
+              <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Reward-to-Risk</div>
+              <div className={`text-lg font-semibold ${showAsymmetricEdge ? 'text-emerald-600' : 'text-slate-900 dark:text-white'}`}>
+                {riskRewardRatioLabel ? `${riskRewardRatioLabel}x` : '—'}
               </div>
-              <div className="text-right">
-                <div className="text-sm font-medium text-slate-600 dark:text-slate-400">Option Price</div>
-                <div className="text-lg font-semibold text-slate-900 dark:text-white">
-                  {formatCurrency(opportunity.premium / 100)} per share
-                </div>
-                <div className="text-sm text-slate-500 dark:text-slate-400">
-                  {formatCurrency(opportunity.premium)} per contract
-                </div>
+              {showAsymmetricEdge && <div className="text-xs text-emerald-600">Asymmetric payoff</div>}
+            </div>
+          </section>
+
+          <section>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center">
+                <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Delta</div>
+                <div className="text-sm font-semibold text-slate-900 dark:text-white">{opportunity.greeks.delta.toFixed(3)}</div>
+              </div>
+              <div className="text-center">
+                <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Gamma</div>
+                <div className="text-sm font-semibold text-slate-900 dark:text-white">{opportunity.greeks.gamma.toFixed(3)}</div>
+              </div>
+              <div className="text-center">
+                <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Theta</div>
+                <div className="text-sm font-semibold text-slate-900 dark:text-white">{opportunity.greeks.theta.toFixed(3)}</div>
+              </div>
+              <div className="text-center">
+                <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Vega</div>
+                <div className="text-sm font-semibold text-slate-900 dark:text-white">{opportunity.greeks.vega.toFixed(3)}</div>
               </div>
             </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <h5 className="font-medium text-slate-900 dark:text-white">Potential Profits</h5>
-                {isPerContractView && (
-                  <span className="text-xs font-medium text-amber-600 dark:text-amber-300">
-                    Showing per-contract economics
-                  </span>
-                )}
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {scenario.scenarios.map((scenarioItem, i) => (
-                  <div key={i} className="bg-white dark:bg-slate-700 rounded-xl p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                        {scenarioItem.move || `${scenarioItem.return.toFixed(0)}%`} Stock Move
-                      </span>
-                      <span
-                        className={`text-xs font-semibold ${scenarioItem.return >= 0 ? 'text-emerald-600' : 'text-red-600'}`}
-                      >
-                        {scenarioItem.return >= 0
-                          ? `+${scenarioItem.return.toFixed(1)}%`
-                          : `${scenarioItem.return.toFixed(1)}%`}
-                      </span>
-                    </div>
-                    <div className="space-y-1">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-slate-600 dark:text-slate-400">Profit:</span>
-                        <span
-                          className={`font-semibold ${scenarioItem.profit >= 0 ? 'text-emerald-600' : 'text-red-600'}`}
-                        >
-                          {formatCurrency(scenarioItem.profit)}
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-slate-600 dark:text-slate-400">Total Value:</span>
-                        <span className="font-semibold text-slate-900 dark:text-white">
-                          {formatCurrency(scenarioItem.totalValue)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+            <div className="mt-4 space-y-2">
+              {getGreeksExplanation(opportunity).map((explanation, index) => (
+                <p key={index} className="text-xs text-slate-600 dark:text-slate-400">
+                  {explanation}
+                </p>
+              ))}
             </div>
-
-            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
-              <div className="flex items-start gap-3">
-                <div className="w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center mt-0.5">
-                  <span className="text-xs text-white font-bold">!</span>
-                </div>
-                <div>
-                  <div className="font-medium text-amber-800 dark:text-amber-200 mb-1">Risk Warning</div>
-                  <div className="text-sm text-amber-700 dark:text-amber-300">{maxLossWarning}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-        <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
-          <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Potential Return</div>
-          <div className="text-lg font-semibold text-emerald-600">{formatPercent(opportunity.potentialReturn, 1)}</div>
-          <div className="text-xs text-slate-500 dark:text-slate-400">≈ {formatCurrency(potentialReturnDisplay)}</div>
-        </div>
-        <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
-          <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Max Return</div>
-          <div className="text-lg font-semibold text-emerald-600">{formatPercent(opportunity.maxReturn, 1)}</div>
-          <div className="text-xs text-slate-500 dark:text-slate-400">≈ {formatCurrency(maxReturnDisplay)}</div>
-        </div>
-        <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
-          <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Max Loss</div>
-          <div className="text-lg font-semibold text-red-600">{formatPercent(opportunity.maxLossPercent, 1)}</div>
-          <div className="text-xs text-slate-500 dark:text-slate-400">≈ {formatCurrency(maxLossDisplay)}</div>
-          {showAsymmetricEdge && (
-            <div className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-emerald-600">
-              <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              {riskRewardRatioLabel}x upside vs risk
-            </div>
-          )}
-        </div>
-        <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
-          <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Profit Probability</div>
-          <div className="text-lg font-semibold text-slate-900 dark:text-white">
-            {opportunity.probabilityOfProfit !== null ? `${opportunity.probabilityOfProfit.toFixed(1)}%` : '—'}
-          </div>
-          {(() => {
-            const breakevenText = formatBreakevenRequirement(opportunity)
-            return breakevenText ? (
-              <div className="text-xs text-slate-500 dark:text-slate-400">{breakevenText}</div>
-            ) : null
-          })()}
-        </div>
-        <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
-          <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Reward-to-Risk</div>
-          <div className={`text-lg font-semibold ${showAsymmetricEdge ? 'text-emerald-600' : 'text-slate-900 dark:text-white'}`}>
-            {riskRewardRatioLabel ? `${riskRewardRatioLabel}x` : '—'}
-          </div>
-          {showAsymmetricEdge && (
-            <div className="text-xs text-emerald-600">Asymmetric payoff</div>
-          )}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="text-center">
-          <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Delta</div>
-          <div className="text-sm font-semibold text-slate-900 dark:text-white">{opportunity.greeks.delta.toFixed(3)}</div>
-        </div>
-        <div className="text-center">
-          <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Gamma</div>
-          <div className="text-sm font-semibold text-slate-900 dark:text-white">{opportunity.greeks.gamma.toFixed(3)}</div>
-        </div>
-        <div className="text-center">
-          <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Theta</div>
-          <div className="text-sm font-semibold text-slate-900 dark:text-white">{opportunity.greeks.theta.toFixed(3)}</div>
-        </div>
-        <div className="text-center">
-          <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Vega</div>
-          <div className="text-sm font-semibold text-slate-900 dark:text-white">{opportunity.greeks.vega.toFixed(3)}</div>
-        </div>
-      </div>
-          <div className="mt-4 space-y-2">
-            {getGreeksExplanation(opportunity).map((explanation, index) => (
-              <p key={index} className="text-xs text-slate-600 dark:text-slate-400">
-                {explanation}
-              </p>
-            ))}
-          </div>
+          </section>
         </div>
       )}
     </div>
