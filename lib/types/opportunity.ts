@@ -274,4 +274,12 @@ export interface CryptoAlert {
   reasons: string[]
   urgency: number
   timestamp: string
+  allocation: {
+    action: 'INCREASE_POSITION' | 'DECREASE_POSITION' | 'MOVE_TO_USDC' | 'MAINTAIN_POSITION'
+    suggested_change_percent: number
+    target_allocation_percent: number
+    current_allocation_percent: number
+    usdc_reallocation_percent: number
+    rationale: string[]
+  }
 }

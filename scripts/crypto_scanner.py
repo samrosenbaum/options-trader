@@ -1068,14 +1068,17 @@ class CryptoScanner:
             
             # Calculate position sizing
             signals['position_size'] = self._calculate_position_size(coin_data, signals)
-            
+
             # Determine risk level
             signals['risk_level'] = self._assess_risk_level(coin_data, signals)
-            
+
+            # Recommend portfolio allocation adjustment
+            signals['allocation'] = self._recommend_allocation_adjustment(coin_data, signals)
+
             signals['reasons'] = all_reasons[:8]  # Top 8 reasons
-            
+
             return signals
-            
+
         except Exception as e:
             print(f"Error calculating trading signals: {e}")
             return {
@@ -1465,6 +1468,112 @@ class CryptoScanner:
                 'position_amounts': {},
                 'risk_level': 'medium'
             }
+
+    def _recommend_allocation_adjustment(self, coin_data: Dict, signals: Dict) -> Dict:
+        """Provide guidance on whether to increase, decrease, or exit into USDC."""
+        try:
+            market_data = coin_data.get('market_data', {})
+            price_change_24h = market_data.get('price_change_percentage_24h', 0) or 0
+            price_change_7d = market_data.get('price_change_percentage_7d', 0) or 0
+            volatility = abs(price_change_24h)
+
+            position_size = signals.get('position_size', {})
+            current_allocation = float(position_size.get('recommended_size', 2.0) or 0)
+            confidence = signals.get('confidence', 0) or 0
+            risk_level = signals.get('risk_level', 'medium') or 'medium'
+            action = signals.get('action', 'HOLD') or 'HOLD'
+
+            recommendation = 'MAINTAIN_POSITION'
+            change_percent = 0.0
+            target_allocation = current_allocation
+            usdc_reallocation = 0.0
+            rationale: List[str] = []
+
+            if action == 'SELL':
+                if risk_level == 'high' or price_change_7d < -8 or volatility > 15:
+                    recommendation = 'MOVE_TO_USDC'
+                    change_percent = -current_allocation
+                    target_allocation = 0.0
+                    usdc_reallocation = current_allocation
+                    if risk_level == 'high':
+                        rationale.append("Elevated risk profile signals capital preservation.")
+                    if price_change_7d < -8:
+                        rationale.append(
+                            f"Seven-day drawdown of {price_change_7d:.1f}% suggests exiting to stable value."
+                        )
+                    if volatility > 15:
+                        rationale.append(
+                            f"24h move of {price_change_24h:.1f}% indicates heightened volatility; USDC can reduce exposure."
+                        )
+                else:
+                    recommendation = 'DECREASE_POSITION'
+                    change_percent = -min(current_allocation * 0.5, current_allocation)
+                    target_allocation = max(0.0, current_allocation + change_percent)
+                    rationale.append("Sell signal triggered—scaling out of the position is prudent.")
+                    if price_change_24h < 0:
+                        rationale.append(
+                            f"Price slipped {price_change_24h:.1f}% in 24h; trimming reduces downside exposure."
+                        )
+
+            elif action == 'BUY':
+                if risk_level == 'low' and confidence >= 80 and price_change_7d > 5:
+                    recommendation = 'INCREASE_POSITION'
+                    change_percent = min(max(current_allocation * 0.5, 0.5), 3.0)
+                    target_allocation = current_allocation + change_percent
+                    rationale.append("High-conviction setup with supportive risk backdrop warrants scaling in.")
+                    rationale.append(
+                        f"Seven-day performance of {price_change_7d:.1f}% confirms upside momentum."
+                    )
+                elif risk_level == 'high' or volatility > 25:
+                    recommendation = 'DECREASE_POSITION'
+                    change_percent = -min(current_allocation * 0.3, 1.0)
+                    target_allocation = max(0.5, current_allocation + change_percent)
+                    rationale.append("Signal confidence is countered by elevated risk—tighten exposure.")
+                    if volatility > 25:
+                        rationale.append(
+                            f"24h swing of {price_change_24h:.1f}% exceeds volatility guardrails."
+                        )
+
+            else:  # HOLD
+                if risk_level == 'high' or price_change_7d < -5:
+                    recommendation = 'DECREASE_POSITION'
+                    change_percent = -min(current_allocation * 0.4, current_allocation)
+                    target_allocation = max(0.0, current_allocation + change_percent)
+                    rationale.append("Defensive posture recommended amid deteriorating trend.")
+                    if price_change_7d < -5:
+                        rationale.append(
+                            f"Weekly slide of {price_change_7d:.1f}% warrants cutting exposure."
+                        )
+                elif risk_level == 'low' and confidence >= 70 and price_change_24h > 2:
+                    recommendation = 'INCREASE_POSITION'
+                    change_percent = min(current_allocation * 0.3, 1.0)
+                    target_allocation = current_allocation + change_percent
+                    rationale.append("Healthy momentum with manageable risk supports a modest add.")
+                    rationale.append(
+                        f"24h gain of {price_change_24h:.1f}% suggests buyers in control."
+                    )
+
+            if recommendation == 'MAINTAIN_POSITION' and not rationale:
+                rationale.append("Market signals are balanced; keeping allocation steady is reasonable.")
+
+            return {
+                'action': recommendation,
+                'suggested_change_percent': round(change_percent, 2),
+                'target_allocation_percent': round(max(target_allocation, 0.0), 2),
+                'current_allocation_percent': round(current_allocation, 2),
+                'usdc_reallocation_percent': round(usdc_reallocation, 2),
+                'rationale': rationale[:5],
+            }
+
+        except Exception as e:
+            return {
+                'action': 'MAINTAIN_POSITION',
+                'suggested_change_percent': 0.0,
+                'target_allocation_percent': float(signals.get('position_size', {}).get('recommended_size', 2.0) or 0),
+                'current_allocation_percent': float(signals.get('position_size', {}).get('recommended_size', 2.0) or 0),
+                'usdc_reallocation_percent': 0.0,
+                'rationale': ['Unable to assess allocation adjustment.'],
+            }
     
     def _assess_risk_level(self, coin_data: Dict, signals: Dict) -> str:
         """Assess overall risk level of the trade"""
@@ -1546,6 +1655,20 @@ class CryptoScanner:
 
                 if directional_bias:
                     alert['directional_bias'] = directional_bias
+
+                if signals.get('allocation'):
+                    allocation = signals['allocation']
+                else:
+                    recommended_size = float(signals.get('position_size', {}).get('recommended_size', 0) or 0)
+                    allocation = {
+                        'action': 'MAINTAIN_POSITION',
+                        'suggested_change_percent': 0.0,
+                        'target_allocation_percent': recommended_size,
+                        'current_allocation_percent': recommended_size,
+                        'usdc_reallocation_percent': 0.0,
+                        'rationale': ['No allocation guidance available.'],
+                    }
+                alert['allocation'] = allocation
 
                 alerts.append(alert)
         
