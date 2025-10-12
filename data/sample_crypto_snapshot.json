@@ -1,0 +1,412 @@
+{
+  "generated": "2025-01-08 14:30 UTC",
+  "note": "_Network access unavailable — loaded archived institutional snapshot._",
+  "macro": {
+    "fear_greed_value": 62,
+    "classification": "Greed",
+    "macro_bias": 0.24
+  },
+  "assets": [
+    {
+      "coin_id": "bitcoin",
+      "name": "Bitcoin",
+      "symbol": "BTC",
+      "metrics": {
+        "price": 61250.0,
+        "change_24h": 1.8
+      },
+      "flow": {
+        "score": 28,
+        "reasons": [
+          "Significant volume increase: 68.5%",
+          "High volume/market cap ratio: 6.1%"
+        ],
+        "volume_change_24h": 68.5,
+        "volume_market_cap_ratio": 6.1,
+        "volume_24h": 18400000000.0
+      },
+      "technical": {
+        "score": 24,
+        "reasons": [
+          "Price above both moving averages - bullish trend",
+          "Strong 7-day momentum: 9.4%",
+          "Moderate volatility: 4.8%"
+        ],
+        "price_change_7d": 9.4,
+        "volatility": 4.8
+      },
+      "fundamentals": {
+        "score": 20,
+        "reasons": [
+          "Positive 24h momentum: 1.8%",
+          "Consistent positive momentum across timeframes",
+          "Strong Twitter presence: 7,350,000 followers"
+        ],
+        "price_change_24h": 1.8,
+        "price_change_7d": 9.2,
+        "price_change_30d": 12.5,
+        "supply_ratio": 91.0
+      },
+      "sentiment": {
+        "score": 18,
+        "reasons": [
+          "Volume supporting price move",
+          "Top 10 coin (rank #1)"
+        ],
+        "volume_change_24h": 68.5,
+        "market_cap_rank": 1,
+        "ath_percentage": -12.4
+      },
+      "derivatives": {
+        "avg_basis": 0.012,
+        "avg_funding_rate": 0.0008,
+        "open_interest_ratio": 0.108,
+        "long_short_bias": "long"
+      },
+      "onchain": {
+        "macro_bias": 0.24,
+        "macro_context": {
+          "classification": "Greed"
+        }
+      },
+      "direction": {
+        "direction": "bullish",
+        "confidence": 67,
+        "score": 32,
+        "recommendation": "Moderate Bullish - favor calls with measured sizing."
+      },
+      "news": {
+        "top_headlines": [
+          "BlackRock bitcoin ETF posts third consecutive record inflow (positive)",
+          "Large miners reduce hedging ahead of halving (positive)",
+          "Options market pricing higher topside skew (positive)"
+        ]
+      },
+      "score_breakdown": {
+        "volume": 28,
+        "technical": 24,
+        "fundamentals": 20,
+        "sentiment": 18
+      }
+    },
+    {
+      "coin_id": "ethereum",
+      "name": "Ethereum",
+      "symbol": "ETH",
+      "metrics": {
+        "price": 2765.0,
+        "change_24h": 1.1
+      },
+      "flow": {
+        "score": 24,
+        "reasons": [
+          "Significant volume increase: 54.2%",
+          "Elevated volume/market cap ratio: 5.2%"
+        ],
+        "volume_change_24h": 54.2,
+        "volume_market_cap_ratio": 5.2,
+        "volume_24h": 9600000000.0
+      },
+      "technical": {
+        "score": 22,
+        "reasons": [
+          "Price above short-term moving average",
+          "Good 7-day momentum: 6.7%",
+          "Moderate volatility: 5.1%"
+        ],
+        "price_change_7d": 6.7,
+        "volatility": 5.1
+      },
+      "fundamentals": {
+        "score": 18,
+        "reasons": [
+          "Positive 24h momentum: 1.1%",
+          "Consistent positive momentum across timeframes",
+          "High developer activity: 128 commits (4 weeks)"
+        ],
+        "price_change_24h": 1.1,
+        "price_change_7d": 6.5,
+        "price_change_30d": 9.4,
+        "supply_ratio": 88.4
+      },
+      "sentiment": {
+        "score": 16,
+        "reasons": [
+          "Volume supporting price move",
+          "Top 10 coin (rank #2)"
+        ],
+        "volume_change_24h": 54.2,
+        "market_cap_rank": 2,
+        "ath_percentage": -34.6
+      },
+      "derivatives": {
+        "avg_basis": 0.009,
+        "avg_funding_rate": 0.0006,
+        "open_interest_ratio": 0.094,
+        "long_short_bias": "long"
+      },
+      "onchain": {
+        "macro_bias": 0.24,
+        "macro_context": {
+          "classification": "Greed"
+        }
+      },
+      "direction": {
+        "direction": "bullish",
+        "confidence": 63,
+        "score": 29,
+        "recommendation": "Moderate Bullish - favor call spreads on strength."
+      },
+      "news": {
+        "top_headlines": [
+          "SEC progresses ETH staking guidance with industry feedback (neutral)",
+          "Lido deposits accelerate as restaking yields widen (positive)",
+          "CME ETH futures open interest hits yearly high (positive)"
+        ]
+      },
+      "score_breakdown": {
+        "volume": 24,
+        "technical": 22,
+        "fundamentals": 18,
+        "sentiment": 16
+      }
+    },
+    {
+      "coin_id": "binancecoin",
+      "name": "BNB",
+      "symbol": "BNB",
+      "metrics": {
+        "price": 342.0,
+        "change_24h": -0.6
+      },
+      "flow": {
+        "score": 18,
+        "reasons": [
+          "Moderate volume increase: 26.4%"
+        ],
+        "volume_change_24h": 26.4,
+        "volume_market_cap_ratio": 3.8,
+        "volume_24h": 2200000000.0
+      },
+      "technical": {
+        "score": 16,
+        "reasons": [
+          "Price above short-term moving average",
+          "Positive 7-day momentum: 3.1%"
+        ],
+        "price_change_7d": 3.1,
+        "volatility": 3.9
+      },
+      "fundamentals": {
+        "score": 14,
+        "reasons": [
+          "Mid cap - good growth potential",
+          "Consistent positive momentum across timeframes"
+        ],
+        "price_change_24h": -0.6,
+        "price_change_7d": 3.1,
+        "price_change_30d": 4.8,
+        "supply_ratio": 98.0
+      },
+      "sentiment": {
+        "score": 12,
+        "reasons": [
+          "Top 10 coin (rank #4)"
+        ],
+        "volume_change_24h": 26.4,
+        "market_cap_rank": 4,
+        "ath_percentage": -48.7
+      },
+      "derivatives": {
+        "avg_basis": 0.006,
+        "avg_funding_rate": 0.0005,
+        "open_interest_ratio": 0.081,
+        "long_short_bias": "balanced"
+      },
+      "onchain": {
+        "macro_bias": 0.24,
+        "macro_context": {
+          "classification": "Greed"
+        }
+      },
+      "direction": {
+        "direction": "neutral",
+        "confidence": 48,
+        "score": 12,
+        "recommendation": "Weak Neutral - prefer range-bound structures."
+      },
+      "news": {
+        "top_headlines": [
+          "Binance expands institutional prime services in Europe (positive)",
+          "BNB Chain proposes new fee burn schedule (positive)"
+        ]
+      },
+      "score_breakdown": {
+        "volume": 18,
+        "technical": 16,
+        "fundamentals": 14,
+        "sentiment": 12
+      }
+    },
+    {
+      "coin_id": "cardano",
+      "name": "Cardano",
+      "symbol": "ADA",
+      "metrics": {
+        "price": 0.58,
+        "change_24h": 0.9
+      },
+      "flow": {
+        "score": 20,
+        "reasons": [
+          "Moderate volume increase: 32.7%",
+          "Elevated volume/market cap ratio: 7.4%"
+        ],
+        "volume_change_24h": 32.7,
+        "volume_market_cap_ratio": 7.4,
+        "volume_24h": 520000000.0
+      },
+      "technical": {
+        "score": 18,
+        "reasons": [
+          "Price above short-term moving average",
+          "Positive 7-day momentum: 5.6%"
+        ],
+        "price_change_7d": 5.6,
+        "volatility": 6.2
+      },
+      "fundamentals": {
+        "score": 16,
+        "reasons": [
+          "Good 24h momentum: 0.9%",
+          "Active Reddit community: 760,000 subscribers"
+        ],
+        "price_change_24h": 0.9,
+        "price_change_7d": 5.4,
+        "price_change_30d": 7.8,
+        "supply_ratio": 74.0
+      },
+      "sentiment": {
+        "score": 14,
+        "reasons": [
+          "Volume supporting price move",
+          "Top 10 coin (rank #8)"
+        ],
+        "volume_change_24h": 32.7,
+        "market_cap_rank": 8,
+        "ath_percentage": -69.2
+      },
+      "derivatives": {
+        "avg_basis": 0.004,
+        "avg_funding_rate": 0.0003,
+        "open_interest_ratio": 0.072,
+        "long_short_bias": "long"
+      },
+      "onchain": {
+        "macro_bias": 0.24,
+        "macro_context": {
+          "classification": "Greed"
+        }
+      },
+      "direction": {
+        "direction": "bullish",
+        "confidence": 52,
+        "score": 21,
+        "recommendation": "Weak Bullish - consider diagonals on pullbacks."
+      },
+      "news": {
+        "top_headlines": [
+          "Hydra scaling milestone pushes daily TPS higher (positive)",
+          "IOG teases new governance tooling rollout (positive)"
+        ]
+      },
+      "score_breakdown": {
+        "volume": 20,
+        "technical": 18,
+        "fundamentals": 16,
+        "sentiment": 14
+      }
+    },
+    {
+      "coin_id": "solana",
+      "name": "Solana",
+      "symbol": "SOL",
+      "metrics": {
+        "price": 134.0,
+        "change_24h": 2.6
+      },
+      "flow": {
+        "score": 26,
+        "reasons": [
+          "Significant volume increase: 61.3%",
+          "High volume/market cap ratio: 8.5%"
+        ],
+        "volume_change_24h": 61.3,
+        "volume_market_cap_ratio": 8.5,
+        "volume_24h": 3900000000.0
+      },
+      "technical": {
+        "score": 26,
+        "reasons": [
+          "Price above both moving averages - bullish trend",
+          "Strong 7-day momentum: 12.2%",
+          "High volatility: 7.9% - potential for big moves"
+        ],
+        "price_change_7d": 12.2,
+        "volatility": 7.9
+      },
+      "fundamentals": {
+        "score": 18,
+        "reasons": [
+          "Strong 24h momentum: 2.6%",
+          "Consistent positive momentum across timeframes"
+        ],
+        "price_change_24h": 2.6,
+        "price_change_7d": 12.0,
+        "price_change_30d": 18.4,
+        "supply_ratio": 82.1
+      },
+      "sentiment": {
+        "score": 17,
+        "reasons": [
+          "Volume leading price - strong bullish sentiment",
+          "Top 10 coin (rank #5)"
+        ],
+        "volume_change_24h": 61.3,
+        "market_cap_rank": 5,
+        "ath_percentage": -49.8
+      },
+      "derivatives": {
+        "avg_basis": 0.014,
+        "avg_funding_rate": 0.0012,
+        "open_interest_ratio": 0.116,
+        "long_short_bias": "long"
+      },
+      "onchain": {
+        "macro_bias": 0.24,
+        "macro_context": {
+          "classification": "Greed"
+        }
+      },
+      "direction": {
+        "direction": "bullish",
+        "confidence": 66,
+        "score": 34,
+        "recommendation": "Moderate Bullish - upside call flys or delta longs favored."
+      },
+      "news": {
+        "top_headlines": [
+          "Solana DeFi TVL hits post-2022 high as stablecoin flows return (positive)",
+          "Major market maker adds SOL perpetual support on CME-style venue (positive)",
+          "Helium migration continues to boost on-chain activity (positive)"
+        ]
+      },
+      "score_breakdown": {
+        "volume": 26,
+        "technical": 26,
+        "fundamentals": 18,
+        "sentiment": 17
+      }
+    }
+  ]
+}

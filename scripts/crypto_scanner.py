@@ -595,6 +595,8 @@ class CryptoScanner:
                 if prev_close:
                     price_change = ((df['close'].iloc[-1] - prev_close) / prev_close) * 100
 
+            symbol = coin_data.get('symbol', coin_id).upper()
+
             signal_data = {
                 'options_chain': self._empty_options_frame.copy(),
                 'options_data': self._empty_options_frame.copy(),
@@ -610,7 +612,6 @@ class CryptoScanner:
             signal_data['news_sentiment'] = quant_insights.get('news', {})
             signal_data['derivatives_metrics'] = quant_insights.get('derivatives', {})
 
-            symbol = coin_data.get('symbol', coin_id).upper()
             directional_score = self.signal_aggregator.aggregate(symbol, signal_data)
             breakdown = self.signal_aggregator.get_signal_breakdown(directional_score)
 
