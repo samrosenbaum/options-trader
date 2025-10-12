@@ -77,8 +77,8 @@ class QualityReport:
 
 class OptionsDataQualityValidator:
     """Comprehensive validator for options data quality."""
-    
-    def __init__(self, 
+
+    def __init__(self,
                  max_spread_pct: float = 0.20,
                  min_volume: int = 5,
                  min_open_interest: int = 10,
@@ -98,10 +98,23 @@ class OptionsDataQualityValidator:
         self.min_open_interest = min_open_interest
         self.max_price_age_minutes = max_price_age_minutes
         self.max_iv_threshold = max_iv_threshold
-        
+
+    def validate_option(self, option: Dict[str, Any]) -> QualityReport:
+        """Backward compatible wrapper around :meth:`validate_opportunity`.
+
+        Historically the validator exposed a ``validate_option`` method.  The
+        higher level scanner and tests still invoke this entry point, so the
+        refactor that introduced :meth:`validate_opportunity` unintentionally
+        removed the public API that callers depend on.  This thin wrapper keeps
+        the existing behavior while allowing the more descriptive method name to
+        be used internally going forward.
+        """
+
+        return self.validate_opportunity(option)
+
     def validate_opportunity(self, opportunity: Dict[str, Any]) -> QualityReport:
         """Validate a single options opportunity and return comprehensive quality report."""
-        
+
         symbol = opportunity.get('symbol', 'UNKNOWN')
         strike = opportunity.get('strike', 0)
         option_type = opportunity.get('type', 'unknown')
