@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef, type ReactNode } from 'react'
 import Image from 'next/image'
 import RealTimeProgress from '../components/real-time-progress'
 import LiveTicker from '../components/live-ticker'
@@ -423,9 +423,19 @@ function ProfitLossSlider({
 const renderOpportunityCard = (
   opp: Opportunity,
   investmentAmount: number,
-  calculateInvestmentScenario: (opp: Opportunity, amount: number) => any,
+  calculateInvestmentScenario: (opp: Opportunity, amount: number) => InvestmentScenario,
   formatCurrency: (amount: number) => string,
-  safeToFixed: (value: number | null | undefined, decimals?: number) => string | null
+  safeToFixed: (value: number | null | undefined, decimals?: number) => string | null,
+  extras: {
+    isExpanded: boolean
+    onToggle: () => void
+    riskBadgeClass: string | null
+    scoreBadgeClass: string
+    breakevenRequirement: string | null
+    riskRewardExplanation: string | null
+    greeksExplanation: string[]
+    moveThesis: ReactNode
+  }
 ) => {
   const scenario = calculateInvestmentScenario(opp, investmentAmount)
   const isPerContractView = scenario.basis === 'perContract'
@@ -439,6 +449,21 @@ const renderOpportunityCard = (
     ? scenario.maxLossAmountPerContract
     : scenario.maxLossAmount
   const maxLossPercentDisplay = Math.abs(opp.maxLossPercent ?? 0)
+
+  const {
+    isExpanded,
+    onToggle,
+    riskBadgeClass,
+    scoreBadgeClass,
+    breakevenRequirement,
+    riskRewardExplanation,
+    greeksExplanation,
+    moveThesis,
+  } = extras
+
+  const normalizedRiskLabel = opp.riskLevel
+    ? opp.riskLevel.charAt(0).toUpperCase() + opp.riskLevel.slice(1)
+    : null
 
   return (
     <div
@@ -455,6 +480,16 @@ const renderOpportunityCard = (
             <div className="px-3 py-1 bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 rounded-lg text-sm font-medium">
               ${opp.strike}
             </div>
+            {normalizedRiskLabel && riskBadgeClass && (
+              <span className={`px-3 py-1 rounded-lg text-xs font-semibold border ${riskBadgeClass}`}>
+                {normalizedRiskLabel}
+              </span>
+            )}
+            {typeof opp.score === 'number' && Number.isFinite(opp.score) && (
+              <span className={`px-3 py-1 rounded-full text-xs font-semibold ${scoreBadgeClass}`}>
+                Score {opp.score.toFixed(0)}
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-5 text-sm text-slate-600 dark:text-slate-400 flex-wrap">
@@ -516,8 +551,59 @@ const renderOpportunityCard = (
               <span className="ml-2 font-medium">{opp.daysToExpiration} days</span>
             </div>
           </div>
+          {breakevenRequirement && (
+            <div className="mt-3 text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+              {breakevenRequirement}
+            </div>
+          )}
         </div>
       </div>
+
+      <div className="mt-6 flex justify-end">
+        <button
+          type="button"
+          onClick={onToggle}
+          className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-700 shadow-sm transition-colors hover:bg-slate-50 hover:text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+        >
+          {isExpanded ? 'Hide advanced analysis' : 'View advanced analysis'}
+        </button>
+      </div>
+
+      {isExpanded && (
+        <div className="mt-6 space-y-6">
+          <ProfitLossSlider opportunity={opp} />
+
+          {riskRewardExplanation && (
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100">
+              <div className="font-semibold uppercase tracking-wide text-[11px] text-amber-700 dark:text-amber-200">
+                Risk/Reward Context
+              </div>
+              <p className="mt-2 leading-relaxed">{riskRewardExplanation}</p>
+            </div>
+          )}
+
+          {greeksExplanation.length > 0 && (
+            <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-4 text-sm text-indigo-900 dark:border-indigo-500/40 dark:bg-indigo-500/10 dark:text-indigo-100">
+              <div className="font-semibold uppercase tracking-wide text-[11px] text-indigo-700 dark:text-indigo-200">
+                Greeks Breakdown
+              </div>
+              <ul className="mt-2 space-y-2">
+                {greeksExplanation.map((item, index) => (
+                  <li key={index} className="leading-relaxed">
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {moveThesis && (
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-800 dark:border-slate-700/60 dark:bg-slate-800/40 dark:text-slate-100">
+              {moveThesis}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -840,20 +926,28 @@ export default function HomePage() {
     { value: 'expiration', label: 'Soonest Expiration' },
   ]
 
-  const getRiskColor = (riskLevel: string) => {
-    switch (riskLevel) {
-      case 'low': return 'bg-emerald-50 text-emerald-700 border-emerald-200'
-      case 'medium': return 'bg-amber-50 text-amber-700 border-amber-200'
-      case 'high': return 'bg-red-50 text-red-700 border-red-200'
-      default: return 'bg-slate-50 text-slate-700 border-slate-200'
+  const getRiskColor = (riskLevel?: string | null) => {
+    const normalized = typeof riskLevel === 'string' ? riskLevel.toLowerCase() : ''
+    switch (normalized) {
+      case 'low':
+        return 'bg-emerald-50 text-emerald-700 border-emerald-200'
+      case 'medium':
+        return 'bg-amber-50 text-amber-700 border-amber-200'
+      case 'high':
+        return 'bg-red-50 text-red-700 border-red-200'
+      default:
+        return 'bg-slate-50 text-slate-700 border-slate-200'
     }
   }
 
-  const getScoreColor = (score: number) => {
+  const getScoreColor = (score: number | null | undefined) => {
+    if (typeof score !== 'number' || !Number.isFinite(score)) {
+      return 'bg-slate-400 text-white'
+    }
     if (score >= 90) return 'bg-red-500 text-white'
     if (score >= 80) return 'bg-orange-500 text-white'
     if (score >= 70) return 'bg-amber-500 text-white'
-    return 'bg-slate-400 text-white'
+    return 'bg-slate-500 text-white'
   }
 
   function formatAgeDescription(minutes?: number | null) {
@@ -1841,9 +1935,29 @@ export default function HomePage() {
             </div>
 
             <div className="space-y-5">
-              {sortedOpportunities.map((opp) => 
-                renderOpportunityCard(opp, investmentAmount, calculateInvestmentScenario, formatCurrency, safeToFixed)
-              )}
+              {sortedOpportunities.map((opp) => {
+                const cardId = `${opp.symbol}-${opp.strike}-${opp.expiration}-${opp.optionType}`
+                const riskBadgeClass = opp.riskLevel ? getRiskColor(opp.riskLevel) : null
+                const extras = {
+                  isExpanded: expandedCards[cardId] ?? false,
+                  onToggle: () => toggleCard(cardId),
+                  riskBadgeClass,
+                  scoreBadgeClass: getScoreColor(opp.score),
+                  breakevenRequirement: formatBreakevenRequirement(opp),
+                  riskRewardExplanation: getRiskRewardExplanation(opp),
+                  greeksExplanation: getGreeksExplanation(opp),
+                  moveThesis: renderMoveThesis(opp),
+                }
+
+                return renderOpportunityCard(
+                  opp,
+                  investmentAmount,
+                  calculateInvestmentScenario,
+                  formatCurrency,
+                  safeToFixed,
+                  extras,
+                )
+              })}
             </div>
           </div>
         )}
@@ -1876,7 +1990,7 @@ export default function HomePage() {
             {!cryptoLoading && cryptoAlerts.length === 0 && (
               <div className="text-center py-12">
                 <p className="text-slate-600 dark:text-slate-400">
-                  No crypto alerts available. Click "Scan Crypto" to analyze current market conditions.
+                  No crypto alerts available. Click &ldquo;Scan Crypto&rdquo; to analyze current market conditions.
                 </p>
               </div>
             )}
