@@ -82,7 +82,30 @@ interface EnhancedScannerOpportunity {
   swingSignal?: Record<string, unknown> | null
   swingSignalError?: string
   metadata?: Record<string, unknown>
-  
+
+  positionSizing?: {
+    recommendedFraction: number
+    conservativeFraction: number
+    aggressiveFraction: number
+    kellyFraction: number
+    expectedLogGrowth?: number
+    expectedEdge?: number
+    riskBudgetTier: string
+    rationale: string[]
+    inputs?: Record<string, unknown>
+    limits?: {
+      maxPerTrade: number
+      maxDrawdown95?: number
+      losingStreak95?: number
+    }
+    capitalAllocationExamples?: Array<{
+      portfolio: number
+      contracts: number
+      capitalAtRisk: number
+      allocationPercent: number
+    }>
+  }
+
   // Enhanced institutional-grade fields
   riskAdjustedScore?: number
   enhancedProbabilityOfProfit?: number

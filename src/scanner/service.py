@@ -7,7 +7,7 @@ import json
 import sys
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from math import isfinite
+from math import ceil, isfinite, log, log1p
 from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Tuple
 
 import pandas as pd
@@ -412,6 +412,8 @@ class SmartOptionsScanner:
                 print(f"⚠️  Rejected {option['symbol']} {option['type']} ${option['strike']} - Quality: {quality_report.quality.value}, Issues: {quality_report.issues}, Warnings: {quality_report.warnings}", file=sys.stderr)
                 continue
 
+            risk_reward_ratio = metrics["bestRoiPercent"] / 100 if metrics["bestRoiPercent"] > 0 else None
+
             opportunity = {
                 "symbol": option["symbol"],
                 "optionType": option["type"],
@@ -457,7 +459,7 @@ class SmartOptionsScanner:
                     probability_percent,
                     volume_ratio,
                 ),
-                "riskRewardRatio": metrics["bestRoiPercent"] / 100 if metrics["bestRoiPercent"] > 0 else None,
+                "riskRewardRatio": risk_reward_ratio,
                 "shortTermRiskRewardRatio": (
                     metrics["tenMoveRoiPercent"] / 100 if metrics["tenMoveRoiPercent"] > 0 else None
                 ),
@@ -482,6 +484,18 @@ class SmartOptionsScanner:
                 opportunity["swingSignal"] = swing_signal
             if swing_error is not None:
                 opportunity["swingSignalError"] = swing_error
+
+            position_sizing = self._calculate_position_sizing(
+                option,
+                metrics,
+                probability_percent,
+                metrics.get("expectedMoveRoiPercent", 0.0),
+                risk_reward_ratio,
+                opportunity["riskLevel"],
+                score,
+            )
+            if position_sizing:
+                opportunity["positionSizing"] = position_sizing
             if not quality_setup:
                 opportunity.setdefault("metadata", {})
                 opportunity["metadata"]["selectionMode"] = "relaxed"
@@ -1476,6 +1490,190 @@ class SmartOptionsScanner:
         }
 
         return scenarios, metrics
+
+    def _calculate_position_sizing(
+        self,
+        option: pd.Series,
+        metrics: Dict[str, Any],
+        probability_percent: float,
+        expected_roi_percent: float,
+        risk_reward_ratio: Optional[float],
+        risk_level: str,
+        score: float,
+    ) -> Optional[Dict[str, Any]]:
+        """Derive an institutional-grade sizing recommendation for a single trade."""
+
+        cost_basis = float(metrics.get("costBasis") or 0.0)
+        if not isfinite(cost_basis) or cost_basis <= 0:
+            return None
+
+        raw_probability = probability_percent / 100.0 if probability_percent is not None else 0.0
+        win_probability = max(0.0, min(0.95, float(raw_probability)))
+        if win_probability <= 0.0:
+            return None
+
+        loss_probability = max(1.0 - win_probability, 1e-6)
+
+        expected_net = max(float(metrics.get("expectedMoveNetProfit", 0.0)), 0.0)
+        optimistic_net = max(float(metrics.get("optimisticMoveNetProfit", 0.0)), 0.0)
+        if expected_net <= 0.0 and optimistic_net <= 0.0:
+            fallback = max(float(metrics.get("bestNetProfit", 0.0)), 0.0)
+            expected_net = fallback
+            optimistic_net = fallback
+
+        weighted_win = (expected_net * 0.7) + (optimistic_net * 0.3)
+        payoff_ratio = weighted_win / cost_basis if cost_basis else 0.0
+        payoff_ratio = max(payoff_ratio, 0.0)
+
+        if payoff_ratio <= 0.0:
+            return None
+
+        # Kelly sizing for limited-loss trades
+        kelly_fraction = (win_probability * (payoff_ratio + 1.0) - 1.0) / payoff_ratio
+        if not isfinite(kelly_fraction):
+            return None
+        kelly_fraction = max(0.0, kelly_fraction)
+
+        expected_edge = win_probability * payoff_ratio - loss_probability
+        if expected_edge <= 0.0:
+            return {
+                "recommendedFraction": 0.0,
+                "conservativeFraction": 0.0,
+                "aggressiveFraction": 0.0,
+                "kellyFraction": round(kelly_fraction, 4),
+                "riskBudgetTier": "capital_preservation",
+                "rationale": [
+                    "Expected edge turns negative after accounting for win odds and payoff – size should be zero to preserve capital."
+                ],
+                "inputs": {
+                    "winProbability": round(win_probability, 4),
+                    "payoffRatio": round(payoff_ratio, 4),
+                    "expectedEdge": round(expected_edge, 4),
+                    "costBasis": round(cost_basis, 2),
+                },
+            }
+
+        score_factor = max(0.55, min(1.0, float(score or 0.0) / 100.0))
+        probability_factor = max(0.5, min(1.0, 0.4 + win_probability * 0.6))
+        volatility = abs(float(metrics.get("expectedMove1SD", 0.0)) or 0.0) / 100.0
+        volatility_factor = 1.0 / (1.0 + volatility * 3.5)
+
+        reward_ratio = float(risk_reward_ratio) if risk_reward_ratio is not None else payoff_ratio
+        reward_factor = max(0.6, min(1.25, 0.7 + reward_ratio * 0.25))
+
+        risk_level_multiplier = {
+            "low": 1.0,
+            "medium": 0.7,
+            "high": 0.45,
+        }.get(str(risk_level).lower(), 0.6)
+
+        base_fraction = kelly_fraction
+        base_fraction *= score_factor
+        base_fraction *= probability_factor
+        base_fraction *= volatility_factor
+        base_fraction *= reward_factor
+        base_fraction *= risk_level_multiplier
+
+        max_fraction = 0.05
+        base_fraction = min(base_fraction, kelly_fraction * 1.1)
+        recommended_fraction = max(0.0, min(max_fraction, base_fraction))
+
+        if recommended_fraction <= 0.0:
+            return None
+
+        drawdown_confidence = 0.95
+        try:
+            losing_streak_95 = max(1, int(ceil(log(1.0 - drawdown_confidence) / log(loss_probability))))
+        except ValueError:
+            losing_streak_95 = 1
+
+        projected_drawdown = 1.0 - (1.0 - recommended_fraction) ** losing_streak_95
+        max_drawdown = 0.25
+        if projected_drawdown > max_drawdown:
+            adjustment = max_drawdown / projected_drawdown
+            recommended_fraction *= adjustment
+
+        recommended_fraction = min(max_fraction, recommended_fraction)
+        conservative_fraction = max(0.0, min(max_fraction, recommended_fraction * 0.6))
+        aggressive_fraction = max(recommended_fraction, min(max_fraction, recommended_fraction * 1.4, kelly_fraction))
+
+        if recommended_fraction < 0.002:
+            conservative_fraction = recommended_fraction
+
+        risk_budget_tier = (
+            "aggressive"
+            if recommended_fraction >= 0.03
+            else "balanced"
+            if recommended_fraction >= 0.015
+            else "conservative"
+        )
+
+        expected_log_growth = (
+            win_probability * log1p(recommended_fraction * payoff_ratio)
+            + loss_probability * log1p(-recommended_fraction)
+        )
+
+        rationale: List[str] = [
+            (
+                f"Kelly fraction of {kelly_fraction * 100:.1f}% based on {win_probability * 100:.0f}% win odds "
+                f"and a {payoff_ratio:.2f}x payoff profile."
+            ),
+            (
+                f"Volatility dampening trims the allocation to {recommended_fraction * 100:.1f}% with expected log growth of "
+                f"{expected_log_growth * 100:.2f}% per trade."
+            ),
+            (
+                "Risk-of-ruin controls keep the 95% losing streak drawdown under 25% of capital."
+            ),
+        ]
+        if risk_level_multiplier < 1.0:
+            rationale.append("Position size reduced to reflect elevated qualitative risk level.")
+
+        portfolio_examples: List[Dict[str, Any]] = []
+        for capital in (50_000, 100_000, 250_000):
+            allocation = capital * recommended_fraction
+            contracts = int(allocation // cost_basis)
+            if contracts <= 0 and allocation >= cost_basis * 0.5:
+                contracts = 1
+            if contracts > 0:
+                portfolio_examples.append(
+                    {
+                        "portfolio": capital,
+                        "contracts": contracts,
+                        "capitalAtRisk": round(contracts * cost_basis, 2),
+                        "allocationPercent": round(recommended_fraction, 4),
+                    }
+                )
+
+        return {
+            "recommendedFraction": round(recommended_fraction, 4),
+            "conservativeFraction": round(conservative_fraction, 4),
+            "aggressiveFraction": round(aggressive_fraction, 4),
+            "kellyFraction": round(kelly_fraction, 4),
+            "expectedLogGrowth": round(expected_log_growth, 6),
+            "expectedEdge": round(expected_edge, 4),
+            "riskBudgetTier": risk_budget_tier,
+            "rationale": rationale,
+            "inputs": {
+                "winProbability": round(win_probability, 4),
+                "lossProbability": round(loss_probability, 4),
+                "payoffRatio": round(payoff_ratio, 4),
+                "volatility": round(volatility, 4),
+                "scoreFactor": round(score_factor, 4),
+                "probabilityFactor": round(probability_factor, 4),
+                "volatilityFactor": round(volatility_factor, 4),
+                "rewardFactor": round(reward_factor, 4),
+                "riskLevel": str(risk_level).lower(),
+                "costBasis": round(cost_basis, 2),
+                "expectedRoi": round(expected_roi_percent / 100.0, 4),
+            },
+            "limits": {
+                "maxPerTrade": max_fraction,
+                "maxDrawdown95": round(min(projected_drawdown, max_drawdown), 4),
+                "losingStreak95": losing_streak_95,
+            },
+            "capitalAllocationExamples": portfolio_examples,
+        }
 
     def scan_for_opportunities(self, *, force_refresh: bool = False) -> ScanResult:
         """Execute the scan and package results for consumers."""
