@@ -35,7 +35,7 @@ function erf(x: number): number {
     1.061405429
   ]
 
-  const poly = coefficients.reduce((acc, coeff) => acc * t + coeff, 0)
+  const poly = coefficients.reduceRight((acc, coeff) => acc * t + coeff, 0)
   const expTerm = Math.exp(-ax * ax)
   const approximation = 1 - poly * t * expTerm
 
