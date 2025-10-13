@@ -223,30 +223,30 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
             data_quality = enhanced_analysis.get('dataQuality', {})
             quality_level = data_quality.get('quality', 'UNKNOWN')
             
-            if quality_level in ['REJECTED', 'LOW']:
+            if quality_level == 'REJECTED':  # Only reject truly bad data (removed 'LOW')
                 print(f"🚫 Filtered out {opp['symbol']} due to {quality_level} data quality", file=sys.stderr)
                 continue
-            
+
             # Probability filter - require reasonable probability of profit
             prob_analysis = enhanced_analysis.get('probabilityAnalysis', {})
             prob_of_profit = prob_analysis.get('probabilityOfProfit', 0)
-            
-            if prob_of_profit < 0.25:  # 25% minimum probability
+
+            if prob_of_profit < 0.15:  # 15% minimum probability (lowered from 25%)
                 print(f"🚫 Filtered out {opp['symbol']} due to low probability ({prob_of_profit:.1%})", file=sys.stderr)
                 continue
-                
+
             # Risk-adjusted score filter
             risk_adjusted_score = opp.get('riskAdjustedScore', opp.get('score', 0))
-            if risk_adjusted_score < 60:
+            if risk_adjusted_score < 40:  # Lowered from 60 to 40
                 print(f"🚫 Filtered out {opp['symbol']} due to low risk-adjusted score ({risk_adjusted_score:.1f})", file=sys.stderr)
                 continue
-                
+
             # Greeks sanity check
             greeks = enhanced_analysis.get('greeks', {})
             delta = abs(greeks.get('delta', 0))
-            
+
             # Skip options with extremely low delta (won't move with stock)
-            if delta < 0.05:
+            if delta < 0.02:  # Lowered from 0.05 to 0.02
                 print(f"🚫 Filtered out {opp['symbol']} due to low delta ({delta:.3f})", file=sys.stderr)
                 continue
                 
