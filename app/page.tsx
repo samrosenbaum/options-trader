@@ -196,6 +196,7 @@ interface Opportunity {
   }>
   swingSignal?: SwingSignalInsight | null
   swingSignalError?: string
+  directionalBias?: EnhancedDirectionalBias | null
   enhancedDirectionalBias?: EnhancedDirectionalBias | null
   positionSizing?: PositionSizingRecommendation | null
 }

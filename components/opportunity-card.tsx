@@ -2,7 +2,12 @@ import React from 'react'
 
 import { formatDistanceToNowStrict } from 'date-fns'
 
-import { Opportunity, SwingSignalNewsHeadline } from '../lib/types/opportunity'
+import {
+  Opportunity,
+  SwingSignalNewsHeadline,
+  EnhancedDirectionalBias,
+  DirectionalSignalBreakdown,
+} from '../lib/types/opportunity'
 import { DataQualityBadge } from './data-quality-badge'
 
 const isFiniteNumber = (value: unknown): value is number =>
@@ -162,6 +167,34 @@ const getRiskBudgetMeta = (tier?: string | null) => {
           'bg-slate-100 text-slate-700 border border-slate-200 dark:bg-slate-700/40 dark:text-slate-200 dark:border-slate-600/50',
       }
   }
+}
+
+const directionalStyles: Record<
+  'bullish' | 'bearish' | 'neutral',
+  { label: string; badgeClass: string; chipClass: string; textClass: string }
+> = {
+  bullish: {
+    label: 'Bullish bias',
+    badgeClass:
+      'bg-emerald-500/15 text-emerald-500 border border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300 dark:border-emerald-500/40',
+    chipClass:
+      'bg-emerald-500/15 text-emerald-500 dark:bg-emerald-500/10 dark:text-emerald-300',
+    textClass: 'text-emerald-600 dark:text-emerald-300',
+  },
+  bearish: {
+    label: 'Bearish bias',
+    badgeClass:
+      'bg-red-500/15 text-red-500 border border-red-500/30 dark:bg-red-500/10 dark:text-red-300 dark:border-red-500/40',
+    chipClass: 'bg-red-500/15 text-red-500 dark:bg-red-500/10 dark:text-red-300',
+    textClass: 'text-red-600 dark:text-red-300',
+  },
+  neutral: {
+    label: 'Neutral bias',
+    badgeClass:
+      'bg-slate-500/10 text-slate-600 border border-slate-400/30 dark:bg-slate-600/20 dark:text-slate-200 dark:border-slate-500/40',
+    chipClass: 'bg-slate-500/10 text-slate-600 dark:bg-slate-600/20 dark:text-slate-200',
+    textClass: 'text-slate-600 dark:text-slate-200',
+  },
 }
 
 const formatDetailValue = (value: unknown): string => {
@@ -853,6 +886,170 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
   const maxPerTradeLabel = maxPerTradeDisplay !== '—' ? maxPerTradeDisplay : null
   const losingStreak95 = positionSizing?.limits?.losingStreak95 ?? null
 
+  const rawDirectionalBias: EnhancedDirectionalBias | null =
+    (opportunity.enhancedDirectionalBias as EnhancedDirectionalBias | null | undefined) ??
+    (opportunity.directionalBias as EnhancedDirectionalBias | null | undefined) ??
+    null
+
+  const resolvedDirectionKey =
+    rawDirectionalBias && typeof rawDirectionalBias.direction === 'string'
+      ? (rawDirectionalBias.direction.toLowerCase() as 'bullish' | 'bearish' | 'neutral')
+      : null
+
+  const directionalMeta = resolvedDirectionKey && directionalStyles[resolvedDirectionKey]
+    ? directionalStyles[resolvedDirectionKey]
+    : directionalStyles.neutral
+
+  const directionalScore =
+    rawDirectionalBias && typeof rawDirectionalBias.score === 'number' && Number.isFinite(rawDirectionalBias.score)
+      ? rawDirectionalBias.score
+      : null
+  const directionalConfidence =
+    rawDirectionalBias && typeof rawDirectionalBias.confidence === 'number' && Number.isFinite(rawDirectionalBias.confidence)
+      ? rawDirectionalBias.confidence
+      : null
+  const directionalScoreLabel =
+    directionalScore !== null ? `${directionalScore >= 0 ? '+' : ''}${directionalScore.toFixed(1)}` : null
+  const directionalConfidenceLabel =
+    directionalConfidence !== null ? `${Math.round(directionalConfidence)}%` : null
+  const directionalRecommendation =
+    rawDirectionalBias && typeof rawDirectionalBias.recommendation === 'string' && rawDirectionalBias.recommendation.trim().length
+      ? rawDirectionalBias.recommendation
+      : null
+  const directionalTimestamp =
+    rawDirectionalBias && typeof rawDirectionalBias.timestamp === 'string'
+      ? formatRelativeDate(rawDirectionalBias.timestamp)
+      : null
+  const directionalDrivers = rawDirectionalBias && Array.isArray(rawDirectionalBias.drivers)
+    ? rawDirectionalBias.drivers.filter((driver): driver is string => typeof driver === 'string' && driver.trim().length > 0)
+    : []
+  const directionalSignals = rawDirectionalBias && Array.isArray(rawDirectionalBias.signals)
+    ? (rawDirectionalBias.signals.filter(
+        (signal): signal is DirectionalSignalBreakdown =>
+          Boolean(
+            signal &&
+            typeof signal === 'object' &&
+            typeof (signal as DirectionalSignalBreakdown).name === 'string' &&
+            (signal as DirectionalSignalBreakdown).name.trim().length > 0,
+          ),
+      ) as DirectionalSignalBreakdown[])
+    : []
+
+  const renderDirectionalBiasSection = () => {
+    if (!rawDirectionalBias) {
+      return null
+    }
+
+    const driverOverflowCount = directionalDrivers.length > 4 ? directionalDrivers.length - 4 : 0
+    const showSignalBreakdown = isExpanded && directionalSignals.length > 0
+
+    return (
+      <div className="mt-4 rounded-2xl border border-indigo-200/70 bg-indigo-50/60 p-4 shadow-sm dark:border-indigo-900/40 dark:bg-indigo-950/20">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-indigo-600 dark:text-indigo-300">
+              Directional Bias
+            </span>
+            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${directionalMeta.badgeClass}`}>
+              {directionalMeta.label}
+            </span>
+          </div>
+          {directionalTimestamp && (
+            <span className="text-xs text-indigo-700/70 dark:text-indigo-200/70">
+              Updated {directionalTimestamp}
+            </span>
+          )}
+        </div>
+
+        {directionalRecommendation && (
+          <p className="mt-2 text-sm leading-relaxed text-indigo-900 dark:text-indigo-100">
+            {directionalRecommendation}
+          </p>
+        )}
+
+        {(directionalScoreLabel || directionalConfidenceLabel) && (
+          <div className="mt-3 flex flex-wrap items-center gap-3 text-xs font-medium text-indigo-700 dark:text-indigo-200">
+            {directionalScoreLabel && <span>Score {directionalScoreLabel}</span>}
+            {directionalConfidenceLabel && <span>Confidence {directionalConfidenceLabel}</span>}
+          </div>
+        )}
+
+        {directionalDrivers.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {directionalDrivers.slice(0, 4).map((driver, index) => (
+              <span
+                key={`${driver}-${index}`}
+                className={`px-2.5 py-1 rounded-full text-[11px] font-medium ${directionalMeta.chipClass} border border-indigo-200/40 dark:border-indigo-900/30`}
+              >
+                {driver}
+              </span>
+            ))}
+            {driverOverflowCount > 0 && (
+              <span className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-500/10 text-slate-600 dark:bg-slate-700/40 dark:text-slate-200">
+                +{driverOverflowCount} more
+              </span>
+            )}
+          </div>
+        )}
+
+        {showSignalBreakdown && (
+          <div className="mt-4 space-y-2">
+            {directionalSignals.map((signal, index) => {
+              const signalDirectionKey =
+                signal && typeof signal.direction === 'string'
+                  ? (signal.direction.toLowerCase() as 'bullish' | 'bearish' | 'neutral')
+                  : 'neutral'
+              const signalMeta = directionalStyles[signalDirectionKey] ?? directionalStyles.neutral
+              const signalScoreLabel =
+                typeof signal.score === 'number' && Number.isFinite(signal.score)
+                  ? `${signal.score >= 0 ? '+' : ''}${signal.score.toFixed(1)}`
+                  : null
+              const signalConfidenceLabel =
+                typeof signal.confidence === 'number' && Number.isFinite(signal.confidence)
+                  ? `${Math.round(signal.confidence)}%`
+                  : null
+              const signalWeightLabel =
+                typeof signal.weight === 'number' && Number.isFinite(signal.weight)
+                  ? formatFractionAsPercent(signal.weight, 0)
+                  : null
+              const signalContributionLabel =
+                typeof signal.weighted_contribution === 'number' && Number.isFinite(signal.weighted_contribution)
+                  ? `${signal.weighted_contribution >= 0 ? '+' : ''}${signal.weighted_contribution.toFixed(1)} pts`
+                  : null
+
+              return (
+                <div
+                  key={`${signal.name}-${index}`}
+                  className="rounded-xl border border-indigo-200/70 bg-white/80 px-3 py-3 dark:border-indigo-900/40 dark:bg-slate-900/40"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="text-sm font-semibold text-slate-900 dark:text-white">{signal.name}</div>
+                      {signal.rationale && (
+                        <p className="text-xs leading-relaxed text-slate-600 dark:text-slate-300">{signal.rationale}</p>
+                      )}
+                    </div>
+                    <div className="flex flex-col items-end gap-1 text-[11px] font-medium text-indigo-700 dark:text-indigo-200">
+                      {signalScoreLabel && <span>Score {signalScoreLabel}</span>}
+                      {signalConfidenceLabel && <span>Conf {signalConfidenceLabel}</span>}
+                      {signalWeightLabel && signalWeightLabel !== '—' && <span>Weight {signalWeightLabel}</span>}
+                      {signalContributionLabel && <span>Impact {signalContributionLabel}</span>}
+                    </div>
+                  </div>
+                  <div className="mt-2 flex items-center gap-2">
+                    <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold ${signalMeta.badgeClass}`}>
+                      {signalMeta.label}
+                    </span>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+    )
+  }
+
   const historical = opportunity.historicalContext
   const touchProbabilitySource = historical?.touchProbability
   const fallbackTouchProbability = historical?.empiricalProbability
@@ -1154,6 +1351,8 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
           </div>
         </div>
       ) : null}
+
+      {renderDirectionalBiasSection()}
 
       {historical?.available && (
         <div className="mb-5 space-y-4">

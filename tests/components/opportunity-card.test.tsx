@@ -63,6 +63,34 @@ describe("OpportunityCard", () => {
       maxPainStrike: 255,
       newsImpactScore: 0.7,
       recentNews: [],
+      enhancedDirectionalBias: {
+        direction: "bullish",
+        confidence: 78,
+        score: 42.5,
+        recommendation: "Call skew and smart money positioning point to upside follow-through.",
+        drivers: ["Call skew premium", "Block call accumulation"],
+        signals: [
+          {
+            name: "Options Skew",
+            direction: "bullish",
+            score: 24.3,
+            confidence: 82,
+            weight: 0.55,
+            weighted_contribution: 13.4,
+            rationale: "Calls are priced at a 4% premium vs puts across the wing, indicating demand for upside exposure.",
+          },
+          {
+            name: "Smart Money Flow",
+            direction: "bullish",
+            score: 18.2,
+            confidence: 75,
+            weight: 0.45,
+            weighted_contribution: 6.8,
+            rationale: "Large block call trades executed on the ask with 2.1x normal volume.",
+          },
+        ],
+        timestamp: "2024-01-01T00:00:00Z",
+      },
       swingSignal: {
         symbol: "TSLA",
         compositeScore: 78.5,
@@ -142,5 +170,9 @@ describe("OpportunityCard", () => {
     expect(serialized).toContain("Elevated swing risk")
     expect(serialized).toContain("Volatility Expansion")
     expect(serialized).toContain("ATR expansion is 1.4x its 30 day average")
+    expect(serialized).toContain("Directional Bias")
+    expect(serialized).toContain("Bullish bias")
+    expect(serialized).toContain("Options Skew")
+    expect(serialized).toContain("Call skew premium")
   })
 })

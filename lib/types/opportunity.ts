@@ -57,6 +57,28 @@ export interface SwingSignalInsight {
   metadata: SwingSignalMetadata
 }
 
+export type DirectionalBiasDirection = 'bullish' | 'bearish' | 'neutral'
+
+export interface DirectionalSignalBreakdown {
+  name: string
+  direction: DirectionalBiasDirection | string
+  score: number
+  confidence: number
+  weight?: number | null
+  weighted_contribution?: number | null
+  rationale?: string
+}
+
+export interface EnhancedDirectionalBias {
+  direction: DirectionalBiasDirection | string
+  confidence?: number
+  score?: number
+  recommendation?: string
+  signals?: DirectionalSignalBreakdown[]
+  timestamp?: string
+  drivers?: string[]
+}
+
 export interface DataQualityInfo {
   quality: 'high' | 'medium' | 'low' | 'rejected'
   score: number
@@ -249,6 +271,8 @@ export interface Opportunity {
   }>
   swingSignal?: SwingSignalInsight | null
   swingSignalError?: string
+  directionalBias?: EnhancedDirectionalBias | null
+  enhancedDirectionalBias?: EnhancedDirectionalBias | null
   historicalContext?: HistoricalContext
   positionSizing?: PositionSizingRecommendation
   _dataQuality?: DataQualityInfo
