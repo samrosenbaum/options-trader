@@ -239,6 +239,10 @@ class SmartOptionsScanner:
         if isinstance(cache_hit, bool):
             freshness["cacheHit"] = cache_hit
 
+        has_future_attr = attrs.get("cache_has_future_contracts")
+        if isinstance(has_future_attr, bool):
+            freshness["hasFutureContracts"] = has_future_attr
+
         if symbols:
             freshness["requestedSymbols"] = list(symbols)
 
