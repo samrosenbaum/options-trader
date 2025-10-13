@@ -225,6 +225,7 @@ interface ScanApiResponse {
 }
 
 const DEFAULT_FETCH_TIMEOUT_MS = 45_000
+const ENHANCED_FETCH_TIMEOUT_MS = 75_000
 
 async function fetchWithTimeout(input: RequestInfo | URL, init?: RequestInit, timeoutMs = DEFAULT_FETCH_TIMEOUT_MS) {
   const controller = new AbortController()
@@ -826,6 +827,14 @@ export default function HomePage() {
   const staleCacheActive = !fallbackActive && scanMetadata?.cacheStale === true
   const fallbackReason = typeof scanMetadata?.fallbackReason === 'string' ? scanMetadata.fallbackReason : null
   const fallbackDetails = typeof scanMetadata?.fallbackDetails === 'string' ? scanMetadata.fallbackDetails : null
+  const metadataSource = typeof scanMetadata?.source === 'string' ? scanMetadata.source.toLowerCase() : null
+  const enhancedModeActive = activeTab === 'options' && useEnhancedScanner
+  const enhancedResponseDetected =
+    enhancedModeActive &&
+    (scanMetadata?.enhancedScanner === true ||
+      scanMetadata?.institutionalGrade === true ||
+      (metadataSource !== null && metadataSource.includes('enhanced')))
+  const showEnhancedStatus = enhancedModeActive && !fallbackActive
   const cacheAgeDescription = formatAgeDescription(
     typeof scanMetadata?.cacheAgeMinutes === 'number' ? scanMetadata.cacheAgeMinutes : (extractFreshnessField('cacheAgeMinutes') as number | null | undefined),
   )
@@ -923,7 +932,8 @@ export default function HomePage() {
 
       // Use enhanced scanner endpoint if toggle is enabled
       const endpoint = useEnhancedScanner ? '/api/scan-enhanced' : '/api/scan-python'
-      const response = await fetchWithTimeout(endpoint)
+      const timeoutMs = useEnhancedScanner ? ENHANCED_FETCH_TIMEOUT_MS : DEFAULT_FETCH_TIMEOUT_MS
+      const response = await fetchWithTimeout(endpoint, undefined, timeoutMs)
 
       if (!response.ok) {
         console.error('Scan request failed with status', response.status)
@@ -1977,6 +1987,35 @@ export default function HomePage() {
                     Cached
                   </span>
                 )}
+              </div>
+            )}
+            {showEnhancedStatus && (
+              <div className="w-full mt-3">
+                <div
+                  className={`flex items-start gap-3 rounded-lg border px-4 py-3 ${
+                    enhancedResponseDetected
+                      ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-100'
+                      : 'border-sky-500/30 bg-sky-500/10 text-sky-100'
+                  }`}
+                >
+                  <svg className="mt-1 h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6l7 4v4c0 3-3 5-7 8-4-3-7-5-7-8v-4l7-4z" />
+                  </svg>
+                  <div className="space-y-1">
+                    <p className="font-semibold">
+                      {enhancedResponseDetected ? 'Institutional scanner active' : 'Requesting institutional-grade analysis'}
+                    </p>
+                    <p
+                      className={`text-sm leading-relaxed ${
+                        enhancedResponseDetected ? 'text-emerald-100/80' : 'text-sky-100/80'
+                      }`}
+                    >
+                      {enhancedResponseDetected
+                        ? 'Results include enhanced probability calibration, advanced Greeks, and risk-adjusted filtering.'
+                        : 'This institutional mode runs advanced modeling and can take up to 60 seconds to complete.'}
+                    </p>
+                  </div>
+                </div>
               </div>
             )}
             {activeTab === 'options' && (fallbackActive || staleCacheActive) && (
