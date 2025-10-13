@@ -730,35 +730,6 @@ const renderOpportunityCard = (
         </div>
       )}
 
-      {/* Additional opportunity details */}
-      <div className="mt-4 space-y-3">
-        <div className="bg-white/80 dark:bg-slate-900/80 rounded-xl p-4 border border-slate-200/60 dark:border-slate-700/40">
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <span className="text-slate-600 dark:text-slate-400">Strike:</span>
-              <span className="ml-2 font-medium">${opp.strike}</span>
-            </div>
-            <div>
-              <span className="text-slate-600 dark:text-slate-400">Type:</span>
-              <span className="ml-2 font-medium capitalize">{opp.optionType}</span>
-            </div>
-            <div>
-              <span className="text-slate-600 dark:text-slate-400">Expiry:</span>
-              <span className="ml-2 font-medium">{new Date(opp.expiration).toLocaleDateString()}</span>
-            </div>
-            <div>
-              <span className="text-slate-600 dark:text-slate-400">DTE:</span>
-              <span className="ml-2 font-medium">{opp.daysToExpiration} days</span>
-            </div>
-          </div>
-          {breakevenRequirement && (
-            <div className="mt-3 text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-              {breakevenRequirement}
-            </div>
-          )}
-        </div>
-      </div>
-
       <div className="mt-6 flex justify-end">
         <button
           type="button"
