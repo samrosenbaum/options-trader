@@ -14,5 +14,6 @@ services:
         value: production
       - key: PYTHON_EXECUTABLE
         value: ./venv/bin/python3
-    healthCheckPath: /
+    # Health check disabled to avoid timeout issues during scans
+    # healthCheckPath: /
     autoDeploy: true

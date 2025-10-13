@@ -182,7 +182,7 @@ interface EnhancedScannerResponse {
 export const runtime = "nodejs"
 export const maxDuration = 300 // 5 minutes for enhanced analysis
 
-const FALLBACK_TIMEOUT_MS = 60_000 // Increased timeout for enhanced processing
+const FALLBACK_TIMEOUT_MS = 140_000 // Increased timeout for cloud enhanced processing
 const FALLBACK_DATA_PATH = path.join(process.cwd(), "configs", "fallback-scan.json")
 
 const normalizePercent = (value: unknown): number | null => {

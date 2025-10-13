@@ -225,8 +225,8 @@ interface ScanApiResponse {
   details?: string
 }
 
-const DEFAULT_FETCH_TIMEOUT_MS = 45_000
-const ENHANCED_FETCH_TIMEOUT_MS = 75_000
+const DEFAULT_FETCH_TIMEOUT_MS = 120_000  // 2 minutes for cloud deployments
+const ENHANCED_FETCH_TIMEOUT_MS = 150_000  // 2.5 minutes for enhanced scanner
 
 async function fetchWithTimeout(input: RequestInfo | URL, init?: RequestInit, timeoutMs = DEFAULT_FETCH_TIMEOUT_MS) {
   const controller = new AbortController()

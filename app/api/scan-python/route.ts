@@ -107,7 +107,7 @@ interface ScannerResponse {
 export const runtime = "nodejs"
 export const maxDuration = 300 // Increased to 5 minutes to accommodate historical analysis
 
-const FALLBACK_TIMEOUT_MS = 90_000 // Increased to 90s for cloud environment latency
+const FALLBACK_TIMEOUT_MS = 110_000 // Increased to 110s for cloud cold starts and latency
 const FALLBACK_DATA_PATH = path.join(process.cwd(), "configs", "fallback-scan.json")
 
 const normalizePercent = (value: unknown): number | null => {
