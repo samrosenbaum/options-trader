@@ -16,6 +16,25 @@ from datetime import datetime, timezone
 from src.adapters.base import AdapterError
 from src.config import get_options_data_adapter, get_settings
 
+
+class RuntimeBudgetExceeded(TimeoutError):
+    """Raised when the bulk options fetch exceeds the configured runtime budget."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        partial_results: pd.DataFrame | None,
+        elapsed: float,
+        successful_symbols: int,
+        total_symbols: int,
+    ) -> None:
+        super().__init__(message)
+        self.partial_results = partial_results
+        self.elapsed = elapsed
+        self.successful_symbols = successful_symbols
+        self.total_symbols = total_symbols
+
 class BulkOptionsFetcher:
     def __init__(self, settings: "AppSettings" | None = None):
         self.session = requests.Session()
@@ -263,22 +282,31 @@ class BulkOptionsFetcher:
         finally:
             for future in pending:
                 future.cancel()
-            executor.shutdown(wait=False, cancel_futures=True)
+            executor.shutdown(wait=True, cancel_futures=True)
+
+        combined_df = pd.concat(all_options_data, ignore_index=True) if all_options_data else None
 
         if timed_out:
             elapsed = time.monotonic() - start_time
-            print(
-                f"⏱️  Stopping fetch after {elapsed:.1f}s - collected {successful_fetches}/{len(symbols)} symbols",
+            message = (
+                f"⏱️  Stopping fetch after {elapsed:.1f}s - collected {successful_fetches}/{len(symbols)} symbols"
+            )
+            print(message)
+            raise RuntimeBudgetExceeded(
+                message,
+                partial_results=combined_df,
+                elapsed=elapsed,
+                successful_symbols=successful_fetches,
+                total_symbols=len(symbols),
             )
 
-        if all_options_data:
-            combined_df = pd.concat(all_options_data, ignore_index=True)
+        if combined_df is not None:
             print(f"\n📊 Total options fetched: {len(combined_df)}")
             print(f"📈 Successful symbols: {successful_fetches}/{len(symbols)}")
             return combined_df
-        else:
-            print("❌ No options data fetched")
-            return None
+
+        print("❌ No options data fetched")
+        return None
     
     def _has_future_contracts(self, frame: pd.DataFrame) -> bool:
         """Determine whether a DataFrame contains any non-expired contracts."""
@@ -425,11 +453,25 @@ class BulkOptionsFetcher:
             if cached_data is not None:
                 return cached_data
 
-        # Fetch fresh data
-        if normalized_symbols is not None:
-            fresh_data = self.fetch_bulk_options_parallel(symbols=normalized_symbols, max_symbols=max_symbols)
-        else:
-            fresh_data = self.fetch_bulk_options_parallel(max_symbols=max_symbols)
+        timeout_error: RuntimeBudgetExceeded | None = None
+        fresh_data: pd.DataFrame | None = None
+        try:
+            if normalized_symbols is not None:
+                fresh_data = self.fetch_bulk_options_parallel(
+                    symbols=normalized_symbols,
+                    max_symbols=max_symbols,
+                )
+            else:
+                fresh_data = self.fetch_bulk_options_parallel(max_symbols=max_symbols)
+        except RuntimeBudgetExceeded as exc:
+            timeout_error = exc
+            fresh_data = exc.partial_results
+            if fresh_data is None:
+                print("❌ Options fetch timed out before any data was collected")
+            else:
+                print(
+                    "⚠️  Options fetch exceeded runtime budget; returning partial results",
+                )
 
         if fresh_data is not None:
             fetch_time = datetime.now(timezone.utc).isoformat()
@@ -441,10 +483,22 @@ class BulkOptionsFetcher:
             fresh_data.attrs["cache_used"] = False
             fresh_data.attrs["cache_has_future_contracts"] = has_future_contracts
 
-            if has_future_contracts:
-                self.save_to_cache(fresh_data)
+            if timeout_error is not None:
+                fresh_data.attrs["runtime_budget_exceeded"] = True
+                fresh_data.attrs["runtime_budget_elapsed_seconds"] = timeout_error.elapsed
+                fresh_data.attrs["runtime_budget_successful_symbols"] = (
+                    timeout_error.successful_symbols
+                )
+                fresh_data.attrs["runtime_budget_total_symbols"] = timeout_error.total_symbols
             else:
+                fresh_data.attrs["runtime_budget_exceeded"] = False
+
+            if timeout_error is None and has_future_contracts:
+                self.save_to_cache(fresh_data)
+            elif timeout_error is None:
                 print("⚠️  Live fetch returned only expired contracts; skipping cache save")
+            else:
+                print("⚠️  Skipping cache save due to runtime budget exhaustion")
 
             return fresh_data
 

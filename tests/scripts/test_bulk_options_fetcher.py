@@ -6,7 +6,7 @@ from types import SimpleNamespace
 import pandas as pd
 import pytest
 
-from scripts.bulk_options_fetcher import BulkOptionsFetcher
+from scripts.bulk_options_fetcher import BulkOptionsFetcher, RuntimeBudgetExceeded
 
 
 def make_fetcher(monkeypatch: pytest.MonkeyPatch) -> BulkOptionsFetcher:
@@ -223,10 +223,14 @@ def test_fetch_bulk_options_parallel_respects_time_budget(monkeypatch: pytest.Mo
     monkeypatch.setattr(BulkOptionsFetcher, "fetch_options_via_adapter", fake_fetch, raising=False)
 
     start = time.perf_counter()
-    result = fetcher.fetch_bulk_options_parallel(symbols=["AAA", "BBB", "CCC"], max_workers=3)
+    with pytest.raises(RuntimeBudgetExceeded) as exc_info:
+        fetcher.fetch_bulk_options_parallel(symbols=["AAA", "BBB", "CCC"], max_workers=3)
     duration = time.perf_counter() - start
 
-    # Should stop close to the configured budget and still return partial data
+    # Should stop close to the configured budget and expose partial data via the exception
     assert duration < 0.5
-    assert result is not None
-    assert set(result["symbol"].unique()) == {"AAA", "CCC"}
+    timeout_exc = exc_info.value
+    assert timeout_exc.partial_results is not None
+    assert set(timeout_exc.partial_results["symbol"].unique()) == {"AAA", "CCC"}
+    assert timeout_exc.successful_symbols == 2
+    assert timeout_exc.total_symbols == 3
