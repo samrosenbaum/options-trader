@@ -36,6 +36,10 @@ class CryptoScanner:
         self.session.headers.update({
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
         })
+
+        self.sample_data_path = ROOT_DIR / "data" / "sample_crypto_snapshot.json"
+        self._sample_snapshot = self._load_sample_snapshot()
+        self._offline_mode = False
         
         # Top crypto symbols to analyze
         self.crypto_watchlist = [
@@ -101,6 +105,152 @@ class CryptoScanner:
         except Exception as e:
             print(f"Error fetching data for {coin_id}: {e}")
             return None
+
+    def _load_sample_snapshot(self) -> Optional[Dict]:
+        """Load cached crypto snapshot for offline fallbacks."""
+        try:
+            if self.sample_data_path.exists():
+                with open(self.sample_data_path, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+        except Exception as e:
+            print(f"Error loading sample crypto snapshot: {e}")
+        return None
+
+    def _build_sample_opportunities(self) -> List[Dict]:
+        """Convert archived snapshot data into opportunity payloads."""
+        if not self._sample_snapshot:
+            return []
+
+        opportunities: List[Dict] = []
+        assets = self._sample_snapshot.get('assets', [])
+
+        for asset in assets:
+            score_breakdown = asset.get('score_breakdown', {})
+            total_score = sum(score_breakdown.values())
+
+            flow = asset.get('flow', {})
+            technical = asset.get('technical', {})
+            fundamentals = asset.get('fundamentals', {})
+            sentiment = asset.get('sentiment', {})
+
+            reasons: List[str] = []
+            for section in (flow, technical, fundamentals, sentiment):
+                reasons.extend(section.get('reasons', []))
+
+            volume_24h = float(flow.get('volume_24h', 0) or 0)
+            ratio = float(flow.get('volume_market_cap_ratio', 0) or 0)
+            market_cap = (volume_24h / (ratio / 100)) if ratio else 0.0
+
+            opportunity = {
+                'symbol': asset.get('symbol', '').upper(),
+                'name': asset.get('name', ''),
+                'coin_id': asset.get('coin_id', ''),
+                'current_price': float(asset.get('metrics', {}).get('price', 0) or 0),
+                'market_cap': market_cap,
+                'market_cap_rank': sentiment.get('market_cap_rank', 0),
+                'volume_24h': volume_24h,
+                'price_change_24h': float(asset.get('metrics', {}).get('change_24h', 0) or 0),
+                'price_change_7d': float(technical.get('price_change_7d', 0) or 0),
+                'total_score': total_score,
+                'volume_score': score_breakdown.get('volume', 0),
+                'technical_score': score_breakdown.get('technical', 0),
+                'fundamentals_score': score_breakdown.get('fundamentals', 0),
+                'sentiment_score': score_breakdown.get('sentiment', 0),
+                'reasons': reasons[:10],
+                'volume_change_24h': float(flow.get('volume_change_24h', 0) or 0),
+                'volatility': float(technical.get('volatility', 0) or 0),
+                'supply_ratio': float(fundamentals.get('supply_ratio', 0) or 0),
+                'ath_percentage': float(sentiment.get('ath_percentage', 0) or 0),
+            }
+
+            direction = asset.get('direction')
+            if direction:
+                opportunity['directional_bias'] = {
+                    'direction': direction.get('direction'),
+                    'confidence': direction.get('confidence'),
+                    'score': direction.get('score'),
+                    'recommendation': direction.get('recommendation'),
+                }
+
+            opportunities.append(opportunity)
+
+        opportunities.sort(key=lambda x: x.get('total_score', 0), reverse=True)
+        return opportunities
+
+    def _build_sample_alerts(self, opportunities: List[Dict]) -> List[Dict]:
+        """Create trading alerts from archived snapshot data."""
+        if not self._sample_snapshot:
+            return []
+
+        asset_map = {
+            asset.get('coin_id'): asset
+            for asset in self._sample_snapshot.get('assets', [])
+        }
+
+        alerts: List[Dict] = []
+        for opp in opportunities:
+            asset = asset_map.get(opp.get('coin_id'))
+            if not asset:
+                continue
+
+            direction = asset.get('direction', {})
+            action = direction.get('direction', '')
+            if action.lower() == 'bullish':
+                trade_action = 'BUY'
+            elif action.lower() == 'bearish':
+                trade_action = 'SELL'
+            else:
+                trade_action = 'HOLD'
+
+            confidence = float(direction.get('confidence', 0) or 0)
+            if trade_action == 'HOLD' or confidence <= 0:
+                continue
+
+            risk_level = 'medium'
+            signals = {
+                'confidence': confidence,
+                'risk_level': risk_level,
+            }
+
+            alert = {
+                'symbol': opp.get('symbol'),
+                'name': opp.get('name'),
+                'current_price': opp.get('current_price'),
+                'market_cap': opp.get('market_cap'),
+                'action': trade_action,
+                'confidence': confidence,
+                'strategy': direction.get('recommendation', 'Directional bias update'),
+                'entry_price': opp.get('current_price'),
+                'target_price': 0,
+                'stop_loss': 0,
+                'position_size': {'recommended_size': 2.0},
+                'risk_level': risk_level,
+                'reasons': opp.get('reasons', []),
+                'urgency': self._calculate_urgency(signals, opp),
+                'timestamp': datetime.now().isoformat(),
+            }
+
+            if direction:
+                alert['directional_bias'] = {
+                    'direction': direction.get('direction'),
+                    'confidence': direction.get('confidence'),
+                    'score': direction.get('score'),
+                    'recommendation': direction.get('recommendation'),
+                }
+
+            alert['allocation'] = {
+                'action': 'MAINTAIN_POSITION',
+                'suggested_change_percent': 0.0,
+                'target_allocation_percent': 2.0,
+                'current_allocation_percent': 2.0,
+                'usdc_reallocation_percent': 0.0,
+                'rationale': ['Offline snapshot used - maintain core sizing.'],
+            }
+
+            alerts.append(alert)
+
+        alerts.sort(key=lambda x: (x['urgency'], x['confidence']), reverse=True)
+        return alerts
     
     def get_price_history(
         self, coin_id: str, days: int = 30, *, return_raw: bool = False
@@ -903,6 +1053,7 @@ class CryptoScanner:
 
     def scan_crypto_opportunities(self) -> List[Dict]:
         """Main function to scan for crypto opportunities"""
+        self._offline_mode = False
         opportunities = []
         rate_limit_hit = False
         
@@ -988,6 +1139,13 @@ class CryptoScanner:
         # No sample data - only real market opportunities
         if rate_limit_hit or len(opportunities) == 0:
             print("Rate limit detected or no opportunities found. Try again later when API limits reset.")
+
+        if len(opportunities) == 0:
+            sample_opportunities = self._build_sample_opportunities()
+            if sample_opportunities:
+                print("Falling back to offline crypto snapshot data.")
+                self._offline_mode = True
+                return sample_opportunities
         
         # Sort by total score
         opportunities.sort(key=lambda x: x['total_score'], reverse=True)
@@ -1621,6 +1779,9 @@ class CryptoScanner:
     
     def generate_trading_alerts(self, opportunities: List[Dict]) -> List[Dict]:
         """Generate actionable trading alerts with buy/sell/rebalance signals"""
+        if self._offline_mode:
+            return self._build_sample_alerts(opportunities)
+
         alerts = []
         
         for opp in opportunities:
