@@ -374,7 +374,15 @@ class SmartOptionsScanner:
         price_history_cache: Dict[str, pd.DataFrame] = {}
         for symbol in unique_symbols:
             try:
-                price_history = yf.download(symbol, period="30d", interval="1d", progress=False, auto_adjust=True)
+                # Add timeout to prevent hanging on slow connections
+                price_history = yf.download(
+                    symbol,
+                    period="30d",
+                    interval="1d",
+                    progress=False,
+                    auto_adjust=True,
+                    timeout=10  # 10 second timeout per symbol
+                )
                 if not price_history.empty:
                     # Flatten MultiIndex columns if present
                     if isinstance(price_history.columns, pd.MultiIndex):
@@ -1074,7 +1082,14 @@ class SmartOptionsScanner:
             else:
                 # Fallback: fetch if not in cache (shouldn't happen with pre-fetching)
                 try:
-                    price_history = yf.download(symbol, period="30d", interval="1d", progress=False, auto_adjust=True)
+                    price_history = yf.download(
+                        symbol,
+                        period="30d",
+                        interval="1d",
+                        progress=False,
+                        auto_adjust=True,
+                        timeout=10
+                    )
                     if not price_history.empty and len(price_history) >= 2:
                         # Flatten MultiIndex columns if present
                         if isinstance(price_history.columns, pd.MultiIndex):

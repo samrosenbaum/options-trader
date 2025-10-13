@@ -174,15 +174,15 @@ class SwingSignalAnalyzer:
     # Fetchers
     # ------------------------------------------------------------------
     def _fetch_price_history(self, symbol: str, lookback: str, interval: str) -> pd.DataFrame:
-        return yf.download(symbol, period=lookback, interval=interval, progress=False)
+        return yf.download(symbol, period=lookback, interval=interval, progress=False, timeout=10)
 
     def _fetch_news(self, symbol: str, limit: int) -> Iterable[NewsHeadline]:
         return fetch_symbol_news(symbol, limit=limit)
 
     def _fetch_market_context(self) -> Dict[str, float]:
         try:
-            vix = yf.download("^VIX", period="3mo", interval="1d", progress=False)
-            spy = yf.download("SPY", period="3mo", interval="1d", progress=False)
+            vix = yf.download("^VIX", period="3mo", interval="1d", progress=False, timeout=10)
+            spy = yf.download("SPY", period="3mo", interval="1d", progress=False, timeout=10)
         except Exception:
             return {}
 
