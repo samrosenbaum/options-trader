@@ -2,7 +2,7 @@ services:
   - type: web
     name: options-trader
     runtime: python
-    plan: free
+    plan: starter
     buildCommand: bash build.sh
     startCommand: bash start.sh
     envVars:
