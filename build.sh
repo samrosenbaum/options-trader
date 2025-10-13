@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
 
+. scripts/ensure_node.sh
+
 echo "Creating Python virtual environment..."
 python3 -m venv venv
 
