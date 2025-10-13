@@ -849,6 +849,8 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
   const expectedEdgeDisplay = formatFractionAsPercent(positionSizing?.expectedEdge ?? null, 1)
   const maxPerTradeDisplay = formatFractionAsPercent(positionSizing?.limits?.maxPerTrade ?? null)
   const maxDrawdownDisplay = formatFractionAsPercent(positionSizing?.limits?.maxDrawdown95 ?? null, 1)
+  const recommendedFractionLabel = recommendedFractionDisplay !== '—' ? recommendedFractionDisplay : null
+  const maxPerTradeLabel = maxPerTradeDisplay !== '—' ? maxPerTradeDisplay : null
   const losingStreak95 = positionSizing?.limits?.losingStreak95 ?? null
 
   const historical = opportunity.historicalContext
@@ -1113,6 +1115,16 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
             <span className={`px-3 py-1 rounded-lg text-sm font-bold border ${getRiskColor(opportunity.riskLevel)}`}>
               {opportunity.riskLevel.toUpperCase()}
             </span>
+            {hasPositionSizing && recommendedFractionLabel && (
+              <span className="px-3 py-1 rounded-lg text-[11px] font-semibold uppercase tracking-wide bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-200 dark:border-emerald-500/40">
+                Risk {recommendedFractionLabel} of portfolio
+              </span>
+            )}
+            {hasPositionSizing && maxPerTradeLabel && (
+              <span className="px-3 py-1 rounded-lg text-[11px] font-semibold uppercase tracking-wide bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/5 dark:text-emerald-200 dark:border-emerald-500/30">
+                Cap {maxPerTradeLabel}
+              </span>
+            )}
           </div>
         </div>
 
