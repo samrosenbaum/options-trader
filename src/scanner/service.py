@@ -64,6 +64,7 @@ class SmartOptionsScanner:
         self.cache_file = "options_cache.json"
         self.last_fetch_time: datetime | None = None
         self.data_freshness: Dict[str, Any] | None = None
+        self.cache_ttl_seconds: int = max(int(getattr(settings.cache, "ttl_seconds", 900) or 0), 0)
         self.validator = OptionsDataValidator()
         sqlite_path: Optional[str] = None
         try:
@@ -110,14 +111,71 @@ class SmartOptionsScanner:
         return market_open <= now <= market_close
 
     def should_refresh_data(self) -> bool:
-        """Determine if cached data should be refreshed.
+        """Determine whether cached option data is too stale to use."""
 
-        Changed to NEVER auto-refresh to prevent UI churn.
-        Users must explicitly request refresh via force_refresh=True.
-        """
+        ttl = self.cache_ttl_seconds
+        freshness = self.data_freshness or {}
 
-        # Always return False - only refresh when explicitly requested
+        # No prior data – force a refresh so we do not operate on an empty cache.
+        if not freshness and self.last_fetch_time is None:
+            return True
+
+        now = datetime.now(timezone.utc)
+
+        # Respect the configured cache TTL when available.
+        if ttl > 0:
+            if self.last_fetch_time is not None:
+                last_fetch = self.last_fetch_time
+                if last_fetch.tzinfo is None:
+                    last_fetch = last_fetch.replace(tzinfo=timezone.utc)
+                if (now - last_fetch).total_seconds() > ttl:
+                    return True
+
+            age_minutes = freshness.get("cacheAgeMinutes")
+            if isinstance(age_minutes, (int, float)) and isfinite(age_minutes):
+                if age_minutes * 60 > ttl:
+                    return True
+
+            timestamp = freshness.get("cacheTimestamp")
+            if isinstance(timestamp, str):
+                try:
+                    parsed = datetime.fromisoformat(timestamp)
+                except ValueError:
+                    parsed = None
+                if parsed is not None:
+                    if parsed.tzinfo is None:
+                        parsed = parsed.replace(tzinfo=timezone.utc)
+                    if (now - parsed).total_seconds() > ttl:
+                        return True
+
+        # Explicit cache metadata indicating staleness.
+        if freshness.get("cacheStale") is True:
+            return True
+
+        # Ensure we have contracts that have not yet expired.
+        has_future_contracts = freshness.get("hasFutureContracts")
+        if has_future_contracts is False:
+            return True
+
         return False
+
+    def _filter_current_contracts(self, options_data: pd.DataFrame) -> pd.DataFrame:
+        """Remove expired contracts so analysis focuses on actionable trades."""
+
+        if options_data is None or options_data.empty or "expiration" not in options_data.columns:
+            return options_data
+
+        expirations = pd.to_datetime(options_data["expiration"], errors="coerce", utc=True)
+        if expirations.empty:
+            return options_data
+
+        now = pd.Timestamp.now(tz=timezone.utc)
+        mask = expirations.notna()
+        mask &= (expirations - now).dt.total_seconds() >= -60
+
+        # Drop contracts where the expiration could not be parsed or is in the distant past.
+        filtered = options_data.loc[mask].copy()
+        return filtered
 
     def get_current_options_data(
         self,
@@ -132,35 +190,22 @@ class SmartOptionsScanner:
 
         normalized_symbols = [str(sym).upper().strip() for sym in symbols if sym]
 
-        if force_refresh:
-            data = self.fetcher.get_fresh_options_data(
-                use_cache=False,
-                max_symbols=self.symbol_limit,
-                symbols=normalized_symbols,
-            )
-            self.last_fetch_time = datetime.now()
-            self._capture_data_freshness(data, normalized_symbols)
-            return data
+        refresh_needed = force_refresh or self.should_refresh_data()
 
-        # Always use cache unless force_refresh is True
-        print("📂 Using cached data (auto-refresh disabled)", file=sys.stderr)
         data = self.fetcher.get_fresh_options_data(
-            use_cache=True,
+            use_cache=not refresh_needed,
             max_symbols=self.symbol_limit,
             symbols=normalized_symbols,
         )
 
-        # If no cache exists, fetch once but don't auto-refresh in future
-        if data is None:
-            print("⚠️  No cache found - fetching data once", file=sys.stderr)
+        # When we explicitly bypass the cache and fail to fetch fresh data,
+        # fall back to whatever cached snapshot we can recover.
+        if data is None and refresh_needed:
             data = self.fetcher.get_fresh_options_data(
-                use_cache=False,
+                use_cache=True,
                 max_symbols=self.symbol_limit,
                 symbols=normalized_symbols,
             )
-            self.last_fetch_time = datetime.now()
-            self._capture_data_freshness(data, normalized_symbols)
-            return data
 
         self._capture_data_freshness(data, normalized_symbols)
 
@@ -197,7 +242,21 @@ class SmartOptionsScanner:
         if symbols:
             freshness["requestedSymbols"] = list(symbols)
 
+        if "expiration" in data.columns:
+            expirations = pd.to_datetime(data["expiration"], errors="coerce", utc=True)
+            if not expirations.empty:
+                today = pd.Timestamp.now(tz=timezone.utc)
+                future_mask = expirations.notna()
+                future_days = ((expirations[future_mask] - today).dt.total_seconds() / 86400.0).tolist()
+                has_future = any(day >= 0 for day in future_days)
+                freshness["hasFutureContracts"] = has_future
+                if future_days:
+                    non_negative = [day for day in future_days if day >= 0]
+                    if non_negative:
+                        freshness["minFutureDte"] = min(non_negative)
+
         self.data_freshness = freshness if freshness else None
+        self.last_fetch_time = datetime.now(timezone.utc)
 
     def _apply_freshness_metadata(self, metadata: Dict[str, Any]) -> None:
         if not self.data_freshness:
@@ -220,6 +279,14 @@ class SmartOptionsScanner:
         cache_hit = self.data_freshness.get("cacheHit")
         if isinstance(cache_hit, bool):
             metadata["cacheHit"] = cache_hit
+
+        has_future = self.data_freshness.get("hasFutureContracts")
+        if isinstance(has_future, bool):
+            metadata["hasFutureContracts"] = has_future
+
+        min_future = self.data_freshness.get("minFutureDte")
+        if isinstance(min_future, (int, float)) and isfinite(min_future):
+            metadata["minFutureDte"] = float(min_future)
 
     def _serialize_swing_signal(self, signal: SwingSignal) -> Dict[str, Any]:
         return {
@@ -270,7 +337,10 @@ class SmartOptionsScanner:
         if options_data is None or options_data.empty:
             return []
 
-        working_data = options_data.copy()
+        working_data = self._filter_current_contracts(options_data).copy()
+        if working_data.empty:
+            print("⚠️  No non-expired options available after filtering", file=sys.stderr)
+            return []
         numeric_columns = [
             "volume",
             "openInterest",
