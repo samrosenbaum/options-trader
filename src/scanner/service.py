@@ -368,6 +368,24 @@ class SmartOptionsScanner:
 
         print(f"📊 Analyzing {len(liquid_options)} liquid options...", file=sys.stderr)
 
+        # Pre-fetch price history for all unique symbols to avoid repeated yfinance calls
+        unique_symbols = liquid_options["symbol"].unique().tolist()
+        print(f"📥 Pre-fetching price history for {len(unique_symbols)} symbols...", file=sys.stderr)
+        price_history_cache: Dict[str, pd.DataFrame] = {}
+        for symbol in unique_symbols:
+            try:
+                price_history = yf.download(symbol, period="30d", interval="1d", progress=False, auto_adjust=True)
+                if not price_history.empty:
+                    # Flatten MultiIndex columns if present
+                    if isinstance(price_history.columns, pd.MultiIndex):
+                        price_history.columns = price_history.columns.get_level_values(0)
+                    # Normalize column names to lowercase
+                    price_history.columns = [col.lower() for col in price_history.columns]
+                    price_history_cache[symbol] = price_history
+            except Exception as e:
+                print(f"⚠️  Could not fetch price history for {symbol}: {e}", file=sys.stderr)
+        print(f"✅ Cached price history for {len(price_history_cache)} symbols", file=sys.stderr)
+
         opportunities: List[Dict[str, Any]] = []
         fallback_candidates: List[Dict[str, Any]] = []
         for _, option in liquid_options.iterrows():
@@ -415,7 +433,7 @@ class SmartOptionsScanner:
             # Get full options chain for this symbol
             symbol_options_chain = working_data[working_data["symbol"] == option["symbol"]].copy()
             enhanced_bias = self.calculate_enhanced_directional_bias(
-                option["symbol"], option, symbol_options_chain
+                option["symbol"], option, symbol_options_chain, price_history_cache
             )
 
             preferred_option_type = self._preferred_option_type(enhanced_bias, directional_bias)
@@ -1006,7 +1024,7 @@ class SmartOptionsScanner:
         }
 
     def calculate_enhanced_directional_bias(
-        self, symbol: str, option: pd.Series, options_chain: pd.DataFrame
+        self, symbol: str, option: pd.Series, options_chain: pd.DataFrame, price_history_cache: Optional[Dict[str, pd.DataFrame]] = None
     ) -> Optional[Dict[str, Any]]:
         """
         Calculate enhanced directional bias using the new signal framework.
@@ -1015,6 +1033,7 @@ class SmartOptionsScanner:
             symbol: Stock symbol
             option: Current option being analyzed
             options_chain: Full options chain for the symbol (for skew analysis)
+            price_history_cache: Optional pre-fetched price history cache to avoid repeated API calls
 
         Returns:
             Dictionary with directional prediction or None if insufficient data
@@ -1041,24 +1060,34 @@ class SmartOptionsScanner:
                 "put_volume_std": float(avg_put_volume * 0.3),
             }
 
-            # Fetch price history for regime detection (30 days of daily data)
+            # Use cached price history if available, otherwise fetch it
             price_history = pd.DataFrame()
             price_change = 0.0
-            try:
-                price_history = yf.download(symbol, period="30d", interval="1d", progress=False, auto_adjust=True)
+
+            if price_history_cache and symbol in price_history_cache:
+                # Use pre-fetched price history from cache
+                price_history = price_history_cache[symbol]
                 if not price_history.empty and len(price_history) >= 2:
-                    # Flatten MultiIndex columns if present
-                    if isinstance(price_history.columns, pd.MultiIndex):
-                        price_history.columns = price_history.columns.get_level_values(0)
-
-                    # Normalize column names to lowercase
-                    price_history.columns = [col.lower() for col in price_history.columns]
-
                     # Calculate price change from previous close
                     closes = price_history["close"].values
                     price_change = ((closes[-1] - closes[-2]) / closes[-2]) * 100
-            except Exception as e:
-                print(f"Warning: Could not fetch price history for {symbol}: {e}")
+            else:
+                # Fallback: fetch if not in cache (shouldn't happen with pre-fetching)
+                try:
+                    price_history = yf.download(symbol, period="30d", interval="1d", progress=False, auto_adjust=True)
+                    if not price_history.empty and len(price_history) >= 2:
+                        # Flatten MultiIndex columns if present
+                        if isinstance(price_history.columns, pd.MultiIndex):
+                            price_history.columns = price_history.columns.get_level_values(0)
+
+                        # Normalize column names to lowercase
+                        price_history.columns = [col.lower() for col in price_history.columns]
+
+                        # Calculate price change from previous close
+                        closes = price_history["close"].values
+                        price_change = ((closes[-1] - closes[-2]) / closes[-2]) * 100
+                except Exception as e:
+                    print(f"Warning: Could not fetch price history for {symbol}: {e}")
 
             # Prepare data for signal aggregator
             signal_data = {

@@ -153,6 +153,8 @@ class HistoricalMoveAnalyzer:
 
                 # Check if cache is fresh (within last 24 hours for most recent date)
                 most_recent = pd.to_datetime(df["date"].max())
+                # Strip timezone info for consistent comparison
+                most_recent = most_recent.replace(tzinfo=None) if most_recent.tzinfo else most_recent
                 if datetime.now() - most_recent > timedelta(days=1):
                     return None  # Stale cache
 
@@ -268,6 +270,9 @@ class HistoricalMoveAnalyzer:
         closes = df["Close"].values
         dates = df.index.to_pydatetime()
 
+        # Strip timezone info from all dates for consistent datetime arithmetic
+        dates = [d.replace(tzinfo=None) if d.tzinfo else d for d in dates]
+
         occurrences = 0
         close_occurrences = 0
         occurrence_details: List[Tuple[datetime, int]] = []
@@ -353,7 +358,9 @@ class HistoricalMoveAnalyzer:
 
         # Data quality weighting considers sample size and recency of data
         sample_factor = min(total_periods / 200, 1.0)
-        recency_days = max((datetime.now() - dates[-1]).days, 0)
+        # Ensure dates[-1] is timezone-naive for comparison
+        last_date = dates[-1].replace(tzinfo=None) if dates[-1].tzinfo else dates[-1]
+        recency_days = max((datetime.now() - last_date).days, 0)
         recency_factor = max(0.0, 1 - (recency_days / 120))
         quality_score = (sample_factor * 0.6 + recency_factor * 0.4) * 100
 
