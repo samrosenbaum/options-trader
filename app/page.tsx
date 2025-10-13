@@ -793,6 +793,7 @@ export default function HomePage() {
   const [scanMetadata, setScanMetadata] = useState<ScanMetadata | null>(null)
   const [expandedCards, setExpandedCards] = useState<Record<string, boolean>>({})
   const previousTabRef = useRef<'options' | 'crypto' | null>(null)
+  const opportunitiesRef = useRef<Opportunity[]>([])
 
   const toggleCard = (cardId: string) => {
     setExpandedCards(prev => ({
@@ -831,49 +832,50 @@ export default function HomePage() {
     return Number.isNaN(parsed.getTime()) ? null : parsed
   })()
 
-  const handleScanPayload = useCallback(
-    (payload: ScanApiResponse, options?: { forcedStale?: boolean }) => {
-      if (!payload || typeof payload !== 'object' || payload.success !== true) {
-        return false
-      }
+  const handleScanPayload = useCallback((payload: ScanApiResponse, options?: { forcedStale?: boolean }) => {
+    if (!payload || typeof payload !== 'object' || payload.success !== true) {
+      return false
+    }
 
-      const metadata: ScanMetadata | null =
-        payload.metadata && typeof payload.metadata === 'object'
-          ? (payload.metadata as ScanMetadata)
-          : null
+    const metadata: ScanMetadata | null =
+      payload.metadata && typeof payload.metadata === 'object'
+        ? (payload.metadata as ScanMetadata)
+        : null
 
-      setScanMetadata(metadata)
+    setScanMetadata(metadata)
 
-      const usedFallback = metadata?.fallback === true
-      const staleCache = metadata?.cacheStale === true
+    const usedFallback = metadata?.fallback === true
+    const staleCache = metadata?.cacheStale === true
 
-      const evaluatedFromApi =
-        typeof payload.totalEvaluated === 'number'
-          ? payload.totalEvaluated
-          : typeof payload.total_evaluated === 'number'
-            ? payload.total_evaluated
-            : Array.isArray(payload.opportunities)
-              ? payload.opportunities.length
-              : 0
+    const evaluatedFromApi =
+      typeof payload.totalEvaluated === 'number'
+        ? payload.totalEvaluated
+        : typeof payload.total_evaluated === 'number'
+          ? payload.total_evaluated
+          : Array.isArray(payload.opportunities)
+            ? payload.opportunities.length
+            : 0
 
-      if (Array.isArray(payload.opportunities) && payload.opportunities.length > 0) {
-        setOpportunities(payload.opportunities)
-        setTotalEvaluated(evaluatedFromApi)
-        setLastSuccessfulUpdate(new Date())
-        setIsStaleData(options?.forcedStale === true || usedFallback || staleCache)
-      } else if (opportunities.length === 0) {
-        setOpportunities([])
-        setTotalEvaluated(evaluatedFromApi)
-        setIsStaleData(options?.forcedStale === true || usedFallback || staleCache)
-      } else {
-        setIsStaleData(true)
-        console.warn('Scan returned no results - keeping previous data visible')
-      }
+    const shouldMarkStale = options?.forcedStale === true || usedFallback || staleCache
 
-      return true
-    },
-    [opportunities],
-  )
+    if (Array.isArray(payload.opportunities) && payload.opportunities.length > 0) {
+      setOpportunities(payload.opportunities)
+      opportunitiesRef.current = payload.opportunities
+      setTotalEvaluated(evaluatedFromApi)
+      setLastSuccessfulUpdate(new Date())
+      setIsStaleData(shouldMarkStale)
+    } else if (opportunitiesRef.current.length === 0) {
+      setOpportunities([])
+      opportunitiesRef.current = []
+      setTotalEvaluated(evaluatedFromApi)
+      setIsStaleData(shouldMarkStale)
+    } else {
+      setIsStaleData(true)
+      console.warn('Scan returned no results - keeping previous data visible')
+    }
+
+    return true
+  }, [])
 
   const attemptFallbackFetch = useCallback(
     async (reason: string, details?: string) => {
@@ -916,7 +918,7 @@ export default function HomePage() {
         const fallbackHandled = await attemptFallbackFetch('http_error', `Received status ${response.status}`)
         if (!fallbackHandled) {
           setScanMetadata(null)
-          if (opportunities.length === 0) {
+          if (opportunitiesRef.current.length === 0) {
             setOpportunities([])
           } else {
             setIsStaleData(true)
@@ -949,14 +951,14 @@ export default function HomePage() {
 
       if (!fallbackHandled) {
         // On error, keep existing data and mark as stale
-        if (opportunities.length > 0) {
+        if (opportunitiesRef.current.length > 0) {
           setIsStaleData(true)
         }
       }
     } finally {
       setIsLoading(false)
     }
-  }, [attemptFallbackFetch, handleScanPayload, opportunities, useEnhancedScanner])
+  }, [attemptFallbackFetch, handleScanPayload, useEnhancedScanner])
 
   const fetchCryptoAlerts = useCallback(async () => {
     try {
@@ -997,6 +999,10 @@ export default function HomePage() {
     fetchOpportunities()
     // Auto-refresh disabled - user must manually refresh to avoid API overuse
   }, [fetchOpportunities])
+
+  useEffect(() => {
+    opportunitiesRef.current = opportunities
+  }, [opportunities])
 
   useEffect(() => {
     if (activeTab === 'crypto' && previousTabRef.current !== 'crypto') {
