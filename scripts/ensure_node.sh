@@ -34,7 +34,15 @@ ensure_node() {
     tmp_tar=$(mktemp)
     node_url="https://nodejs.org/dist/v${node_version}/node-v${node_version}-linux-${node_arch}.tar.xz"
     echo "Downloading Node.js from ${node_url}..."
-    curl -fsSL "$node_url" -o "$tmp_tar"
+    if command -v curl >/dev/null 2>&1; then
+      curl -fsSL "$node_url" -o "$tmp_tar"
+    elif command -v wget >/dev/null 2>&1; then
+      wget -q "$node_url" -O "$tmp_tar"
+    else
+      echo "Neither curl nor wget is available for downloading Node.js." >&2
+      echo "Please install curl or wget and retry." >&2
+      return 1
+    fi
     tar -xJf "$tmp_tar" -C "$node_dir" --strip-components=1
     rm -f "$tmp_tar"
   fi
