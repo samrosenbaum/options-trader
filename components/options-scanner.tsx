@@ -7,6 +7,13 @@ import { mockOptions } from "@/lib/mock-data"
 import { TrendingUp, TrendingDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 
+const currencyFormatter = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+})
+
 export function OptionsScanner() {
   return (
     <div className="space-y-4">
@@ -87,7 +94,7 @@ export function OptionsScanner() {
                     </span>
                   </div>
                   <div className="mt-1 text-xs text-muted-foreground">
-                    Confidence: {(option.confidence * 100).toFixed(0)}%
+                    Contract Cost: {currencyFormatter.format(option.premium * 100)}
                   </div>
                 </div>
                 <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90">
