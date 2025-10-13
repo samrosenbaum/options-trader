@@ -34,6 +34,7 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     },
     "fetcher": {
         "max_priority_symbols": None,
+        "max_runtime_seconds": 75,
     },
     "cache": {
         "ttl_seconds": 900,
@@ -94,6 +95,19 @@ class AdapterSettings(BaseModel):
 
 class FetcherSettings(BaseModel):
     max_priority_symbols: Optional[int] = None
+    max_runtime_seconds: Optional[float] = Field(default=75)
+
+    @validator("max_runtime_seconds", pre=True)
+    def _normalize_runtime(cls, value: Any) -> Optional[float]:  # type: ignore[override]
+        if value is None:
+            return None
+        try:
+            runtime = float(value)
+        except (TypeError, ValueError):  # pragma: no cover - defensive conversion
+            return None
+        if runtime <= 0:
+            return None
+        return runtime
 
 
 class CacheSettings(BaseModel):
