@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 
 import pandas as pd
@@ -20,7 +20,7 @@ def make_fetcher(monkeypatch: pytest.MonkeyPatch) -> BulkOptionsFetcher:
 def test_load_from_cache_allows_stale_when_requested(monkeypatch: pytest.MonkeyPatch, tmp_path):
     fetcher = make_fetcher(monkeypatch)
     cache_path = tmp_path / "options_cache.json"
-    stale_timestamp = (datetime.now() - timedelta(hours=4)).isoformat()
+    stale_timestamp = (datetime.now(timezone.utc) - timedelta(hours=4)).isoformat()
     cache_payload = {
         "timestamp": stale_timestamp,
         "data_count": 1,
@@ -31,6 +31,7 @@ def test_load_from_cache_allows_stale_when_requested(monkeypatch: pytest.MonkeyP
                 "volume": 1200,
                 "openInterest": 5000,
                 "lastPrice": 4.2,
+                "expiration": (datetime.now(timezone.utc) + timedelta(days=5)).isoformat(),
             }
         ],
     }
@@ -60,6 +61,7 @@ def test_load_from_cache_allows_stale_when_requested(monkeypatch: pytest.MonkeyP
     age_minutes = frame.attrs.get("cache_age_minutes")
     assert isinstance(age_minutes, (int, float))
     assert age_minutes >= 240  # At least four hours old
+    assert frame.attrs.get("cache_has_future_contracts") is True
 
 
 def test_get_fresh_options_data_uses_stale_cache_on_failure(monkeypatch: pytest.MonkeyPatch):
@@ -72,6 +74,7 @@ def test_get_fresh_options_data_uses_stale_cache_on_failure(monkeypatch: pytest.
                 "volume": 900,
                 "openInterest": 3000,
                 "lastPrice": 5.1,
+                "expiration": (datetime.now(timezone.utc) + timedelta(days=2)).isoformat(),
             }
         ]
     )
@@ -115,3 +118,86 @@ def test_get_fresh_options_data_uses_stale_cache_on_failure(monkeypatch: pytest.
     assert result is stale_frame
     assert load_calls == [False, True]
     assert result.attrs.get("cache_stale") is True
+
+
+def test_load_from_cache_rejects_future_timestamp(monkeypatch: pytest.MonkeyPatch, tmp_path):
+    fetcher = make_fetcher(monkeypatch)
+    cache_path = tmp_path / "options_cache.json"
+    future_timestamp = (datetime.now(timezone.utc) + timedelta(days=1)).isoformat()
+    cache_payload = {
+        "timestamp": future_timestamp,
+        "data_count": 1,
+        "symbols": ["TSLA"],
+        "options": [
+            {
+                "symbol": "TSLA",
+                "volume": 1200,
+                "openInterest": 5000,
+                "lastPrice": 4.2,
+                "expiration": (datetime.now(timezone.utc) + timedelta(days=7)).isoformat(),
+            }
+        ],
+    }
+    cache_path.write_text(json.dumps(cache_payload))
+
+    assert (
+        fetcher.load_from_cache(
+            filename=str(cache_path),
+            symbols=["TSLA"],
+            max_age_minutes=15,
+        )
+        is None
+    )
+
+    frame = fetcher.load_from_cache(
+        filename=str(cache_path),
+        symbols=["TSLA"],
+        max_age_minutes=15,
+        allow_stale=True,
+    )
+    assert frame is not None
+    assert frame.attrs.get("cache_stale") is True
+    assert frame.attrs.get("cache_source") == "adapter-cache-stale"
+    assert frame.attrs.get("cache_has_future_contracts") is True
+    assert frame.attrs.get("cache_age_minutes") >= 0
+
+
+def test_load_from_cache_rejects_expired_contracts(monkeypatch: pytest.MonkeyPatch, tmp_path):
+    fetcher = make_fetcher(monkeypatch)
+    cache_path = tmp_path / "options_cache.json"
+    stale_timestamp = (datetime.now(timezone.utc) - timedelta(minutes=5)).isoformat()
+    cache_payload = {
+        "timestamp": stale_timestamp,
+        "data_count": 1,
+        "symbols": ["TSLA"],
+        "options": [
+            {
+                "symbol": "TSLA",
+                "volume": 1200,
+                "openInterest": 5000,
+                "lastPrice": 4.2,
+                "expiration": (datetime.now(timezone.utc) - timedelta(days=2)).isoformat(),
+            }
+        ],
+    }
+    cache_path.write_text(json.dumps(cache_payload))
+
+    assert (
+        fetcher.load_from_cache(
+            filename=str(cache_path),
+            symbols=["TSLA"],
+            max_age_minutes=15,
+        )
+        is None
+    )
+
+    frame = fetcher.load_from_cache(
+        filename=str(cache_path),
+        symbols=["TSLA"],
+        max_age_minutes=15,
+        allow_stale=True,
+    )
+    assert frame is not None
+    assert frame.attrs.get("cache_stale") is True
+    assert frame.attrs.get("cache_source") == "adapter-cache-stale"
+    assert frame.attrs.get("cache_has_future_contracts") is False

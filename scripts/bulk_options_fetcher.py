@@ -10,7 +10,7 @@ import requests
 import json
 import time
 import concurrent.futures
-from datetime import datetime
+from datetime import datetime, timezone
 
 from src.adapters.base import AdapterError
 from src.config import get_options_data_adapter, get_settings
@@ -223,6 +223,19 @@ class BulkOptionsFetcher:
             print("❌ No options data fetched")
             return None
     
+    def _has_future_contracts(self, frame: pd.DataFrame) -> bool:
+        """Determine whether a DataFrame contains any non-expired contracts."""
+
+        if frame is None or frame.empty or "expiration" not in frame.columns:
+            return False
+
+        expirations = pd.to_datetime(frame["expiration"], errors="coerce", utc=True)
+        if expirations.empty:
+            return False
+
+        now = pd.Timestamp.now(tz=timezone.utc)
+        return bool((expirations >= now - pd.Timedelta(minutes=1)).any())
+
     def save_to_cache(self, data, filename="options_cache.json"):
         """Save options data to cache file"""
         try:
@@ -239,7 +252,7 @@ class BulkOptionsFetcher:
                 raise TypeError(f"Type {type(obj)} not serializable")
 
             cache_data = {
-                'timestamp': datetime.now().isoformat(),
+                'timestamp': datetime.now(timezone.utc).isoformat(),
                 'data_count': len(data_dict),
                 'symbols': data['symbol'].unique().tolist(),
                 'options': data_dict
@@ -267,12 +280,17 @@ class BulkOptionsFetcher:
                 cache_data = json.load(f)
 
             cache_time = datetime.fromisoformat(cache_data['timestamp'])
-            age_minutes = (datetime.now() - cache_time).total_seconds() / 60
+            if cache_time.tzinfo is None:
+                cache_time = cache_time.replace(tzinfo=timezone.utc)
+            now = datetime.now(timezone.utc)
+            raw_age_minutes = (now - cache_time).total_seconds() / 60
 
             cache_frame = pd.DataFrame(cache_data['options'])
+            has_future_contracts = self._has_future_contracts(cache_frame)
             cache_frame.attrs["cache_timestamp"] = cache_time.isoformat()
-            cache_frame.attrs["cache_age_minutes"] = age_minutes
+            cache_frame.attrs["cache_age_minutes"] = max(raw_age_minutes, 0.0)
             cache_frame.attrs["cache_used"] = True
+            cache_frame.attrs["cache_has_future_contracts"] = has_future_contracts
 
             cached_symbols = [str(sym).upper() for sym in cache_data.get('symbols', [])]
             symbol_mismatch = False
@@ -285,13 +303,30 @@ class BulkOptionsFetcher:
                         return None
                     print("⚠️  Cache symbols mismatch – using stale cache dataset")
 
-            if age_minutes <= max_age_minutes:
-                print(f"📂 Using cached data ({age_minutes:.1f} minutes old)")
+            if raw_age_minutes < 0:
+                print("⚠️  Cache timestamp is in the future; discarding fresh cache")
+                if allow_stale:
+                    cache_frame.attrs["cache_source"] = "adapter-cache-stale"
+                    cache_frame.attrs["cache_stale"] = True
+                    cache_frame.attrs["cache_age_minutes"] = abs(raw_age_minutes)
+                    return cache_frame
+                return None
+
+            if not has_future_contracts:
+                print("📂 Cache contains only expired contracts")
+                if allow_stale:
+                    cache_frame.attrs["cache_source"] = "adapter-cache-stale"
+                    cache_frame.attrs["cache_stale"] = True
+                    return cache_frame
+                return None
+
+            if raw_age_minutes <= max_age_minutes:
+                print(f"📂 Using cached data ({raw_age_minutes:.1f} minutes old)")
                 cache_frame.attrs["cache_source"] = "adapter-cache"
                 cache_frame.attrs["cache_stale"] = False
                 return cache_frame
 
-            print(f"🕐 Cache too old ({age_minutes:.1f} minutes), will fetch fresh data")
+            print(f"🕐 Cache too old ({raw_age_minutes:.1f} minutes), will fetch fresh data")
 
             if allow_stale:
                 print("⚠️  Falling back to stale cache - live fetch failed")
@@ -340,12 +375,19 @@ class BulkOptionsFetcher:
             fresh_data = self.fetch_bulk_options_parallel(max_symbols=max_symbols)
 
         if fresh_data is not None:
-            fresh_data.attrs["cache_timestamp"] = datetime.now().isoformat()
+            fetch_time = datetime.now(timezone.utc).isoformat()
+            has_future_contracts = self._has_future_contracts(fresh_data)
+            fresh_data.attrs["cache_timestamp"] = fetch_time
             fresh_data.attrs["cache_age_minutes"] = 0.0
             fresh_data.attrs["cache_source"] = "adapter-live"
-            fresh_data.attrs["cache_stale"] = False
+            fresh_data.attrs["cache_stale"] = not has_future_contracts
             fresh_data.attrs["cache_used"] = False
-            self.save_to_cache(fresh_data)
+            fresh_data.attrs["cache_has_future_contracts"] = has_future_contracts
+
+            if has_future_contracts:
+                self.save_to_cache(fresh_data)
+            else:
+                print("⚠️  Live fetch returned only expired contracts; skipping cache save")
 
             return fresh_data
 
