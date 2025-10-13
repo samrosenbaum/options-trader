@@ -3,6 +3,8 @@ set -e
 
 echo "Starting application..."
 
+. scripts/ensure_node.sh
+
 # Activate virtual environment
 source venv/bin/activate
 
