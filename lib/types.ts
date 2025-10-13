@@ -22,6 +22,12 @@ export interface OptionContract {
   recommendation: "strong_buy" | "buy" | "hold" | "sell" | "strong_sell"
   reasoning: string
   confidence: number
+  marketSentiment?: {
+    direction: "bullish" | "bearish" | "neutral"
+    score: number
+    confidence: number
+    summary: string
+  }
 }
 
 export interface NewsItem {
