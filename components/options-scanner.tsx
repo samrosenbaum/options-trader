@@ -4,8 +4,26 @@ import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { mockOptions } from "@/lib/mock-data"
-import { TrendingUp, TrendingDown } from "lucide-react"
+import { TrendingUp, TrendingDown, Minus } from "lucide-react"
 import { cn } from "@/lib/utils"
+
+const sentimentMeta = {
+  bullish: {
+    label: "Bullish bias",
+    badgeClass: "border-bull text-bull bg-bull/10",
+    icon: TrendingUp,
+  },
+  bearish: {
+    label: "Bearish bias",
+    badgeClass: "border-bear text-bear bg-bear/10",
+    icon: TrendingDown,
+  },
+  neutral: {
+    label: "Neutral bias",
+    badgeClass: "border-muted-foreground text-muted-foreground bg-muted/40",
+    icon: Minus,
+  },
+} as const
 
 export function OptionsScanner() {
   return (
@@ -63,6 +81,46 @@ export function OptionsScanner() {
                     <span>•</span>
                     <span className="font-mono">Premium: ${option.premium}</span>
                   </div>
+                  {option.marketSentiment && (() => {
+                    const sentiment = option.marketSentiment
+                    const meta = sentimentMeta[sentiment.direction]
+                    const Icon = meta.icon
+
+                    return (
+                      <div className="mt-2 space-y-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge
+                            variant="outline"
+                            className={cn(
+                              "flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold",
+                              meta.badgeClass,
+                            )}
+                          >
+                            <Icon className="h-3.5 w-3.5" />
+                            {meta.label}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">{sentiment.summary}</span>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2 text-[11px] font-mono text-muted-foreground">
+                          <span>
+                            Sentiment score:
+                            <span
+                              className={cn(
+                                "ml-1",
+                                sentiment.score > 0 && "text-bull",
+                                sentiment.score < 0 && "text-bear",
+                              )}
+                            >
+                              {sentiment.score > 0 ? "+" : ""}
+                              {sentiment.score.toFixed(2)}
+                            </span>
+                          </span>
+                          <span>•</span>
+                          <span>Confidence {Math.round(sentiment.confidence * 100)}%</span>
+                        </div>
+                      </div>
+                    )
+                  })()}
                 </div>
               </div>
 

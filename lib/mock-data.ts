@@ -120,6 +120,12 @@ export const mockOptions: OptionContract[] = [
     reasoning:
       "Strong bullish momentum with positive AI chip news. High delta indicates good leverage. IV relatively low for potential expansion.",
     confidence: 0.87,
+    marketSentiment: {
+      direction: "bullish",
+      score: 0.74,
+      confidence: 0.82,
+      summary: "Flows, price momentum, and news tone align to support an upside move toward the strike.",
+    },
   },
   {
     id: "2",
@@ -146,6 +152,12 @@ export const mockOptions: OptionContract[] = [
     reasoning:
       "Increased competition concerns creating downside pressure. Good risk/reward ratio with manageable premium.",
     confidence: 0.72,
+    marketSentiment: {
+      direction: "bearish",
+      score: -0.46,
+      confidence: 0.69,
+      summary: "Momentum is rolling over and dark-pool flow leans defensive, signaling continued downside risk.",
+    },
   },
   {
     id: "3",
@@ -171,6 +183,12 @@ export const mockOptions: OptionContract[] = [
     recommendation: "buy",
     reasoning: "Record deliveries driving bullish sentiment. Higher IV provides opportunity for volatility play.",
     confidence: 0.79,
+    marketSentiment: {
+      direction: "bullish",
+      score: 0.58,
+      confidence: 0.76,
+      summary: "Institutional call buying and improving momentum backdrop point to further upside follow-through.",
+    },
   },
   {
     id: "4",
@@ -196,6 +214,12 @@ export const mockOptions: OptionContract[] = [
     recommendation: "hold",
     reasoning: "Stable cloud growth supports selling puts for premium collection. Low IV limits upside.",
     confidence: 0.65,
+    marketSentiment: {
+      direction: "neutral",
+      score: 0.12,
+      confidence: 0.61,
+      summary: "News tone is balanced and price trend is range-bound, suggesting limited directional conviction.",
+    },
   },
 ]
 
