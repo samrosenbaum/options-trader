@@ -3,6 +3,7 @@ import { readFile } from "fs/promises"
 import path from "path"
 
 import { resolvePythonExecutable } from "@/lib/server/python"
+import { determineScannerExecutionPolicy } from "@/lib/server/scanner-runtime"
 import { ensureOptionGreeks } from "@/lib/math/greeks"
 
 /**
@@ -435,6 +436,15 @@ export async function GET(request: Request) {
         reasonParam && reasonParam.trim().length > 0 ? reasonParam : "client_requested",
         detailsParam && detailsParam.trim().length > 0 ? detailsParam : "Client requested fallback dataset",
       )
+    }
+
+    const forcedPolicy = determineScannerExecutionPolicy()
+
+    if (forcedPolicy?.forceFallback) {
+      console.warn(
+        `Enhanced scanner disabled (${forcedPolicy.reason}). Serving fallback dataset instead.`,
+      )
+      return await buildFallbackResponse(forcedPolicy.reason, forcedPolicy.details)
     }
 
     // Execute Enhanced Python Scanner

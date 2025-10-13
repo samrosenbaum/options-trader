@@ -4,6 +4,7 @@ import path from "path"
 
 import { resolvePythonExecutable } from "@/lib/server/python"
 import { ensureOptionGreeks } from "@/lib/math/greeks"
+import { determineScannerExecutionPolicy } from "@/lib/server/scanner-runtime"
 
 interface ScannerOpportunity {
   symbol: string
@@ -363,6 +364,15 @@ export async function GET(request: Request) {
         reasonParam && reasonParam.trim().length > 0 ? reasonParam : "client_requested",
         detailsParam && detailsParam.trim().length > 0 ? detailsParam : "Client requested fallback dataset",
       )
+    }
+
+    const forcedPolicy = determineScannerExecutionPolicy()
+
+    if (forcedPolicy?.forceFallback) {
+      console.warn(
+        `Python scanner disabled (${forcedPolicy.reason}). Serving fallback dataset instead.`,
+      )
+      return await buildFallbackResponse(forcedPolicy.reason, forcedPolicy.details)
     }
 
     // Execute Python script to scan for opportunities

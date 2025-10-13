@@ -133,6 +133,12 @@ Hosting providers without persistent access to a Python runtime (for example,
 serverless-only platforms) are not currently supported because several API
 routes rely on Python libraries such as `yfinance` and `pandas`.
 
+If you still want to deploy on a serverless host (Render static sites, Railway
+static, Vercel, AWS Lambda, etc.), set the environment variable
+`DISABLE_PYTHON_SCANNER=1`. When this flag is present, the application skips the
+Python scanners and immediately serves the bundled fallback dataset. This avoids
+HTTP 502/timeout errors at the cost of losing real-time market scanning.
+
 ## Disclaimer
 
 This dashboard is for educational and informational purposes only. It is not financial advice. Always do your own research and consult with a licensed financial advisor before making investment decisions.
