@@ -1,5 +1,5 @@
-#!/bin/bash
-set -euo pipefail
+#!/bin/sh
+set -eu
 
 ensure_node() {
   if command -v npm >/dev/null 2>&1; then
@@ -7,21 +7,15 @@ ensure_node() {
     return 0
   fi
 
-  local script_dir
-  script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-  local repo_root
-  repo_root="$(cd "${script_dir}/.." && pwd)"
-  local node_dir
-  node_dir="${NODE_DIR:-${repo_root}/.node}"
-  local node_version
-  node_version="${NODE_VERSION:-20.17.0}"
+  script_dir=$(cd "$(dirname "$0")" && pwd)
+  repo_root=$(cd "$script_dir/.." && pwd)
+  node_dir=${NODE_DIR:-$repo_root/.node}
+  node_version=${NODE_VERSION:-20.17.0}
 
   echo "npm not found; installing Node.js ${node_version} locally..."
 
-  local arch
-  arch="$(uname -m)"
-  local node_arch
-  case "${arch}" in
+  arch=$(uname -m)
+  case "$arch" in
     x86_64|amd64)
       node_arch="x64"
       ;;
@@ -29,7 +23,7 @@ ensure_node() {
       node_arch="arm64"
       ;;
     *)
-      echo "Unsupported architecture: ${arch}" >&2
+      echo "Unsupported architecture: $arch" >&2
       return 1
       ;;
   esac
@@ -37,17 +31,17 @@ ensure_node() {
   if [ ! -x "${node_dir}/bin/npm" ]; then
     rm -rf "${node_dir}"
     mkdir -p "${node_dir}"
-    local tmp_tar
-    tmp_tar="$(mktemp)"
-    local node_url
+    tmp_tar=$(mktemp)
     node_url="https://nodejs.org/dist/v${node_version}/node-v${node_version}-linux-${node_arch}.tar.xz"
     echo "Downloading Node.js from ${node_url}..."
-    curl -fsSL "${node_url}" -o "${tmp_tar}"
-    tar -xJf "${tmp_tar}" -C "${node_dir}" --strip-components=1
-    rm -f "${tmp_tar}"
+    curl -fsSL "$node_url" -o "$tmp_tar"
+    tar -xJf "$tmp_tar" -C "$node_dir" --strip-components=1
+    rm -f "$tmp_tar"
   fi
 
-  export PATH="${node_dir}/bin:${PATH}"
+  PATH="${node_dir}/bin:${PATH}"
+  export PATH
+  hash -r 2>/dev/null || true
 
   if ! command -v npm >/dev/null 2>&1; then
     echo "Failed to install npm" >&2
