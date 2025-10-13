@@ -552,6 +552,22 @@ const renderOpportunityCard = (
             <div className="px-3 py-1 bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 rounded-lg text-sm font-medium">
               ${opp.strike}
             </div>
+            {(opp.enhancedDirectionalBias || opp.directionalBias) && (() => {
+              const bias = opp.enhancedDirectionalBias || opp.directionalBias
+              const direction = bias?.direction || 'neutral'
+              const confidence = bias?.confidence || 0
+              const directionColors = {
+                bullish: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800',
+                bearish: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-red-200 dark:border-red-800',
+                neutral: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+              }
+              const colorClass = directionColors[direction as keyof typeof directionColors] || directionColors.neutral
+              return (
+                <div className={`px-3 py-1 rounded-lg text-sm font-bold border ${colorClass}`}>
+                  {direction.toUpperCase()} {confidence > 0 && `(${confidence.toFixed(0)}%)`}
+                </div>
+              )
+            })()}
             {normalizedRiskLabel && riskBadgeClass && (
               <span className={`px-3 py-1 rounded-lg text-xs font-semibold border ${riskBadgeClass}`}>
                 {normalizedRiskLabel}
@@ -583,9 +599,9 @@ const renderOpportunityCard = (
 
         <div className="text-right space-y-1 ml-4">
           <div className="text-3xl font-bold text-slate-900 dark:text-white">
-            {safeToFixed(opp.potentialReturn, 1) ?? '—'}%
+            ${opp.premium.toFixed(2)}
           </div>
-          <div className="text-sm text-slate-500 dark:text-slate-400">Max Potential</div>
+          <div className="text-sm text-slate-500 dark:text-slate-400">Premium</div>
         </div>
       </div>
 
