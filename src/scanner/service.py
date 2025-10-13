@@ -1659,12 +1659,15 @@ class SmartOptionsScanner:
                 "conservativeFraction": 0.0,
                 "aggressiveFraction": 0.0,
                 "kellyFraction": round(kelly_fraction, 4),
+                "expectedLogGrowth": 0.0,
+                "expectedEdge": round(expected_edge, 4),
                 "riskBudgetTier": "capital_preservation",
                 "rationale": [
                     "Expected edge turns negative after accounting for win odds and payoff – size should be zero to preserve capital."
                 ],
                 "inputs": {
                     "winProbability": round(win_probability, 4),
+                    "lossProbability": round(loss_probability, 4),
                     "payoffRatio": round(payoff_ratio, 4),
                     "expectedEdge": round(expected_edge, 4),
                     "costBasis": round(cost_basis, 2),
