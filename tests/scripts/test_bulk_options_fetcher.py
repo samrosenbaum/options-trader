@@ -1,4 +1,5 @@
 import json
+import time
 from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 
@@ -201,3 +202,31 @@ def test_load_from_cache_rejects_expired_contracts(monkeypatch: pytest.MonkeyPat
     assert frame.attrs.get("cache_stale") is True
     assert frame.attrs.get("cache_source") == "adapter-cache-stale"
     assert frame.attrs.get("cache_has_future_contracts") is False
+
+
+def test_fetch_bulk_options_parallel_respects_time_budget(monkeypatch: pytest.MonkeyPatch):
+    fetcher = make_fetcher(monkeypatch)
+    fetcher.max_runtime_seconds = 0.25
+
+    def fake_fetch(self, symbol, max_expirations=3):
+        sleep_durations = {"AAA": 0.05, "BBB": 0.35, "CCC": 0.05}
+        time.sleep(sleep_durations.get(symbol, 0.05))
+        return pd.DataFrame(
+            [
+                {
+                    "symbol": symbol,
+                    "expiration": (datetime.now(timezone.utc) + timedelta(days=7)).isoformat(),
+                }
+            ]
+        )
+
+    monkeypatch.setattr(BulkOptionsFetcher, "fetch_options_via_adapter", fake_fetch, raising=False)
+
+    start = time.perf_counter()
+    result = fetcher.fetch_bulk_options_parallel(symbols=["AAA", "BBB", "CCC"], max_workers=3)
+    duration = time.perf_counter() - start
+
+    # Should stop close to the configured budget and still return partial data
+    assert duration < 0.5
+    assert result is not None
+    assert set(result["symbol"].unique()) == {"AAA", "CCC"}

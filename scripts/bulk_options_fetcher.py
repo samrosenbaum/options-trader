@@ -5,6 +5,7 @@ Bulk Options Data Fetcher - Get options data from multiple sources efficiently
 
 from __future__ import annotations
 
+import os
 import pandas as pd
 import requests
 import json
@@ -25,6 +26,22 @@ class BulkOptionsFetcher:
         self.settings = settings or get_settings()
         self.adapter = get_options_data_adapter()
         self.fetcher_settings = getattr(self.settings, "fetcher", None)
+        default_runtime = 75.0
+        configured_runtime = getattr(self.fetcher_settings, "max_runtime_seconds", default_runtime)
+        env_runtime = os.getenv("SCAN_MAX_RUNTIME_SECONDS")
+        if env_runtime is not None:
+            try:
+                configured_runtime = float(env_runtime)
+            except ValueError:  # pragma: no cover - defensive parsing
+                pass
+        if configured_runtime is None:
+            self.max_runtime_seconds = None
+        else:
+            try:
+                runtime_value = float(configured_runtime)
+            except (TypeError, ValueError):  # pragma: no cover - defensive parsing
+                runtime_value = default_runtime
+            self.max_runtime_seconds = runtime_value if runtime_value > 0 else None
 
         # Maximum expirations to evaluate per symbol when fetching chains
         self.max_expirations = 6
@@ -192,28 +209,68 @@ class BulkOptionsFetcher:
         
         print(f"Fetching options data for {len(symbols)} symbols using {max_workers} workers...")
         
-        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-            # Submit all fetch tasks
-            future_to_symbol = {
-                executor.submit(self.fetch_options_via_adapter, symbol, self.max_expirations): symbol
-                for symbol in symbols
-            }
-            
-            # Collect results as they complete
-            for future in concurrent.futures.as_completed(future_to_symbol):
-                symbol = future_to_symbol[future]
-                try:
-                    options_data = future.result(timeout=30)  # 30 second timeout per symbol
-                    if options_data is not None and not options_data.empty:
-                        all_options_data.append(options_data)
-                        successful_fetches += 1
-                        print(f"✅ {symbol}: {len(options_data)} options")
-                    else:
-                        print(f"❌ {symbol}: No data")
-                        
-                except Exception as e:
-                    print(f"❌ {symbol}: Error - {e}")
-        
+        start_time = time.monotonic()
+        deadline = None
+        if self.max_runtime_seconds is not None:
+            deadline = start_time + self.max_runtime_seconds
+
+        executor = concurrent.futures.ThreadPoolExecutor(max_workers=max_workers)
+        future_to_symbol = {
+            executor.submit(self.fetch_options_via_adapter, symbol, self.max_expirations): symbol
+            for symbol in symbols
+        }
+        pending = set(future_to_symbol.keys())
+        timed_out = False
+
+        try:
+            while pending:
+                timeout = None
+                if deadline is not None:
+                    remaining = deadline - time.monotonic()
+                    if remaining <= 0:
+                        timed_out = True
+                        break
+                    timeout = remaining
+
+                done, pending = concurrent.futures.wait(
+                    pending,
+                    timeout=timeout,
+                    return_when=concurrent.futures.FIRST_COMPLETED,
+                )
+
+                if not done:
+                    timed_out = True
+                    break
+
+                for future in done:
+                    symbol = future_to_symbol.get(future)
+                    try:
+                        options_data = future.result()
+                        if options_data is not None and not options_data.empty:
+                            all_options_data.append(options_data)
+                            successful_fetches += 1
+                            print(f"✅ {symbol}: {len(options_data)} options")
+                        else:
+                            print(f"❌ {symbol}: No data")
+                    except Exception as e:  # pragma: no cover - network errors
+                        print(f"❌ {symbol}: Error - {e}")
+                    finally:
+                        future_to_symbol.pop(future, None)
+
+                if deadline is not None and time.monotonic() >= deadline:
+                    timed_out = True
+                    break
+        finally:
+            for future in pending:
+                future.cancel()
+            executor.shutdown(wait=False, cancel_futures=True)
+
+        if timed_out:
+            elapsed = time.monotonic() - start_time
+            print(
+                f"⏱️  Stopping fetch after {elapsed:.1f}s - collected {successful_fetches}/{len(symbols)} symbols",
+            )
+
         if all_options_data:
             combined_df = pd.concat(all_options_data, ignore_index=True)
             print(f"\n📊 Total options fetched: {len(combined_df)}")

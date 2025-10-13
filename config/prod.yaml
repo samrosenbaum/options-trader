@@ -51,6 +51,7 @@ scanner:
   rotation_mode: random
 fetcher:
   max_priority_symbols: null
+  max_runtime_seconds: 75
 scoring:
   enabled:
     - volume
