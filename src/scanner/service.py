@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -1851,8 +1852,40 @@ class SmartOptionsScanner:
         if risk_level_multiplier < 1.0:
             rationale.append("Position size reduced to reflect elevated qualitative risk level.")
 
+        user_portfolio_size: float | None = None
+        env_portfolio_size = os.environ.get("USER_PORTFOLIO_SIZE")
+        if env_portfolio_size:
+            try:
+                parsed_portfolio = float(env_portfolio_size)
+            except ValueError:
+                parsed_portfolio = float("nan")
+            if isfinite(parsed_portfolio) and parsed_portfolio > 0:
+                user_portfolio_size = parsed_portfolio
+
+        user_daily_budget: float | None = None
+        env_daily_budget = os.environ.get("USER_DAILY_CONTRACT_BUDGET")
+        if env_daily_budget:
+            try:
+                parsed_budget = float(env_daily_budget)
+            except ValueError:
+                parsed_budget = float("nan")
+            if isfinite(parsed_budget) and parsed_budget >= 0:
+                user_daily_budget = parsed_budget
+
         portfolio_examples: List[Dict[str, Any]] = []
-        for capital in (50_000, 100_000, 250_000):
+        if user_portfolio_size is not None:
+            capitals = {
+                user_portfolio_size * multiplier
+                for multiplier in (0.5, 1.0, 1.5)
+                if user_portfolio_size * multiplier > 0
+            }
+            if not capitals:
+                capitals = {user_portfolio_size}
+            example_capitals = sorted(capitals)
+        else:
+            example_capitals = [50_000, 100_000, 250_000]
+
+        for capital in example_capitals:
             allocation = capital * recommended_fraction
             contracts = int(allocation // cost_basis)
             if contracts <= 0 and allocation >= cost_basis * 0.5:
@@ -1860,12 +1893,38 @@ class SmartOptionsScanner:
             if contracts > 0:
                 portfolio_examples.append(
                     {
-                        "portfolio": capital,
+                        "portfolio": round(capital, 2),
                         "contracts": contracts,
                         "capitalAtRisk": round(contracts * cost_basis, 2),
                         "allocationPercent": round(recommended_fraction, 4),
                     }
                 )
+
+        inputs_summary: Dict[str, Any] = {
+            "winProbability": round(win_probability, 4),
+            "lossProbability": round(loss_probability, 4),
+            "payoffRatio": round(payoff_ratio, 4),
+            "volatility": round(volatility, 4),
+            "scoreFactor": round(score_factor, 4),
+            "probabilityFactor": round(probability_factor, 4),
+            "volatilityFactor": round(volatility_factor, 4),
+            "rewardFactor": round(reward_factor, 4),
+            "riskLevel": str(risk_level).lower(),
+            "costBasis": round(cost_basis, 2),
+            "expectedRoi": round(expected_roi_percent / 100.0, 4),
+        }
+        if user_portfolio_size is not None:
+            inputs_summary["userPortfolioSize"] = round(user_portfolio_size, 2)
+        if user_daily_budget is not None:
+            inputs_summary["userDailyContractBudget"] = round(user_daily_budget, 2)
+
+        limits_summary: Dict[str, Any] = {
+            "maxPerTrade": max_fraction,
+            "maxDrawdown95": round(min(projected_drawdown, max_drawdown), 4),
+            "losingStreak95": losing_streak_95,
+        }
+        if user_daily_budget is not None:
+            limits_summary["dailyContractBudget"] = round(user_daily_budget, 2)
 
         return {
             "recommendedFraction": round(recommended_fraction, 4),
@@ -1876,24 +1935,8 @@ class SmartOptionsScanner:
             "expectedEdge": round(expected_edge, 4),
             "riskBudgetTier": risk_budget_tier,
             "rationale": rationale,
-            "inputs": {
-                "winProbability": round(win_probability, 4),
-                "lossProbability": round(loss_probability, 4),
-                "payoffRatio": round(payoff_ratio, 4),
-                "volatility": round(volatility, 4),
-                "scoreFactor": round(score_factor, 4),
-                "probabilityFactor": round(probability_factor, 4),
-                "volatilityFactor": round(volatility_factor, 4),
-                "rewardFactor": round(reward_factor, 4),
-                "riskLevel": str(risk_level).lower(),
-                "costBasis": round(cost_basis, 2),
-                "expectedRoi": round(expected_roi_percent / 100.0, 4),
-            },
-            "limits": {
-                "maxPerTrade": max_fraction,
-                "maxDrawdown95": round(min(projected_drawdown, max_drawdown), 4),
-                "losingStreak95": losing_streak_95,
-            },
+            "inputs": inputs_summary,
+            "limits": limits_summary,
             "capitalAllocationExamples": portfolio_examples,
         }
 

@@ -5,6 +5,7 @@ import Image from 'next/image'
 import RealTimeProgress from '../components/real-time-progress'
 import LiveTicker from '../components/live-ticker'
 import type { PositionSizingRecommendation } from '@/lib/types/opportunity'
+import { createClient } from '@/lib/supabase/client'
 
 interface MoveAnalysisFactor {
   label: string
@@ -842,11 +843,14 @@ const renderOpportunityCard = (
 }
 
 export default function HomePage() {
+  const supabase = useMemo(() => createClient(), [])
   const [opportunities, setOpportunities] = useState<Opportunity[]>([])
   const [totalEvaluated, setTotalEvaluated] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [lastSuccessfulUpdate, setLastSuccessfulUpdate] = useState<Date | null>(null)
   const [investmentAmount, setInvestmentAmount] = useState(1000)
+  const [portfolioSize, setPortfolioSize] = useState<number | null>(null)
+  const [dailyContractBudget, setDailyContractBudget] = useState<number | null>(null)
   const [activeTab, setActiveTab] = useState<'options' | 'crypto'>('options')
   const [cryptoAlerts, setCryptoAlerts] = useState<CryptoAlert[]>([])
   const [cryptoLoading, setCryptoLoading] = useState(false)
@@ -856,6 +860,7 @@ export default function HomePage() {
   const [expandedCards, setExpandedCards] = useState<Record<string, boolean>>({})
   const previousTabRef = useRef<'options' | 'crypto' | null>(null)
   const opportunitiesRef = useRef<Opportunity[]>([])
+  const userAdjustedInvestmentAmount = useRef(false)
 
   const toggleCard = (cardId: string) => {
     setExpandedCards(prev => ({
@@ -883,6 +888,71 @@ export default function HomePage() {
     scanMetadata.debugInfo !== null
       ? (scanMetadata.debugInfo as Record<string, unknown>)
       : null
+  useEffect(() => {
+    let isMounted = true
+
+    const loadUserSettings = async () => {
+      try {
+        const {
+          data: { user },
+          error: authError,
+        } = await supabase.auth.getUser()
+
+        if (!isMounted) {
+          return
+        }
+
+        if (authError) {
+          console.error('Failed to look up authenticated user for scanner settings', authError)
+          return
+        }
+
+        if (!user) {
+          setPortfolioSize(null)
+          setDailyContractBudget(null)
+          return
+        }
+
+        const { data, error: settingsError } = await supabase
+          .from('user_settings')
+          .select('portfolio_size, daily_contract_budget')
+          .eq('user_id', user.id)
+          .maybeSingle()
+
+        if (!isMounted) {
+          return
+        }
+
+        if (settingsError) {
+          console.error('Failed to load user portfolio settings for scanner', settingsError)
+          return
+        }
+
+        const portfolio = data?.portfolio_size
+        const dailyBudget = data?.daily_contract_budget
+
+        const normalizedPortfolio =
+          typeof portfolio === 'number' && Number.isFinite(portfolio) ? portfolio : null
+        const normalizedDailyBudget =
+          typeof dailyBudget === 'number' && Number.isFinite(dailyBudget) ? dailyBudget : null
+
+        setPortfolioSize(normalizedPortfolio)
+        setDailyContractBudget(normalizedDailyBudget)
+
+        if (!userAdjustedInvestmentAmount.current && normalizedPortfolio !== null) {
+          setInvestmentAmount(normalizedPortfolio)
+        }
+      } catch (error) {
+        console.error('Unexpected error loading user settings for scanner', error)
+      }
+    }
+
+    void loadUserSettings()
+
+    return () => {
+      isMounted = false
+    }
+  }, [supabase])
   const metadataSource = typeof scanMetadata?.source === 'string' ? scanMetadata.source.toLowerCase() : null
   // Always use enhanced scanner for options
   const enhancedModeActive = activeTab === 'options'
@@ -988,7 +1058,16 @@ export default function HomePage() {
       setIsLoading(true)
 
       // Always use institutional-grade enhanced scanner
-      const endpoint = '/api/scan-enhanced'
+      const params = new URLSearchParams()
+      if (typeof portfolioSize === 'number' && Number.isFinite(portfolioSize)) {
+        params.set('portfolioSize', portfolioSize.toString())
+      }
+      if (typeof dailyContractBudget === 'number' && Number.isFinite(dailyContractBudget)) {
+        params.set('dailyContractBudget', dailyContractBudget.toString())
+      }
+
+      const query = params.toString()
+      const endpoint = query.length > 0 ? `/api/scan-enhanced?${query}` : '/api/scan-enhanced'
       const timeoutMs = ENHANCED_FETCH_TIMEOUT_MS
       const response = await fetchWithTimeout(endpoint, undefined, timeoutMs)
 
@@ -1037,7 +1116,7 @@ export default function HomePage() {
     } finally {
       setIsLoading(false)
     }
-  }, [attemptFallbackFetch, handleScanPayload])
+  }, [attemptFallbackFetch, dailyContractBudget, handleScanPayload, portfolioSize])
 
   const fetchCryptoAlerts = useCallback(async () => {
     try {
@@ -1966,7 +2045,11 @@ export default function HomePage() {
                 <input
                   type="number"
                   value={investmentAmount}
-                  onChange={(e) => setInvestmentAmount(Number(e.target.value))}
+                  onChange={(event) => {
+                    userAdjustedInvestmentAmount.current = true
+                    const nextValue = Number(event.target.value)
+                    setInvestmentAmount(Number.isFinite(nextValue) ? nextValue : 0)
+                  }}
                   className="w-28 text-base font-bold bg-transparent text-white focus:outline-none placeholder-zinc-500"
                   min="100"
                   max="100000"

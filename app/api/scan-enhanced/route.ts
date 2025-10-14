@@ -96,6 +96,7 @@ interface EnhancedScannerOpportunity {
       maxPerTrade: number
       maxDrawdown95?: number
       losingStreak95?: number
+      dailyContractBudget?: number
     }
     capitalAllocationExamples?: Array<{
       portfolio: number
@@ -449,6 +450,21 @@ const buildFallbackResponse = (
 export async function GET(request: Request) {
   try {
     const url = new URL(request.url)
+    const parseNumberParam = (value: string | null) => {
+      if (!value) {
+        return null
+      }
+      const parsed = Number(value)
+      if (!Number.isFinite(parsed) || parsed < 0) {
+        return null
+      }
+      return parsed
+    }
+
+    const userPortfolioSize = parseNumberParam(url.searchParams.get("portfolioSize"))
+    const userDailyContractBudget = parseNumberParam(
+      url.searchParams.get("dailyContractBudget"),
+    )
     const fallbackParam = url.searchParams.get("fallback") ?? url.searchParams.get("mode")
     const normalizedFallback = fallbackParam?.toLowerCase()
     const fallbackOnly =
@@ -485,8 +501,16 @@ export async function GET(request: Request) {
 
     return await new Promise<NextResponse>((resolve) => {
       // Use the enhanced scanner service
+      const env: NodeJS.ProcessEnv = { ...process.env, PYTHONPATH: process.cwd() }
+      if (userPortfolioSize !== null) {
+        env.USER_PORTFOLIO_SIZE = userPortfolioSize.toString()
+      }
+      if (userDailyContractBudget !== null) {
+        env.USER_DAILY_CONTRACT_BUDGET = userDailyContractBudget.toString()
+      }
+
       const python = spawn(pythonPath, ["-m", "src.scanner.enhanced_service"], {
-        env: { ...process.env, PYTHONPATH: process.cwd() },
+        env,
       })
 
       let stdoutBuffer = ""

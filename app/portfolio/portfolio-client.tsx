@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { type FormEvent, useEffect, useMemo, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { Database } from '@/lib/types/database.types'
 import AddPositionModal from './add-position-modal'
@@ -16,12 +16,103 @@ export default function PortfolioClient({
   initialPositions: Position[]
   user: User
 }) {
+  const supabase = useMemo(() => createClient(), [])
+
   const [positions, setPositions] = useState<Position[]>(initialPositions)
   const [showAddModal, setShowAddModal] = useState(false)
   const [positionToClose, setPositionToClose] = useState<Position | null>(null)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [refreshMessage, setRefreshMessage] = useState<string | null>(null)
-  const supabase = createClient()
+  const [portfolioSizeInput, setPortfolioSizeInput] = useState('')
+  const [dailyContractBudgetInput, setDailyContractBudgetInput] = useState('')
+  const [settingsError, setSettingsError] = useState<string | null>(null)
+  const [settingsStatus, setSettingsStatus] = useState<string | null>(null)
+  const [isSavingSettings, setIsSavingSettings] = useState(false)
+  const [isLoadingSettings, setIsLoadingSettings] = useState(true)
+
+  useEffect(() => {
+    let isActive = true
+
+    const loadSettings = async () => {
+      setIsLoadingSettings(true)
+      setSettingsError(null)
+
+      const { data, error } = await supabase
+        .from('user_settings')
+        .select('portfolio_size, daily_contract_budget')
+        .eq('user_id', user.id)
+        .maybeSingle()
+
+      if (!isActive) {
+        return
+      }
+
+      if (error) {
+        console.error('Failed to load user settings', error)
+        setSettingsError('Unable to load portfolio settings right now.')
+      } else {
+        setPortfolioSizeInput(
+          data?.portfolio_size !== null && data?.portfolio_size !== undefined
+            ? String(Number(data.portfolio_size))
+            : '',
+        )
+        setDailyContractBudgetInput(
+          data?.daily_contract_budget !== null && data?.daily_contract_budget !== undefined
+            ? String(Number(data.daily_contract_budget))
+            : '',
+        )
+      }
+
+      setIsLoadingSettings(false)
+    }
+
+    void loadSettings()
+
+    return () => {
+      isActive = false
+    }
+  }, [supabase, user.id])
+
+  const handleSaveSettings = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setSettingsError(null)
+    setSettingsStatus(null)
+
+    const parsedPortfolioSize = portfolioSizeInput.trim() === '' ? null : Number(portfolioSizeInput)
+    if (parsedPortfolioSize !== null && (!Number.isFinite(parsedPortfolioSize) || parsedPortfolioSize < 0)) {
+      setSettingsError('Portfolio size must be a number greater than or equal to zero.')
+      return
+    }
+
+    const parsedDailyBudget =
+      dailyContractBudgetInput.trim() === '' ? null : Number(dailyContractBudgetInput)
+    if (parsedDailyBudget !== null && (!Number.isFinite(parsedDailyBudget) || parsedDailyBudget < 0)) {
+      setSettingsError('Daily contract budget must be a number greater than or equal to zero.')
+      return
+    }
+
+    setIsSavingSettings(true)
+
+    const payload: Database['public']['Tables']['user_settings']['Insert'] = {
+      user_id: user.id,
+      portfolio_size: parsedPortfolioSize,
+      daily_contract_budget: parsedDailyBudget,
+      updated_at: new Date().toISOString(),
+    }
+
+    const { error } = await supabase
+      .from('user_settings')
+      .upsert(payload, { onConflict: 'user_id' })
+
+    if (error) {
+      console.error('Failed to save user settings', error)
+      setSettingsError('Failed to save settings. Please try again.')
+    } else {
+      setSettingsStatus('Portfolio settings saved successfully.')
+    }
+
+    setIsSavingSettings(false)
+  }
 
   const handleAddPosition = () => {
     setShowAddModal(true)
@@ -104,6 +195,90 @@ export default function PortfolioClient({
 
       {/* Summary Cards */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-200 dark:border-slate-800 mb-8">
+          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-semibold text-slate-900 dark:text-white">Portfolio Settings</h2>
+              <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                Save your default portfolio size and daily contract budget to personalize scanner recommendations.
+              </p>
+            </div>
+            {isLoadingSettings && (
+              <span className="text-sm text-slate-500 dark:text-slate-400">Loading…</span>
+            )}
+          </div>
+
+          <form onSubmit={handleSaveSettings} className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <label className="flex flex-col gap-2">
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                Portfolio Size
+              </span>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={portfolioSizeInput}
+                onChange={(event) => {
+                  setPortfolioSizeInput(event.target.value)
+                  setSettingsError(null)
+                  setSettingsStatus(null)
+                }}
+                className="rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-4 py-2 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                placeholder="e.g. 100000"
+                disabled={isSavingSettings || isLoadingSettings}
+              />
+              <span className="text-xs text-slate-500 dark:text-slate-400">
+                Total capital you would like the scanner to use when suggesting allocations.
+              </span>
+            </label>
+
+            <label className="flex flex-col gap-2">
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                Daily Contract Budget
+              </span>
+              <input
+                type="number"
+                min="0"
+                step="1"
+                value={dailyContractBudgetInput}
+                onChange={(event) => {
+                  setDailyContractBudgetInput(event.target.value)
+                  setSettingsError(null)
+                  setSettingsStatus(null)
+                }}
+                className="rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-4 py-2 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                placeholder="e.g. 10"
+                disabled={isSavingSettings || isLoadingSettings}
+              />
+              <span className="text-xs text-slate-500 dark:text-slate-400">
+                Maximum number of option contracts you want to trade in a single day.
+              </span>
+            </label>
+
+            <div className="md:col-span-2 flex flex-col gap-2">
+              {settingsError && (
+                <span className="text-sm text-red-600 dark:text-red-400">{settingsError}</span>
+              )}
+              {settingsStatus && (
+                <span className="text-sm text-emerald-600 dark:text-emerald-400">{settingsStatus}</span>
+              )}
+              <div>
+                <button
+                  type="submit"
+                  disabled={isSavingSettings || isLoadingSettings}
+                  className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 font-semibold text-white transition-colors ${
+                    isSavingSettings || isLoadingSettings
+                      ? 'bg-emerald-400 cursor-not-allowed'
+                      : 'bg-emerald-600 hover:bg-emerald-700'
+                  }`}
+                >
+                  {isSavingSettings ? 'Saving…' : 'Save Settings'}
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-200 dark:border-slate-800">
             <div className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">
