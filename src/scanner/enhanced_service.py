@@ -301,10 +301,160 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
                     probability=result.get('probabilityOfProfit', 50)
                 )
 
+                # Recalculate Kelly fraction using backtest win rate instead of theoretical probability
+                if 'positionSizing' in result:
+                    updated_sizing = self._recalculate_kelly_with_backtest(
+                        position_sizing=result['positionSizing'],
+                        backtest_win_rate=backtest_result.win_rate,
+                        sample_size=backtest_result.similar_trades_found
+                    )
+                    if updated_sizing:
+                        result['positionSizing'] = updated_sizing
+
             return result
             
         except Exception as e:
             print(f"Error in _enhance_opportunity for {legacy_opp.get('symbol', 'unknown')}: {e}", file=sys.stderr)
+            return None
+
+    def _recalculate_kelly_with_backtest(
+        self,
+        position_sizing: Dict[str, Any],
+        backtest_win_rate: float,
+        sample_size: int
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Recalculate Kelly fraction using backtest win rate instead of theoretical probability.
+
+        Args:
+            position_sizing: Original position sizing dict
+            backtest_win_rate: Historical win rate (0.0 to 1.0)
+            sample_size: Number of similar trades in backtest
+
+        Returns:
+            Updated position sizing dict or None if calculation fails
+        """
+        try:
+            from math import log1p, log, ceil, isfinite
+
+            # Only use backtest data if we have sufficient sample size
+            if sample_size < 20:
+                return None
+
+            # Get original inputs
+            inputs = position_sizing.get('inputs', {})
+            payoff_ratio = inputs.get('payoffRatio', 0)
+            cost_basis = inputs.get('costBasis', 0)
+
+            if payoff_ratio <= 0 or cost_basis <= 0:
+                return None
+
+            # Use backtest win rate (capped at 95% for Kelly safety)
+            win_probability = min(0.95, max(0.05, backtest_win_rate))
+            loss_probability = 1.0 - win_probability
+
+            # Recalculate Kelly fraction with backtest win rate
+            kelly_fraction = (win_probability * (payoff_ratio + 1.0) - 1.0) / payoff_ratio
+            if not isfinite(kelly_fraction):
+                return None
+            kelly_fraction = max(0.0, kelly_fraction)
+
+            # Recalculate expected edge
+            expected_edge = win_probability * payoff_ratio - loss_probability
+
+            # If edge is negative with backtest data, something is wrong
+            if expected_edge <= 0.0:
+                return position_sizing  # Keep original
+
+            # Apply same dampening factors as original calculation
+            score_factor = inputs.get('scoreFactor', 0.75)
+            probability_factor = max(0.5, min(1.0, 0.4 + win_probability * 0.6))
+            volatility_factor = inputs.get('volatilityFactor', 0.7)
+            reward_factor = inputs.get('rewardFactor', 0.9)
+            risk_level = inputs.get('riskLevel', 'medium')
+
+            risk_level_multiplier = {
+                "low": 1.0,
+                "medium": 0.7,
+                "high": 0.45,
+                "extreme": 0.25
+            }.get(str(risk_level).lower(), 0.6)
+
+            # Calculate base fraction with all dampening
+            base_fraction = kelly_fraction
+            base_fraction *= score_factor
+            base_fraction *= probability_factor
+            base_fraction *= volatility_factor
+            base_fraction *= reward_factor
+            base_fraction *= risk_level_multiplier
+
+            # Cap at 5% max and Kelly * 1.1
+            max_fraction = 0.05
+            base_fraction = min(base_fraction, kelly_fraction * 1.1)
+            recommended_fraction = max(0.0, min(max_fraction, base_fraction))
+
+            # Drawdown protection (same as original)
+            drawdown_confidence = 0.95
+            try:
+                losing_streak_95 = max(1, int(ceil(log(1.0 - drawdown_confidence) / log(loss_probability))))
+            except (ValueError, ZeroDivisionError):
+                losing_streak_95 = 1
+
+            projected_drawdown = 1.0 - (1.0 - recommended_fraction) ** losing_streak_95
+            max_drawdown = 0.25
+            if projected_drawdown > max_drawdown:
+                adjustment = max_drawdown / projected_drawdown
+                recommended_fraction *= adjustment
+
+            recommended_fraction = min(max_fraction, recommended_fraction)
+            conservative_fraction = max(0.0, min(max_fraction, recommended_fraction * 0.6))
+            aggressive_fraction = max(recommended_fraction, min(max_fraction, recommended_fraction * 1.4, kelly_fraction))
+
+            # Expected log growth
+            expected_log_growth = (
+                win_probability * log1p(recommended_fraction * payoff_ratio)
+                + loss_probability * log1p(-recommended_fraction)
+            )
+
+            # Determine risk budget tier
+            risk_budget_tier = (
+                "aggressive" if recommended_fraction >= 0.03
+                else "balanced" if recommended_fraction >= 0.015
+                else "conservative"
+            )
+
+            # Update position sizing with backtest-driven values
+            updated = position_sizing.copy()
+            updated['recommendedFraction'] = round(recommended_fraction, 4)
+            updated['conservativeFraction'] = round(conservative_fraction, 4)
+            updated['aggressiveFraction'] = round(aggressive_fraction, 4)
+            updated['kellyFraction'] = round(kelly_fraction, 4)
+            updated['expectedLogGrowth'] = round(expected_log_growth, 6)
+            updated['expectedEdge'] = round(expected_edge, 4)
+            updated['riskBudgetTier'] = risk_budget_tier
+
+            # Update rationale to mention backtest
+            updated['rationale'] = [
+                f"Kelly fraction of {kelly_fraction * 100:.1f}% based on {win_probability * 100:.0f}% BACKTEST win rate "
+                f"(from {sample_size} similar trades) and a {payoff_ratio:.2f}x payoff profile.",
+                f"Position sized to {recommended_fraction * 100:.1f}% with expected log growth of "
+                f"{expected_log_growth * 100:.2f}% per trade.",
+                "Risk-of-ruin controls keep the 95% losing streak drawdown under 25% of capital."
+            ]
+
+            # Update inputs to show we used backtest
+            updated['inputs'] = inputs.copy()
+            updated['inputs']['winProbability'] = round(win_probability, 4)
+            updated['inputs']['lossProbability'] = round(loss_probability, 4)
+            updated['inputs']['backtestDriven'] = True
+            updated['inputs']['backtestSampleSize'] = sample_size
+
+            print(f"   💰 Updated Kelly: {kelly_fraction*100:.1f}% → Recommended: {recommended_fraction*100:.1f}% (using {win_probability*100:.0f}% backtest win rate)", file=sys.stderr)
+
+            return updated
+
+        except Exception as e:
+            print(f"⚠️  Could not recalculate Kelly with backtest: {e}", file=sys.stderr)
             return None
 
     def _assess_risk_with_backtest(
