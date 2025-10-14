@@ -37,9 +37,25 @@ from src.math.greeks import GreeksCalculator
 class InstitutionalOptionsScanner(SmartOptionsScanner):
     """Enhanced scanner that combines existing functionality with institutional-grade components."""
 
-    def __init__(self, max_symbols: Optional[int] = None, **kwargs):
-        """Initialize scanner with both legacy and enhanced components."""
+    def __init__(
+        self,
+        max_symbols: Optional[int] = None,
+        max_results: int = 20,
+        max_per_symbol: int = 5,
+        **kwargs
+    ):
+        """
+        Initialize scanner with both legacy and enhanced components.
+
+        Args:
+            max_symbols: Maximum symbols to scan
+            max_results: Maximum total opportunities to return
+            max_per_symbol: Maximum opportunities per symbol (for diversity)
+        """
         super().__init__(max_symbols, **kwargs)
+
+        self.max_results = max_results
+        self.max_per_symbol = max_per_symbol
 
         # Initialize enhanced components
         self.enhanced_scanner = EnhancedOptionsScanner(
@@ -149,7 +165,11 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
                 enhanced_opportunities.append(legacy_opp)
                 
         # Apply institutional-grade filtering
-        filtered_opportunities = self._apply_institutional_filters(enhanced_opportunities)
+        filtered_opportunities = self._apply_institutional_filters(
+            enhanced_opportunities,
+            max_results=self.max_results,
+            max_per_symbol=self.max_per_symbol
+        )
         
         # Re-sort by risk-adjusted score
         filtered_opportunities.sort(key=lambda x: x.get('riskAdjustedScore', x.get('score', 0)), reverse=True)
@@ -606,14 +626,21 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
 
         return min(100, score)
 
-    def _apply_institutional_filters(self, opportunities: List[Dict[str, Any]],
-                                    min_results: int = 5) -> List[Dict[str, Any]]:
+    def _apply_institutional_filters(
+        self,
+        opportunities: List[Dict[str, Any]],
+        min_results: int = 5,
+        max_results: int = 20,
+        max_per_symbol: int = 5
+    ) -> List[Dict[str, Any]]:
         """
         Apply institutional-grade filtering criteria with "best available" fallback.
 
         Args:
             opportunities: List of opportunities to filter
             min_results: Minimum number of results to return (triggers fallback)
+            max_results: Maximum number of total results to return
+            max_per_symbol: Maximum opportunities per symbol (for diversity)
 
         Returns:
             Filtered opportunities, or best available if strict filters yield too few
@@ -724,6 +751,28 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
         # Sort by premium (ascending) to show affordable options first
         filtered.sort(key=lambda x: x.get('premium', 999999))
 
+        # Apply symbol diversity - limit opportunities per symbol
+        if max_per_symbol > 0:
+            diversified = []
+            symbol_counts = {}
+
+            for opp in filtered:
+                symbol = opp.get('symbol', 'UNKNOWN')
+                count = symbol_counts.get(symbol, 0)
+
+                if count < max_per_symbol:
+                    diversified.append(opp)
+                    symbol_counts[symbol] = count + 1
+
+            if len(diversified) < len(filtered):
+                print(f"🎯 Symbol diversity: {len(filtered)} → {len(diversified)} opportunities (max {max_per_symbol} per symbol)", file=sys.stderr)
+                filtered = diversified
+
+        # Limit total results
+        if len(filtered) > max_results:
+            print(f"📊 Limiting results: {len(filtered)} → {max_results} opportunities", file=sys.stderr)
+            filtered = filtered[:max_results]
+
         return filtered
 
     def get_enhanced_statistics(self) -> Dict[str, Any]:
@@ -752,6 +801,8 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
 def run_enhanced_scan(
     max_symbols: Optional[int] = None,
     *,
+    max_results: int = 20,
+    max_per_symbol: int = 5,
     force_refresh: bool = False,
     batch_builder = None,
     allow_relaxed_fallback: bool | None = None,
@@ -760,7 +811,12 @@ def run_enhanced_scan(
 
     print("🚀 Starting enhanced institutional-grade scan...", file=sys.stderr)
 
-    scanner = InstitutionalOptionsScanner(max_symbols=max_symbols, batch_builder=batch_builder)
+    scanner = InstitutionalOptionsScanner(
+        max_symbols=max_symbols,
+        max_results=max_results,
+        max_per_symbol=max_per_symbol,
+        batch_builder=batch_builder
+    )
     result = scanner.scan_for_opportunities(
         force_refresh=force_refresh,
         allow_relaxed_fallback=allow_relaxed_fallback,
@@ -788,6 +844,18 @@ def cli(argv: Optional[Sequence[str]] = None) -> None:
         help="Limit the number of symbols to scan"
     )
     parser.add_argument(
+        "--max-results",
+        type=int,
+        default=20,
+        help="Maximum total opportunities to return (default: 20)"
+    )
+    parser.add_argument(
+        "--max-per-symbol",
+        type=int,
+        default=5,
+        help="Maximum opportunities per symbol for diversity (default: 5, 0=unlimited)"
+    )
+    parser.add_argument(
         "--force-refresh",
         action="store_true",
         help="Force refresh of data (ignore cache)"
@@ -811,6 +879,8 @@ def cli(argv: Optional[Sequence[str]] = None) -> None:
     allow_relaxed = None if args.strict_only is None else not args.strict_only
     result = run_enhanced_scan(
         symbol_limit,
+        max_results=args.max_results,
+        max_per_symbol=args.max_per_symbol,
         force_refresh=args.force_refresh,
         allow_relaxed_fallback=allow_relaxed
     )
