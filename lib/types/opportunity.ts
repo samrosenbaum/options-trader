@@ -234,8 +234,13 @@ export interface PositionSizingRecommendation {
     maxPerTrade: number
     maxDrawdown95?: number
     losingStreak95?: number
+    dailyContractBudget?: number | null
   }
   capitalAllocationExamples?: PositionSizingExample[]
+  userConstraints?: {
+    portfolioSize?: number | null
+    dailyContractBudget?: number | null
+  }
 }
 
 export interface Opportunity {

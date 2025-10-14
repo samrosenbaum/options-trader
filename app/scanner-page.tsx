@@ -4,6 +4,8 @@ import { useState, useEffect, useMemo, useCallback, useRef, type ReactNode } fro
 import Image from 'next/image'
 import RealTimeProgress from '../components/real-time-progress'
 import LiveTicker from '../components/live-ticker'
+import { createClient } from '@/lib/supabase/client'
+import type { Database } from '@/lib/types/database.types'
 import type { PositionSizingRecommendation } from '@/lib/types/opportunity'
 
 interface MoveAnalysisFactor {
@@ -263,6 +265,15 @@ interface ScanApiResponse {
   total_evaluated?: number
   error?: string
   details?: string
+}
+
+type UserSettingsRow = Database['public']['Tables']['user_settings']['Row']
+
+interface ScannerPageProps {
+  user: {
+    id: string
+    email?: string | null
+  }
 }
 
 const DEFAULT_FETCH_TIMEOUT_MS = 120_000  // 2 minutes for cloud deployments
@@ -841,7 +852,7 @@ const renderOpportunityCard = (
   )
 }
 
-export default function HomePage() {
+export default function ScannerPage({ user }: ScannerPageProps) {
   const [opportunities, setOpportunities] = useState<Opportunity[]>([])
   const [totalEvaluated, setTotalEvaluated] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
@@ -856,6 +867,15 @@ export default function HomePage() {
   const [expandedCards, setExpandedCards] = useState<Record<string, boolean>>({})
   const previousTabRef = useRef<'options' | 'crypto' | null>(null)
   const opportunitiesRef = useRef<Opportunity[]>([])
+  const [userPortfolioConstraints, setUserPortfolioConstraints] = useState<{
+    portfolioSize: number | null
+    dailyContractBudget: number | null
+  }>({
+    portfolioSize: null,
+    dailyContractBudget: null,
+  })
+  const [settingsLoaded, setSettingsLoaded] = useState(false)
+  const [prefilledInvestment, setPrefilledInvestment] = useState(false)
 
   const toggleCard = (cardId: string) => {
     setExpandedCards(prev => ({
@@ -863,6 +883,85 @@ export default function HomePage() {
       [cardId]: !prev[cardId],
     }))
   }
+
+  useEffect(() => {
+    let isMounted = true
+
+    const loadSettings = async () => {
+      if (!user?.id) {
+        if (isMounted) {
+          setSettingsLoaded(true)
+        }
+        return
+      }
+
+      try {
+        const supabase = createClient()
+        const { data, error } = await supabase
+          .from('user_settings')
+          .select('portfolio_size, daily_contract_budget')
+          .eq('user_id', user.id)
+          .maybeSingle<UserSettingsRow>()
+
+        if (!isMounted) {
+          return
+        }
+
+        if (error && error.code !== 'PGRST116') {
+          console.error('Failed to load user settings for scanner', error)
+        }
+
+        if (data) {
+          const portfolioSize =
+            data.portfolio_size !== null && data.portfolio_size !== undefined
+              ? Number(data.portfolio_size)
+              : null
+          const dailyBudget =
+            data.daily_contract_budget !== null && data.daily_contract_budget !== undefined
+              ? Number(data.daily_contract_budget)
+              : null
+          setUserPortfolioConstraints({
+            portfolioSize:
+              portfolioSize !== null && Number.isFinite(portfolioSize) ? portfolioSize : null,
+            dailyContractBudget:
+              dailyBudget !== null && Number.isFinite(dailyBudget) ? dailyBudget : null,
+          })
+        } else {
+          setUserPortfolioConstraints({
+            portfolioSize: null,
+            dailyContractBudget: null,
+          })
+        }
+      } catch (settingsError) {
+        if (isMounted) {
+          console.error('Error fetching user settings for scanner', settingsError)
+        }
+      } finally {
+        if (isMounted) {
+          setSettingsLoaded(true)
+        }
+      }
+    }
+
+    loadSettings()
+
+    return () => {
+      isMounted = false
+    }
+  }, [user?.id])
+
+  useEffect(() => {
+    if (!settingsLoaded || prefilledInvestment) {
+      return
+    }
+
+    const size = userPortfolioConstraints.portfolioSize
+    if (typeof size === 'number' && Number.isFinite(size) && size > 0) {
+      setInvestmentAmount(size)
+    }
+
+    setPrefilledInvestment(true)
+  }, [settingsLoaded, prefilledInvestment, userPortfolioConstraints.portfolioSize])
 
   const extractFreshnessField = (field: string): unknown => {
     if (!scanMetadata || !scanMetadata.dataFreshness || typeof scanMetadata.dataFreshness !== 'object') {
@@ -990,7 +1089,31 @@ export default function HomePage() {
       // Always use institutional-grade enhanced scanner
       const endpoint = '/api/scan-enhanced'
       const timeoutMs = ENHANCED_FETCH_TIMEOUT_MS
-      const response = await fetchWithTimeout(endpoint, undefined, timeoutMs)
+      const resolvedPortfolioSize = Number.isFinite(userPortfolioConstraints.portfolioSize ?? NaN)
+        ? userPortfolioConstraints.portfolioSize
+        : Number.isFinite(investmentAmount)
+          ? investmentAmount
+          : null
+      const resolvedDailyBudget = Number.isFinite(userPortfolioConstraints.dailyContractBudget ?? NaN)
+        ? userPortfolioConstraints.dailyContractBudget
+        : null
+
+      const payload = {
+        portfolioSize: resolvedPortfolioSize,
+        dailyContractBudget: resolvedDailyBudget,
+      }
+
+      const response = await fetchWithTimeout(
+        endpoint,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        },
+        timeoutMs,
+      )
 
       if (!response.ok) {
         console.error('Scan request failed with status', response.status)
@@ -1037,7 +1160,7 @@ export default function HomePage() {
     } finally {
       setIsLoading(false)
     }
-  }, [attemptFallbackFetch, handleScanPayload])
+  }, [attemptFallbackFetch, handleScanPayload, investmentAmount, userPortfolioConstraints])
 
   const fetchCryptoAlerts = useCallback(async () => {
     try {
@@ -1075,9 +1198,13 @@ export default function HomePage() {
   }
 
   useEffect(() => {
+    if (!settingsLoaded) {
+      return
+    }
+
     fetchOpportunities()
     // Auto-refresh disabled - user must manually refresh to avoid API overuse
-  }, [fetchOpportunities])
+  }, [fetchOpportunities, settingsLoaded])
 
   useEffect(() => {
     opportunitiesRef.current = opportunities
