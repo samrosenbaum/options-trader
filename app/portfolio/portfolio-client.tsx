@@ -2,9 +2,7 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
 import type { Database } from '@/lib/types/database.types'
-import Link from 'next/link'
 import AddPositionModal from './add-position-modal'
 
 type Position = Database['public']['Tables']['positions']['Row']
@@ -19,14 +17,7 @@ export default function PortfolioClient({
 }) {
   const [positions, setPositions] = useState<Position[]>(initialPositions)
   const [showAddModal, setShowAddModal] = useState(false)
-  const router = useRouter()
   const supabase = createClient()
-
-  const handleSignOut = async () => {
-    await supabase.auth.signOut()
-    router.push('/')
-    router.refresh()
-  }
 
   const handleAddPosition = () => {
     setShowAddModal(true)
@@ -54,35 +45,6 @@ export default function PortfolioClient({
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
-      {/* Header */}
-      <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-6">
-              <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-                Portfolio Tracker
-              </h1>
-              <Link
-                href="/"
-                className="text-sm text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
-              >
-                ← Scanner
-              </Link>
-            </div>
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-slate-600 dark:text-slate-400">
-                {user.email}
-              </span>
-              <button
-                onClick={handleSignOut}
-                className="text-sm text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
-              >
-                Sign Out
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Summary Cards */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
