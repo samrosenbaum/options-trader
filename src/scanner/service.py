@@ -65,7 +65,7 @@ class ScanResult:
         return json.dumps(self.to_dict(), indent=indent, default=str)
 
 
-UniverseBuilder = Callable[[AppSettings, int, Mapping[str, Any] | None], Tuple[List[str], Dict[str, Any]]]
+UniverseBuilder = Callable[[AppSettings, int, Optional[Mapping[str, Any]]], Tuple[List[str], Dict[str, Any]]]
 
 
 class SmartOptionsScanner:

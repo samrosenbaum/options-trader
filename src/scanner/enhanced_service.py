@@ -202,10 +202,12 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
             }
             
             # Run enhanced analysis
+            # Note: Using LOW quality minimum to allow more opportunities through
+            # The institutional filters will do final quality checks
             enhanced_opportunities = self.enhanced_scanner.scan_opportunities(
                 [enhanced_opp_data],
-                min_quality=DataQuality.MEDIUM,  # Maintain quality standards for profitability
-                min_composite_score=50.0,  # Strong composite score ensures good opportunities
+                min_quality=DataQuality.LOW,  # Let institutional filters do the heavy lifting
+                min_composite_score=35.0,  # Relaxed to allow more opportunities (was 50)
                 max_results=1
             )
             
@@ -285,18 +287,64 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
                 option_type=legacy_opp['optionType'],
                 strike=legacy_opp['strike'],
                 stock_price=legacy_opp['stockPrice'],
-                premium=legacy_opp['premium'],
+                premium=legacy_opp['premium'] / 100,  # Convert per-contract to per-share
                 days_to_expiration=legacy_opp.get('daysToExpiration', 30),
                 implied_volatility=legacy_opp.get('impliedVolatility', 0.5)
             )
             if backtest_result:
                 result['backtestValidation'] = backtest_result.to_dict()
 
+                # Update risk level based on backtest data
+                result['riskLevel'] = self._assess_risk_with_backtest(
+                    current_risk=result.get('riskLevel', 'medium'),
+                    backtest_result=backtest_result,
+                    probability=result.get('probabilityOfProfit', 50)
+                )
+
             return result
             
         except Exception as e:
             print(f"Error in _enhance_opportunity for {legacy_opp.get('symbol', 'unknown')}: {e}", file=sys.stderr)
             return None
+
+    def _assess_risk_with_backtest(
+        self,
+        current_risk: str,
+        backtest_result: Any,
+        probability: float
+    ) -> str:
+        """
+        Re-assess risk level using backtest data.
+
+        A 0% historical win rate should override other signals and mark as HIGH risk.
+        """
+        if not backtest_result:
+            return current_risk
+
+        win_rate = backtest_result.win_rate
+        sample_size = backtest_result.similar_trades_found
+
+        # If we have meaningful backtest data
+        if sample_size >= 50:  # Statistically significant
+            # 0-10% win rate = EXTREME risk
+            if win_rate <= 0.10:
+                return "extreme"
+            # 10-30% win rate = HIGH risk
+            elif win_rate <= 0.30:
+                return "high"
+            # 30-45% win rate = MEDIUM risk
+            elif win_rate <= 0.45:
+                return "medium"
+            # 45%+ win rate but still check probability
+            elif win_rate >= 0.45 and probability >= 50:
+                return "low"
+
+        # If sample size is small but win rate is 0, still mark as high risk
+        if sample_size >= 20 and win_rate == 0:
+            return "high"
+
+        # Otherwise keep current assessment
+        return current_risk
 
     def _get_historical_context(
         self,

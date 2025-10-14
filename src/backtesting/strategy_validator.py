@@ -130,7 +130,14 @@ class StrategyValidator:
         # Calculate key characteristics of this opportunity
         moneyness = (stock_price / strike) if option_type == 'call' else (strike / stock_price)
         premium_pct = (premium / stock_price) * 100
-        breakeven_move_pct = premium_pct
+
+        # Calculate actual breakeven move (NOT just premium for ITM options)
+        if option_type == 'call':
+            breakeven_price = strike + premium
+            breakeven_move_pct = abs((breakeven_price - stock_price) / stock_price) * 100
+        else:  # put
+            breakeven_price = strike - premium
+            breakeven_move_pct = abs((stock_price - breakeven_price) / stock_price) * 100
 
         # Find similar historical patterns
         similar_patterns = self._find_similar_patterns(
