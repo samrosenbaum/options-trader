@@ -2223,7 +2223,9 @@ export default function ScannerPage({ user }: ScannerPageProps) {
               </div>
 
               <button
-                onClick={activeTab === 'options' ? fetchOpportunities : fetchCryptoAlerts}
+                onClick={() =>
+                  activeTab === 'options' ? fetchOpportunities() : fetchCryptoAlerts()
+                }
                 disabled={activeTab === 'options' ? isLoading : cryptoLoading}
                 className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-bold shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40 transition-all duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
