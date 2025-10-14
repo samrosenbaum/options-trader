@@ -366,6 +366,42 @@ class SmartOptionsScanner:
             & (working_data["ask"] > 0)
         ].copy()
 
+        if liquid_options.empty:
+            print(
+                "⚠️  No contracts met strict liquidity filters; applying adaptive fallback",
+                file=sys.stderr,
+            )
+
+            relaxed_filters = [
+                working_data.get("volume") > 50 if "volume" in working_data else None,
+                working_data.get("openInterest") > 250 if "openInterest" in working_data else None,
+                working_data.get("lastPrice") > 0.05 if "lastPrice" in working_data else None,
+                working_data.get("bid") > 0 if "bid" in working_data else None,
+                working_data.get("ask") > 0 if "ask" in working_data else None,
+            ]
+
+            mask = None
+            for condition in relaxed_filters:
+                if condition is None:
+                    continue
+                mask = condition if mask is None else mask & condition
+
+            if mask is not None:
+                liquid_options = working_data[mask].copy()
+            else:
+                liquid_options = working_data.copy()
+
+        if liquid_options.empty and "volume" in working_data:
+            print(
+                "⚠️  No contracts qualified after fallback; using top volume contracts",
+                file=sys.stderr,
+            )
+            liquid_options = (
+                working_data.sort_values(by="volume", ascending=False)
+                .head(100)
+                .copy()
+            )
+
         print(f"📊 Analyzing {len(liquid_options)} liquid options...", file=sys.stderr)
 
         # Pre-fetch price history for all unique symbols to avoid repeated yfinance calls
