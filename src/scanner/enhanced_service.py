@@ -494,11 +494,33 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
             greeks = enhanced_analysis.get('greeks', {})
             delta = abs(greeks.get('delta', 0))
 
+            # Check backtest data - if strong historical performance, relax other filters
+            backtest = opp.get('backtestValidation', {})
+            backtest_win_rate = backtest.get('winRate', 0) / 100  # Convert from percentage
+            backtest_sample_size = backtest.get('similarTradesFound', 0)
+
+            # Strong backtest data = proven strategy, lower bar on other metrics
+            has_strong_backtest = (
+                backtest_sample_size >= 100 and backtest_win_rate >= 0.50  # 50%+ with 100+ trades
+            ) or (
+                backtest_sample_size >= 50 and backtest_win_rate >= 0.60   # 60%+ with 50+ trades
+            ) or (
+                backtest_sample_size >= 20 and backtest_win_rate >= 0.70   # 70%+ with 20+ trades
+            )
+
             # Check if passes all filters
             passes_probability = prob_of_profit >= 0.12
             passes_risk_score = risk_adjusted_score >= 35
             passes_delta = delta >= 0.015
 
+            # If strong backtest, only require probability check (relaxed)
+            if has_strong_backtest:
+                if prob_of_profit >= 0.08:  # Lower bar for proven strategies
+                    print(f"✅ {opp['symbol']} passed via STRONG BACKTEST: {backtest_win_rate:.1%} win rate over {backtest_sample_size} trades", file=sys.stderr)
+                    filtered.append(opp)
+                    continue
+
+            # Otherwise require all standard filters
             if passes_probability and passes_risk_score and passes_delta:
                 filtered.append(opp)
             else:
