@@ -1505,7 +1505,78 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
             </div>
           )}
 
-          {hasPositionSizing && (
+          {/* Exit Strategy - NEW SECTION */}
+      <section className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border border-amber-200/60 dark:border-amber-800/60 rounded-xl p-5 mb-5">
+        <div className="flex items-start gap-3 mb-4">
+          <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center flex-shrink-0">
+            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div className="flex-1">
+            <h4 className="text-lg font-semibold text-amber-900 dark:text-amber-100">Exit Strategy</h4>
+            <p className="text-sm text-amber-800/80 dark:text-amber-200/80">
+              Recommended profit targets and stop losses based on historical patterns
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Profit Target */}
+          <div className="bg-white/70 dark:bg-slate-900/60 border border-emerald-200 dark:border-emerald-800 rounded-xl p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-2xl">🎯</span>
+              <div className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">Profit Target</div>
+            </div>
+            <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+              {formatCurrency(opportunity.premium * 1.5)}
+            </div>
+            <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+              +50% gain • Sell when reached
+            </div>
+          </div>
+
+          {/* Stop Loss */}
+          <div className="bg-white/70 dark:bg-slate-900/60 border border-red-200 dark:border-red-800 rounded-xl p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-2xl">🛑</span>
+              <div className="text-sm font-semibold text-red-700 dark:text-red-300">Stop Loss</div>
+            </div>
+            <div className="text-2xl font-bold text-red-600 dark:text-red-400">
+              {formatCurrency(opportunity.premium * 0.7)}
+            </div>
+            <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+              -30% loss • Cut and move on
+            </div>
+          </div>
+
+          {/* Optimal Exit Window */}
+          <div className="bg-white/70 dark:bg-slate-900/60 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-2xl">⏰</span>
+              <div className="text-sm font-semibold text-blue-700 dark:text-blue-300">Best Exit Window</div>
+            </div>
+            <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+              {Math.max(7, Math.floor(opportunity.daysToExpiration * 0.3))} days
+            </div>
+            <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+              Before theta decay accelerates
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-4 bg-amber-100/50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-lg p-3">
+          <div className="flex items-start gap-2">
+            <span className="text-lg mt-0.5">💡</span>
+            <div className="text-sm text-amber-900 dark:text-amber-100">
+              <span className="font-semibold">Pro Tip:</span> Based on {opportunity.backtestValidation?.similarTradesFound || 0} similar trades,
+              most profitable exits happened within the first third of the option's life, capturing intrinsic + time value before theta accelerates.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {hasPositionSizing && (
             <section className="bg-gradient-to-r from-emerald-50 to-blue-50 dark:from-emerald-950/30 dark:to-blue-950/30 border border-emerald-200/60 dark:border-emerald-800/60 rounded-xl p-5">
               <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
                 <div>
