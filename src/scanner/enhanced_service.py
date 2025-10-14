@@ -25,6 +25,7 @@ from src.scanner.iv_rank_history import IVRankHistory
 from src.scanner.universe import build_scan_universe
 from src.scanner.service import ScanResult, SmartOptionsScanner
 from src.backtesting.strategy_validator import StrategyValidator
+from src.scanner.sentiment_prescreener import SentimentPreScreener
 
 # Import our new institutional-grade components
 from src.integration.enhanced_scanner import EnhancedOptionsScanner, EnhancedOpportunity
@@ -67,7 +68,50 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
         # Initialize strategy validator for backtesting
         self.strategy_validator = StrategyValidator(lookback_days=365)
 
+        # Initialize sentiment pre-screener for targeted symbol selection
+        self.sentiment_prescreener = SentimentPreScreener(iv_history=self.iv_history)
+
+        # Check environment variable for pre-screening mode
+        import os
+        self.use_sentiment_prescreening = os.getenv('USE_SENTIMENT_PRESCREENING', '1') == '1'
+
         print("🚀 Enhanced scanner initialized with institutional-grade components + backtesting", file=sys.stderr)
+        if self.use_sentiment_prescreening:
+            print("📊 Sentiment pre-screening ENABLED - will prioritize hot symbols", file=sys.stderr)
+
+    def _next_symbol_batch(self) -> List[str]:
+        """
+        Override symbol batch selection to use sentiment pre-screening.
+
+        Returns symbols with high market activity instead of round-robin.
+        """
+        if not self.use_sentiment_prescreening:
+            # Fall back to parent's round-robin behavior
+            return super()._next_symbol_batch()
+
+        try:
+            # Get hot symbols from sentiment pre-screener
+            hot_symbols = self.sentiment_prescreener.get_hot_symbols(
+                universe=self.fetcher.priority_symbols,
+                max_results=min(50, self.symbol_limit or 50),
+                include_gainers=True,
+                include_losers=True,
+                include_volume=True,
+                include_iv=True,
+                include_earnings=True
+            )
+
+            if hot_symbols:
+                print(f"🎯 Pre-screened {len(hot_symbols)} hot symbols from {len(self.fetcher.priority_symbols)} universe", file=sys.stderr)
+                self.current_batch_symbols = hot_symbols
+                return hot_symbols
+            else:
+                print("⚠️  Pre-screening found no hot symbols, using standard selection", file=sys.stderr)
+                return super()._next_symbol_batch()
+
+        except Exception as e:
+            print(f"⚠️  Pre-screening failed ({e}), using standard selection", file=sys.stderr)
+            return super()._next_symbol_batch()
 
     def analyze_opportunities(
         self,
@@ -332,47 +376,122 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
             print(f"⚠️  Could not validate strategy for {symbol}: {e}", file=sys.stderr)
             return None
 
-    def _apply_institutional_filters(self, opportunities: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """Apply institutional-grade filtering criteria."""
-        
+    def _calculate_filter_score(self, opp: Dict[str, Any]) -> float:
+        """
+        Calculate how close an opportunity is to passing filters.
+        Used for "best available" fallback when strict filters return nothing.
+
+        Returns:
+            Score 0-100 indicating filter compliance
+        """
+        score = 0.0
+        enhanced_analysis = opp.get('enhancedAnalysis', {})
+
+        # Data quality (30 points)
+        data_quality = enhanced_analysis.get('dataQuality', {})
+        quality_score = data_quality.get('score', 0)
+        score += (quality_score / 100) * 30
+
+        # Probability of profit (30 points)
+        prob_analysis = enhanced_analysis.get('probabilityAnalysis', {})
+        prob_of_profit = prob_analysis.get('probabilityOfProfit', 0)
+        score += min(30, prob_of_profit * 100)
+
+        # Risk-adjusted score (25 points)
+        risk_adjusted_score = opp.get('riskAdjustedScore', opp.get('score', 0))
+        score += min(25, (risk_adjusted_score / 100) * 25)
+
+        # Delta (15 points)
+        greeks = enhanced_analysis.get('greeks', {})
+        delta = abs(greeks.get('delta', 0))
+        score += min(15, delta * 100)
+
+        return min(100, score)
+
+    def _apply_institutional_filters(self, opportunities: List[Dict[str, Any]],
+                                    min_results: int = 5) -> List[Dict[str, Any]]:
+        """
+        Apply institutional-grade filtering criteria with "best available" fallback.
+
+        Args:
+            opportunities: List of opportunities to filter
+            min_results: Minimum number of results to return (triggers fallback)
+
+        Returns:
+            Filtered opportunities, or best available if strict filters yield too few
+        """
+
         filtered = []
-        
+        rejected_with_scores = []
+
         for opp in opportunities:
             enhanced_analysis = opp.get('enhancedAnalysis', {})
-            
+
             # Data quality filter
             data_quality = enhanced_analysis.get('dataQuality', {})
             quality_level = data_quality.get('quality', 'UNKNOWN')
-            
-            if quality_level == 'REJECTED':  # Only reject truly bad data (removed 'LOW')
+
+            if quality_level == 'REJECTED':
                 print(f"🚫 Filtered out {opp['symbol']} due to {quality_level} data quality", file=sys.stderr)
                 continue
 
-            # Probability filter - require reasonable probability of profit
+            # Probability filter
             prob_analysis = enhanced_analysis.get('probabilityAnalysis', {})
             prob_of_profit = prob_analysis.get('probabilityOfProfit', 0)
 
-            if prob_of_profit < 0.12:  # 12% minimum - relaxed to allow more opportunities (has fallback mode)
-                print(f"🚫 Filtered out {opp['symbol']} due to low probability ({prob_of_profit:.1%})", file=sys.stderr)
-                continue
-
             # Risk-adjusted score filter
             risk_adjusted_score = opp.get('riskAdjustedScore', opp.get('score', 0))
-            if risk_adjusted_score < 35:  # Relaxed threshold with fallback mode for safety
-                print(f"🚫 Filtered out {opp['symbol']} due to low risk-adjusted score ({risk_adjusted_score:.1f})", file=sys.stderr)
-                continue
 
             # Greeks sanity check
             greeks = enhanced_analysis.get('greeks', {})
             delta = abs(greeks.get('delta', 0))
 
-            # Skip options with extremely low delta (won't move with stock)
-            if delta < 0.015:  # Lowered from 0.02 to 0.015
-                print(f"🚫 Filtered out {opp['symbol']} due to low delta ({delta:.3f})", file=sys.stderr)
-                continue
-                
-            filtered.append(opp)
-            
+            # Check if passes all filters
+            passes_probability = prob_of_profit >= 0.12
+            passes_risk_score = risk_adjusted_score >= 35
+            passes_delta = delta >= 0.015
+
+            if passes_probability and passes_risk_score and passes_delta:
+                filtered.append(opp)
+            else:
+                # Track rejected opportunities with their scores for fallback
+                filter_score = self._calculate_filter_score(opp)
+                opp['_filter_score'] = filter_score
+                opp['_filter_failures'] = []
+
+                if not passes_probability:
+                    opp['_filter_failures'].append(f"probability {prob_of_profit:.1%}")
+                if not passes_risk_score:
+                    opp['_filter_failures'].append(f"risk-score {risk_adjusted_score:.1f}")
+                if not passes_delta:
+                    opp['_filter_failures'].append(f"delta {delta:.3f}")
+
+                rejected_with_scores.append(opp)
+                print(f"🚫 Filtered out {opp['symbol']} due to: {', '.join(opp['_filter_failures'])}", file=sys.stderr)
+
+        # Fallback mode: If we don't have enough results, return best available
+        if len(filtered) < min_results and rejected_with_scores:
+            print(f"\n⚠️  Only {len(filtered)} opportunities passed strict filters", file=sys.stderr)
+            print(f"🔄 FALLBACK MODE: Selecting best {min_results} available opportunities", file=sys.stderr)
+
+            # Sort all opportunities (passed + rejected) by filter score
+            all_opportunities = filtered + rejected_with_scores
+            all_opportunities.sort(key=lambda x: x.get('_filter_score', x.get('riskAdjustedScore', 0)), reverse=True)
+
+            # Take top N
+            fallback_results = all_opportunities[:min_results]
+
+            # Mark fallback opportunities
+            for opp in fallback_results:
+                if '_filter_failures' in opp:
+                    opp['_fallback'] = True
+                    opp['_fallback_reason'] = f"Relaxed: {', '.join(opp['_filter_failures'])}"
+                    print(f"📊 FALLBACK: Including {opp['symbol']} (filter score: {opp.get('_filter_score', 0):.1f})",
+                          file=sys.stderr)
+
+            print(f"✅ Fallback complete: Returning {len(fallback_results)} best available opportunities\n", file=sys.stderr)
+            return fallback_results
+
         print(f"📈 Institutional filters: {len(opportunities)} → {len(filtered)} opportunities", file=sys.stderr)
         return filtered
 

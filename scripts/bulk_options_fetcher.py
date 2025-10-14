@@ -237,8 +237,18 @@ class BulkOptionsFetcher:
             return self.fetcher_settings.max_priority_symbols
         return None
 
-    def fetch_bulk_options_parallel(self, symbols=None, max_workers=5, max_symbols: int | None = None):
-        """Fetch options data for multiple symbols in parallel"""
+    def fetch_bulk_options_parallel(self, symbols=None, max_workers=20, max_symbols: int | None = None):
+        """
+        Fetch options data for multiple symbols in parallel.
+
+        Args:
+            symbols: List of symbols to fetch (uses priority_symbols if None)
+            max_workers: Number of parallel workers (default: 20 for faster scans)
+            max_symbols: Limit number of symbols to fetch
+
+        Returns:
+            Combined DataFrame of all options data
+        """
         symbol_limit = self._resolve_symbol_limit(max_symbols)
         if symbols is None:
             symbols = self.priority_symbols
