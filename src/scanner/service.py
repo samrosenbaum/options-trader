@@ -66,6 +66,9 @@ class SmartOptionsScanner:
         self.data_freshness: Dict[str, Any] | None = None
         self.cache_ttl_seconds: int = max(int(getattr(settings.cache, "ttl_seconds", 900) or 0), 0)
         self.validator = OptionsDataValidator()
+        # Relaxed fallbacks are only safe when we are certain the snapshot is live.
+        # Limit their activation window to the most recent few minutes of market data.
+        self._fallback_max_age_minutes: float = 5.0
         sqlite_path: Optional[str] = None
         try:
             sqlite_settings = settings.storage.require_sqlite()
@@ -292,6 +295,48 @@ class SmartOptionsScanner:
         if isinstance(min_future, (int, float)) and isfinite(min_future):
             metadata["minFutureDte"] = float(min_future)
 
+    def _snapshot_is_live(self) -> bool:
+        """Return True when the currently cached snapshot represents live market data."""
+
+        freshness = self.data_freshness or {}
+        if not freshness:
+            return False
+
+        if freshness.get("cacheStale") is True:
+            return False
+
+        has_future = freshness.get("hasFutureContracts")
+        if has_future is False:
+            return False
+
+        cache_hit = freshness.get("cacheHit")
+        if cache_hit is False:
+            # Explicit fresh pull from the adapter
+            return True
+
+        age_minutes = freshness.get("cacheAgeMinutes")
+        if isinstance(age_minutes, (int, float)) and isfinite(age_minutes):
+            if age_minutes > self._fallback_max_age_minutes:
+                return False
+
+        timestamp = freshness.get("cacheTimestamp")
+        if isinstance(timestamp, str):
+            try:
+                parsed = datetime.fromisoformat(timestamp)
+            except ValueError:
+                parsed = None
+            if parsed is not None:
+                if parsed.tzinfo is None:
+                    parsed = parsed.replace(tzinfo=timezone.utc)
+                if (datetime.now(timezone.utc) - parsed).total_seconds() > self._fallback_max_age_minutes * 60:
+                    return False
+
+        if self.last_fetch_time is not None:
+            if (datetime.now(timezone.utc) - self.last_fetch_time).total_seconds() > self._fallback_max_age_minutes * 60:
+                return False
+
+        return True
+
     def _serialize_swing_signal(self, signal: SwingSignal) -> Dict[str, Any]:
         return {
             "symbol": signal.symbol,
@@ -366,7 +411,15 @@ class SmartOptionsScanner:
             & (working_data["ask"] > 0)
         ].copy()
 
+        fallback_allowed = self._snapshot_is_live()
+
         if liquid_options.empty:
+            if not fallback_allowed:
+                print(
+                    "⏸️  Fallback disabled because latest options snapshot is older than live window",
+                    file=sys.stderr,
+                )
+                return []
             print(
                 "⚠️  No contracts met strict liquidity filters; applying adaptive fallback",
                 file=sys.stderr,
@@ -392,6 +445,12 @@ class SmartOptionsScanner:
                 liquid_options = working_data.copy()
 
         if liquid_options.empty and "volume" in working_data:
+            if not fallback_allowed:
+                print(
+                    "⏸️  Volume-based safety net disabled due to stale snapshot",
+                    file=sys.stderr,
+                )
+                return []
             print(
                 "⚠️  No contracts qualified after fallback; using top volume contracts",
                 file=sys.stderr,
@@ -652,6 +711,12 @@ class SmartOptionsScanner:
         opportunities.sort(key=expected_value_key, reverse=True)
 
         if not opportunities and fallback_candidates:
+            if not fallback_allowed:
+                print(
+                    "⏸️  Relaxed opportunity set suppressed because data is outside live window",
+                    file=sys.stderr,
+                )
+                return []
             print(
                 f"ℹ️  No opportunities met the strict filter – returning {len(fallback_candidates)} relaxed candidates",
                 file=sys.stderr,
