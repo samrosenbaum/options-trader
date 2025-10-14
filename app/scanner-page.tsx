@@ -139,6 +139,51 @@ const normalizeDebugValue = (value: unknown): string => {
   }
 }
 
+const describeFilterMode = (mode: unknown) => {
+  if (typeof mode !== 'string') {
+    return null
+  }
+
+  const normalized = mode.toLowerCase()
+  if (normalized === 'relaxed') {
+    return 'Relaxed (broader criteria)'
+  }
+
+  if (normalized === 'strict') {
+    return 'Strict (institutional-grade criteria)'
+  }
+
+  return mode
+}
+
+const extractNumber = (record: Record<string, unknown> | null | undefined, key: string) => {
+  if (!record) {
+    return null
+  }
+
+  const value = record[key]
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value
+  }
+
+  return null
+}
+
+const extractStringArray = (record: Record<string, unknown> | null | undefined, key: string) => {
+  if (!record) {
+    return [] as string[]
+  }
+
+  const value = record[key]
+  if (!Array.isArray(value)) {
+    return [] as string[]
+  }
+
+  return value
+    .map((item) => (typeof item === 'string' ? item : null))
+    .filter((item): item is string => Boolean(item))
+}
+
 const getRiskBudgetMeta = (tier?: PositionSizingRecommendation['riskBudgetTier'] | string | null) => {
   switch (tier) {
     case 'aggressive':
@@ -1015,6 +1060,114 @@ export default function ScannerPage({ user }: ScannerPageProps) {
     scanMetadata.debugInfo !== null
       ? (scanMetadata.debugInfo as Record<string, unknown>)
       : null
+  const fallbackIsNoResults = fallbackActive && fallbackReason === 'no_enhanced_results'
+  const fallbackSearchMetadata = useMemo(() => {
+    if (!fallbackIsNoResults || !fallbackDebugInfo) {
+      return null
+    }
+
+    const metadataCandidate = fallbackDebugInfo.sanitizedMetadata
+    if (!metadataCandidate || typeof metadataCandidate !== 'object') {
+      return null
+    }
+
+    return metadataCandidate as Record<string, unknown>
+  }, [fallbackDebugInfo, fallbackIsNoResults])
+  const fallbackSearchSummary = useMemo(() => {
+    if (!fallbackIsNoResults) {
+      return {
+        description: null as string | null,
+        entries: [] as Array<{ label: string; value: string }>,
+      }
+    }
+
+    const metadata = fallbackSearchMetadata
+    const entries: Array<{ label: string; value: string }> = []
+
+    const filterModeRaw =
+      (metadata && typeof metadata['filterMode'] === 'string' ? (metadata['filterMode'] as string) : null) ??
+      (typeof fallbackDebugInfo?.['filterMode'] === 'string' ? (fallbackDebugInfo['filterMode'] as string) : null)
+    const filterModeDescription = describeFilterMode(filterModeRaw)
+    if (filterModeDescription) {
+      entries.push({ label: 'Filter mode', value: filterModeDescription })
+    }
+
+    const symbolList = extractStringArray(metadata ?? null, 'symbols')
+    const symbolLimit = extractNumber(metadata ?? null, 'symbolLimit')
+    const symbolDisplay = (() => {
+      if (symbolList.length === 0) {
+        return null
+      }
+      const displayList = symbolList.slice(0, 8)
+      const remainder = symbolList.length - displayList.length
+      const formatted = displayList.join(', ')
+      return remainder > 0 ? `${formatted} +${remainder} more` : formatted
+    })()
+    if (symbolDisplay) {
+      const suffix =
+        typeof symbolLimit === 'number' && symbolLimit > symbolList.length
+          ? ` (limited to ${symbolLimit.toLocaleString()})`
+          : ''
+      entries.push({
+        label: `Symbols scanned${suffix}`,
+        value: symbolDisplay,
+      })
+    } else if (typeof symbolLimit === 'number') {
+      entries.push({ label: 'Symbol limit', value: symbolLimit.toLocaleString() })
+    }
+
+    const totalEvaluated =
+      extractNumber(fallbackDebugInfo ?? null, 'totalEvaluated') ?? extractNumber(metadata ?? null, 'totalEvaluated')
+    if (typeof totalEvaluated === 'number') {
+      entries.push({ label: 'Options evaluated', value: totalEvaluated.toLocaleString() })
+    }
+
+    const rawCandidates = extractNumber(fallbackDebugInfo ?? null, 'rawOpportunityCount')
+    if (typeof rawCandidates === 'number' && rawCandidates > 0) {
+      entries.push({
+        label: 'Candidates before quality checks',
+        value: rawCandidates.toLocaleString(),
+      })
+    }
+
+    const sanitizedCandidates =
+      extractNumber(fallbackDebugInfo ?? null, 'sanitizedOpportunityCount') ??
+      extractNumber(metadata ?? null, 'opportunityCount') ??
+      0
+    entries.push({
+      label: 'Qualified opportunities',
+      value:
+        sanitizedCandidates > 0
+          ? sanitizedCandidates.toLocaleString()
+          : '0 (none cleared the institutional-grade thresholds)',
+    })
+
+    const normalizedMode = typeof filterModeRaw === 'string' ? filterModeRaw.toLowerCase() : null
+    const evaluatedText =
+      typeof totalEvaluated === 'number' && totalEvaluated > 0
+        ? `scanned ${totalEvaluated.toLocaleString()} options`
+        : 'completed an institutional scan'
+    const symbolText =
+      symbolList.length > 0
+        ? ` across ${symbolList.length.toLocaleString()} symbol${symbolList.length === 1 ? '' : 's'}`
+        : ''
+    const filterText = (() => {
+      if (normalizedMode === 'relaxed') {
+        return ' with relaxed filters applied'
+      }
+      if (normalizedMode === 'strict') {
+        return ' with strict institutional-grade filters'
+      }
+      return ''
+    })()
+
+    const description = `We ${evaluatedText}${symbolText}${filterText}, but none met the institutional-grade criteria.`
+
+    return {
+      description,
+      entries,
+    }
+  }, [fallbackDebugInfo, fallbackIsNoResults, fallbackSearchMetadata])
   const metadataSource = typeof scanMetadata?.source === 'string' ? scanMetadata.source.toLowerCase() : null
   // Always use enhanced scanner for options
   const enhancedModeActive = activeTab === 'options'
@@ -2299,52 +2452,91 @@ export default function ScannerPage({ user }: ScannerPageProps) {
             {activeTab === 'options' && (fallbackActive || staleCacheActive) && (
               <div className="w-full mt-3 space-y-2">
                 {fallbackActive && (
-                  <div className="flex items-start gap-3 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-amber-100">
-                    <svg className="mt-1 h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <div className="space-y-1">
-                      <p className="font-semibold">Fallback recommendations</p>
+                  fallbackIsNoResults ? (
+                    <div className="rounded-2xl border border-slate-300/70 bg-white/80 px-5 py-5 text-left text-slate-900 shadow-sm dark:border-slate-500/50 dark:bg-slate-800/60 dark:text-slate-100">
+                      <div className="flex items-start gap-3">
+                        <div className="mt-0.5 flex h-10 w-10 items-center justify-center rounded-full bg-slate-900/10 text-slate-700 dark:bg-slate-700/60 dark:text-slate-100">
+                          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1016.65 16.65z" />
+                          </svg>
+                        </div>
+                        <div className="flex-1 space-y-3">
+                          <div className="space-y-1">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">Institutional scan complete</p>
+                            <h3 className="text-lg font-semibold text-slate-900 dark:text-white">No institutional-grade matches yet</h3>
+                          </div>
+                          <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+                            {fallbackSearchSummary.description ??
+                              'We completed the institutional-grade scan but no opportunities satisfied the risk and quality thresholds. The criteria are working as intended.'}
+                          </p>
+                          {fallbackDetails && (
+                            <p className="text-xs text-slate-500 dark:text-slate-400">Details: {fallbackDetails}</p>
+                          )}
+                          {fallbackSearchSummary.entries.length > 0 && (
+                            <dl className="mt-2 grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
+                              {fallbackSearchSummary.entries.map(({ label, value }) => (
+                                <div key={label} className="space-y-1">
+                                  <dt className="text-[11px] font-semibold uppercase tracking-wide text-slate-500/80 dark:text-slate-300/80">
+                                    {label}
+                                  </dt>
+                                  <dd className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                                    {value}
+                                  </dd>
+                                </div>
+                              ))}
+                            </dl>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-start gap-3 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-amber-100">
+                      <svg className="mt-1 h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <div className="space-y-1">
+                        <p className="font-semibold">Fallback recommendations</p>
                         <p className="text-sm leading-relaxed text-amber-100/80">
                           Live scanning failed{fallbackReason ? ` (${fallbackReason})` : ''}, so we are surfacing the diagnostic details we captured from the scanner run.
                           Expect pricing and probabilities to deviate from current market conditions until a fresh scan succeeds.
                         </p>
-                      {fallbackDetails && (
-                        <p className="text-xs text-amber-100/70">Details: {fallbackDetails}</p>
-                      )}
-                      {fallbackDebugInfo && Object.keys(fallbackDebugInfo).length > 0 && (
-                        <div className="mt-2 space-y-1 rounded-lg border border-amber-500/20 bg-amber-500/10 p-3">
-                          <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-200">
-                            Debug information
-                          </p>
-                          <dl className="space-y-2">
-                            {Object.entries(fallbackDebugInfo).map(([key, value]) => {
-                              const normalized = normalizeDebugValue(value)
-                              const isMultiline = typeof normalized === 'string' && /\n/.test(normalized)
-                              return (
-                                <div key={key} className="space-y-1">
-                                  <dt className="text-[10px] font-medium uppercase tracking-wide text-amber-200/70">
-                                    {formatDebugKey(key)}
-                                  </dt>
-                                  <dd>
-                                    {isMultiline ? (
-                                      <pre className="max-h-48 overflow-auto rounded-md border border-amber-500/20 bg-amber-500/10 p-2 font-mono text-[11px] leading-relaxed text-amber-100/90 whitespace-pre-wrap break-words">
-                                        {normalized}
-                                      </pre>
-                                    ) : (
-                                      <span className="font-mono text-[12px] text-amber-100/90 break-words">
-                                        {normalized}
-                                      </span>
-                                    )}
-                                  </dd>
-                                </div>
-                              )
-                            })}
-                          </dl>
-                        </div>
-                      )}
+                        {fallbackDetails && (
+                          <p className="text-xs text-amber-100/70">Details: {fallbackDetails}</p>
+                        )}
+                        {fallbackDebugInfo && Object.keys(fallbackDebugInfo).length > 0 && (
+                          <div className="mt-2 space-y-1 rounded-lg border border-amber-500/20 bg-amber-500/10 p-3">
+                            <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-200">
+                              Debug information
+                            </p>
+                            <dl className="space-y-2">
+                              {Object.entries(fallbackDebugInfo).map(([key, value]) => {
+                                const normalized = normalizeDebugValue(value)
+                                const isMultiline = typeof normalized === 'string' && /\n/.test(normalized)
+                                return (
+                                  <div key={key} className="space-y-1">
+                                    <dt className="text-[10px] font-medium uppercase tracking-wide text-amber-200/70">
+                                      {formatDebugKey(key)}
+                                    </dt>
+                                    <dd>
+                                      {isMultiline ? (
+                                        <pre className="max-h-48 overflow-auto rounded-md border border-amber-500/20 bg-amber-500/10 p-2 font-mono text-[11px] leading-relaxed text-amber-100/90 whitespace-pre-wrap break-words">
+                                          {normalized}
+                                        </pre>
+                                      ) : (
+                                        <span className="font-mono text-[12px] text-amber-100/90 break-words">
+                                          {normalized}
+                                        </span>
+                                      )}
+                                    </dd>
+                                  </div>
+                                )
+                              })}
+                            </dl>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  )
                 )}
                 {staleCacheActive && (
                   <div className="flex items-start gap-3 rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-yellow-100">
