@@ -18,7 +18,7 @@ export default async function HomePage() {
   return (
     <>
       <Navigation userEmail={user.email} />
-      <ScannerPage />
+      <ScannerPage user={user} />
     </>
   )
 }

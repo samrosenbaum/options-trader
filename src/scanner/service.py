@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from math import ceil, isfinite, log, log1p
-from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Tuple
+from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Set, Tuple
 
 import pandas as pd
 import yfinance as yf
@@ -21,6 +22,18 @@ from src.scanner.iv_rank_history import IVRankHistory
 from src.scanner.universe import build_scan_universe
 from src.signals import OptionsSkewAnalyzer, SmartMoneyFlowDetector, RegimeDetector, VolumeProfileAnalyzer, SignalAggregator
 from src.validation import OptionsDataValidator, DataQuality
+
+
+def _parse_positive_float(value: str | None) -> Optional[float]:
+    if value is None:
+        return None
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError):
+        return None
+    if not isfinite(parsed) or parsed <= 0:
+        return None
+    return parsed
 
 
 @dataclass
@@ -80,6 +93,8 @@ class SmartOptionsScanner:
         self.swing_analyzer: SwingSignalAnalyzer | None = None
         self._swing_signal_cache: Dict[str, Optional[Dict[str, Any]]] = {}
         self._swing_error_cache: Dict[str, str] = {}
+        self.user_portfolio_size = _parse_positive_float(os.getenv("USER_PORTFOLIO_SIZE"))
+        self.user_daily_contract_budget = _parse_positive_float(os.getenv("USER_DAILY_CONTRACT_BUDGET"))
 
         # Initialize directional signal framework
         self.signal_aggregator = SignalAggregator([
@@ -1852,22 +1867,63 @@ class SmartOptionsScanner:
             rationale.append("Position size reduced to reflect elevated qualitative risk level.")
 
         portfolio_examples: List[Dict[str, Any]] = []
-        for capital in (50_000, 100_000, 250_000):
+        base_capitals: List[float]
+        if self.user_portfolio_size is not None:
+            user_capital = float(self.user_portfolio_size)
+            candidate_factors = (0.5, 1.0, 2.0)
+            seen_capitals: Set[float] = set()
+            base_capitals = []
+            for factor in candidate_factors:
+                candidate = user_capital * factor
+                if not isfinite(candidate) or candidate <= 0:
+                    continue
+                rounded_candidate = round(candidate, 2)
+                if rounded_candidate in seen_capitals:
+                    continue
+                seen_capitals.add(rounded_candidate)
+                base_capitals.append(rounded_candidate)
+            if not base_capitals:
+                base_capitals.append(round(user_capital, 2))
+        else:
+            base_capitals = [50_000.0, 100_000.0, 250_000.0]
+
+        for capital in base_capitals:
             allocation = capital * recommended_fraction
             contracts = int(allocation // cost_basis)
             if contracts <= 0 and allocation >= cost_basis * 0.5:
                 contracts = 1
-            if contracts > 0:
-                portfolio_examples.append(
-                    {
-                        "portfolio": capital,
-                        "contracts": contracts,
-                        "capitalAtRisk": round(contracts * cost_basis, 2),
-                        "allocationPercent": round(recommended_fraction, 4),
-                    }
-                )
+            if contracts <= 0:
+                continue
+            capital_at_risk = round(contracts * cost_basis, 2)
+            allocation_percent = (
+                round(capital_at_risk / capital, 4)
+                if capital
+                else round(recommended_fraction, 4)
+            )
+            portfolio_examples.append(
+                {
+                    "portfolio": round(capital, 2),
+                    "contracts": contracts,
+                    "capitalAtRisk": capital_at_risk,
+                    "allocationPercent": allocation_percent,
+                }
+            )
 
-        return {
+        limits: Dict[str, Any] = {
+            "maxPerTrade": max_fraction,
+            "maxDrawdown95": round(min(projected_drawdown, max_drawdown), 4),
+            "losingStreak95": losing_streak_95,
+        }
+        if self.user_daily_contract_budget is not None:
+            limits["dailyContractBudget"] = round(self.user_daily_contract_budget, 4)
+
+        user_constraints: Dict[str, Any] = {}
+        if self.user_portfolio_size is not None:
+            user_constraints["portfolioSize"] = round(self.user_portfolio_size, 2)
+        if self.user_daily_contract_budget is not None:
+            user_constraints["dailyContractBudget"] = round(self.user_daily_contract_budget, 4)
+
+        result: Dict[str, Any] = {
             "recommendedFraction": round(recommended_fraction, 4),
             "conservativeFraction": round(conservative_fraction, 4),
             "aggressiveFraction": round(aggressive_fraction, 4),
@@ -1889,13 +1945,12 @@ class SmartOptionsScanner:
                 "costBasis": round(cost_basis, 2),
                 "expectedRoi": round(expected_roi_percent / 100.0, 4),
             },
-            "limits": {
-                "maxPerTrade": max_fraction,
-                "maxDrawdown95": round(min(projected_drawdown, max_drawdown), 4),
-                "losingStreak95": losing_streak_95,
-            },
+            "limits": limits,
             "capitalAllocationExamples": portfolio_examples,
         }
+        if user_constraints:
+            result["userConstraints"] = user_constraints
+        return result
 
     def scan_for_opportunities(self, *, force_refresh: bool = False) -> ScanResult:
         """Execute the scan and package results for consumers."""

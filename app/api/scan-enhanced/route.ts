@@ -406,6 +406,282 @@ const buildSuccessResponse = (payload: SanitizedPayload) => {
   })
 }
 
+interface ConstraintPayload {
+  portfolioSize?: number
+  dailyContractBudget?: number
+}
+
+const parseConstraintNumber = (value: unknown): number | undefined => {
+  if (value === null || value === undefined) {
+    return undefined
+  }
+
+  if (typeof value === "number") {
+    return Number.isFinite(value) && value > 0 ? value : undefined
+  }
+
+  if (typeof value === "string") {
+    const trimmed = value.trim()
+    if (!trimmed) {
+      return undefined
+    }
+    const parsed = Number(trimmed)
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined
+  }
+
+  const coerced = Number(value)
+  return Number.isFinite(coerced) && coerced > 0 ? coerced : undefined
+}
+
+const extractConstraintsFromSearchParams = (params: URLSearchParams): ConstraintPayload => {
+  const constraints: ConstraintPayload = {}
+  const portfolioParam = params.get("portfolioSize") ?? params.get("portfolio_size")
+  const dailyParam = params.get("dailyContractBudget") ?? params.get("daily_contract_budget")
+
+  const parsedPortfolio = parseConstraintNumber(portfolioParam)
+  if (parsedPortfolio !== undefined) {
+    constraints.portfolioSize = parsedPortfolio
+  }
+
+  const parsedDaily = parseConstraintNumber(dailyParam)
+  if (parsedDaily !== undefined) {
+    constraints.dailyContractBudget = parsedDaily
+  }
+
+  return constraints
+}
+
+const extractConstraintsFromBody = (body: unknown): ConstraintPayload => {
+  if (!body || typeof body !== "object") {
+    return {}
+  }
+
+  const record = body as Record<string, unknown>
+  const constraints: ConstraintPayload = {}
+
+  const portfolioValue = record.portfolioSize ?? record.portfolio_size
+  const dailyValue = record.dailyContractBudget ?? record.daily_contract_budget
+
+  const parsedPortfolio = parseConstraintNumber(portfolioValue)
+  if (parsedPortfolio !== undefined) {
+    constraints.portfolioSize = parsedPortfolio
+  }
+
+  const parsedDaily = parseConstraintNumber(dailyValue)
+  if (parsedDaily !== undefined) {
+    constraints.dailyContractBudget = parsedDaily
+  }
+
+  return constraints
+}
+
+const mergeConstraints = (
+  ...sources: Array<ConstraintPayload | undefined>
+): ConstraintPayload | undefined => {
+  const merged: ConstraintPayload = {}
+
+  for (const source of sources) {
+    if (!source) {
+      continue
+    }
+
+    if (source.portfolioSize !== undefined) {
+      merged.portfolioSize = source.portfolioSize
+    }
+
+    if (source.dailyContractBudget !== undefined) {
+      merged.dailyContractBudget = source.dailyContractBudget
+    }
+  }
+
+  return Object.keys(merged).length > 0 ? merged : undefined
+}
+
+const executeEnhancedScanner = async ({
+  constraints,
+  debugContext,
+}: {
+  constraints?: ConstraintPayload
+  debugContext?: Record<string, unknown>
+}) => {
+  const forcedPolicy = determineScannerExecutionPolicy()
+
+  if (forcedPolicy?.forceFallback) {
+    console.warn(
+      `Enhanced scanner disabled (${forcedPolicy.reason}). Serving fallback dataset instead.`,
+    )
+
+    return buildFallbackResponse(forcedPolicy.reason, forcedPolicy.details, {
+      executionPolicy: forcedPolicy,
+      ...(debugContext ?? {}),
+      ...(constraints
+        ? {
+            userConstraints: {
+              ...(constraints.portfolioSize !== undefined
+                ? { portfolioSize: constraints.portfolioSize }
+                : {}),
+              ...(constraints.dailyContractBudget !== undefined
+                ? { dailyContractBudget: constraints.dailyContractBudget }
+                : {}),
+            },
+          }
+        : {}),
+    })
+  }
+
+  const { spawn } = await import("child_process")
+  const pythonPath = await resolvePythonExecutable()
+
+  const constraintDebug = constraints
+    ? {
+        ...(constraints.portfolioSize !== undefined
+          ? { portfolioSize: constraints.portfolioSize }
+          : {}),
+        ...(constraints.dailyContractBudget !== undefined
+          ? { dailyContractBudget: constraints.dailyContractBudget }
+          : {}),
+      }
+    : undefined
+
+  return await new Promise<NextResponse>((resolve) => {
+    const env: NodeJS.ProcessEnv = { ...process.env, PYTHONPATH: process.cwd() }
+
+    if (
+      typeof constraints?.portfolioSize === "number" &&
+      Number.isFinite(constraints.portfolioSize) &&
+      constraints.portfolioSize > 0
+    ) {
+      env.USER_PORTFOLIO_SIZE = String(constraints.portfolioSize)
+    }
+
+    if (
+      typeof constraints?.dailyContractBudget === "number" &&
+      Number.isFinite(constraints.dailyContractBudget) &&
+      constraints.dailyContractBudget > 0
+    ) {
+      env.USER_DAILY_CONTRACT_BUDGET = String(constraints.dailyContractBudget)
+    }
+
+    const python = spawn(pythonPath, ["-m", "src.scanner.enhanced_service"], {
+      env,
+    })
+
+    let stdoutBuffer = ""
+    let stderrBuffer = ""
+    let settled = false
+
+    const settle = (response: NextResponse) => {
+      if (!settled) {
+        settled = true
+        clearTimeout(timeoutId)
+        resolve(response)
+      }
+    }
+
+    const baseDebug = {
+      ...(debugContext ?? {}),
+      ...(constraintDebug ? { userConstraints: constraintDebug } : {}),
+    }
+
+    const fallbackAndSettle = (
+      reason: string,
+      details?: string,
+      debug?: Record<string, unknown>,
+    ) => {
+      const mergedDebug = Object.keys(baseDebug).length
+        ? { ...baseDebug, ...(debug ?? {}) }
+        : debug
+      const response = buildFallbackResponse(reason, details, mergedDebug)
+      settle(response)
+    }
+
+    const timeoutId = setTimeout(() => {
+      console.warn(
+        `Enhanced scanner exceeded ${FALLBACK_TIMEOUT_MS / 1000} seconds. Terminating and serving fallback.`,
+      )
+      try {
+        python.kill("SIGKILL")
+      } catch (killError) {
+        console.error("Failed to terminate enhanced scanner after timeout:", killError)
+      }
+      fallbackAndSettle("timeout", `Enhanced scanner exceeded ${FALLBACK_TIMEOUT_MS / 1000} seconds`, {
+        stdoutTail: buildLogTail(stdoutBuffer),
+        stderrTail: buildLogTail(stderrBuffer),
+      })
+    }, FALLBACK_TIMEOUT_MS)
+
+    python.stdout.on("data", (data) => {
+      stdoutBuffer += data.toString()
+    })
+
+    python.stderr.on("data", (data) => {
+      stderrBuffer += data.toString()
+    })
+
+    python.on("error", (error) => {
+      console.error("Failed to start enhanced scanner process:", error)
+      fallbackAndSettle("spawn_error", error instanceof Error ? error.message : String(error))
+    })
+
+    python.on("close", (code) => {
+      if (code !== 0) {
+        console.error("Enhanced scanner error:", stderrBuffer)
+        const exitMessage = stderrBuffer || `Enhanced scanner exited with code ${code}`
+        fallbackAndSettle("exit_non_zero", exitMessage, {
+          exitCode: code,
+          stdoutTail: buildLogTail(stdoutBuffer),
+          stderrTail: buildLogTail(stderrBuffer),
+        })
+        return
+      }
+
+      try {
+        const parsedOutput = parseScannerJson(stdoutBuffer, stderrBuffer)
+
+        if (!parsedOutput) {
+          console.warn("Enhanced scanner produced no JSON payload", { stdout: stdoutBuffer, stderr: stderrBuffer })
+          fallbackAndSettle("no_payload", "Enhanced scanner emitted no JSON payload", {
+            stdoutTail: buildLogTail(stdoutBuffer),
+            stderrTail: buildLogTail(stderrBuffer),
+          })
+          return
+        }
+
+        const payload = sanitizeScannerResponse(parsedOutput)
+
+        if (!payload.opportunities.length) {
+          console.warn("Enhanced scanner returned zero qualifying opportunities. Serving fallback dataset.")
+          fallbackAndSettle(
+            "no_enhanced_results",
+            "Enhanced scanner returned no qualifying opportunities",
+            {
+              totalEvaluated: payload.totalEvaluated,
+              sanitizedMetadata: payload.metadata,
+              rawOpportunityCount: Array.isArray(parsedOutput.opportunities)
+                ? parsedOutput.opportunities.length
+                : null,
+              sanitizedOpportunityCount: payload.opportunities.length,
+              stdoutTail: buildLogTail(stdoutBuffer),
+              stderrTail: buildLogTail(stderrBuffer),
+            },
+          )
+          return
+        }
+
+        settle(buildSuccessResponse(payload))
+      } catch (error) {
+        console.error("Error parsing enhanced scanner output:", error)
+        console.error("Raw stdout:", stdoutBuffer)
+        console.error("Raw stderr:", stderrBuffer)
+        fallbackAndSettle("parse_error", error instanceof Error ? error.message : String(error), {
+          stdoutTail: buildLogTail(stdoutBuffer),
+          stderrTail: buildLogTail(stderrBuffer),
+        })
+      }
+    })
+  })
+}
+
 const buildFallbackResponse = (
   reason: string,
   details?: string,
@@ -467,136 +743,67 @@ export async function GET(request: Request) {
         { requestedViaQuery: true },
       )
     }
-
-    const forcedPolicy = determineScannerExecutionPolicy()
-
-    if (forcedPolicy?.forceFallback) {
-      console.warn(
-        `Enhanced scanner disabled (${forcedPolicy.reason}). Serving fallback dataset instead.`,
-      )
-      return buildFallbackResponse(forcedPolicy.reason, forcedPolicy.details, {
-        executionPolicy: forcedPolicy,
-      })
-    }
-
-    // Execute Enhanced Python Scanner
-    const { spawn } = await import("child_process")
-    const pythonPath = await resolvePythonExecutable()
-
-    return await new Promise<NextResponse>((resolve) => {
-      // Use the enhanced scanner service
-      const python = spawn(pythonPath, ["-m", "src.scanner.enhanced_service"], {
-        env: { ...process.env, PYTHONPATH: process.cwd() },
-      })
-
-      let stdoutBuffer = ""
-      let stderrBuffer = ""
-      let settled = false
-
-      const settle = (response: NextResponse) => {
-        if (!settled) {
-          settled = true
-          clearTimeout(timeoutId)
-          resolve(response)
-        }
-      }
-
-      const fallbackAndSettle = (
-        reason: string,
-        details?: string,
-        debug?: Record<string, unknown>,
-      ) => {
-        const response = buildFallbackResponse(reason, details, debug)
-        settle(response)
-      }
-
-      const timeoutId = setTimeout(() => {
-        console.warn(
-          `Enhanced scanner exceeded ${FALLBACK_TIMEOUT_MS / 1000} seconds. Terminating and serving fallback.`,
-        )
-        try {
-          python.kill("SIGKILL")
-        } catch (killError) {
-          console.error("Failed to terminate enhanced scanner after timeout:", killError)
-        }
-        fallbackAndSettle("timeout", `Enhanced scanner exceeded ${FALLBACK_TIMEOUT_MS / 1000} seconds`, {
-          stdoutTail: buildLogTail(stdoutBuffer),
-          stderrTail: buildLogTail(stderrBuffer),
-        })
-      }, FALLBACK_TIMEOUT_MS)
-
-      python.stdout.on("data", (data) => {
-        stdoutBuffer += data.toString()
-      })
-
-      python.stderr.on("data", (data) => {
-        stderrBuffer += data.toString()
-      })
-
-      python.on("error", (error) => {
-        console.error("Failed to start enhanced scanner process:", error)
-        fallbackAndSettle("spawn_error", error instanceof Error ? error.message : String(error))
-      })
-
-      python.on("close", (code) => {
-        if (code !== 0) {
-          console.error("Enhanced scanner error:", stderrBuffer)
-          const exitMessage = stderrBuffer || `Enhanced scanner exited with code ${code}`
-          fallbackAndSettle("exit_non_zero", exitMessage, {
-            exitCode: code,
-            stdoutTail: buildLogTail(stdoutBuffer),
-            stderrTail: buildLogTail(stderrBuffer),
-          })
-          return
-        }
-
-        try {
-          const parsedOutput = parseScannerJson(stdoutBuffer, stderrBuffer)
-
-          if (!parsedOutput) {
-            console.warn("Enhanced scanner produced no JSON payload", { stdout: stdoutBuffer, stderr: stderrBuffer })
-            fallbackAndSettle("no_payload", "Enhanced scanner emitted no JSON payload", {
-              stdoutTail: buildLogTail(stdoutBuffer),
-              stderrTail: buildLogTail(stderrBuffer),
-            })
-            return
-          }
-
-          const payload = sanitizeScannerResponse(parsedOutput)
-
-          if (!payload.opportunities.length) {
-            console.warn("Enhanced scanner returned zero qualifying opportunities. Serving fallback dataset.")
-            fallbackAndSettle(
-              "no_enhanced_results",
-              "Enhanced scanner returned no qualifying opportunities",
-              {
-                totalEvaluated: payload.totalEvaluated,
-                sanitizedMetadata: payload.metadata,
-                rawOpportunityCount: Array.isArray(parsedOutput.opportunities)
-                  ? parsedOutput.opportunities.length
-                  : null,
-                sanitizedOpportunityCount: payload.opportunities.length,
-                stdoutTail: buildLogTail(stdoutBuffer),
-                stderrTail: buildLogTail(stderrBuffer),
-              },
-            )
-            return
-          }
-
-          settle(buildSuccessResponse(payload))
-        } catch (error) {
-          console.error("Error parsing enhanced scanner output:", error)
-          console.error("Raw stdout:", stdoutBuffer)
-          console.error("Raw stderr:", stderrBuffer)
-          fallbackAndSettle("parse_error", error instanceof Error ? error.message : String(error), {
-            stdoutTail: buildLogTail(stdoutBuffer),
-            stderrTail: buildLogTail(stderrBuffer),
-          })
-        }
-      })
+    const constraints = mergeConstraints(extractConstraintsFromSearchParams(url.searchParams))
+    return executeEnhancedScanner({
+      constraints,
+      debugContext: { requestedVia: "GET" },
     })
   } catch (error) {
     console.error("Error executing enhanced scanner:", error)
+    return buildFallbackResponse("handler_failure", error instanceof Error ? error.message : String(error))
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    const url = new URL(request.url)
+    const fallbackParam = url.searchParams.get("fallback") ?? url.searchParams.get("mode")
+    const normalizedFallback = fallbackParam?.toLowerCase()
+    const fallbackOnly =
+      normalizedFallback === "1" ||
+      normalizedFallback === "true" ||
+      normalizedFallback === "yes" ||
+      normalizedFallback === "only" ||
+      normalizedFallback === "fallback"
+
+    let body: unknown = null
+    try {
+      body = await request.json()
+    } catch {
+      body = null
+    }
+
+    const searchConstraints = extractConstraintsFromSearchParams(url.searchParams)
+    const bodyConstraints = extractConstraintsFromBody(body)
+    const constraints = mergeConstraints(searchConstraints, bodyConstraints)
+
+    if (fallbackOnly) {
+      const reasonFromBody =
+        body && typeof body === "object" && body !== null
+          ? (body as Record<string, unknown>).reason
+          : undefined
+      const detailsFromBody =
+        body && typeof body === "object" && body !== null
+          ? (body as Record<string, unknown>).details
+          : undefined
+
+      const reasonParam = typeof reasonFromBody === "string" ? reasonFromBody : url.searchParams.get("reason")
+      const detailsParam =
+        typeof detailsFromBody === "string" ? detailsFromBody : url.searchParams.get("details")
+
+      return buildFallbackResponse(
+        reasonParam && reasonParam.trim().length > 0 ? reasonParam : "client_requested",
+        detailsParam && detailsParam.trim().length > 0 ? detailsParam : "Client requested fallback dataset",
+        { requestedViaBody: true },
+      )
+    }
+
+    return executeEnhancedScanner({
+      constraints,
+      debugContext: { requestedVia: "POST" },
+    })
+  } catch (error) {
+    console.error("Error executing enhanced scanner via POST:", error)
     return buildFallbackResponse("handler_failure", error instanceof Error ? error.message : String(error))
   }
 }
