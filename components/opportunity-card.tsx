@@ -9,6 +9,7 @@ import {
   DirectionalSignalBreakdown,
 } from '../lib/types/opportunity'
 import { DataQualityBadge } from './data-quality-badge'
+import { useWatchlist } from '@/components/watchlist-context'
 
 const isFiniteNumber = (value: unknown): value is number =>
   typeof value === 'number' && Number.isFinite(value)
@@ -852,6 +853,53 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
   const scenario = calculateInvestmentScenario(opportunity, investmentAmount)
   const isPerContractView = scenario.basis === 'perContract'
 
+  const { addItem, removeItem, isOnWatchlist } = useWatchlist()
+  const watchlistId = React.useMemo(
+    () =>
+      `${opportunity.symbol}-${opportunity.optionType}-${opportunity.strike}-${opportunity.expiration}`.toLowerCase(),
+    [opportunity.symbol, opportunity.optionType, opportunity.strike, opportunity.expiration],
+  )
+
+  const watchlistPayload = React.useMemo(
+    () => ({
+      id: watchlistId,
+      symbol: opportunity.symbol,
+      optionType: opportunity.optionType,
+      strike: opportunity.strike,
+      expiration: opportunity.expiration,
+      premium: opportunity.premium,
+      score: opportunity.score,
+      riskLevel: opportunity.riskLevel,
+      daysToExpiration: opportunity.daysToExpiration,
+      tradeSummary: opportunity.tradeSummary ?? null,
+    }),
+    [
+      watchlistId,
+      opportunity.symbol,
+      opportunity.optionType,
+      opportunity.strike,
+      opportunity.expiration,
+      opportunity.premium,
+      opportunity.score,
+      opportunity.riskLevel,
+      opportunity.daysToExpiration,
+      opportunity.tradeSummary,
+    ],
+  )
+
+  const onWatchlist = isOnWatchlist(watchlistId)
+
+  const handleWatchlistToggle = React.useCallback(() => {
+    if (onWatchlist) {
+      removeItem(watchlistId)
+    } else {
+      addItem(watchlistPayload)
+    }
+  }, [addItem, removeItem, watchlistPayload, watchlistId, onWatchlist])
+
+  const watchlistButtonLabel = onWatchlist ? 'Remove from Watchlist' : 'Add to Watchlist'
+  const watchlistHelperText = onWatchlist ? 'Saved to your watchlist' : 'Keep an eye on this contract later'
+
   const potentialReturnDisplay = isPerContractView
     ? scenario.potentialReturnAmountPerContract
     : scenario.potentialReturnAmount
@@ -1325,7 +1373,7 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
           </div>
         </div>
 
-        <div className="text-right space-y-2 ml-4 min-w-[12rem]">
+        <div className="text-right space-y-3 ml-4 min-w-[14rem]">
           {dataQuality && (
             <div className="flex justify-end">
               <DataQualityBadge quality={dataQuality} compact />
@@ -1340,6 +1388,22 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
               Institutional fallback data active — sanitized for pre-market review.
             </div>
           )}
+          <button
+            type="button"
+            onClick={handleWatchlistToggle}
+            className={`w-full rounded-lg px-4 py-2 text-sm font-semibold transition-colors shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 ${
+              onWatchlist
+                ? 'bg-amber-500 text-white hover:bg-amber-600 focus-visible:outline-amber-300'
+                : 'bg-emerald-500 text-white hover:bg-emerald-600 focus-visible:outline-emerald-300'
+            }`}
+            aria-pressed={onWatchlist}
+          >
+            <span className="mr-2 text-base font-bold" aria-hidden>
+              {onWatchlist ? '−' : '+'}
+            </span>
+            {watchlistButtonLabel}
+          </button>
+          <div className="text-[11px] text-slate-500 dark:text-slate-400">{watchlistHelperText}</div>
         </div>
       </div>
 
