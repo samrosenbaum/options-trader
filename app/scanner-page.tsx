@@ -857,7 +857,15 @@ export default function ScannerPage({ user }: ScannerPageProps) {
   const [totalEvaluated, setTotalEvaluated] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [lastSuccessfulUpdate, setLastSuccessfulUpdate] = useState<Date | null>(null)
-  const [investmentAmount, setInvestmentAmount] = useState(1000)
+  const [investmentAmountInput, setInvestmentAmountInput] = useState('1000')
+  const investmentAmount = useMemo(() => {
+    if (investmentAmountInput.trim() === '') {
+      return null
+    }
+
+    const parsed = Number(investmentAmountInput)
+    return Number.isFinite(parsed) ? parsed : null
+  }, [investmentAmountInput])
   const [activeTab, setActiveTab] = useState<'options' | 'crypto'>('options')
   const [cryptoAlerts, setCryptoAlerts] = useState<CryptoAlert[]>([])
   const [cryptoLoading, setCryptoLoading] = useState(false)
@@ -957,7 +965,7 @@ export default function ScannerPage({ user }: ScannerPageProps) {
 
     const size = userPortfolioConstraints.portfolioSize
     if (typeof size === 'number' && Number.isFinite(size) && size > 0) {
-      setInvestmentAmount(size)
+      setInvestmentAmountInput(String(size))
     }
 
     setPrefilledInvestment(true)
@@ -1091,7 +1099,7 @@ export default function ScannerPage({ user }: ScannerPageProps) {
       const timeoutMs = ENHANCED_FETCH_TIMEOUT_MS
       const resolvedPortfolioSize = Number.isFinite(userPortfolioConstraints.portfolioSize ?? NaN)
         ? userPortfolioConstraints.portfolioSize
-        : Number.isFinite(investmentAmount)
+        : Number.isFinite(investmentAmount ?? NaN)
           ? investmentAmount
           : null
       const resolvedDailyBudget = Number.isFinite(userPortfolioConstraints.dailyContractBudget ?? NaN)
@@ -2092,8 +2100,8 @@ export default function ScannerPage({ user }: ScannerPageProps) {
                 <span className="text-sm font-semibold text-emerald-500">$</span>
                 <input
                   type="number"
-                  value={investmentAmount}
-                  onChange={(e) => setInvestmentAmount(Number(e.target.value))}
+                  value={investmentAmountInput}
+                  onChange={(e) => setInvestmentAmountInput(e.target.value)}
                   className="w-28 text-base font-bold bg-transparent text-white focus:outline-none placeholder-zinc-500"
                   min="100"
                   max="100000"
@@ -2390,7 +2398,7 @@ export default function ScannerPage({ user }: ScannerPageProps) {
 
                 return renderOpportunityCard(
                   opp,
-                  investmentAmount,
+                  investmentAmount ?? 0,
                   calculateInvestmentScenario,
                   formatCurrency,
                   safeToFixed,
