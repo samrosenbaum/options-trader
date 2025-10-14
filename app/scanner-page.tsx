@@ -808,7 +808,6 @@ export default function HomePage() {
   const [lastSuccessfulUpdate, setLastSuccessfulUpdate] = useState<Date | null>(null)
   const [investmentAmount, setInvestmentAmount] = useState(1000)
   const [activeTab, setActiveTab] = useState<'options' | 'crypto'>('options')
-  const [useEnhancedScanner, setUseEnhancedScanner] = useState(false)
   const [cryptoAlerts, setCryptoAlerts] = useState<CryptoAlert[]>([])
   const [cryptoLoading, setCryptoLoading] = useState(false)
   const [sortOption, setSortOption] = useState<OpportunitySortOption>('promising')
@@ -838,7 +837,8 @@ export default function HomePage() {
   const fallbackReason = typeof scanMetadata?.fallbackReason === 'string' ? scanMetadata.fallbackReason : null
   const fallbackDetails = typeof scanMetadata?.fallbackDetails === 'string' ? scanMetadata.fallbackDetails : null
   const metadataSource = typeof scanMetadata?.source === 'string' ? scanMetadata.source.toLowerCase() : null
-  const enhancedModeActive = activeTab === 'options' && useEnhancedScanner
+  // Always use enhanced scanner for options
+  const enhancedModeActive = activeTab === 'options'
   const enhancedResponseDetected =
     enhancedModeActive &&
     (scanMetadata?.enhancedScanner === true ||
@@ -940,9 +940,9 @@ export default function HomePage() {
     try {
       setIsLoading(true)
 
-      // Use enhanced scanner endpoint if toggle is enabled
-      const endpoint = useEnhancedScanner ? '/api/scan-enhanced' : '/api/scan-python'
-      const timeoutMs = useEnhancedScanner ? ENHANCED_FETCH_TIMEOUT_MS : DEFAULT_FETCH_TIMEOUT_MS
+      // Always use institutional-grade enhanced scanner
+      const endpoint = '/api/scan-enhanced'
+      const timeoutMs = ENHANCED_FETCH_TIMEOUT_MS
       const response = await fetchWithTimeout(endpoint, undefined, timeoutMs)
 
       if (!response.ok) {
@@ -990,7 +990,7 @@ export default function HomePage() {
     } finally {
       setIsLoading(false)
     }
-  }, [attemptFallbackFetch, handleScanPayload, useEnhancedScanner])
+  }, [attemptFallbackFetch, handleScanPayload])
 
   const fetchCryptoAlerts = useCallback(async () => {
     try {
@@ -1913,35 +1913,6 @@ export default function HomePage() {
                   Crypto
                 </button>
               </div>
-
-              {/* Enhanced Scanner Toggle (only for options) */}
-              {activeTab === 'options' && (
-                <div className="flex items-center gap-2 bg-zinc-900 px-3 py-2 rounded-lg border border-zinc-800">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={useEnhancedScanner}
-                      onChange={(e) => setUseEnhancedScanner(e.target.checked)}
-                      className="sr-only"
-                    />
-                    <div className={`w-9 h-5 rounded-full transition-colors ${
-                      useEnhancedScanner ? 'bg-emerald-500' : 'bg-zinc-700'
-                    }`}>
-                      <div className={`w-4 h-4 bg-white rounded-full shadow-md transform transition-transform ${
-                        useEnhancedScanner ? 'translate-x-4' : 'translate-x-0.5'
-                      } mt-0.5`}></div>
-                    </div>
-                    <span className="text-sm font-medium text-zinc-300">
-                      Institutional
-                      {useEnhancedScanner && (
-                        <span className="ml-1 px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-xs rounded-full font-bold">
-                          PRO
-                        </span>
-                      )}
-                    </span>
-                  </label>
-                </div>
-              )}
 
               <div className="flex items-center gap-2 bg-zinc-900 px-4 py-2.5 rounded-lg border border-zinc-800">
                 <span className="text-sm font-semibold text-emerald-500">$</span>
