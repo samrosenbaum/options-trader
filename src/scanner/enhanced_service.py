@@ -344,13 +344,13 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
             prob_analysis = enhanced_analysis.get('probabilityAnalysis', {})
             prob_of_profit = prob_analysis.get('probabilityOfProfit', 0)
 
-            if prob_of_profit < 0.15:  # 15% minimum probability (lowered from 25%)
+            if prob_of_profit < 0.12:  # 12% minimum probability (lowered from 15%)
                 print(f"🚫 Filtered out {opp['symbol']} due to low probability ({prob_of_profit:.1%})", file=sys.stderr)
                 continue
 
             # Risk-adjusted score filter
             risk_adjusted_score = opp.get('riskAdjustedScore', opp.get('score', 0))
-            if risk_adjusted_score < 40:  # Lowered from 60 to 40
+            if risk_adjusted_score < 35:  # Lowered from 40 to 35
                 print(f"🚫 Filtered out {opp['symbol']} due to low risk-adjusted score ({risk_adjusted_score:.1f})", file=sys.stderr)
                 continue
 
@@ -359,7 +359,7 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
             delta = abs(greeks.get('delta', 0))
 
             # Skip options with extremely low delta (won't move with stock)
-            if delta < 0.02:  # Lowered from 0.05 to 0.02
+            if delta < 0.015:  # Lowered from 0.02 to 0.015
                 print(f"🚫 Filtered out {opp['symbol']} due to low delta ({delta:.3f})", file=sys.stderr)
                 continue
                 
