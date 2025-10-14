@@ -338,6 +338,36 @@ class SentimentPreScreener:
         ranked_symbols = sorted(symbol_scores.items(), key=lambda x: x[1], reverse=True)
         hot_symbols = [symbol for symbol, score in ranked_symbols][:max_results]
 
+        # Ensure price diversity: Add lower-priced stocks for retail affordability
+        # Reserve 30% of slots for affordable options if hot symbols are mostly expensive
+        try:
+            affordable_stocks = [
+                'AMD', 'F', 'GM', 'SNAP', 'PINS', 'PLUG', 'SOFI', 'RIVN', 'NIO', 'XPEV',
+                'PFE', 'INTC', 'AAL', 'LCID', 'COIN', 'HOOD', 'U', 'UPST', 'DASH',
+                'ZM', 'DOCU', 'TWLO', 'CHWY', 'ETSY', 'W', 'ABNB'
+            ]
+
+            # Check if we need more affordable diversity
+            affordable_target = max(5, int(max_results * 0.3))  # At least 5 or 30% of results
+            current_affordable = len([s for s in hot_symbols if s in affordable_stocks])
+
+            if current_affordable < affordable_target:
+                # Add affordable stocks from universe that aren't already included
+                needed = affordable_target - current_affordable
+                candidates = [s for s in affordable_stocks if s in universe and s not in hot_symbols]
+
+                # Add them with lower priority
+                hot_symbols.extend(candidates[:needed])
+
+                if candidates:
+                    print(f"💰 Added {min(needed, len(candidates))} affordable stocks for retail diversity", file=sys.stderr)
+
+        except Exception as e:
+            print(f"⚠️  Could not add affordable diversity: {e}", file=sys.stderr)
+
+        # Trim to max_results after adding diversity
+        hot_symbols = hot_symbols[:max_results]
+
         # Cache results
         self.cache = {'hot_symbols': hot_symbols}
         self.cache_timestamp = datetime.now()

@@ -544,9 +544,16 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
             print(f"\n⚠️  Only {len(filtered)} opportunities passed strict filters", file=sys.stderr)
             print(f"🔄 FALLBACK MODE: Selecting best {min_results} available opportunities", file=sys.stderr)
 
-            # Sort all opportunities (passed + rejected) by filter score
+            # Sort all opportunities by:
+            # 1. Filter score (quality) - descending
+            # 2. Premium (affordability) - ascending
             all_opportunities = filtered + rejected_with_scores
-            all_opportunities.sort(key=lambda x: x.get('_filter_score', x.get('riskAdjustedScore', 0)), reverse=True)
+            all_opportunities.sort(
+                key=lambda x: (
+                    -x.get('_filter_score', x.get('riskAdjustedScore', 0)),  # Higher is better (use negative for desc)
+                    x.get('premium', 999999)  # Lower premium is better (asc)
+                )
+            )
 
             # Take top N
             fallback_results = all_opportunities[:min_results]
@@ -563,6 +570,10 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
             return fallback_results
 
         print(f"📈 Institutional filters: {len(opportunities)} → {len(filtered)} opportunities", file=sys.stderr)
+
+        # Sort by premium (ascending) to show affordable options first
+        filtered.sort(key=lambda x: x.get('premium', 999999))
+
         return filtered
 
     def get_enhanced_statistics(self) -> Dict[str, Any]:
