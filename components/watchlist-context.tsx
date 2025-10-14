@@ -41,6 +41,14 @@ const STORAGE_KEY = 'options-trader:watchlist'
 
 const WatchlistContext = createContext<WatchlistContextValue | undefined>(undefined)
 
+const defaultContext: WatchlistContextValue = {
+  items: [],
+  isReady: false,
+  addItem: () => {},
+  removeItem: () => {},
+  isOnWatchlist: () => false,
+}
+
 const parseStoredItems = (rawValue: string | null): WatchlistItem[] => {
   if (!rawValue) {
     return []
@@ -176,7 +184,7 @@ export function WatchlistProvider({ children }: { children: React.ReactNode }) {
 export function useWatchlist() {
   const context = useContext(WatchlistContext)
   if (!context) {
-    throw new Error('useWatchlist must be used within a WatchlistProvider')
+    return defaultContext
   }
   return context
 }
