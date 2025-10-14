@@ -36,6 +36,17 @@ def _parse_positive_float(value: str | None) -> Optional[float]:
     return parsed
 
 
+def _parse_bool_env(name: str, default: bool = True) -> bool:
+    """Parse a boolean flag from environment variables."""
+
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+
+    normalized = raw.strip().lower()
+    return normalized in {"1", "true", "yes", "on", "relaxed", "wide"}
+
+
 @dataclass
 class ScanResult:
     """Container holding serialized scan opportunities and metadata."""
@@ -103,6 +114,7 @@ class SmartOptionsScanner:
             RegimeDetector(weight=0.20),  # 20% weight
             VolumeProfileAnalyzer(weight=0.20),  # 20% weight
         ])
+        self.relaxed_scan_info: Dict[str, Any] | None = None
 
     @property
     def batch_size(self) -> int:
@@ -119,6 +131,16 @@ class SmartOptionsScanner:
         self.rotation_state = dict(state)
         self.current_batch_symbols = list(symbols)
         return self.current_batch_symbols
+
+    def _resolve_relaxed_default(self) -> bool:
+        mode = os.getenv("SCANNER_FILTER_MODE")
+        if mode:
+            normalized = mode.strip().lower()
+            if normalized in {"strict", "strict-only", "tight"}:
+                return False
+            if normalized in {"relaxed", "wide"}:
+                return True
+        return _parse_bool_env("SCANNER_ALLOW_RELAXED", True)
 
     def is_market_hours(self) -> bool:
         """Check if market is currently open."""
@@ -395,8 +417,52 @@ class SmartOptionsScanner:
             self._swing_error_cache.pop(normalized, None)
         return payload, None
 
-    def analyze_opportunities(self, options_data: pd.DataFrame | None) -> List[Dict[str, Any]]:
+    def analyze_opportunities(
+        self,
+        options_data: pd.DataFrame | None,
+        *,
+        allow_relaxed_fallback: bool = True,
+    ) -> List[Dict[str, Any]]:
         """Analyze options data for opportunities."""
+
+        self.relaxed_scan_info = {
+            "strictMode": not allow_relaxed_fallback,
+            "mode": "relaxed" if allow_relaxed_fallback else "strict",
+            "available": False,
+            "applied": False,
+            "candidateCount": 0,
+            "stages": {},
+        }
+        relaxed_info = self.relaxed_scan_info
+
+        def record_relaxed_stage(
+            stage: str,
+            *,
+            candidates: int | None = None,
+            reason: str | None = None,
+            blocked: str | None = None,
+        ) -> None:
+            if relaxed_info is None:
+                return
+
+            stage_info: Dict[str, Any] = {}
+            if candidates is not None:
+                count = int(candidates)
+                stage_info["candidates"] = count
+                if count > 0:
+                    relaxed_info["available"] = True
+                    current = int(relaxed_info.get("candidateCount", 0) or 0)
+                    if count > current:
+                        relaxed_info["candidateCount"] = count
+            if reason:
+                stage_info["reason"] = reason
+            if blocked:
+                stage_info["blocked"] = blocked
+                relaxed_info["blockedReason"] = blocked
+
+            if stage_info:
+                stages = relaxed_info.setdefault("stages", {})
+                stages[stage] = stage_info
 
         if options_data is None or options_data.empty:
             return []
@@ -426,20 +492,9 @@ class SmartOptionsScanner:
             & (working_data["ask"] > 0)
         ].copy()
 
-        fallback_allowed = self._snapshot_is_live()
+        snapshot_live = self._snapshot_is_live()
 
         if liquid_options.empty:
-            if not fallback_allowed:
-                print(
-                    "⏸️  Fallback disabled because latest options snapshot is older than live window",
-                    file=sys.stderr,
-                )
-                return []
-            print(
-                "⚠️  No contracts met strict liquidity filters; applying adaptive fallback",
-                file=sys.stderr,
-            )
-
             relaxed_filters = [
                 working_data.get("volume") > 50 if "volume" in working_data else None,
                 working_data.get("openInterest") > 250 if "openInterest" in working_data else None,
@@ -454,18 +509,83 @@ class SmartOptionsScanner:
                     continue
                 mask = condition if mask is None else mask & condition
 
-            if mask is not None:
-                liquid_options = working_data[mask].copy()
+            relaxed_liquidity = working_data[mask].copy() if mask is not None else working_data.copy()
+            relaxed_candidates = int(len(relaxed_liquidity))
+            record_relaxed_stage(
+                "liquidity",
+                candidates=relaxed_candidates,
+                reason="Contracts available after relaxing liquidity filters"
+                if relaxed_candidates
+                else "No contracts remained after relaxing liquidity filters",
+            )
+
+            if not allow_relaxed_fallback:
+                if relaxed_candidates:
+                    print(
+                        "⚠️  Strict mode withheld relaxed liquidity candidates from the result set",
+                        file=sys.stderr,
+                    )
+                else:
+                    print(
+                        "⚠️  No contracts met strict liquidity filters and relaxed mode is disabled",
+                        file=sys.stderr,
+                    )
+                if self.relaxed_scan_info is not None:
+                    self.relaxed_scan_info["selectedCount"] = 0
+                return []
+
+            if not snapshot_live:
+                print(
+                    "⏸️  Fallback disabled because latest options snapshot is older than live window",
+                    file=sys.stderr,
+                )
+                record_relaxed_stage("liquidity", blocked="stale_snapshot")
+                if self.relaxed_scan_info is not None:
+                    self.relaxed_scan_info["selectedCount"] = 0
+                return []
+
+            if relaxed_candidates == 0:
+                print(
+                    "⚠️  Relaxed liquidity filters also returned zero candidates; attempting volume safety net",
+                    file=sys.stderr,
+                )
             else:
-                liquid_options = working_data.copy()
+                print(
+                    "⚠️  No contracts met strict liquidity filters; applying adaptive fallback",
+                    file=sys.stderr,
+                )
+                liquid_options = relaxed_liquidity
+                if relaxed_info is not None:
+                    relaxed_info["applied"] = True
+                    relaxed_info["appliedStage"] = "liquidity"
 
         if liquid_options.empty and "volume" in working_data:
-            if not fallback_allowed:
+            top_volume_candidates = int(min(len(working_data), 150))
+            record_relaxed_stage(
+                "topVolume",
+                candidates=top_volume_candidates,
+                reason="Evaluate top volume contracts when widening filters",
+            )
+
+            if not allow_relaxed_fallback:
+                print(
+                    "⚠️  Strict mode prevented the top-volume safety net from running",
+                    file=sys.stderr,
+                )
+                if self.relaxed_scan_info is not None:
+                    self.relaxed_scan_info["selectedCount"] = 0
+                return []
+
+            if not snapshot_live:
                 print(
                     "⏸️  Volume-based safety net disabled due to stale snapshot",
                     file=sys.stderr,
                 )
+                record_relaxed_stage("topVolume", blocked="stale_snapshot")
+                if self.relaxed_scan_info is not None:
+                    self.relaxed_scan_info["selectedCount"] = 0
                 return []
+
             print(
                 "⚠️  No contracts qualified after fallback; using top volume contracts",
                 file=sys.stderr,
@@ -475,6 +595,9 @@ class SmartOptionsScanner:
                 .head(150)
                 .copy()
             )
+            if relaxed_info is not None:
+                relaxed_info["applied"] = True
+                relaxed_info["appliedStage"] = "topVolume"
 
         print(f"📊 Analyzing {len(liquid_options)} liquid options...", file=sys.stderr)
 
@@ -725,12 +848,30 @@ class SmartOptionsScanner:
 
         opportunities.sort(key=expected_value_key, reverse=True)
 
+        if fallback_candidates:
+            record_relaxed_stage(
+                "quality",
+                candidates=len(fallback_candidates),
+                reason="Opportunities available after relaxing quality thresholds",
+            )
+
         if not opportunities and fallback_candidates:
-            if not fallback_allowed:
+            if not allow_relaxed_fallback:
+                print(
+                    "ℹ️  Relaxed opportunities available, but strict mode kept the output empty",
+                    file=sys.stderr,
+                )
+                if self.relaxed_scan_info is not None:
+                    self.relaxed_scan_info["selectedCount"] = 0
+                return []
+            if not snapshot_live:
                 print(
                     "⏸️  Relaxed opportunity set suppressed because data is outside live window",
                     file=sys.stderr,
                 )
+                record_relaxed_stage("quality", blocked="stale_snapshot")
+                if self.relaxed_scan_info is not None:
+                    self.relaxed_scan_info["selectedCount"] = 0
                 return []
             print(
                 f"ℹ️  No opportunities met the strict filter – returning {len(fallback_candidates)} relaxed candidates",
@@ -739,12 +880,18 @@ class SmartOptionsScanner:
             fallback_candidates.sort(key=expected_value_key, reverse=True)
             max_relaxed = 10
             opportunities = fallback_candidates[:max_relaxed]
+            if relaxed_info is not None:
+                relaxed_info["applied"] = True
+                relaxed_info["appliedStage"] = "quality"
 
         # Limit to top 20 opportunities to keep JSON manageable
         max_opportunities = 20
         if len(opportunities) > max_opportunities:
             print(f"📊 Limiting output to top {max_opportunities} of {len(opportunities)} opportunities", file=sys.stderr)
             opportunities = opportunities[:max_opportunities]
+
+        if self.relaxed_scan_info is not None:
+            self.relaxed_scan_info["selectedCount"] = len(opportunities)
 
         return opportunities
 
@@ -1952,14 +2099,27 @@ class SmartOptionsScanner:
             result["userConstraints"] = user_constraints
         return result
 
-    def scan_for_opportunities(self, *, force_refresh: bool = False) -> ScanResult:
+    def scan_for_opportunities(
+        self,
+        *,
+        force_refresh: bool = False,
+        allow_relaxed_fallback: bool | None = None,
+    ) -> ScanResult:
         """Execute the scan and package results for consumers."""
 
         print("🔍 Starting smart options scan...", file=sys.stderr)
         symbols = self._next_symbol_batch()
         options_data = self.get_current_options_data(symbols, force_refresh=force_refresh)
 
+        allow_relaxed = (
+            self._resolve_relaxed_default()
+            if allow_relaxed_fallback is None
+            else allow_relaxed_fallback
+        )
+        filter_mode = "relaxed" if allow_relaxed else "strict"
+
         if options_data is None or options_data.empty:
+            self.relaxed_scan_info = None
             metadata = {
                 "fetchedAt": datetime.now(timezone.utc).isoformat(),
                 "symbolCount": 0,
@@ -1972,9 +2132,13 @@ class SmartOptionsScanner:
                 "rotationState": dict(self.rotation_state or {}),
             }
             self._apply_freshness_metadata(metadata)
+            metadata["filterMode"] = filter_mode
             return ScanResult([], metadata)
 
-        opportunities = self.analyze_opportunities(options_data)
+        opportunities = self.analyze_opportunities(
+            options_data,
+            allow_relaxed_fallback=allow_relaxed,
+        )
         print(f"✅ Found {len(opportunities)} high-scoring opportunities", file=sys.stderr)
 
         chains_by_symbol = {
@@ -1996,6 +2160,14 @@ class SmartOptionsScanner:
             "rotationState": dict(self.rotation_state or {}),
         }
         self._apply_freshness_metadata(metadata)
+        metadata["filterMode"] = filter_mode
+        if self.relaxed_scan_info is not None:
+            try:
+                metadata["relaxedScan"] = json.loads(json.dumps(self.relaxed_scan_info))
+            except Exception:
+                metadata["relaxedScan"] = json.loads(
+                    json.dumps({"error": "serialization_failed"})
+                )
         return ScanResult(opportunities, metadata)
 
 
@@ -2016,6 +2188,12 @@ def _parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
         default=None,
         help="Pretty print JSON with the provided indentation",
     )
+    parser.add_argument(
+        "--strict-only",
+        action="store_true",
+        default=None,
+        help="Disable relaxed fallback filters and return only strict matches",
+    )
     return parser.parse_args(argv)
 
 
@@ -2032,9 +2210,13 @@ def run_scan(
     *,
     force_refresh: bool = False,
     batch_builder: UniverseBuilder | None = None,
+    allow_relaxed_fallback: bool | None = None,
 ) -> ScanResult:
     scanner = SmartOptionsScanner(max_symbols=max_symbols, batch_builder=batch_builder)
-    return scanner.scan_for_opportunities(force_refresh=force_refresh)
+    return scanner.scan_for_opportunities(
+        force_refresh=force_refresh,
+        allow_relaxed_fallback=allow_relaxed_fallback,
+    )
 
 
 def run_deep_scan(
@@ -2042,16 +2224,27 @@ def run_deep_scan(
     max_symbols: Optional[int] = None,
     *,
     batch_builder: UniverseBuilder | None = None,
+    allow_relaxed_fallback: bool | None = None,
 ) -> ScanResult:
     if batch_count <= 1:
-        return run_scan(max_symbols, force_refresh=True, batch_builder=batch_builder)
+        return run_scan(
+            max_symbols,
+            force_refresh=True,
+            batch_builder=batch_builder,
+            allow_relaxed_fallback=allow_relaxed_fallback,
+        )
 
     settings = get_settings()
     aggregated_opportunities: List[Dict[str, Any]] = []
     batch_metadata: List[Mapping[str, Any]] = []
 
     for index in range(batch_count):
-        result = run_scan(max_symbols, force_refresh=True, batch_builder=batch_builder)
+        result = run_scan(
+            max_symbols,
+            force_refresh=True,
+            batch_builder=batch_builder,
+            allow_relaxed_fallback=allow_relaxed_fallback,
+        )
         aggregated_opportunities.extend(result.opportunities)
         batch_metadata.append(
             {
@@ -2116,7 +2309,8 @@ def run_deep_scan(
 def cli(argv: Optional[Sequence[str]] = None) -> None:
     args = _parse_args(argv)
     symbol_limit = _normalize_symbol_limit(args.max_symbols)
-    result = run_scan(symbol_limit)
+    allow_relaxed = None if args.strict_only is None else not args.strict_only
+    result = run_scan(symbol_limit, allow_relaxed_fallback=allow_relaxed)
     print(result.to_json(indent=args.json_indent))
 
 
