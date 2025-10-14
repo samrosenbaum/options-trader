@@ -1570,7 +1570,7 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
             <span className="text-lg mt-0.5">💡</span>
             <div className="text-sm text-amber-900 dark:text-amber-100">
               <span className="font-semibold">Pro Tip:</span> Based on {opportunity.backtestValidation?.similarTradesFound || 0} similar trades,
-              most profitable exits happened within the first third of the option's life, capturing intrinsic + time value before theta accelerates.
+              most profitable exits happened within the first third of the option&apos;s life, capturing intrinsic + time value before theta accelerates.
             </div>
           </div>
         </div>
