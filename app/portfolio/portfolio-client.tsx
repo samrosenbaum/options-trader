@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { Database } from '@/lib/types/database.types'
 import AddPositionModal from './add-position-modal'
+import ClosePositionModal from './close-position-modal'
 
 type Position = Database['public']['Tables']['positions']['Row']
 type User = { id: string; email?: string }
@@ -17,6 +18,9 @@ export default function PortfolioClient({
 }) {
   const [positions, setPositions] = useState<Position[]>(initialPositions)
   const [showAddModal, setShowAddModal] = useState(false)
+  const [positionToClose, setPositionToClose] = useState<Position | null>(null)
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [refreshMessage, setRefreshMessage] = useState<string | null>(null)
   const supabase = createClient()
 
   const handleAddPosition = () => {
@@ -26,6 +30,58 @@ export default function PortfolioClient({
   const handlePositionAdded = (newPosition: Position) => {
     setPositions([newPosition, ...positions])
     setShowAddModal(false)
+  }
+
+  const handlePositionClosed = (closedPosition: Position) => {
+    setPositions(
+      positions.map((p) =>
+        p.id === closedPosition.id ? closedPosition : p
+      )
+    )
+    setPositionToClose(null)
+  }
+
+  const handleRefreshPrices = async () => {
+    setIsRefreshing(true)
+    setRefreshMessage(null)
+
+    try {
+      const response = await fetch('/api/portfolio/update-prices', {
+        method: 'POST',
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to update prices')
+      }
+
+      const result = await response.json()
+
+      // Refresh positions from database
+      const { data: updatedPositions, error } = await supabase
+        .from('positions')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('entry_date', { ascending: false })
+
+      if (error) {
+        throw new Error('Failed to fetch updated positions')
+      }
+
+      setPositions(updatedPositions || [])
+      setRefreshMessage(
+        `✓ Updated ${result.updated} of ${result.total} positions`
+      )
+
+      // Clear message after 3 seconds
+      setTimeout(() => setRefreshMessage(null), 3000)
+    } catch (error) {
+      console.error('Error refreshing prices:', error)
+      setRefreshMessage(
+        `✗ Error: ${error instanceof Error ? error.message : 'Failed to update prices'}`
+      )
+    } finally {
+      setIsRefreshing(false)
+    }
   }
 
   const openPositions = positions.filter((p) => p.status === 'open')
@@ -104,12 +160,79 @@ export default function PortfolioClient({
 
         {/* Action Buttons */}
         <div className="mb-6">
-          <button
-            onClick={handleAddPosition}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
-          >
-            + Add Position
-          </button>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={handleAddPosition}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
+            >
+              + Add Position
+            </button>
+
+            <button
+              onClick={handleRefreshPrices}
+              disabled={isRefreshing || openPositions.length === 0}
+              className={`flex items-center gap-2 font-semibold py-3 px-6 rounded-lg transition-colors ${
+                isRefreshing || openPositions.length === 0
+                  ? 'bg-slate-300 dark:bg-slate-700 text-slate-500 dark:text-slate-400 cursor-not-allowed'
+                  : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700'
+              }`}
+            >
+              {isRefreshing ? (
+                <>
+                  <svg
+                    className="animate-spin h-5 w-5"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Updating...
+                </>
+              ) : (
+                <>
+                  <svg
+                    className="h-5 w-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    />
+                  </svg>
+                  Refresh Prices
+                </>
+              )}
+            </button>
+
+            {refreshMessage && (
+              <div
+                className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                  refreshMessage.startsWith('✓')
+                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                    : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                }`}
+              >
+                {refreshMessage}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Open Positions */}
@@ -145,6 +268,12 @@ export default function PortfolioClient({
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                       P&L
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      Exit Signal
+                    </th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      Actions
                     </th>
                   </tr>
                 </thead>
@@ -196,6 +325,57 @@ export default function PortfolioClient({
                           </div>
                         )}
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        {position.exit_signal && (() => {
+                          const signal = position.exit_signal
+                          const urgency = position.exit_urgency_score || 0
+                          const reasons = (position.exit_reasons as string[]) || []
+
+                          let bgColor = 'bg-emerald-100 dark:bg-emerald-900/30'
+                          let textColor = 'text-emerald-700 dark:text-emerald-400'
+                          let emoji = '🟢'
+                          let label = 'HOLD'
+
+                          if (signal === 'exit_now') {
+                            bgColor = 'bg-red-100 dark:bg-red-900/30'
+                            textColor = 'text-red-700 dark:text-red-400'
+                            emoji = '🔴'
+                            label = 'EXIT NOW'
+                          } else if (signal === 'consider') {
+                            bgColor = 'bg-amber-100 dark:bg-amber-900/30'
+                            textColor = 'text-amber-700 dark:text-amber-400'
+                            emoji = '🟡'
+                            label = 'CONSIDER'
+                          }
+
+                          return (
+                            <div className="space-y-1">
+                              <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold ${bgColor} ${textColor}`}>
+                                <span>{emoji}</span>
+                                <span>{label}</span>
+                                <span className="text-[10px]">({urgency})</span>
+                              </div>
+                              {reasons.length > 0 && (
+                                <div className="text-[10px] text-slate-500 dark:text-slate-400">
+                                  {reasons.map(r => r.replace(/_/g, ' ')).join(', ')}
+                                </div>
+                              )}
+                            </div>
+                          )
+                        })()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center text-sm">
+                        <button
+                          onClick={() => setPositionToClose(position)}
+                          className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors ${
+                            position.exit_signal === 'exit_now'
+                              ? 'bg-red-600 hover:bg-red-700 text-white'
+                              : 'bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200'
+                          }`}
+                        >
+                          Close
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -244,6 +424,15 @@ export default function PortfolioClient({
           userId={user.id}
           onClose={() => setShowAddModal(false)}
           onSuccess={handlePositionAdded}
+        />
+      )}
+
+      {/* Close Position Modal */}
+      {positionToClose && (
+        <ClosePositionModal
+          position={positionToClose}
+          onClose={() => setPositionToClose(null)}
+          onSuccess={handlePositionClosed}
         />
       )}
     </div>

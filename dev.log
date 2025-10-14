@@ -1,0 +1,3234 @@
+
+> money-printer@0.1.0 dev
+> next dev
+
+   ▲ Next.js 15.5.4
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.6.182:3000
+
+ ✓ Starting...
+ ✓ Ready in 1213ms
+ ○ Compiling / ...
+ ⨯ ./app/page.tsx
+Error:   [31mx[0m Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+      ,-[[36;1;4m/Users/samrosenbaum/options-trader/app/page.tsx[0m:2195:1]
+ [2m2192[0m |                       </div>
+ [2m2193[0m |                     </div>
+ [2m2194[0m |                   </div>
+ [2m2195[0m |                 ))}
+      : [35;1m                  ^[0m
+ [2m2196[0m |               </div>
+ [2m2197[0m |             </div>
+ [2m2198[0m |           </main>
+      `----
+  [31mx[0m Unterminated regexp literal
+      ,-[[36;1;4m/Users/samrosenbaum/options-trader/app/page.tsx[0m:2197:1]
+ [2m2194[0m |                   </div>
+ [2m2195[0m |                 ))}
+ [2m2196[0m |               </div>
+ [2m2197[0m |             </div>
+      : [35;1m             ^^^^^[0m
+ [2m2198[0m |           </main>
+ [2m2199[0m |         </div>
+ [2m2200[0m |       </div>
+      `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./app/page.tsx
+ ⨯ ./app/page.tsx
+Error:   [31mx[0m Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+      ,-[[36;1;4m/Users/samrosenbaum/options-trader/app/page.tsx[0m:2195:1]
+ [2m2192[0m |                       </div>
+ [2m2193[0m |                     </div>
+ [2m2194[0m |                   </div>
+ [2m2195[0m |                 ))}
+      : [35;1m                  ^[0m
+ [2m2196[0m |               </div>
+ [2m2197[0m |             </div>
+ [2m2198[0m |           </main>
+      `----
+  [31mx[0m Unterminated regexp literal
+      ,-[[36;1;4m/Users/samrosenbaum/options-trader/app/page.tsx[0m:2197:1]
+ [2m2194[0m |                   </div>
+ [2m2195[0m |                 ))}
+ [2m2196[0m |               </div>
+ [2m2197[0m |             </div>
+      : [35;1m             ^^^^^[0m
+ [2m2198[0m |           </main>
+ [2m2199[0m |         </div>
+ [2m2200[0m |       </div>
+      `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./app/page.tsx
+ ⨯ ./app/page.tsx
+Error:   [31mx[0m Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+      ,-[[36;1;4m/Users/samrosenbaum/options-trader/app/page.tsx[0m:2195:1]
+ [2m2192[0m |                       </div>
+ [2m2193[0m |                     </div>
+ [2m2194[0m |                   </div>
+ [2m2195[0m |                 ))}
+      : [35;1m                  ^[0m
+ [2m2196[0m |               </div>
+ [2m2197[0m |             </div>
+ [2m2198[0m |           </main>
+      `----
+  [31mx[0m Unterminated regexp literal
+      ,-[[36;1;4m/Users/samrosenbaum/options-trader/app/page.tsx[0m:2197:1]
+ [2m2194[0m |                   </div>
+ [2m2195[0m |                 ))}
+ [2m2196[0m |               </div>
+ [2m2197[0m |             </div>
+      : [35;1m             ^^^^^[0m
+ [2m2198[0m |           </main>
+ [2m2199[0m |         </div>
+ [2m2200[0m |       </div>
+      `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./app/page.tsx
+ GET / 500 in 1714ms
+ ⨯ ./app/page.tsx
+Error:   [31mx[0m Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+      ,-[[36;1;4m/Users/samrosenbaum/options-trader/app/page.tsx[0m:2195:1]
+ [2m2192[0m |                       </div>
+ [2m2193[0m |                     </div>
+ [2m2194[0m |                   </div>
+ [2m2195[0m |                 ))}
+      : [35;1m                  ^[0m
+ [2m2196[0m |               </div>
+ [2m2197[0m |             </div>
+ [2m2198[0m |           </main>
+      `----
+  [31mx[0m Unterminated regexp literal
+      ,-[[36;1;4m/Users/samrosenbaum/options-trader/app/page.tsx[0m:2197:1]
+ [2m2194[0m |                   </div>
+ [2m2195[0m |                 ))}
+ [2m2196[0m |               </div>
+ [2m2197[0m |             </div>
+      : [35;1m             ^^^^^[0m
+ [2m2198[0m |           </main>
+ [2m2199[0m |         </div>
+ [2m2200[0m |       </div>
+      `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./app/page.tsx
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 218ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 7ms
+ ⨯ ./app/page.tsx
+Error:   [31mx[0m Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+      ,-[[36;1;4m/Users/samrosenbaum/options-trader/app/page.tsx[0m:2195:1]
+ [2m2192[0m |                       </div>
+ [2m2193[0m |                     </div>
+ [2m2194[0m |                   </div>
+ [2m2195[0m |                 ))}
+      : [35;1m                  ^[0m
+ [2m2196[0m |               </div>
+ [2m2197[0m |             </div>
+ [2m2198[0m |           </main>
+      `----
+  [31mx[0m Unterminated regexp literal
+      ,-[[36;1;4m/Users/samrosenbaum/options-trader/app/page.tsx[0m:2197:1]
+ [2m2194[0m |                   </div>
+ [2m2195[0m |                 ))}
+ [2m2196[0m |               </div>
+ [2m2197[0m |             </div>
+      : [35;1m             ^^^^^[0m
+ [2m2198[0m |           </main>
+ [2m2199[0m |         </div>
+ [2m2200[0m |       </div>
+      `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./app/page.tsx
+ GET /api/scan-enhanced?maxSymbols=1 500 in 140ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 30ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 5ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 19ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 6ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 27ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 8ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 23ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 6ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 23ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 3ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 19ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 8ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 18ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 6ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 19ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 8ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 13ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 9ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 18ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 5ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 18ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 4ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 22ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 4ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 26ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 3ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 19ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 10ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 20ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 5ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 15ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 11ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 14ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 10ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 11ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 9ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 13ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 10ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 12ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 17ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 10ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 4ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 8ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 14ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 15ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 8ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 12ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 9ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 14ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 10ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 25ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 5ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 20ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 4ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 18ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 8ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 13ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 9ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 16ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 7ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 23ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 4ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 14ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 11ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 14ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 12ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 10ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 10ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 16ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 9ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 9ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 3ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 28ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 4ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 17ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 9ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 11ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 7ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 14ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 5ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 9ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 4ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 25ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 4ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 18ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 10ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 16ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 8ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 15ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 7ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 13ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 5ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 17ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 7ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 13ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 8ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 18ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 7ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 17ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 7ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 9ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 4ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 12ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 8ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 11ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 7ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 14ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 10ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 16ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 7ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 13ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 4ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 21ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 5ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 15ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 3ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 14ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 7ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 10ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 10ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 8ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 6ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 11ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 8ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 13ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 8ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 12ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 9ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 15ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 11ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 11ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 3ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 7ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 17ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 13ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 9ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 12ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 7ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 10ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 9ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 11ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 9ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 13ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 9ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 11ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 8ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 16ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 8ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 19ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 8ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 11ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 3ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 13ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 10ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 22ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 3ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 23ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 8ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 11ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 10ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 14ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 8ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 15ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 6ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 11ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 7ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 8ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 7ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 10ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 11ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 14ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 7ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 9ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 6ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 17ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 10ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 20ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 4ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 19ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 8ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 9ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 4ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 14ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 9ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 18ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 9ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 19ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 8ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 9ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 7ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 12ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 3ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 6ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 7ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 10ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 6ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 9ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 3ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 13ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 6ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 18ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 7ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 17ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 5ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 11ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 10ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 8ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 13ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 13ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 8ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 19ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 4ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 10ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 7ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 8ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 6ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 10ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 9ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 15ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 11ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 16ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 5ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 17ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 4ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 12ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 5ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 15ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 5ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 9ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 12ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 10ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 12ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 13ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 5ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 10ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 7ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 16ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 4ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 13ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 9ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 7ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 13ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 19ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 4ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 15ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 4ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 9ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 11ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 12ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 6ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 14ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 6ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 8ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 12ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 15ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 7ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 12ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 8ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 9ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 9ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 10ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 11ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 10ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 6ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 11ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 7ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 14ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 7ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 11ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 10ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 16ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 8ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 15ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 9ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 12ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 8ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 11ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 14ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 9ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 12ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 9ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 8ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 16ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 4ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 7ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 6ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 10ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 7ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 8ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 16ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 13ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 7ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 12ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 8ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 24ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 5ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 12ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 8ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 10ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 7ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 10ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 11ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 10ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 8ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 13ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 8ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 11ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 8ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 11ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 6ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 11ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 4ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 10ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 14ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 21ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 5ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 15ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 8ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 14ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 7ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 9ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 10ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 8ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 10ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 13ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 10ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 17ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 10ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 19ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 7ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 14ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 9ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 13ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 10ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 14ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 9ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 15ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 8ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 12ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 8ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 19ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 8ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 21ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 4ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 18ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 7ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 14ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 7ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 6ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 7ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 19ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 5ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 14ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 4ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 8ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 10ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 17ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 9ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 10ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 4ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 12ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 11ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 22ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 3ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 7ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 11ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 15ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 11ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 12ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 8ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 11ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 9ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 9ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 3ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 7ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 10ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 59ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 3ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 18ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 4ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 10ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 5ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 15ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 3ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 7ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 13ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 14ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 3ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 23ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 4ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 15ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 3ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 20ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 7ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 16ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 6ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 20ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 3ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 7ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 3ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 8ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 11ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 12ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 2ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 17ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 7ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 8ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 4ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 43ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 3ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 14ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 8ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 9ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 4ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 11ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 11ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 10ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 9ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 10ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 6ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 8ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 8ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 13ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 6ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 13ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 8ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 17ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 6ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 15ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 4ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 11ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 7ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 6ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 7ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 11ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 11ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 13ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 7ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 15ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 7ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 7ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 12ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 15ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 3ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 10ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 14ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 9ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 7ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 7ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 4ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 14ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 9ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 23ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 10ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 8ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 10ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 8ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 4ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 12ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 6ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 39ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 5ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 22ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 7ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 29ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 4ms
+ ✓ Compiled /api/scan-enhanced in 318ms (921 modules)
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 200 in 3203ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 200 in 2162ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 200 in 2330ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 200 in 1999ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 404 in 221ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 404 in 31ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 404 in 23ms
+ ✓ Compiled in 213ms (382 modules)
+ ✓ Compiled in 161ms (382 modules)
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 404 in 30ms
+ ✓ Compiled in 144ms (382 modules)
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 119ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 28ms
+ ✓ Compiled in 225ms (378 modules)
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: Cannot find module './611.js'
+Require stack:
+- /Users/samrosenbaum/options-trader/.next/server/webpack-runtime.js
+- /Users/samrosenbaum/options-trader/.next/server/app/api/quotes-python/route.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/require.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/load-components.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/utils.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/options.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/index.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/next.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/lib/start-server.js
+    at <unknown> (.next/server/pages/_document.js:1:321)
+    at Object.<anonymous> (.next/server/pages/_document.js:1:366) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: Cannot find module './611.js'
+Require stack:
+- /Users/samrosenbaum/options-trader/.next/server/webpack-runtime.js
+- /Users/samrosenbaum/options-trader/.next/server/app/api/quotes-python/route.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/require.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/load-components.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/utils.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/options.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/index.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/next.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/lib/start-server.js
+    at <unknown> (.next/server/pages/_document.js:1:321)
+    at Object.<anonymous> (.next/server/pages/_document.js:1:366) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 246ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 25ms
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: Cannot find module './611.js'
+Require stack:
+- /Users/samrosenbaum/options-trader/.next/server/webpack-runtime.js
+- /Users/samrosenbaum/options-trader/.next/server/app/api/quotes-python/route.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/require.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/load-components.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/utils.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/options.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/index.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/next.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/lib/start-server.js
+    at <unknown> (.next/server/pages/_document.js:1:321)
+    at Object.<anonymous> (.next/server/pages/_document.js:1:366) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: Cannot find module './611.js'
+Require stack:
+- /Users/samrosenbaum/options-trader/.next/server/webpack-runtime.js
+- /Users/samrosenbaum/options-trader/.next/server/app/api/quotes-python/route.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/require.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/load-components.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/utils.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/options.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/index.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/next.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/lib/start-server.js
+    at <unknown> (.next/server/pages/_document.js:1:321)
+    at Object.<anonymous> (.next/server/pages/_document.js:1:366) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 412ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 97ms
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: Cannot find module './611.js'
+Require stack:
+- /Users/samrosenbaum/options-trader/.next/server/webpack-runtime.js
+- /Users/samrosenbaum/options-trader/.next/server/app/api/quotes-python/route.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/require.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/load-components.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/utils.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/options.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/index.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/next.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/lib/start-server.js
+    at <unknown> (.next/server/pages/_document.js:1:321)
+    at Object.<anonymous> (.next/server/pages/_document.js:1:366) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: Cannot find module './611.js'
+Require stack:
+- /Users/samrosenbaum/options-trader/.next/server/webpack-runtime.js
+- /Users/samrosenbaum/options-trader/.next/server/app/api/quotes-python/route.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/require.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/load-components.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/utils.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/options.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/index.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/next.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/lib/start-server.js
+    at <unknown> (.next/server/pages/_document.js:1:321)
+    at Object.<anonymous> (.next/server/pages/_document.js:1:366) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 157ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 25ms
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: Cannot find module './611.js'
+Require stack:
+- /Users/samrosenbaum/options-trader/.next/server/webpack-runtime.js
+- /Users/samrosenbaum/options-trader/.next/server/app/api/quotes-python/route.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/require.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/load-components.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/utils.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/options.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/index.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/next.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/lib/start-server.js
+    at <unknown> (.next/server/pages/_document.js:1:321)
+    at Object.<anonymous> (.next/server/pages/_document.js:1:366) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: Cannot find module './611.js'
+Require stack:
+- /Users/samrosenbaum/options-trader/.next/server/webpack-runtime.js
+- /Users/samrosenbaum/options-trader/.next/server/app/api/quotes-python/route.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/require.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/load-components.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/utils.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/options.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/index.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/next.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/lib/start-server.js
+    at <unknown> (.next/server/pages/_document.js:1:321)
+    at Object.<anonymous> (.next/server/pages/_document.js:1:366) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 191ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 42ms
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: Cannot find module './611.js'
+Require stack:
+- /Users/samrosenbaum/options-trader/.next/server/webpack-runtime.js
+- /Users/samrosenbaum/options-trader/.next/server/app/api/quotes-python/route.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/require.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/load-components.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/utils.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/options.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/index.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/next.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/lib/start-server.js
+    at <unknown> (.next/server/pages/_document.js:1:321)
+    at Object.<anonymous> (.next/server/pages/_document.js:1:366) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: Cannot find module './611.js'
+Require stack:
+- /Users/samrosenbaum/options-trader/.next/server/webpack-runtime.js
+- /Users/samrosenbaum/options-trader/.next/server/app/api/quotes-python/route.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/require.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/load-components.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/utils.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/options.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/index.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/next.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/lib/start-server.js
+    at <unknown> (.next/server/pages/_document.js:1:321)
+    at Object.<anonymous> (.next/server/pages/_document.js:1:366) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 145ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 23ms
+ ✓ Compiled in 209ms (378 modules)
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 92ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 25ms
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 96ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 24ms
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 75ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 26ms
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 78ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 22ms
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 68ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 22ms
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 122ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 23ms
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 83ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 22ms
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 116ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 43ms
+ ✓ Compiled in 202ms (378 modules)
+ ✓ Compiled in 132ms (378 modules)
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: Cannot find module './611.js'
+Require stack:
+- /Users/samrosenbaum/options-trader/.next/server/webpack-runtime.js
+- /Users/samrosenbaum/options-trader/.next/server/app/api/quotes-python/route.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/require.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/load-components.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/utils.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/options.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/index.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/next.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/lib/start-server.js
+    at <unknown> (.next/server/pages/_document.js:1:321)
+    at Object.<anonymous> (.next/server/pages/_document.js:1:366) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: Cannot find module './611.js'
+Require stack:
+- /Users/samrosenbaum/options-trader/.next/server/webpack-runtime.js
+- /Users/samrosenbaum/options-trader/.next/server/app/api/quotes-python/route.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/require.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/load-components.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/utils.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/options.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/index.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/next.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/lib/start-server.js
+    at <unknown> (.next/server/pages/_document.js:1:321)
+    at Object.<anonymous> (.next/server/pages/_document.js:1:366) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 181ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 21ms
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: Cannot find module './611.js'
+Require stack:
+- /Users/samrosenbaum/options-trader/.next/server/webpack-runtime.js
+- /Users/samrosenbaum/options-trader/.next/server/app/api/quotes-python/route.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/require.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/load-components.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/utils.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/options.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/index.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/next.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/lib/start-server.js
+    at <unknown> (.next/server/pages/_document.js:1:321)
+    at Object.<anonymous> (.next/server/pages/_document.js:1:366) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: Cannot find module './611.js'
+Require stack:
+- /Users/samrosenbaum/options-trader/.next/server/webpack-runtime.js
+- /Users/samrosenbaum/options-trader/.next/server/app/api/quotes-python/route.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/require.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/load-components.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/utils.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/options.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/index.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/next.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/lib/start-server.js
+    at <unknown> (.next/server/pages/_document.js:1:321)
+    at Object.<anonymous> (.next/server/pages/_document.js:1:366) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 163ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 40ms
+ ✓ Compiled in 209ms (378 modules)
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: Cannot find module './611.js'
+Require stack:
+- /Users/samrosenbaum/options-trader/.next/server/webpack-runtime.js
+- /Users/samrosenbaum/options-trader/.next/server/app/api/quotes-python/route.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/require.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/load-components.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/utils.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/options.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/index.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/next.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/lib/start-server.js
+    at <unknown> (.next/server/pages/_document.js:1:321)
+    at Object.<anonymous> (.next/server/pages/_document.js:1:366) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: Cannot find module './611.js'
+Require stack:
+- /Users/samrosenbaum/options-trader/.next/server/webpack-runtime.js
+- /Users/samrosenbaum/options-trader/.next/server/app/api/quotes-python/route.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/require.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/load-components.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/utils.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/options.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/index.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/next.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/lib/start-server.js
+    at <unknown> (.next/server/pages/_document.js:1:321)
+    at Object.<anonymous> (.next/server/pages/_document.js:1:366) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 133ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 24ms
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: Cannot find module './611.js'
+Require stack:
+- /Users/samrosenbaum/options-trader/.next/server/webpack-runtime.js
+- /Users/samrosenbaum/options-trader/.next/server/app/api/quotes-python/route.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/require.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/load-components.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/utils.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/options.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/index.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/next.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/lib/start-server.js
+    at <unknown> (.next/server/pages/_document.js:1:321)
+    at Object.<anonymous> (.next/server/pages/_document.js:1:366) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: Cannot find module './611.js'
+Require stack:
+- /Users/samrosenbaum/options-trader/.next/server/webpack-runtime.js
+- /Users/samrosenbaum/options-trader/.next/server/app/api/quotes-python/route.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/require.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/load-components.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/utils.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/options.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/index.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/next.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/lib/start-server.js
+    at <unknown> (.next/server/pages/_document.js:1:321)
+    at Object.<anonymous> (.next/server/pages/_document.js:1:366) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 137ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 35ms
+ ✓ Compiled in 154ms (378 modules)
+ ✓ Compiled in 124ms (378 modules)
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: Cannot find module './611.js'
+Require stack:
+- /Users/samrosenbaum/options-trader/.next/server/webpack-runtime.js
+- /Users/samrosenbaum/options-trader/.next/server/app/api/quotes-python/route.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/require.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/load-components.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/utils.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/options.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/index.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/next.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/lib/start-server.js
+    at <unknown> (.next/server/pages/_document.js:1:321)
+    at Object.<anonymous> (.next/server/pages/_document.js:1:366) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: Cannot find module './611.js'
+Require stack:
+- /Users/samrosenbaum/options-trader/.next/server/webpack-runtime.js
+- /Users/samrosenbaum/options-trader/.next/server/app/api/quotes-python/route.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/require.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/load-components.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/utils.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/options.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/index.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/next.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/lib/start-server.js
+    at <unknown> (.next/server/pages/_document.js:1:321)
+    at Object.<anonymous> (.next/server/pages/_document.js:1:366) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 146ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 28ms
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: Cannot find module './611.js'
+Require stack:
+- /Users/samrosenbaum/options-trader/.next/server/webpack-runtime.js
+- /Users/samrosenbaum/options-trader/.next/server/app/api/quotes-python/route.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/require.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/load-components.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/utils.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/options.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/index.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/next.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/lib/start-server.js
+    at <unknown> (.next/server/pages/_document.js:1:321)
+    at Object.<anonymous> (.next/server/pages/_document.js:1:366) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: Cannot find module './611.js'
+Require stack:
+- /Users/samrosenbaum/options-trader/.next/server/webpack-runtime.js
+- /Users/samrosenbaum/options-trader/.next/server/app/api/quotes-python/route.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/require.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/load-components.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/utils.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/options.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/index.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/next.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/lib/start-server.js
+    at <unknown> (.next/server/pages/_document.js:1:321)
+    at Object.<anonymous> (.next/server/pages/_document.js:1:366) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 147ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 34ms
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: Cannot find module './611.js'
+Require stack:
+- /Users/samrosenbaum/options-trader/.next/server/webpack-runtime.js
+- /Users/samrosenbaum/options-trader/.next/server/app/api/quotes-python/route.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/require.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/load-components.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/utils.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/options.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/index.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/next.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/lib/start-server.js
+    at <unknown> (.next/server/pages/_document.js:1:321)
+    at Object.<anonymous> (.next/server/pages/_document.js:1:366) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: Cannot find module './611.js'
+Require stack:
+- /Users/samrosenbaum/options-trader/.next/server/webpack-runtime.js
+- /Users/samrosenbaum/options-trader/.next/server/app/api/quotes-python/route.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/require.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/load-components.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/utils.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/options.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/index.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/next.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/lib/start-server.js
+    at <unknown> (.next/server/pages/_document.js:1:321)
+    at Object.<anonymous> (.next/server/pages/_document.js:1:366) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 131ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 22ms
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: Cannot find module './611.js'
+Require stack:
+- /Users/samrosenbaum/options-trader/.next/server/webpack-runtime.js
+- /Users/samrosenbaum/options-trader/.next/server/app/api/quotes-python/route.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/require.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/load-components.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/utils.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/options.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/index.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/next.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/lib/start-server.js
+    at <unknown> (.next/server/pages/_document.js:1:321)
+    at Object.<anonymous> (.next/server/pages/_document.js:1:366) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: Cannot find module './611.js'
+Require stack:
+- /Users/samrosenbaum/options-trader/.next/server/webpack-runtime.js
+- /Users/samrosenbaum/options-trader/.next/server/app/api/quotes-python/route.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/require.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/load-components.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/utils.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/options.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/index.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/next.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/lib/start-server.js
+    at <unknown> (.next/server/pages/_document.js:1:321)
+    at Object.<anonymous> (.next/server/pages/_document.js:1:366) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 218ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 57ms
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: Cannot find module './611.js'
+Require stack:
+- /Users/samrosenbaum/options-trader/.next/server/webpack-runtime.js
+- /Users/samrosenbaum/options-trader/.next/server/app/api/quotes-python/route.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/require.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/load-components.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/utils.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/options.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/index.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/next.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/lib/start-server.js
+    at <unknown> (.next/server/pages/_document.js:1:321)
+    at Object.<anonymous> (.next/server/pages/_document.js:1:366) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: Cannot find module './611.js'
+Require stack:
+- /Users/samrosenbaum/options-trader/.next/server/webpack-runtime.js
+- /Users/samrosenbaum/options-trader/.next/server/app/api/quotes-python/route.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/require.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/load-components.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/utils.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/options.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/index.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/next.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/lib/start-server.js
+    at <unknown> (.next/server/pages/_document.js:1:321)
+    at Object.<anonymous> (.next/server/pages/_document.js:1:366) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 191ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 35ms
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: Cannot find module './611.js'
+Require stack:
+- /Users/samrosenbaum/options-trader/.next/server/webpack-runtime.js
+- /Users/samrosenbaum/options-trader/.next/server/app/api/quotes-python/route.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/require.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/load-components.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/utils.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/options.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/index.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/next.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/lib/start-server.js
+    at <unknown> (.next/server/pages/_document.js:1:321)
+    at Object.<anonymous> (.next/server/pages/_document.js:1:366) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: Cannot find module './611.js'
+Require stack:
+- /Users/samrosenbaum/options-trader/.next/server/webpack-runtime.js
+- /Users/samrosenbaum/options-trader/.next/server/app/api/quotes-python/route.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/require.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/load-components.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/utils.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/options.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/index.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/next.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/lib/start-server.js
+    at <unknown> (.next/server/pages/_document.js:1:321)
+    at Object.<anonymous> (.next/server/pages/_document.js:1:366) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 159ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 27ms
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: Cannot find module './611.js'
+Require stack:
+- /Users/samrosenbaum/options-trader/.next/server/webpack-runtime.js
+- /Users/samrosenbaum/options-trader/.next/server/app/api/quotes-python/route.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/require.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/load-components.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/utils.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/options.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/index.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/next.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/lib/start-server.js
+    at <unknown> (.next/server/pages/_document.js:1:321)
+    at Object.<anonymous> (.next/server/pages/_document.js:1:366) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: Cannot find module './611.js'
+Require stack:
+- /Users/samrosenbaum/options-trader/.next/server/webpack-runtime.js
+- /Users/samrosenbaum/options-trader/.next/server/app/api/quotes-python/route.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/require.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/load-components.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/utils.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/options.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/index.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/next.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/lib/start-server.js
+    at <unknown> (.next/server/pages/_document.js:1:321)
+    at Object.<anonymous> (.next/server/pages/_document.js:1:366) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 197ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 37ms
+ ✓ Compiled in 175ms (378 modules)
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 145ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 31ms
+ ✓ Compiled /_not-found in 175ms (907 modules)
+ ⨯ [Error: Cannot find module '/Users/samrosenbaum/options-trader/.next/server/app/_not-found/page.js'
+Require stack:
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/require.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/load-components.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/utils.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/options.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/index.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/next.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/lib/start-server.js] {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+TypeError: Cannot read properties of undefined (reading '/_app')
+    at new Promise (<anonymous>)
+ ⨯ TypeError: Cannot read properties of undefined (reading '/_app')
+    at new Promise (<anonymous>)
+ ⨯ TypeError: Cannot read properties of undefined (reading '/_app')
+    at new Promise (<anonymous>)
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/pages/_document.js'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/pages/_document.js'
+}
+TypeError: Cannot read properties of undefined (reading '/_app')
+    at new Promise (<anonymous>)
+ ⨯ TypeError: Cannot read properties of undefined (reading '/_app')
+    at new Promise (<anonymous>)
+TypeError: Cannot read properties of undefined (reading '/_app')
+    at new Promise (<anonymous>)
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/pages/_document.js'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/pages/_document.js'
+}
+TypeError: Cannot read properties of undefined (reading '/_app')
+    at new Promise (<anonymous>)
+ ⨯ TypeError: Cannot read properties of undefined (reading '/_app')
+    at new Promise (<anonymous>)
+TypeError: Cannot read properties of undefined (reading '/_app')
+    at new Promise (<anonymous>)
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 552ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 31ms
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/app/api/quotes-python/route.js'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/app/api/quotes-python/route.js',
+  page: '/api/quotes-python'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/pages/_document.js'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/pages/_document.js'
+}
+TypeError: Cannot read properties of undefined (reading '/_app')
+    at new Promise (<anonymous>)
+ ⨯ TypeError: Cannot read properties of undefined (reading '/_app')
+    at new Promise (<anonymous>)
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/app/api/quotes-python/route.js'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/app/api/quotes-python/route.js',
+  page: '/api/quotes-python'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/pages/_document.js'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/pages/_document.js'
+}
+TypeError: Cannot read properties of undefined (reading '/_app')
+    at new Promise (<anonymous>)
+ ⨯ TypeError: Cannot read properties of undefined (reading '/_app')
+    at new Promise (<anonymous>)
+TypeError: Cannot read properties of undefined (reading '/_app')
+    at new Promise (<anonymous>)
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 140ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 45ms
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/app/api/quotes-python/route.js'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/app/api/quotes-python/route.js',
+  page: '/api/quotes-python'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/pages/_document.js'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/pages/_document.js'
+}
+TypeError: Cannot read properties of undefined (reading '/_app')
+    at new Promise (<anonymous>)
+ ⨯ TypeError: Cannot read properties of undefined (reading '/_app')
+    at new Promise (<anonymous>)
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/app/api/quotes-python/route.js'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/app/api/quotes-python/route.js',
+  page: '/api/quotes-python'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/pages/_document.js'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/pages/_document.js'
+}
+TypeError: Cannot read properties of undefined (reading '/_app')
+    at new Promise (<anonymous>)
+ ⨯ TypeError: Cannot read properties of undefined (reading '/_app')
+    at new Promise (<anonymous>)
+TypeError: Cannot read properties of undefined (reading '/_app')
+    at new Promise (<anonymous>)
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 150ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 40ms
+ ⨯ ./app/page.tsx
+Error:   [31mx[0m Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+      ,-[[36;1;4m/Users/samrosenbaum/options-trader/app/page.tsx[0m:2228:1]
+ [2m2225[0m |                   </div>
+ [2m2226[0m |                 )
+ [2m2227[0m |               </div>
+ [2m2228[0m |             })}
+      : [35;1m            ^[0m
+ [2m2229[0m |           </div>
+ [2m2230[0m |         )}
+      `----
+  [31mx[0m Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+      ,-[[36;1;4m/Users/samrosenbaum/options-trader/app/page.tsx[0m:2228:1]
+ [2m2225[0m |                   </div>
+ [2m2226[0m |                 )
+ [2m2227[0m |               </div>
+ [2m2228[0m |             })}
+      : [35;1m              ^[0m
+ [2m2229[0m |           </div>
+ [2m2230[0m |         )}
+      `----
+  [31mx[0m Expected '</', got '{'
+      ,-[[36;1;4m/Users/samrosenbaum/options-trader/app/page.tsx[0m:2232:1]
+ [2m2229[0m |           </div>
+ [2m2230[0m |         )}
+ [2m2231[0m | 
+ [2m2232[0m |         {/* Crypto Content */}
+      : [35;1m        ^[0m
+ [2m2233[0m |         {activeTab === 'crypto' && (
+ [2m2234[0m |           <div className="space-y-6">
+ [2m2235[0m |             {cryptoLoading && (
+      `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./app/page.tsx
+ ⨯ ./app/page.tsx
+Error:   [31mx[0m Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+      ,-[[36;1;4m/Users/samrosenbaum/options-trader/app/page.tsx[0m:2228:1]
+ [2m2225[0m |                   </div>
+ [2m2226[0m |                 )
+ [2m2227[0m |               </div>
+ [2m2228[0m |             })}
+      : [35;1m            ^[0m
+ [2m2229[0m |           </div>
+ [2m2230[0m |         )}
+      `----
+  [31mx[0m Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+      ,-[[36;1;4m/Users/samrosenbaum/options-trader/app/page.tsx[0m:2228:1]
+ [2m2225[0m |                   </div>
+ [2m2226[0m |                 )
+ [2m2227[0m |               </div>
+ [2m2228[0m |             })}
+      : [35;1m              ^[0m
+ [2m2229[0m |           </div>
+ [2m2230[0m |         )}
+      `----
+  [31mx[0m Expected '</', got '{'
+      ,-[[36;1;4m/Users/samrosenbaum/options-trader/app/page.tsx[0m:2232:1]
+ [2m2229[0m |           </div>
+ [2m2230[0m |         )}
+ [2m2231[0m | 
+ [2m2232[0m |         {/* Crypto Content */}
+      : [35;1m        ^[0m
+ [2m2233[0m |         {activeTab === 'crypto' && (
+ [2m2234[0m |           <div className="space-y-6">
+ [2m2235[0m |             {cryptoLoading && (
+      `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./app/page.tsx
+TypeError: Cannot read properties of undefined (reading '/_app')
+    at new Promise (<anonymous>)
+ ⨯ TypeError: Cannot read properties of undefined (reading '/_app')
+    at new Promise (<anonymous>)
+ ⨯ TypeError: Cannot read properties of undefined (reading '/_app')
+    at new Promise (<anonymous>)
+TypeError: Cannot read properties of undefined (reading '/_app')
+    at new Promise (<anonymous>)
+ ⨯ TypeError: Cannot read properties of undefined (reading '/_app')
+    at new Promise (<anonymous>)
+TypeError: Cannot read properties of undefined (reading '/_app')
+    at new Promise (<anonymous>)
+TypeError: Cannot read properties of undefined (reading '/_app')
+    at new Promise (<anonymous>)
+ ⨯ TypeError: Cannot read properties of undefined (reading '/_app')
+    at new Promise (<anonymous>)
+TypeError: Cannot read properties of undefined (reading '/_app')
+    at new Promise (<anonymous>)
+ GET / 500 in 265ms
+ GET / 500 in 23ms
+ ○ Compiling /_not-found ...
+TypeError: Cannot read properties of undefined (reading '/_app')
+    at new Promise (<anonymous>)
+ ⨯ TypeError: Cannot read properties of undefined (reading '/_app')
+    at new Promise (<anonymous>)
+ ⨯ TypeError: Cannot read properties of undefined (reading '/_app')
+    at new Promise (<anonymous>)
+TypeError: Cannot read properties of undefined (reading '/_app')
+    at new Promise (<anonymous>)
+ ⨯ TypeError: Cannot read properties of undefined (reading '/_app')
+    at new Promise (<anonymous>)
+TypeError: Cannot read properties of undefined (reading '/_app')
+    at new Promise (<anonymous>)
+TypeError: Cannot read properties of undefined (reading '/_app')
+    at new Promise (<anonymous>)
+ ⨯ TypeError: Cannot read properties of undefined (reading '/_app')
+    at new Promise (<anonymous>)
+TypeError: Cannot read properties of undefined (reading '/_app')
+    at new Promise (<anonymous>)
+ GET / 500 in 94ms
+ GET / 500 in 26ms
+ ⨯ ./app/page.tsx
+Error:   [31mx[0m Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+      ,-[[36;1;4m/Users/samrosenbaum/options-trader/app/page.tsx[0m:2228:1]
+ [2m2225[0m |                   </div>
+ [2m2226[0m |                 )
+ [2m2227[0m |               </div>
+ [2m2228[0m |             })}
+      : [35;1m            ^[0m
+ [2m2229[0m |           </div>
+ [2m2230[0m |         )}
+      `----
+  [31mx[0m Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+      ,-[[36;1;4m/Users/samrosenbaum/options-trader/app/page.tsx[0m:2228:1]
+ [2m2225[0m |                   </div>
+ [2m2226[0m |                 )
+ [2m2227[0m |               </div>
+ [2m2228[0m |             })}
+      : [35;1m              ^[0m
+ [2m2229[0m |           </div>
+ [2m2230[0m |         )}
+      `----
+  [31mx[0m Expected '</', got '{'
+      ,-[[36;1;4m/Users/samrosenbaum/options-trader/app/page.tsx[0m:2232:1]
+ [2m2229[0m |           </div>
+ [2m2230[0m |         )}
+ [2m2231[0m | 
+ [2m2232[0m |         {/* Crypto Content */}
+      : [35;1m        ^[0m
+ [2m2233[0m |         {activeTab === 'crypto' && (
+ [2m2234[0m |           <div className="space-y-6">
+ [2m2235[0m |             {cryptoLoading && (
+      `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./app/page.tsx
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 30ms
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, stat '/Users/samrosenbaum/options-trader/.next/cache/webpack/server-development/0.pack.gz'
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 29ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 15ms
+ ✓ Compiled /favicon.ico in 235ms (674 modules)
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/app/api/quotes-python/route.js'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/app/api/quotes-python/route.js',
+  page: '/api/quotes-python'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/pages/_document.js'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/pages/_document.js'
+}
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 88ms
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/app/api/quotes-python/route.js'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/app/api/quotes-python/route.js',
+  page: '/api/quotes-python'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/pages/_document.js'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/pages/_document.js'
+}
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 176ms
+ ⨯ Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async G (.next/server/app/api/quotes-python/route.js:1:3207) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async (.next/server/pages/_error.js:8:14071) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async G (.next/server/app/api/quotes-python/route.js:1:3207) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async (.next/server/pages/_error.js:8:14071) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 845ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 252ms
+ ✓ Compiled in 189ms (378 modules)
+ ⨯ Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async G (.next/server/app/api/quotes-python/route.js:1:3207) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async (.next/server/pages/_error.js:8:14071) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async G (.next/server/app/api/quotes-python/route.js:1:3207) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async (.next/server/pages/_error.js:8:14071) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 572ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 249ms
+ ⨯ Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async G (.next/server/app/api/quotes-python/route.js:1:3207) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async (.next/server/pages/_error.js:8:14071) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async G (.next/server/app/api/quotes-python/route.js:1:3207) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async (.next/server/pages/_error.js:8:14071) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 598ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 252ms
+ ✓ Compiled in 182ms (378 modules)
+ ⨯ Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async G (.next/server/app/api/quotes-python/route.js:1:3207) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async (.next/server/pages/_error.js:8:14071) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async G (.next/server/app/api/quotes-python/route.js:1:3207) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async (.next/server/pages/_error.js:8:14071) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 666ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 272ms
+ ⨯ Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async G (.next/server/app/api/quotes-python/route.js:1:3207) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async (.next/server/pages/_error.js:8:14071) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async G (.next/server/app/api/quotes-python/route.js:1:3207) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async (.next/server/pages/_error.js:8:14071) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 644ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 276ms
+ ✓ Compiled in 194ms (378 modules)
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 159ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 24ms
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 78ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 22ms
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 122ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 31ms
+ ✓ Compiled in 153ms (378 modules)
+ ✓ Compiled in 168ms (378 modules)
+ ⨯ Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async G (.next/server/app/api/quotes-python/route.js:1:3207) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async (.next/server/pages/_error.js:8:14071) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async G (.next/server/app/api/quotes-python/route.js:1:3207) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async (.next/server/pages/_error.js:8:14071) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 622ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 261ms
+ ⨯ Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async G (.next/server/app/api/quotes-python/route.js:1:3207) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async (.next/server/pages/_error.js:8:14071) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async G (.next/server/app/api/quotes-python/route.js:1:3207) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async (.next/server/pages/_error.js:8:14071) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 675ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 251ms
+ ✓ Compiled in 197ms (378 modules)
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/next-font-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 96ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 29ms
+ ✓ Compiled in 165ms (378 modules)
+ ✓ Compiled in 142ms (378 modules)
+ ⨯ Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async G (.next/server/app/api/quotes-python/route.js:1:3207) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async (.next/server/pages/_error.js:8:14071) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async G (.next/server/app/api/quotes-python/route.js:1:3207) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async (.next/server/pages/_error.js:8:14071) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 592ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 247ms
+ ✓ Compiled in 141ms (378 modules)
+ ⨯ Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async G (.next/server/app/api/quotes-python/route.js:1:3207) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async (.next/server/pages/_error.js:8:14071) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async G (.next/server/app/api/quotes-python/route.js:1:3207) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async (.next/server/pages/_error.js:8:14071) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 665ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 246ms
+ ✓ Compiled in 188ms (378 modules)
+ ⨯ Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async G (.next/server/app/api/quotes-python/route.js:1:3207) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async (.next/server/pages/_error.js:8:14071) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async G (.next/server/app/api/quotes-python/route.js:1:3207) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async (.next/server/pages/_error.js:8:14071) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 618ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 248ms
+ ✓ Compiled in 158ms (378 modules)
+ ⨯ Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async G (.next/server/app/api/quotes-python/route.js:1:3207) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async (.next/server/pages/_error.js:8:14071) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async G (.next/server/app/api/quotes-python/route.js:1:3207) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async (.next/server/pages/_error.js:8:14071) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 597ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 249ms
+ ⨯ Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async G (.next/server/app/api/quotes-python/route.js:1:3207) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async (.next/server/pages/_error.js:8:14071) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async G (.next/server/app/api/quotes-python/route.js:1:3207) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async (.next/server/pages/_error.js:8:14071) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 575ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 248ms
+ ⨯ Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async G (.next/server/app/api/quotes-python/route.js:1:3207) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async (.next/server/pages/_error.js:8:14071) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async G (.next/server/app/api/quotes-python/route.js:1:3207) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async (.next/server/pages/_error.js:8:14071) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 625ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 251ms
+ ⨯ Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async G (.next/server/app/api/quotes-python/route.js:1:3207) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async (.next/server/pages/_error.js:8:14071) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async G (.next/server/app/api/quotes-python/route.js:1:3207) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async (.next/server/pages/_error.js:8:14071) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 688ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 268ms
+ ⨯ Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async G (.next/server/app/api/quotes-python/route.js:1:3207) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async (.next/server/pages/_error.js:8:14071) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async G (.next/server/app/api/quotes-python/route.js:1:3207) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json',
+  page: '/api/quotes-python'
+}
+ ⨯ Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async (.next/server/pages/_error.js:8:14071) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 644ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 263ms
+ ✓ Compiled /api/scan-enhanced in 97ms (299 modules)
+ ⨯ Error: Cannot find module './chunks/vendor-chunks/next.js'
+Require stack:
+- /Users/samrosenbaum/options-trader/.next/server/webpack-runtime.js
+- /Users/samrosenbaum/options-trader/.next/server/app/api/scan-enhanced/route.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/require.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/load-components.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/utils.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/options.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/index.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/next.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/lib/start-server.js
+    at <unknown> (.next/server/app/api/scan-enhanced/route.js:218:47)
+    at Object.<anonymous> (.next/server/app/api/scan-enhanced/route.js:221:3) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array],
+  page: '/api/scan-enhanced'
+}
+ ⨯ Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async (.next/server/pages/_error.js:8:14071) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+Error: Cannot find module './chunks/vendor-chunks/next.js'
+Require stack:
+- /Users/samrosenbaum/options-trader/.next/server/webpack-runtime.js
+- /Users/samrosenbaum/options-trader/.next/server/app/api/scan-enhanced/route.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/require.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/load-components.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/utils.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/options.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/swc/index.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/config.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/next.js
+- /Users/samrosenbaum/options-trader/node_modules/next/dist/server/lib/start-server.js
+    at <unknown> (.next/server/app/api/scan-enhanced/route.js:218:47)
+    at Object.<anonymous> (.next/server/app/api/scan-enhanced/route.js:221:3) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array],
+  page: '/api/scan-enhanced'
+}
+ ⨯ Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+    at async (.next/server/pages/_error.js:8:14071) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/routes-manifest.json'
+}
+ GET /api/scan-enhanced 500 in 839ms
+ GET /api/scan-enhanced 500 in 252ms
+ ✓ Compiled /_not-found in 215ms (910 modules)
+ GET /api/scan-enhanced 404 in 686ms
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/app/api/quotes-python/route.js'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/app/api/quotes-python/route.js',
+  page: '/api/quotes-python'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/pages/_document.js'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/pages/_document.js'
+}
+TypeError: Cannot read properties of undefined (reading '/_app')
+    at new Promise (<anonymous>)
+ ⨯ TypeError: Cannot read properties of undefined (reading '/_app')
+    at new Promise (<anonymous>)
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/app/api/quotes-python/route.js'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/app/api/quotes-python/route.js',
+  page: '/api/quotes-python'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/pages/_document.js'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/pages/_document.js'
+}
+TypeError: Cannot read properties of undefined (reading '/_app')
+    at new Promise (<anonymous>)
+ ⨯ TypeError: Cannot read properties of undefined (reading '/_app')
+    at new Promise (<anonymous>)
+TypeError: Cannot read properties of undefined (reading '/_app')
+    at new Promise (<anonymous>)
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 160ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 38ms
+ ✓ Compiled /api/scan-python in 146ms (912 modules)
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/app/api/quotes-python/route.js'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/app/api/quotes-python/route.js',
+  page: '/api/quotes-python'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/pages/_document.js'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/pages/_document.js'
+}
+TypeError: Cannot read properties of undefined (reading '/_app')
+    at new Promise (<anonymous>)
+ ⨯ TypeError: Cannot read properties of undefined (reading '/_app')
+    at new Promise (<anonymous>)
+[Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/app/api/quotes-python/route.js'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/app/api/quotes-python/route.js',
+  page: '/api/quotes-python'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/samrosenbaum/options-trader/.next/server/pages/_document.js'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/samrosenbaum/options-trader/.next/server/pages/_document.js'
+}
+TypeError: Cannot read properties of undefined (reading '/_app')
+    at new Promise (<anonymous>)
+ ⨯ TypeError: Cannot read properties of undefined (reading '/_app')
+    at new Promise (<anonymous>)
+TypeError: Cannot read properties of undefined (reading '/_app')
+    at new Promise (<anonymous>)
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 114ms
+ GET /api/quotes-python?symbols=SPY%2CQQQ%2CNVDA%2CTSLA%2CAAPL%2CBTC-USD%2CETH-USD%2CSOL-USD 500 in 36ms
+ GET /api/scan-python 200 in 10002ms
+Python script error: 🔍 Starting smart options scan...
+📂 Using cached data (auto-refresh disabled)
+📊 Analyzing 766 liquid options...
+/Users/samrosenbaum/options-trader/src/analysis/swing_signal.py:177: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  return yf.download(symbol, period=lookback, interval=interval, progress=False)
+/Users/samrosenbaum/options-trader/src/analysis/swing_signal.py:184: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  vix = yf.download("^VIX", period="3mo", interval="1d", progress=False)
+/Users/samrosenbaum/options-trader/src/analysis/swing_signal.py:185: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  spy = yf.download("SPY", period="3mo", interval="1d", progress=False)
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/Users/samrosenbaum/options-trader/src/scanner/service.py", line 1649, in <module>
+    cli()
+    ~~~^^
+  File "/Users/samrosenbaum/options-trader/src/scanner/service.py", line 1644, in cli
+    result = run_scan(symbol_limit)
+  File "/Users/samrosenbaum/options-trader/src/scanner/service.py", line 1562, in run_scan
+    return scanner.scan_for_opportunities(force_refresh=force_refresh)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/samrosenbaum/options-trader/src/scanner/service.py", line 1502, in scan_for_opportunities
+    opportunities = self.analyze_opportunities(options_data)
+  File "/Users/samrosenbaum/options-trader/src/scanner/service.py", line 408, in analyze_opportunities
+    quality_report = self.validator.validate_option(option.to_dict())
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'OptionsDataQualityValidator' object has no attribute 'validate_option'
+
+ ⨯ ./app/page.tsx
+Error:   [31mx[0m Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+      ,-[[36;1;4m/Users/samrosenbaum/options-trader/app/page.tsx[0m:2202:1]
+ [2m2199[0m |                     </div>
+ [2m2200[0m |                   </div>
+ [2m2201[0m |                 </div>
+ [2m2202[0m |               })}
+      : [35;1m              ^[0m
+ [2m2203[0m |             </div>
+ [2m2204[0m |           )}
+ [2m2205[0m |         </div>
+      `----
+  [31mx[0m Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+      ,-[[36;1;4m/Users/samrosenbaum/options-trader/app/page.tsx[0m:2202:1]
+ [2m2199[0m |                     </div>
+ [2m2200[0m |                   </div>
+ [2m2201[0m |                 </div>
+ [2m2202[0m |               })}
+      : [35;1m                ^[0m
+ [2m2203[0m |             </div>
+ [2m2204[0m |           )}
+ [2m2205[0m |         </div>
+      `----
+  [31mx[0m Expected a semicolon
+      ,-[[36;1;4m/Users/samrosenbaum/options-trader/app/page.tsx[0m:2205:1]
+ [2m2202[0m |               })}
+ [2m2203[0m |             </div>
+ [2m2204[0m |           )}
+ [2m2205[0m |         </div>
+      : [35;1m        ^[0m
+ [2m2206[0m | 
+ [2m2207[0m |         {/* Crypto Section */}
+ [2m2208[0m |         {activeTab === 'crypto' && (
+      `----
+  [31mx[0m Unterminated regexp literal
+      ,-[[36;1;4m/Users/samrosenbaum/options-trader/app/page.tsx[0m:2205:1]
+ [2m2202[0m |               })}
+ [2m2203[0m |             </div>
+ [2m2204[0m |           )}
+ [2m2205[0m |         </div>
+      : [35;1m         ^^^^^[0m
+ [2m2206[0m | 
+ [2m2207[0m |         {/* Crypto Section */}
+ [2m2208[0m |         {activeTab === 'crypto' && (
+      `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./app/page.tsx
+ ⨯ ./app/page.tsx
+Error:   [31mx[0m Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+      ,-[[36;1;4m/Users/samrosenbaum/options-trader/app/page.tsx[0m:2202:1]
+ [2m2199[0m |                     </div>
+ [2m2200[0m |                   </div>
+ [2m2201[0m |                 </div>
+ [2m2202[0m |               })}
+      : [35;1m              ^[0m
+ [2m2203[0m |             </div>
+ [2m2204[0m |           )}
+ [2m2205[0m |         </div>
+      `----
+  [31mx[0m Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+      ,-[[36;1;4m/Users/samrosenbaum/options-trader/app/page.tsx[0m:2202:1]
+ [2m2199[0m |                     </div>
+ [2m2200[0m |                   </div>
+ [2m2201[0m |                 </div>
+ [2m2202[0m |               })}
+      : [35;1m                ^[0m
+ [2m2203[0m |             </div>
+ [2m2204[0m |           )}
+ [2m2205[0m |         </div>
+      `----
+  [31mx[0m Expected a semicolon
+      ,-[[36;1;4m/Users/samrosenbaum/options-trader/app/page.tsx[0m:2205:1]
+ [2m2202[0m |               })}
+ [2m2203[0m |             </div>
+ [2m2204[0m |           )}
+ [2m2205[0m |         </div>
+      : [35;1m        ^[0m
+ [2m2206[0m | 
+ [2m2207[0m |         {/* Crypto Section */}
+ [2m2208[0m |         {activeTab === 'crypto' && (
+      `----
+  [31mx[0m Unterminated regexp literal
+      ,-[[36;1;4m/Users/samrosenbaum/options-trader/app/page.tsx[0m:2205:1]
+ [2m2202[0m |               })}
+ [2m2203[0m |             </div>
+ [2m2204[0m |           )}
+ [2m2205[0m |         </div>
+      : [35;1m         ^^^^^[0m
+ [2m2206[0m | 
+ [2m2207[0m |         {/* Crypto Section */}
+ [2m2208[0m |         {activeTab === 'crypto' && (
+      `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./app/page.tsx
+TypeError: Cannot read properties of undefined (reading '/_app')
+    at new Promise (<anonymous>)
+ ⨯ TypeError: Cannot read properties of undefined (reading '/_app')
+    at new Promise (<anonymous>)
+ ⨯ TypeError: Cannot read properties of undefined (reading '/_app')
+    at new Promise (<anonymous>)
+TypeError: Cannot read properties of undefined (reading '/_app')
+    at new Promise (<anonymous>)
+ ⨯ TypeError: Cannot read properties of undefined (reading '/_app')
+    at new Promise (<anonymous>)
+TypeError: Cannot read properties of undefined (reading '/_app')
+    at new Promise (<anonymous>)
+TypeError: Cannot read properties of undefined (reading '/_app')
+    at new Promise (<anonymous>)
+ ⨯ TypeError: Cannot read properties of undefined (reading '/_app')
+    at new Promise (<anonymous>)
+TypeError: Cannot read properties of undefined (reading '/_app')
+    at new Promise (<anonymous>)
+ GET / 500 in 304ms
+ GET / 500 in 22ms
+ ○ Compiling /_not-found ...
+[?25h

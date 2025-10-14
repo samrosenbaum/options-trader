@@ -41,6 +41,11 @@ export interface Database {
           unrealized_pl_percent: number | null
           realized_pl: number | null
           realized_pl_percent: number | null
+          // Exit signals
+          exit_signal: 'hold' | 'consider' | 'exit_now'
+          exit_urgency_score: number
+          exit_reasons: Json
+          last_signal_check: string | null
           // Notes
           notes: string | null
           tags: string[] | null
@@ -74,6 +79,10 @@ export interface Database {
           unrealized_pl_percent?: number | null
           realized_pl?: number | null
           realized_pl_percent?: number | null
+          exit_signal?: 'hold' | 'consider' | 'exit_now'
+          exit_urgency_score?: number
+          exit_reasons?: Json
+          last_signal_check?: string | null
           notes?: string | null
           tags?: string[] | null
         }
@@ -106,6 +115,10 @@ export interface Database {
           unrealized_pl_percent?: number | null
           realized_pl?: number | null
           realized_pl_percent?: number | null
+          exit_signal?: 'hold' | 'consider' | 'exit_now'
+          exit_urgency_score?: number
+          exit_reasons?: Json
+          last_signal_check?: string | null
           notes?: string | null
           tags?: string[] | null
         }
