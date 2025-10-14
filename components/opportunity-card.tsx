@@ -1621,6 +1621,117 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
             </section>
           )}
 
+          {/* Backtest Validation Section */}
+          {opportunity.backtestValidation && opportunity.backtestValidation.similarTradesFound >= 5 && (
+            <section className="bg-gradient-to-br from-purple-50 via-purple-50/50 to-white dark:from-purple-950/30 dark:via-purple-900/20 dark:to-slate-900 rounded-3xl p-6 border-2 border-purple-200 dark:border-purple-800">
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-2">
+                  <h5 className="text-lg font-bold text-purple-900 dark:text-purple-100">🎯 Backtest Validation</h5>
+                  <span className={`px-3 py-1 rounded-lg text-xs font-bold ${
+                    opportunity.backtestValidation.sampleSizeQuality === 'high'
+                      ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                      : opportunity.backtestValidation.sampleSizeQuality === 'medium'
+                        ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                        : 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
+                  }`}>
+                    {opportunity.backtestValidation.sampleSizeQuality.toUpperCase()} CONFIDENCE
+                  </span>
+                </div>
+                <p className="text-sm text-purple-800 dark:text-purple-200 leading-relaxed font-medium">
+                  {opportunity.backtestValidation.patternDescription}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                <div className="bg-white/70 dark:bg-slate-900/50 rounded-xl p-4 border border-purple-200 dark:border-purple-800">
+                  <div className="text-xs font-semibold text-purple-600 dark:text-purple-400 mb-1 uppercase tracking-wide">Win Rate</div>
+                  <div className={`text-3xl font-bold ${
+                    opportunity.backtestValidation.winRate >= 60
+                      ? 'text-green-600 dark:text-green-400'
+                      : opportunity.backtestValidation.winRate >= 50
+                        ? 'text-yellow-600 dark:text-yellow-400'
+                        : 'text-red-600 dark:text-red-400'
+                  }`}>
+                    {opportunity.backtestValidation.winRate.toFixed(0)}%
+                  </div>
+                  <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                    {opportunity.backtestValidation.winningTrades}W / {opportunity.backtestValidation.losingTrades}L
+                  </div>
+                </div>
+
+                <div className="bg-white/70 dark:bg-slate-900/50 rounded-xl p-4 border border-purple-200 dark:border-purple-800">
+                  <div className="text-xs font-semibold text-purple-600 dark:text-purple-400 mb-1 uppercase tracking-wide">Avg Return</div>
+                  <div className={`text-3xl font-bold ${
+                    opportunity.backtestValidation.avgReturnPct >= 0
+                      ? 'text-green-600 dark:text-green-400'
+                      : 'text-red-600 dark:text-red-400'
+                  }`}>
+                    {opportunity.backtestValidation.avgReturnPct >= 0 ? '+' : ''}{opportunity.backtestValidation.avgReturnPct.toFixed(1)}%
+                  </div>
+                  <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                    Median: {opportunity.backtestValidation.medianReturnPct >= 0 ? '+' : ''}{opportunity.backtestValidation.medianReturnPct.toFixed(1)}%
+                  </div>
+                </div>
+
+                <div className="bg-white/70 dark:bg-slate-900/50 rounded-xl p-4 border border-purple-200 dark:border-purple-800">
+                  <div className="text-xs font-semibold text-purple-600 dark:text-purple-400 mb-1 uppercase tracking-wide">Best / Worst</div>
+                  <div className="text-lg font-bold text-green-600 dark:text-green-400">
+                    +{opportunity.backtestValidation.bestReturnPct.toFixed(0)}%
+                  </div>
+                  <div className="text-lg font-bold text-red-600 dark:text-red-400">
+                    {opportunity.backtestValidation.worstReturnPct.toFixed(0)}%
+                  </div>
+                </div>
+
+                <div className="bg-white/70 dark:bg-slate-900/50 rounded-xl p-4 border border-purple-200 dark:border-purple-800">
+                  <div className="text-xs font-semibold text-purple-600 dark:text-purple-400 mb-1 uppercase tracking-wide">Sample Size</div>
+                  <div className="text-3xl font-bold text-slate-900 dark:text-white">
+                    {opportunity.backtestValidation.similarTradesFound}
+                  </div>
+                  <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                    trades over {(opportunity.backtestValidation.lookbackDays / 365).toFixed(1)}yr
+                  </div>
+                </div>
+              </div>
+
+              {opportunity.backtestValidation.sharpeRatio !== null && (
+                <div className="bg-white/60 dark:bg-slate-900/40 rounded-xl p-4 border border-purple-200 dark:border-purple-800 mb-4">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                    <div>
+                      <div className="text-xs font-semibold text-purple-600 dark:text-purple-400 mb-1">Sharpe Ratio</div>
+                      <div className="font-bold text-slate-900 dark:text-white">{opportunity.backtestValidation.sharpeRatio.toFixed(2)}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs font-semibold text-purple-600 dark:text-purple-400 mb-1">Max Drawdown</div>
+                      <div className="font-bold text-red-600 dark:text-red-400">{opportunity.backtestValidation.maxDrawdownPct.toFixed(1)}%</div>
+                    </div>
+                    <div>
+                      <div className="text-xs font-semibold text-purple-600 dark:text-purple-400 mb-1">Avg Days Held</div>
+                      <div className="font-bold text-slate-900 dark:text-white">{opportunity.backtestValidation.avgDaysHeld.toFixed(0)}d</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {opportunity.backtestValidation.recentExamples && opportunity.backtestValidation.recentExamples.length > 0 && (
+                <div className="space-y-2">
+                  <div className="text-xs font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wide">Recent Examples</div>
+                  <div className="flex flex-wrap gap-2">
+                    {opportunity.backtestValidation.recentExamples.slice(0, 3).map((example, i) => (
+                      <div key={i} className={`px-3 py-2 rounded-lg text-xs font-semibold border ${
+                        example.outcome === 'win'
+                          ? 'bg-green-50 border-green-200 text-green-700 dark:bg-green-900/20 dark:border-green-800 dark:text-green-400'
+                          : 'bg-red-50 border-red-200 text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400'
+                      }`}>
+                        {example.date}: {example.returnPct >= 0 ? '+' : ''}{example.returnPct}% ({example.daysHeld}d)
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </section>
+          )}
+
           {opportunity.recentNews && opportunity.recentNews.length > 0 && (
             <section>
               <h4 className="font-semibold text-slate-900 dark:text-white mb-3">Recent News</h4>

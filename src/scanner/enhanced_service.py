@@ -24,6 +24,7 @@ from src.scanner.historical_moves import HistoricalMoveAnalyzer
 from src.scanner.iv_rank_history import IVRankHistory
 from src.scanner.universe import build_scan_universe
 from src.scanner.service import ScanResult, SmartOptionsScanner
+from src.backtesting.strategy_validator import StrategyValidator
 
 # Import our new institutional-grade components
 from src.integration.enhanced_scanner import EnhancedOptionsScanner, EnhancedOpportunity
@@ -63,7 +64,10 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
             lookback_days=365
         )
 
-        print("🚀 Enhanced scanner initialized with institutional-grade components", file=sys.stderr)
+        # Initialize strategy validator for backtesting
+        self.strategy_validator = StrategyValidator(lookback_days=365)
+
+        print("🚀 Enhanced scanner initialized with institutional-grade components + backtesting", file=sys.stderr)
 
     def analyze_opportunities(self, options_data: Optional[pd.DataFrame]) -> List[Dict[str, Any]]:
         """Enhanced opportunity analysis using both legacy and new components."""
@@ -223,6 +227,19 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
             if historical_context and historical_context.get('available'):
                 result['historicalContext'] = historical_context
 
+            # Add backtesting validation
+            backtest_result = self._validate_strategy(
+                symbol=legacy_opp['symbol'],
+                option_type=legacy_opp['optionType'],
+                strike=legacy_opp['strike'],
+                stock_price=legacy_opp['stockPrice'],
+                premium=legacy_opp['premium'],
+                days_to_expiration=legacy_opp.get('daysToExpiration', 30),
+                implied_volatility=legacy_opp.get('impliedVolatility', 0.5)
+            )
+            if backtest_result:
+                result['backtestValidation'] = backtest_result.to_dict()
+
             return result
             
         except Exception as e:
@@ -266,6 +283,46 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
         except Exception as e:
             print(f"⚠️  Could not get historical context for {symbol}: {e}", file=sys.stderr)
             return {'available': False, 'message': f'Historical data unavailable: {str(e)}'}
+
+    def _validate_strategy(
+        self,
+        symbol: str,
+        option_type: str,
+        strike: float,
+        stock_price: float,
+        premium: float,
+        days_to_expiration: int,
+        implied_volatility: float
+    ) -> Optional[Any]:
+        """Validate strategy using backtesting on similar historical patterns."""
+        try:
+            from datetime import datetime
+
+            # Calculate days to expiration if needed
+            if days_to_expiration <= 0:
+                # Default to 30 days if not available
+                days_to_expiration = 30
+
+            result = self.strategy_validator.validate_strategy(
+                symbol=symbol,
+                option_type=option_type,
+                strike=strike,
+                stock_price=stock_price,
+                premium=premium,
+                days_to_expiration=days_to_expiration,
+                implied_volatility=implied_volatility
+            )
+
+            if result and result.similar_trades_found >= 5:
+                print(f"📈 Backtest for {symbol}: {result.win_rate:.1%} win rate over {result.similar_trades_found} similar trades", file=sys.stderr)
+                return result
+            else:
+                print(f"⚠️  Insufficient backtest data for {symbol} (found {result.similar_trades_found if result else 0} similar trades)", file=sys.stderr)
+                return None
+
+        except Exception as e:
+            print(f"⚠️  Could not validate strategy for {symbol}: {e}", file=sys.stderr)
+            return None
 
     def _apply_institutional_filters(self, opportunities: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Apply institutional-grade filtering criteria."""
