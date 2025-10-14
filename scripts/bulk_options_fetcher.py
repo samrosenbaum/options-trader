@@ -65,12 +65,49 @@ class BulkOptionsFetcher:
         # Maximum expirations to evaluate per symbol when fetching chains
         self.max_expirations = 6
 
-        # High-volume stocks that typically have good options liquidity
+        # Expanded universe of highly liquid stocks with active options markets
+        # Organized by category for better coverage across sectors
         base_symbols = [
-            'SPY', 'QQQ', 'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'NVDA', 'META', 'NFLX',
-            'AMD', 'INTC', 'CRM', 'ADBE', 'PYPL', 'UBER', 'SQ', 'ROKU', 'ZM', 'DOCU',
-            'SNOW', 'PLTR', 'COIN', 'HOOD', 'SOFI', 'AFRM', 'UPST', 'LCID', 'RIVN', 'XPEV',
-            'SHOP', 'CRWD', 'SMCI', 'MARA', 'AI', 'AVGO', 'ASML', 'ANET', 'MDB',
+            # Major Indices & ETFs (highest liquidity)
+            'SPY', 'QQQ', 'IWM', 'DIA', 'VXX', 'TLT', 'GLD', 'SLV', 'USO', 'XLE', 'XLF', 'XLK',
+            # Mega Cap Tech (FAANG+)
+            'AAPL', 'MSFT', 'GOOGL', 'GOOG', 'AMZN', 'META', 'NVDA', 'TSLA', 'NFLX',
+            # Semiconductors & Hardware
+            'AMD', 'INTC', 'QCOM', 'AVGO', 'MU', 'AMAT', 'LRCX', 'KLAC', 'ASML', 'TSM', 'ON', 'MRVL',
+            # Cloud & Enterprise Software
+            'CRM', 'ORCL', 'ADBE', 'NOW', 'SNOW', 'DDOG', 'MDB', 'WDAY', 'TEAM', 'ZS', 'CRWD', 'PANW',
+            # Fintech & Payments
+            'V', 'MA', 'PYPL', 'SQ', 'COIN', 'HOOD', 'SOFI', 'AFRM', 'UPST',
+            # E-Commerce & Retail
+            'SHOP', 'ETSY', 'W', 'CHWY', 'DASH', 'ABNB',
+            # Social Media & Communications
+            'SNAP', 'PINS', 'TWLO', 'ZM', 'DOCU', 'U',
+            # EVs & Auto Tech
+            'F', 'GM', 'RIVN', 'LCID', 'NIO', 'XPEV', 'LI',
+            # Energy & Renewables
+            'XOM', 'CVX', 'COP', 'SLB', 'HAL', 'PLUG', 'ENPH', 'RUN',
+            # Financials & Banks
+            'JPM', 'BAC', 'WFC', 'GS', 'MS', 'C', 'SCHW', 'AXP', 'BLK',
+            # Healthcare & Biotech
+            'JNJ', 'UNH', 'PFE', 'ABBV', 'LLY', 'TMO', 'ABT', 'DHR', 'MRNA', 'BNTX', 'REGN',
+            # Consumer Staples & Discretionary
+            'WMT', 'TGT', 'COST', 'HD', 'LOW', 'NKE', 'SBUX', 'MCD', 'DIS', 'CMCSA',
+            # Consumer Brands
+            'KO', 'PEP', 'PG', 'CL', 'EL', 'LULU',
+            # Gaming & Entertainment
+            'RBLX', 'EA', 'TTWO', 'ATVI',
+            # Industrials & Aerospace
+            'BA', 'CAT', 'DE', 'UPS', 'FDX', 'LMT', 'RTX', 'GE',
+            # AI & Emerging Tech
+            'AI', 'PLTR', 'PATH', 'BILL', 'S', 'NET', 'GTLB',
+            # Crypto-Related
+            'MARA', 'RIOT', 'CLSK', 'MSTR',
+            # High Volatility Stocks
+            'AMC', 'GME', 'BBBY', 'BYND',
+            # REITs & Real Estate
+            'SPG', 'PLD', 'AMT', 'CCI',
+            # Additional High-Volume Names
+            'ANET', 'SMCI', 'UBER', 'ROKU',
         ]
 
         self.priority_symbols = self._build_priority_symbols(base_symbols, self.settings)

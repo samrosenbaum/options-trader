@@ -43,10 +43,10 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
         # Initialize enhanced components
         self.enhanced_scanner = EnhancedOptionsScanner(
             data_quality_config={
-                'max_spread_pct': 0.15,  # 15% maximum spread
-                'min_volume': 10,
-                'min_open_interest': 50,
-                'max_price_age_minutes': 10
+                'max_spread_pct': 0.15,  # 15% maximum spread - strict for good execution
+                'min_volume': 10,  # Minimum 10 volume for reliable fills
+                'min_open_interest': 50,  # Minimum 50 OI for liquidity
+                'max_price_age_minutes': 15  # Fresh data for accurate pricing
             },
             probability_config={
                 'risk_free_rate': 0.045,  # 4.5% risk-free rate
@@ -160,8 +160,8 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
             # Run enhanced analysis
             enhanced_opportunities = self.enhanced_scanner.scan_opportunities(
                 [enhanced_opp_data],
-                min_quality=DataQuality.MEDIUM,
-                min_composite_score=50.0,  # Lower threshold for individual enhancement
+                min_quality=DataQuality.MEDIUM,  # Maintain quality standards for profitability
+                min_composite_score=50.0,  # Strong composite score ensures good opportunities
                 max_results=1
             )
             
@@ -352,13 +352,13 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
             prob_analysis = enhanced_analysis.get('probabilityAnalysis', {})
             prob_of_profit = prob_analysis.get('probabilityOfProfit', 0)
 
-            if prob_of_profit < 0.12:  # 12% minimum probability (lowered from 15%)
+            if prob_of_profit < 0.12:  # 12% minimum - relaxed to allow more opportunities (has fallback mode)
                 print(f"🚫 Filtered out {opp['symbol']} due to low probability ({prob_of_profit:.1%})", file=sys.stderr)
                 continue
 
             # Risk-adjusted score filter
             risk_adjusted_score = opp.get('riskAdjustedScore', opp.get('score', 0))
-            if risk_adjusted_score < 35:  # Lowered from 40 to 35
+            if risk_adjusted_score < 35:  # Relaxed threshold with fallback mode for safety
                 print(f"🚫 Filtered out {opp['symbol']} due to low risk-adjusted score ({risk_adjusted_score:.1f})", file=sys.stderr)
                 continue
 
