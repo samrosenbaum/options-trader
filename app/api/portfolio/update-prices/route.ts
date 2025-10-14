@@ -1,11 +1,14 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { resolvePythonExecutable } from '@/lib/server/python'
+import type { Database } from '@/lib/types/database.types'
+
+type Position = Database['public']['Tables']['positions']['Row']
 
 export const runtime = 'nodejs'
 export const maxDuration = 60 // 1 minute timeout
 
-export async function POST(request: Request) {
+export async function POST() {
   try {
     const supabase = await createClient()
 
@@ -47,7 +50,7 @@ export async function POST(request: Request) {
     const { spawn } = await import('child_process')
     const pythonPath = await resolvePythonExecutable()
 
-    const updatedPositions = await new Promise<any[]>((resolve, reject) => {
+    const updatedPositions = await new Promise<Position[]>((resolve, reject) => {
       const python = spawn(pythonPath, [
         'scripts/update_position_prices.py',
       ], {

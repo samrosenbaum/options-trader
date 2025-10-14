@@ -15,7 +15,7 @@ export default async function PortfolioPage() {
   }
 
   // Fetch user's positions
-  const { data: positions, error } = await supabase
+  const { data: positions } = await supabase
     .from('positions')
     .select('*')
     .eq('user_id', user.id)

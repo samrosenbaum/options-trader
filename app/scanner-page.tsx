@@ -527,7 +527,6 @@ const renderOpportunityCard = (
     onToggle,
     riskBadgeClass,
     scoreBadgeClass,
-    breakevenRequirement,
     riskRewardExplanation,
     greeksExplanation,
     moveThesis,
