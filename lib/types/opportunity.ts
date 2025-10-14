@@ -171,6 +171,36 @@ export interface HistoricalContext {
   }
 }
 
+export type BacktestOutcome = 'win' | 'loss'
+
+export interface BacktestValidationExample {
+  date: string
+  returnPct: number
+  daysHeld: number
+  outcome: BacktestOutcome | string
+}
+
+export interface BacktestValidation {
+  patternType: string
+  similarTradesFound: number
+  lookbackDays: number
+  winningTrades: number
+  losingTrades: number
+  winRate: number
+  avgReturnPct: number
+  medianReturnPct: number
+  bestReturnPct: number
+  worstReturnPct: number
+  totalReturnPct: number
+  sharpeRatio: number | null
+  maxDrawdownPct: number
+  avgDaysHeld: number
+  sampleSizeQuality: 'low' | 'medium' | 'high'
+  confidenceLevel: number
+  patternDescription: string
+  recentExamples: BacktestValidationExample[]
+}
+
 export interface PositionSizingExample {
   portfolio: number
   contracts: number
@@ -274,6 +304,7 @@ export interface Opportunity {
   directionalBias?: EnhancedDirectionalBias | null
   enhancedDirectionalBias?: EnhancedDirectionalBias | null
   historicalContext?: HistoricalContext
+  backtestValidation?: BacktestValidation | null
   positionSizing?: PositionSizingRecommendation
   _dataQuality?: DataQualityInfo
 }
