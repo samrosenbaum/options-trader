@@ -578,6 +578,11 @@ const renderOpportunityCard = (
                 Score {opp.score.toFixed(0)}
               </span>
             )}
+            {positionSizing && (positionSizing.recommendedFraction === 0 || (positionSizing.recommendedFraction && positionSizing.recommendedFraction < 0.01)) && (
+              <span className="px-3 py-1 rounded-lg text-xs font-bold border-2 border-amber-400 bg-amber-100 text-amber-800 dark:border-amber-600 dark:bg-amber-900/40 dark:text-amber-300">
+                ⚠️ HIGH RISK
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-5 text-sm text-slate-600 dark:text-slate-400 flex-wrap">
@@ -643,6 +648,24 @@ const renderOpportunityCard = (
               {riskBudgetMeta.label}
             </div>
           </div>
+
+          {positionSizing && (positionSizing.recommendedFraction === 0 || (positionSizing.recommendedFraction && positionSizing.recommendedFraction < 0.01)) && (
+            <div className="mb-4 rounded-lg border-2 border-amber-300 bg-amber-50 p-4 dark:border-amber-700/50 dark:bg-amber-900/20">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0 mt-0.5">
+                  <svg className="h-5 w-5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h5 className="font-semibold text-amber-900 dark:text-amber-200 mb-1">Position Not Recommended</h5>
+                  <p className="text-sm text-amber-800 dark:text-amber-300 leading-relaxed">
+                    While this opportunity appears attractive, Kelly criterion analysis shows negative expected edge. The risk-adjusted mathematics suggest passing on this trade to preserve capital.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="rounded-lg border border-emerald-200/60 bg-white/70 p-4 dark:border-emerald-800/50 dark:bg-slate-900/60">
