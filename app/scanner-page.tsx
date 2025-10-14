@@ -98,6 +98,45 @@ const formatFractionAsPercent = (value: number | null | undefined, digits = 1) =
   return `${(value * 100).toFixed(digits)}%`
 }
 
+const formatDebugKey = (key: string) => {
+  const spaced = key
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  if (!spaced) {
+    return key
+  }
+
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1)
+}
+
+const normalizeDebugValue = (value: unknown): string => {
+  if (value === undefined) {
+    return '—'
+  }
+
+  if (value === null) {
+    return 'null'
+  }
+
+  if (typeof value === 'string') {
+    return value
+  }
+
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value)
+  }
+
+  try {
+    return JSON.stringify(value, null, 2)
+  } catch (error) {
+    console.error('Failed to normalize debug value', error)
+    return String(value)
+  }
+}
+
 const getRiskBudgetMeta = (tier?: PositionSizingRecommendation['riskBudgetTier'] | string | null) => {
   switch (tier) {
     case 'aggressive':
@@ -211,6 +250,7 @@ interface ScanMetadata {
   cacheTimestamp?: string
   dataFreshness?: Record<string, unknown>
   source?: string
+  debugInfo?: Record<string, unknown>
   [key: string]: unknown
 }
 
@@ -836,6 +876,13 @@ export default function HomePage() {
   const staleCacheActive = !fallbackActive && scanMetadata?.cacheStale === true
   const fallbackReason = typeof scanMetadata?.fallbackReason === 'string' ? scanMetadata.fallbackReason : null
   const fallbackDetails = typeof scanMetadata?.fallbackDetails === 'string' ? scanMetadata.fallbackDetails : null
+  const fallbackDebugInfo =
+    fallbackActive &&
+    scanMetadata?.debugInfo &&
+    typeof scanMetadata.debugInfo === 'object' &&
+    scanMetadata.debugInfo !== null
+      ? (scanMetadata.debugInfo as Record<string, unknown>)
+      : null
   const metadataSource = typeof scanMetadata?.source === 'string' ? scanMetadata.source.toLowerCase() : null
   // Always use enhanced scanner for options
   const enhancedModeActive = activeTab === 'options'
@@ -2008,12 +2055,43 @@ export default function HomePage() {
                     </svg>
                     <div className="space-y-1">
                       <p className="font-semibold">Fallback recommendations</p>
-                      <p className="text-sm leading-relaxed text-amber-100/80">
-                        Live scanning failed{fallbackReason ? ` (${fallbackReason})` : ''}, so we are showing the bundled backup trade ideas.
-                        Expect pricing and probabilities to deviate from current market conditions.
-                      </p>
+                        <p className="text-sm leading-relaxed text-amber-100/80">
+                          Live scanning failed{fallbackReason ? ` (${fallbackReason})` : ''}, so we are surfacing the diagnostic details we captured from the scanner run.
+                          Expect pricing and probabilities to deviate from current market conditions until a fresh scan succeeds.
+                        </p>
                       {fallbackDetails && (
                         <p className="text-xs text-amber-100/70">Details: {fallbackDetails}</p>
+                      )}
+                      {fallbackDebugInfo && Object.keys(fallbackDebugInfo).length > 0 && (
+                        <div className="mt-2 space-y-1 rounded-lg border border-amber-500/20 bg-amber-500/10 p-3">
+                          <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-200">
+                            Debug information
+                          </p>
+                          <dl className="space-y-2">
+                            {Object.entries(fallbackDebugInfo).map(([key, value]) => {
+                              const normalized = normalizeDebugValue(value)
+                              const isMultiline = typeof normalized === 'string' && /\n/.test(normalized)
+                              return (
+                                <div key={key} className="space-y-1">
+                                  <dt className="text-[10px] font-medium uppercase tracking-wide text-amber-200/70">
+                                    {formatDebugKey(key)}
+                                  </dt>
+                                  <dd>
+                                    {isMultiline ? (
+                                      <pre className="max-h-48 overflow-auto rounded-md border border-amber-500/20 bg-amber-500/10 p-2 font-mono text-[11px] leading-relaxed text-amber-100/90 whitespace-pre-wrap break-words">
+                                        {normalized}
+                                      </pre>
+                                    ) : (
+                                      <span className="font-mono text-[12px] text-amber-100/90 break-words">
+                                        {normalized}
+                                      </span>
+                                    )}
+                                  </dd>
+                                </div>
+                              )
+                            })}
+                          </dl>
+                        </div>
                       )}
                     </div>
                   </div>
