@@ -11,7 +11,7 @@ export default function LandingPage() {
         <div className="text-center mb-16">
           <div className="flex justify-center mb-8">
             <Image
-              src="/money-printer-pig.png"
+              src="/money-printer.png"
               alt="Money Printer Pig"
               width={400}
               height={400}

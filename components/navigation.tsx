@@ -30,7 +30,7 @@ export default function Navigation({ userEmail }: { userEmail?: string }) {
           {/* Logo/Brand */}
           <div className="flex items-center gap-3">
             <Image
-              src="/money-printer-pig.png"
+              src="/money-printer.png"
               alt="Money Printer"
               width={40}
               height={40}
