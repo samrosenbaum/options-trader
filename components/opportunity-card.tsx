@@ -1322,6 +1322,24 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
             <div className={`px-4 py-1.5 rounded-lg text-base font-bold ${getScoreColor(opportunity.score)}`}>
               {opportunity.score}
             </div>
+            <button
+              type="button"
+              onClick={handleWatchlistToggle}
+              className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors flex items-center gap-1.5 ${
+                onWatchlist
+                  ? 'bg-amber-500 text-white hover:bg-amber-600'
+                  : 'bg-emerald-500 text-white hover:bg-emerald-600'
+              }`}
+              aria-pressed={onWatchlist}
+              title={watchlistButtonLabel}
+            >
+              <span className="text-base font-bold" aria-hidden>
+                {onWatchlist ? '★' : '☆'}
+              </span>
+              <span className="hidden sm:inline">
+                {onWatchlist ? 'Saved' : 'Save'}
+              </span>
+            </button>
             <div className="flex items-center gap-2 flex-wrap">
               {opportunity.gammaSqueezeScore && opportunity.gammaSqueezeScore > 0 && (
                 <span className="px-3 py-1 bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 rounded-lg text-sm font-semibold">
