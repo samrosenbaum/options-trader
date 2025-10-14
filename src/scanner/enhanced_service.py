@@ -34,11 +34,11 @@ from src.math.greeks import GreeksCalculator
 
 class InstitutionalOptionsScanner(SmartOptionsScanner):
     """Enhanced scanner that combines existing functionality with institutional-grade components."""
-    
+
     def __init__(self, max_symbols: Optional[int] = None, **kwargs):
         """Initialize scanner with both legacy and enhanced components."""
         super().__init__(max_symbols, **kwargs)
-        
+
         # Initialize enhanced components
         self.enhanced_scanner = EnhancedOptionsScanner(
             data_quality_config={
@@ -56,7 +56,13 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
                 'dividend_yield': 0.0  # Default, will be adjusted per symbol
             }
         )
-        
+
+        # Initialize historical move analyzer
+        self.historical_analyzer = HistoricalMoveAnalyzer(
+            db_path="data/historical_moves.db",
+            lookback_days=365
+        )
+
         print("🚀 Enhanced scanner initialized with institutional-grade components", file=sys.stderr)
 
     def analyze_opportunities(self, options_data: Optional[pd.DataFrame]) -> List[Dict[str, Any]]:
@@ -204,12 +210,62 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
             result['enhancedTags'] = enhanced_opp.tags
             if enhanced_opp.warnings:
                 result['enhancedWarnings'] = enhanced_opp.warnings
-                
+
+            # Add historical move analysis
+            historical_context = self._get_historical_context(
+                symbol=legacy_opp['symbol'],
+                strike=legacy_opp['strike'],
+                stock_price=legacy_opp['stockPrice'],
+                option_type=legacy_opp['optionType'],
+                expiration=legacy_opp['expiration'],
+                premium=legacy_opp['premium']
+            )
+            if historical_context and historical_context.get('available'):
+                result['historicalContext'] = historical_context
+
             return result
             
         except Exception as e:
             print(f"Error in _enhance_opportunity for {legacy_opp.get('symbol', 'unknown')}: {e}", file=sys.stderr)
             return None
+
+    def _get_historical_context(
+        self,
+        symbol: str,
+        strike: float,
+        stock_price: float,
+        option_type: str,
+        expiration: str,
+        premium: float
+    ) -> Optional[Dict[str, Any]]:
+        """Get historical move context for an opportunity."""
+        try:
+            from datetime import datetime
+
+            # Calculate required move for breakeven
+            breakeven_move_pct = (premium / stock_price) * 100  # premium is per contract (x100)
+
+            # Calculate days to expiration
+            exp_date = datetime.strptime(expiration, '%Y-%m-%d')
+            days_to_exp = (exp_date - datetime.now()).days
+
+            # Determine direction based on option type
+            direction = "up" if option_type.lower() == "call" else "down"
+
+            # Get historical move analysis
+            context = self.historical_analyzer.get_move_context(
+                symbol=symbol,
+                target_move_pct=breakeven_move_pct,
+                timeframe_days=days_to_exp,
+                direction=direction,
+                current_price=stock_price
+            )
+
+            return context
+
+        except Exception as e:
+            print(f"⚠️  Could not get historical context for {symbol}: {e}", file=sys.stderr)
+            return {'available': False, 'message': f'Historical data unavailable: {str(e)}'}
 
     def _apply_institutional_filters(self, opportunities: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Apply institutional-grade filtering criteria."""
