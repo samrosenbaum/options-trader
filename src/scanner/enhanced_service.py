@@ -69,14 +69,22 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
 
         print("🚀 Enhanced scanner initialized with institutional-grade components + backtesting", file=sys.stderr)
 
-    def analyze_opportunities(self, options_data: Optional[pd.DataFrame]) -> List[Dict[str, Any]]:
+    def analyze_opportunities(
+        self,
+        options_data: Optional[pd.DataFrame],
+        *,
+        allow_relaxed_fallback: bool = True,
+    ) -> List[Dict[str, Any]]:
         """Enhanced opportunity analysis using both legacy and new components."""
-        
+
         if options_data is None or options_data.empty:
             return []
 
         # Get legacy opportunities first
-        legacy_opportunities = super().analyze_opportunities(options_data)
+        legacy_opportunities = super().analyze_opportunities(
+            options_data,
+            allow_relaxed_fallback=allow_relaxed_fallback,
+        )
         
         if not legacy_opportunities:
             print("📊 No legacy opportunities found", file=sys.stderr)
@@ -396,13 +404,17 @@ def run_enhanced_scan(
     *,
     force_refresh: bool = False,
     batch_builder = None,
+    allow_relaxed_fallback: bool | None = None,
 ) -> ScanResult:
     """Run enhanced scan with institutional-grade components."""
-    
+
     print("🚀 Starting enhanced institutional-grade scan...", file=sys.stderr)
-    
+
     scanner = InstitutionalOptionsScanner(max_symbols=max_symbols, batch_builder=batch_builder)
-    result = scanner.scan_for_opportunities(force_refresh=force_refresh)
+    result = scanner.scan_for_opportunities(
+        force_refresh=force_refresh,
+        allow_relaxed_fallback=allow_relaxed_fallback,
+    )
     
     # Add enhanced statistics to metadata
     enhanced_stats = scanner.get_enhanced_statistics()
@@ -436,11 +448,22 @@ def cli(argv: Optional[Sequence[str]] = None) -> None:
         default=None,
         help="Pretty print JSON with indentation"
     )
-    
+    parser.add_argument(
+        "--strict-only",
+        action="store_true",
+        default=None,
+        help="Disable relaxed fallback filters and only return strict matches"
+    )
+
     args = parser.parse_args(argv)
-    
+
     symbol_limit = args.max_symbols if args.max_symbols and args.max_symbols > 0 else None
-    result = run_enhanced_scan(symbol_limit, force_refresh=args.force_refresh)
+    allow_relaxed = None if args.strict_only is None else not args.strict_only
+    result = run_enhanced_scan(
+        symbol_limit,
+        force_refresh=args.force_refresh,
+        allow_relaxed_fallback=allow_relaxed
+    )
     
     print(result.to_json(indent=args.json_indent))
 

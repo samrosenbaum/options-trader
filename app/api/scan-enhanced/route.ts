@@ -14,6 +14,26 @@ import { ensureOptionGreeks } from "@/lib/math/greeks"
  * - Risk-adjusted scoring and filtering
  */
 
+type FilterMode = "strict" | "relaxed"
+
+interface RelaxedScanStageMetadata {
+  candidates?: number
+  reason?: string
+  blocked?: string
+}
+
+interface RelaxedScanMetadata {
+  strictMode?: boolean
+  mode?: FilterMode
+  available?: boolean
+  candidateCount?: number
+  applied?: boolean
+  appliedStage?: string
+  blockedReason?: string
+  stages?: Record<string, RelaxedScanStageMetadata>
+  selectedCount?: number
+}
+
 interface EnhancedScannerOpportunity {
   symbol: string
   optionType: "call" | "put" | string
@@ -163,6 +183,8 @@ interface EnhancedScannerMetadata {
   fallbackDetails?: string
   enhancedScanner?: boolean
   institutionalGrade?: boolean
+  filterMode?: FilterMode
+  relaxedScan?: RelaxedScanMetadata
   enhancedStatistics?: {
     scanStatistics?: Record<string, unknown>
     calibrationMetrics?: Record<string, unknown>
@@ -235,6 +257,80 @@ const mergeDebugInfo = (
   }
 
   return sanitized
+}
+
+const normalizeFilterMode = (value: unknown): FilterMode | undefined => {
+  if (typeof value !== "string") {
+    return undefined
+  }
+
+  const normalized = value.trim().toLowerCase()
+  if (!normalized) {
+    return undefined
+  }
+
+  if (["strict", "strict-only", "strict_only", "tight"].includes(normalized)) {
+    return "strict"
+  }
+
+  if (["relaxed", "wide", "expanded", "loose"].includes(normalized)) {
+    return "relaxed"
+  }
+
+  return undefined
+}
+
+const extractFilterModeFromSearchParams = (params: URLSearchParams): FilterMode | undefined => {
+  const candidates = [
+    params.get("filterMode"),
+    params.get("filter_mode"),
+    params.get("filter"),
+    params.get("mode"),
+  ]
+
+  for (const candidate of candidates) {
+    const normalized = normalizeFilterMode(candidate)
+    if (normalized) {
+      return normalized
+    }
+  }
+
+  return undefined
+}
+
+const extractFilterModeFromBody = (body: unknown): FilterMode | undefined => {
+  if (!body || typeof body !== "object") {
+    return undefined
+  }
+
+  const record = body as Record<string, unknown>
+  const candidates = [
+    record.filterMode,
+    record.filter_mode,
+    record.filter,
+    record.mode,
+  ]
+
+  for (const candidate of candidates) {
+    const normalized = normalizeFilterMode(candidate)
+    if (normalized) {
+      return normalized
+    }
+  }
+
+  return undefined
+}
+
+const resolveFilterMode = (
+  params: URLSearchParams,
+  body?: unknown,
+): FilterMode | undefined => {
+  const fromParams = extractFilterModeFromSearchParams(params)
+  if (fromParams) {
+    return fromParams
+  }
+
+  return extractFilterModeFromBody(body)
 }
 
 const normalizePercent = (value: unknown): number | null => {
@@ -500,11 +596,14 @@ const mergeConstraints = (
 const executeEnhancedScanner = async ({
   constraints,
   debugContext,
+  filterMode,
 }: {
   constraints?: ConstraintPayload
   debugContext?: Record<string, unknown>
+  filterMode?: FilterMode
 }) => {
   const forcedPolicy = determineScannerExecutionPolicy()
+  const resolvedMode: FilterMode = filterMode === "strict" ? "strict" : "relaxed"
 
   if (forcedPolicy?.forceFallback) {
     console.warn(
@@ -512,6 +611,7 @@ const executeEnhancedScanner = async ({
     )
 
     return buildFallbackResponse(forcedPolicy.reason, forcedPolicy.details, {
+      filterMode: resolvedMode,
       executionPolicy: forcedPolicy,
       ...(debugContext ?? {}),
       ...(constraints
@@ -546,6 +646,9 @@ const executeEnhancedScanner = async ({
   return await new Promise<NextResponse>((resolve) => {
     const env: NodeJS.ProcessEnv = { ...process.env, PYTHONPATH: process.cwd() }
 
+    env.SCANNER_FILTER_MODE = resolvedMode
+    env.SCANNER_ALLOW_RELAXED = resolvedMode === "relaxed" ? "1" : "0"
+
     if (
       typeof constraints?.portfolioSize === "number" &&
       Number.isFinite(constraints.portfolioSize) &&
@@ -579,6 +682,7 @@ const executeEnhancedScanner = async ({
     }
 
     const baseDebug = {
+      filterMode: resolvedMode,
       ...(debugContext ?? {}),
       ...(constraintDebug ? { userConstraints: constraintDebug } : {}),
     }
@@ -649,6 +753,10 @@ const executeEnhancedScanner = async ({
 
         const payload = sanitizeScannerResponse(parsedOutput)
 
+        if (!payload.metadata.filterMode) {
+          payload.metadata.filterMode = resolvedMode
+        }
+
         if (!payload.opportunities.length) {
           console.warn("Enhanced scanner returned zero qualifying opportunities. Serving fallback dataset.")
           fallbackAndSettle(
@@ -702,6 +810,11 @@ const buildFallbackResponse = (
     },
   }
 
+  const debugFilterMode = normalizeFilterMode(debug?.filterMode) ?? normalizeFilterMode(debugInfo.filterMode)
+  if (debugFilterMode) {
+    metadata.filterMode = debugFilterMode
+  }
+
   if (!details) {
     delete metadata.fallbackDetails
   }
@@ -734,19 +847,22 @@ export async function GET(request: Request) {
       normalizedFallback === "only" ||
       normalizedFallback === "fallback"
 
+    const resolvedFilterMode = resolveFilterMode(url.searchParams)
+
     if (fallbackOnly) {
       const reasonParam = url.searchParams.get("reason")
       const detailsParam = url.searchParams.get("details")
       return buildFallbackResponse(
         reasonParam && reasonParam.trim().length > 0 ? reasonParam : "client_requested",
         detailsParam && detailsParam.trim().length > 0 ? detailsParam : "Client requested fallback dataset",
-        { requestedViaQuery: true },
+        { requestedViaQuery: true, filterMode: resolvedFilterMode ?? "relaxed" },
       )
     }
     const constraints = mergeConstraints(extractConstraintsFromSearchParams(url.searchParams))
     return executeEnhancedScanner({
       constraints,
       debugContext: { requestedVia: "GET" },
+      filterMode: resolvedFilterMode,
     })
   } catch (error) {
     console.error("Error executing enhanced scanner:", error)
@@ -773,6 +889,7 @@ export async function POST(request: Request) {
       body = null
     }
 
+    const resolvedFilterMode = resolveFilterMode(url.searchParams, body)
     const searchConstraints = extractConstraintsFromSearchParams(url.searchParams)
     const bodyConstraints = extractConstraintsFromBody(body)
     const constraints = mergeConstraints(searchConstraints, bodyConstraints)
@@ -794,13 +911,14 @@ export async function POST(request: Request) {
       return buildFallbackResponse(
         reasonParam && reasonParam.trim().length > 0 ? reasonParam : "client_requested",
         detailsParam && detailsParam.trim().length > 0 ? detailsParam : "Client requested fallback dataset",
-        { requestedViaBody: true },
+        { requestedViaBody: true, filterMode: resolvedFilterMode ?? "relaxed" },
       )
     }
 
     return executeEnhancedScanner({
       constraints,
       debugContext: { requestedVia: "POST" },
+      filterMode: resolvedFilterMode,
     })
   } catch (error) {
     console.error("Error executing enhanced scanner via POST:", error)

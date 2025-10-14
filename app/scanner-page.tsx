@@ -242,6 +242,26 @@ interface Opportunity {
   positionSizing?: PositionSizingRecommendation | null
 }
 
+type FilterMode = 'strict' | 'relaxed'
+
+interface RelaxedScanStageMetadata {
+  candidates?: number
+  reason?: string
+  blocked?: string
+}
+
+interface RelaxedScanMetadata {
+  strictMode?: boolean
+  mode?: FilterMode
+  available?: boolean
+  candidateCount?: number
+  applied?: boolean
+  appliedStage?: string
+  blockedReason?: string
+  stages?: Record<string, RelaxedScanStageMetadata>
+  selectedCount?: number
+}
+
 interface ScanMetadata {
   fallback?: boolean
   fallbackReason?: string
@@ -253,6 +273,8 @@ interface ScanMetadata {
   dataFreshness?: Record<string, unknown>
   source?: string
   debugInfo?: Record<string, unknown>
+  filterMode?: FilterMode
+  relaxedScan?: RelaxedScanMetadata | null
   [key: string]: unknown
 }
 
@@ -872,9 +894,12 @@ export default function ScannerPage({ user }: ScannerPageProps) {
   const [sortOption, setSortOption] = useState<OpportunitySortOption>('promising')
   const [isStaleData, setIsStaleData] = useState(false)
   const [scanMetadata, setScanMetadata] = useState<ScanMetadata | null>(null)
+  const [scanMode, setScanMode] = useState<FilterMode>('strict')
+  const [relaxedScanMeta, setRelaxedScanMeta] = useState<RelaxedScanMetadata | null>(null)
   const [expandedCards, setExpandedCards] = useState<Record<string, boolean>>({})
   const previousTabRef = useRef<'options' | 'crypto' | null>(null)
   const opportunitiesRef = useRef<Opportunity[]>([])
+  const scanModeRef = useRef<FilterMode>('strict')
   const [userPortfolioConstraints, setUserPortfolioConstraints] = useState<{
     portfolioSize: number | null
     dailyContractBudget: number | null
@@ -1017,6 +1042,70 @@ export default function ScannerPage({ user }: ScannerPageProps) {
     return Number.isNaN(parsed.getTime()) ? null : parsed
   })()
 
+  const isRelaxedMode = scanMode === 'relaxed'
+  const relaxedSuggestionAvailable =
+    scanMode === 'strict' &&
+    relaxedScanMeta?.strictMode === true &&
+    relaxedScanMeta?.available === true &&
+    relaxedScanMeta?.applied !== true
+  const relaxedCandidateCount =
+    typeof relaxedScanMeta?.candidateCount === 'number' && Number.isFinite(relaxedScanMeta.candidateCount)
+      ? relaxedScanMeta.candidateCount
+      : null
+  const relaxedStageSummaries = useMemo(() => {
+    if (!relaxedScanMeta?.stages || typeof relaxedScanMeta.stages !== 'object') {
+      return [] as Array<{ stage: string; candidates: number | null; reason: string | null; blocked: string | null }>
+    }
+
+    return Object.entries(relaxedScanMeta.stages)
+      .map(([stageKey, stageValue]) => {
+        if (!stageValue || typeof stageValue !== 'object') {
+          return null
+        }
+
+        const normalizedStage = (() => {
+          switch (stageKey) {
+            case 'liquidity':
+              return 'Liquidity filters'
+            case 'quality':
+              return 'Quality thresholds'
+            case 'topVolume':
+              return 'Top volume safety net'
+            default:
+              return stageKey.charAt(0).toUpperCase() + stageKey.slice(1)
+          }
+        })()
+
+        const stageMeta = stageValue as RelaxedScanStageMetadata
+        const candidates =
+          typeof stageMeta.candidates === 'number' && Number.isFinite(stageMeta.candidates)
+            ? stageMeta.candidates
+            : null
+        const reason = typeof stageMeta.reason === 'string' ? stageMeta.reason : null
+        const blocked = typeof stageMeta.blocked === 'string' ? stageMeta.blocked : null
+
+        if (candidates === null && !reason && !blocked) {
+          return null
+        }
+
+        return { stage: normalizedStage, candidates, reason, blocked }
+      })
+      .filter((entry): entry is { stage: string; candidates: number | null; reason: string | null; blocked: string | null } => Boolean(entry))
+  }, [relaxedScanMeta])
+  const relaxedAppliedStage = typeof relaxedScanMeta?.appliedStage === 'string' ? relaxedScanMeta.appliedStage : null
+  const relaxedAppliedDescription = (() => {
+    switch (relaxedAppliedStage) {
+      case 'liquidity':
+        return 'adaptive liquidity filters'
+      case 'quality':
+        return 'relaxed quality thresholds'
+      case 'topVolume':
+        return 'the top-volume safety net'
+      default:
+        return null
+    }
+  })()
+
   const handleScanPayload = useCallback((payload: ScanApiResponse, options?: { forcedStale?: boolean }) => {
     if (!payload || typeof payload !== 'object' || payload.success !== true) {
       return false
@@ -1028,6 +1117,20 @@ export default function ScannerPage({ user }: ScannerPageProps) {
         : null
 
     setScanMetadata(metadata)
+
+    if (metadata && typeof metadata.filterMode === 'string') {
+      const normalizedMode = metadata.filterMode.toLowerCase()
+      if (normalizedMode === 'relaxed' || normalizedMode === 'strict') {
+        scanModeRef.current = normalizedMode as FilterMode
+        setScanMode(normalizedMode as FilterMode)
+      }
+    }
+
+    const relaxedMetadata =
+      metadata && typeof metadata.relaxedScan === 'object' && metadata.relaxedScan !== null
+        ? (metadata.relaxedScan as RelaxedScanMetadata)
+        : null
+    setRelaxedScanMeta(relaxedMetadata)
 
     const usedFallback = metadata?.fallback === true
     const staleCache = metadata?.cacheStale === true
@@ -1090,12 +1193,22 @@ export default function ScannerPage({ user }: ScannerPageProps) {
     [handleScanPayload],
   )
 
-  const fetchOpportunities = useCallback(async () => {
+  const fetchOpportunities = useCallback(async (modeOverride?: FilterMode) => {
+    const effectiveMode: FilterMode = modeOverride ?? scanModeRef.current
+    if (modeOverride && modeOverride !== scanModeRef.current) {
+      scanModeRef.current = modeOverride
+      setScanMode(modeOverride)
+    }
+
     try {
       setIsLoading(true)
 
       // Always use institutional-grade enhanced scanner
-      const endpoint = '/api/scan-enhanced'
+      const endpointBase = '/api/scan-enhanced'
+      const endpoint =
+        effectiveMode === 'relaxed'
+          ? `${endpointBase}?filterMode=relaxed`
+          : `${endpointBase}?filterMode=strict`
       const timeoutMs = ENHANCED_FETCH_TIMEOUT_MS
       const resolvedPortfolioSize = Number.isFinite(userPortfolioConstraints.portfolioSize ?? NaN)
         ? userPortfolioConstraints.portfolioSize
@@ -2307,6 +2420,60 @@ export default function ScannerPage({ user }: ScannerPageProps) {
           </div>
         </div>
 
+        {isRelaxedMode && !isLoading && !fallbackActive && (
+          <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-6 py-4 text-left text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div className="space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-200">
+                  Relaxed Filters Active
+                </p>
+                <p className="text-sm leading-relaxed">
+                  {relaxedAppliedDescription
+                    ? `We widened the ${relaxedAppliedDescription} to surface additional setups.`
+                    : 'We widened the filters to surface additional setups.'}
+                  {relaxedCandidateCount !== null
+                    ? ` Up to ${relaxedCandidateCount.toLocaleString()} candidates satisfied the relaxed criteria.`
+                    : ''}
+                </p>
+                {relaxedStageSummaries.length > 0 && (
+                  <ul className="space-y-1 text-xs leading-relaxed text-amber-800 dark:text-amber-100/80">
+                    {relaxedStageSummaries.map(({ stage, candidates, reason, blocked }, index) => {
+                      const candidateLabel =
+                        typeof candidates === 'number'
+                          ? ` (${candidates.toLocaleString()} candidate${candidates === 1 ? '' : 's'})`
+                          : ''
+                      const blockedLabel =
+                        blocked === 'stale_snapshot'
+                          ? ' — blocked until a fresh market snapshot is available'
+                          : blocked
+                            ? ` — ${blocked.replace(/_/g, ' ')}`
+                            : ''
+                      return (
+                        <li key={`${stage}-${index}`} className="flex flex-col sm:flex-row sm:items-center sm:gap-2">
+                          <span className="font-medium">{stage}:</span>
+                          <span>
+                            {reason || 'Available under relaxed criteria'}
+                            {candidateLabel}
+                            {blockedLabel}
+                          </span>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                )}
+              </div>
+              <div className="flex flex-shrink-0 items-center justify-start">
+                <button
+                  onClick={() => fetchOpportunities('strict')}
+                  className="inline-flex items-center rounded-full border border-amber-400/60 bg-white px-4 py-2 text-sm font-semibold text-amber-800 shadow-sm transition hover:bg-amber-100 dark:border-amber-500/60 dark:bg-transparent dark:text-amber-100 dark:hover:bg-amber-500/20"
+                >
+                  Return to Strict Filters
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Loading State */}
         {isLoading && (
           <div className="text-center py-16">
@@ -2326,17 +2493,65 @@ export default function ScannerPage({ user }: ScannerPageProps) {
               </svg>
             </div>
             <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">No strong opportunities found</h3>
-              <p className="text-slate-600 dark:text-slate-400 mb-6">
-                {totalEvaluated > 0
-                  ? `Scanned ${totalEvaluated.toLocaleString()} options but found 0 strong opportunities meeting our criteria.`
-                  : "The scanner is currently running but hasn't found any high-scoring opportunities yet."}
-              </p>
-            <button
-              onClick={fetchOpportunities}
-              className="px-6 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-medium hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors"
-            >
-              Scan Again
-            </button>
+            <p className="text-slate-600 dark:text-slate-400 mb-6">
+              {totalEvaluated > 0
+                ? `Scanned ${totalEvaluated.toLocaleString()} options but found 0 strong opportunities meeting our criteria.`
+                : "The scanner is currently running but hasn't found any high-scoring opportunities yet."}
+            </p>
+            {relaxedSuggestionAvailable && (
+              <div className="mx-auto mb-6 max-w-xl rounded-2xl border border-amber-200 bg-amber-50 px-6 py-4 text-left text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100">
+                <p className="text-xs font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-200">
+                  Relax filters to review more setups
+                </p>
+                <p className="mt-2 text-sm leading-relaxed">
+                  {relaxedCandidateCount !== null
+                    ? `Our strict criteria filtered out ${relaxedCandidateCount.toLocaleString()} candidates that meet the relaxed thresholds.`
+                    : 'Our strict criteria filtered out additional candidates that meet the relaxed thresholds.'}
+                </p>
+                {relaxedStageSummaries.length > 0 && (
+                  <ul className="mt-3 space-y-1 text-xs leading-relaxed text-amber-800 dark:text-amber-100/80">
+                    {relaxedStageSummaries.map(({ stage, candidates, reason, blocked }, index) => {
+                      const candidateLabel =
+                        typeof candidates === 'number'
+                          ? ` (${candidates.toLocaleString()} candidate${candidates === 1 ? '' : 's'})`
+                          : ''
+                      const blockedLabel =
+                        blocked === 'stale_snapshot'
+                          ? ' — waiting for a fresh market snapshot'
+                          : blocked
+                            ? ` — ${blocked.replace(/_/g, ' ')}`
+                            : ''
+                      return (
+                        <li key={`${stage}-${index}`}>
+                          <span className="font-medium">{stage}:</span>{' '}
+                          <span>
+                            {reason || 'Available under relaxed filters'}
+                            {candidateLabel}
+                            {blockedLabel}
+                          </span>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                )}
+              </div>
+            )}
+            <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+              {relaxedSuggestionAvailable && (
+                <button
+                  onClick={() => fetchOpportunities('relaxed')}
+                  className="w-full px-6 py-3 rounded-2xl bg-amber-500 text-white font-medium shadow-sm transition hover:bg-amber-400 dark:bg-amber-400 dark:text-slate-900 dark:hover:bg-amber-300 sm:w-auto"
+                >
+                  Widen Filters
+                </button>
+              )}
+              <button
+                onClick={() => (relaxedSuggestionAvailable ? fetchOpportunities('strict') : fetchOpportunities())}
+                className="w-full px-6 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-medium hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors sm:w-auto"
+              >
+                {relaxedSuggestionAvailable ? 'Rescan with Strict Filters' : 'Scan Again'}
+              </button>
+            </div>
           </div>
         )}
 
