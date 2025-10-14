@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Navigation from '@/components/navigation'
+import Link from 'next/link'
+import WatchlistView from '@/components/watchlist-view'
 
 export default async function WatchlistPage() {
   const supabase = await createClient()
@@ -17,39 +19,25 @@ export default async function WatchlistPage() {
     <>
       <Navigation userEmail={user.email} />
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="text-center py-20">
-            <div className="text-6xl mb-4">👀</div>
-            <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-4">
-              Options Watchlist
-            </h1>
-            <p className="text-lg text-slate-600 dark:text-slate-400 mb-8">
-              Coming soon! Track your favorite contracts and get real-time alerts.
-            </p>
-            <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 max-w-2xl mx-auto border border-slate-200 dark:border-slate-800">
-              <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">
-                Planned Features:
-              </h3>
-              <ul className="text-left space-y-3 text-slate-600 dark:text-slate-400">
-                <li className="flex items-start gap-3">
-                  <span className="text-emerald-500 mt-1">✓</span>
-                  <span>Add contracts to your watchlist from the scanner</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="text-emerald-500 mt-1">✓</span>
-                  <span>Monitor real-time Greeks and price changes</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="text-emerald-500 mt-1">✓</span>
-                  <span>Set alerts for price targets and probability thresholds</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="text-emerald-500 mt-1">✓</span>
-                  <span>Quick-add watched contracts to your portfolio</span>
-                </li>
-              </ul>
+        <div className="mx-auto max-w-6xl px-4 pb-16 pt-10 sm:px-6 lg:px-8">
+          <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h1 className="text-4xl font-bold tracking-tight text-slate-900 dark:text-white">
+                Options Watchlist
+              </h1>
+              <p className="mt-2 max-w-2xl text-sm text-slate-600 dark:text-slate-300">
+                Keep tabs on contracts you&apos;re considering. Add ideas from the scanner, review the thesis later, and prune the list as setups evolve.
+              </p>
             </div>
+            <Link
+              href="/scanner-page"
+              className="inline-flex items-center justify-center rounded-xl border border-emerald-500 px-5 py-2 text-sm font-semibold text-emerald-600 transition hover:bg-emerald-500 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500 dark:border-emerald-400 dark:text-emerald-300 dark:hover:bg-emerald-500/20"
+            >
+              ← Back to Scanner
+            </Link>
           </div>
+
+          <WatchlistView />
         </div>
       </div>
     </>
