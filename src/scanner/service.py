@@ -419,9 +419,9 @@ class SmartOptionsScanner:
                 working_data[col] = pd.to_numeric(working_data[col], errors="coerce")
 
         liquid_options = working_data[
-            (working_data["volume"] > 200)
-            & (working_data["openInterest"] > 1000)
-            & (working_data["lastPrice"] > 0.25)
+            (working_data["volume"] > 100)
+            & (working_data["openInterest"] > 500)
+            & (working_data["lastPrice"] > 0.1)
             & (working_data["bid"] > 0)
             & (working_data["ask"] > 0)
         ].copy()
@@ -472,7 +472,7 @@ class SmartOptionsScanner:
             )
             liquid_options = (
                 working_data.sort_values(by="volume", ascending=False)
-                .head(100)
+                .head(150)
                 .copy()
             )
 
@@ -516,14 +516,14 @@ class SmartOptionsScanner:
             expected_roi = metrics["expectedMoveRoiPercent"]  # 1 SD move (realistic)
 
             # Define quality thresholds - prioritize probable winners
-            high_probability = probability_percent >= 35  # Good chance of profit (lowered from 40)
-            reasonable_return = expected_roi >= 20  # 20% return on 1 SD move (lowered from 25)
+            high_probability = probability_percent >= 30  # Good chance of profit (lowered from 35)
+            reasonable_return = expected_roi >= 15  # Solid return on 1 SD move (lowered from 20)
 
             # Quality criteria: High score + reasonable probability + decent expected returns
             # Removed the "high_asymmetry" path that surfaced lottery tickets
             quality_setup = (
                 expected_roi > 0
-                and score >= 65  # Lowered from 70
+                and score >= 60  # Lowered from 65
                 and high_probability
                 and reasonable_return
             )
@@ -531,9 +531,9 @@ class SmartOptionsScanner:
             # Relaxed criteria used as a safety net when nothing meets the strict filter
             relaxed_setup = (
                 not quality_setup
-                and expected_roi >= 10
-                and probability_percent >= 18
-                and score >= 60
+                and expected_roi >= 8
+                and probability_percent >= 15
+                and score >= 55
             )
 
             if not quality_setup and not relaxed_setup:
