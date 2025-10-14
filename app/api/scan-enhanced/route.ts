@@ -744,7 +744,7 @@ export async function GET(request: Request) {
       )
     }
     const constraints = mergeConstraints(extractConstraintsFromSearchParams(url.searchParams))
-    return executeEnhancedScanner({
+    return await executeEnhancedScanner({
       constraints,
       debugContext: { requestedVia: "GET" },
     })
@@ -798,7 +798,7 @@ export async function POST(request: Request) {
       )
     }
 
-    return executeEnhancedScanner({
+    return await executeEnhancedScanner({
       constraints,
       debugContext: { requestedVia: "POST" },
     })
