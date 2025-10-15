@@ -36,9 +36,14 @@ export default function Navigation({ userEmail }: { userEmail?: string }) {
               height={40}
               className="rounded-lg"
             />
-            <span className="text-xl font-bold text-slate-900 dark:text-white">
-              Money Printer
-            </span>
+            <div>
+              <div className="text-xl font-bold text-slate-900 dark:text-white">
+                Money Printer
+              </div>
+              <div className="text-xs text-slate-600 dark:text-slate-400">
+                Find explosive trading opportunities
+              </div>
+            </div>
           </div>
 
           {/* Navigation Links */}

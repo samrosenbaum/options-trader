@@ -2321,25 +2321,10 @@ export default function ScannerPage({ user }: ScannerPageProps) {
 
   return (
     <div className="min-h-screen bg-[#0D0D0D]">
-      {/* Header - Robinhood-inspired dark design */}
+      {/* Scanner Controls - Robinhood-inspired dark design */}
       <div className="border-b border-zinc-800 bg-black shadow-sm">
         <div className="max-w-7xl mx-auto px-6 py-6">
           <div className="flex items-center justify-between flex-wrap gap-6">
-            {/* Logo and Title */}
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center overflow-hidden">
-                <Image src="/logo.svg" alt="Money Printer" width={48} height={48} className="w-full h-full object-contain" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-white">
-                  Money Printer
-                </h1>
-                <p className="text-sm text-zinc-400">
-                  Find explosive trading opportunities
-                </p>
-              </div>
-            </div>
-
             <div className="flex items-center gap-4 flex-wrap">
               {/* Tab Navigation */}
               <div className="flex items-center bg-zinc-900 rounded-lg p-1 border border-zinc-800">
