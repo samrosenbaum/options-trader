@@ -77,24 +77,29 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
         )
 
         # Initialize historical move analyzer
+        # Reduced from 365 to 90 days for faster queries (still provides solid sample size)
         self.historical_analyzer = HistoricalMoveAnalyzer(
             db_path="data/historical_moves.db",
-            lookback_days=365
+            lookback_days=90
         )
 
         # Initialize strategy validator for backtesting
-        self.strategy_validator = StrategyValidator(lookback_days=365)
+        self.strategy_validator = StrategyValidator(lookback_days=90)
 
         # Initialize sentiment pre-screener for targeted symbol selection
         self.sentiment_prescreener = SentimentPreScreener(iv_history=self.iv_history)
 
         # Check environment variable for pre-screening mode
         import os
-        self.use_sentiment_prescreening = os.getenv('USE_SENTIMENT_PRESCREENING', '1') == '1'
+        # TEMPORARILY DISABLED for speed - sentiment pre-screening adds 30-60s
+        # Re-enable when we implement progressive results or caching
+        self.use_sentiment_prescreening = os.getenv('USE_SENTIMENT_PRESCREENING', '0') == '1'
 
         print("🚀 Enhanced scanner initialized with institutional-grade components + backtesting", file=sys.stderr)
         if self.use_sentiment_prescreening:
             print("📊 Sentiment pre-screening ENABLED - will prioritize hot symbols", file=sys.stderr)
+        else:
+            print("⚡ Using fast mode: pre-screening disabled for speed", file=sys.stderr)
 
     def _next_symbol_batch(self) -> List[str]:
         """
@@ -110,7 +115,7 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
             # Get hot symbols from sentiment pre-screener
             hot_symbols = self.sentiment_prescreener.get_hot_symbols(
                 universe=self.fetcher.priority_symbols,
-                max_results=min(50, self.symbol_limit or 50),
+                max_results=min(20, self.symbol_limit or 20),  # Reduced from 50 to 20 for speed
                 include_gainers=True,
                 include_losers=True,
                 include_volume=True,

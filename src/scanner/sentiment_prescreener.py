@@ -305,8 +305,8 @@ class SentimentPreScreener:
         Returns:
             Deduplicated list of hot symbols, prioritized by frequency across sources
         """
-        # Check cache
-        if self.cache_timestamp and (datetime.now() - self.cache_timestamp).seconds < 300:  # 5 min cache
+        # Check cache (increased to 15 min for fewer re-scans)
+        if self.cache_timestamp and (datetime.now() - self.cache_timestamp).seconds < 900:  # 15 min cache
             print("📦 Using cached pre-screen results", file=sys.stderr)
             return self.cache.get('hot_symbols', [])[:max_results]
 
@@ -386,7 +386,7 @@ class SentimentPreScreener:
         print("="*80, file=sys.stderr)
         print(f"✅ Pre-screen complete: {len(hot_symbols)} hot symbols identified", file=sys.stderr)
         print(f"   Multi-source symbols: {sum(1 for _, score in ranked_symbols if score >= 3)}", file=sys.stderr)
-        print(f"   Cache expires in 5 minutes\n", file=sys.stderr)
+        print(f"   Cache expires in 15 minutes\n", file=sys.stderr)
 
         return hot_symbols
 
