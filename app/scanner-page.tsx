@@ -738,29 +738,6 @@ const renderOpportunityCard = (
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-        <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
-          <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Potential Return</div>
-          <div className="text-lg font-semibold text-emerald-600">{opp.potentialReturn.toFixed(1)}%</div>
-          <div className="text-xs text-slate-500 dark:text-slate-400">≈ {formatCurrency(potentialReturnDisplay)}</div>
-        </div>
-        <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
-          <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Max Return</div>
-          <div className="text-lg font-semibold text-emerald-600">{opp.maxReturn.toFixed(1)}%</div>
-          <div className="text-xs text-slate-500 dark:text-slate-400">≈ {formatCurrency(maxReturnDisplay)}</div>
-        </div>
-        <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
-          <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Max Loss</div>
-          <div className="text-lg font-semibold text-red-600">{maxLossPercentDisplay.toFixed(1)}%</div>
-          <div className="text-xs text-slate-500 dark:text-slate-400">≈ {formatCurrency(maxLossDisplay)}</div>
-          {opp.riskRewardRatio && opp.riskRewardRatio >= 3 && (
-            <div className="mt-1 inline-flex items-center gap-1 px-2 py-1 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 rounded-full text-xs font-medium">
-              <span>R:R {opp.riskRewardRatio.toFixed(1)}:1</span>
-            </div>
-          )}
-        </div>
-      </div>
-
       {hasPositionSizing && (
         <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50/60 p-5 dark:border-emerald-800/40 dark:bg-emerald-900/20">
           <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
