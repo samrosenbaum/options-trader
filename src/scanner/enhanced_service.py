@@ -77,15 +77,15 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
         )
 
         # Initialize historical move analyzer
-        # Use 90 days for institutional-grade analysis
-        # Fast enough with proper error handling + timeouts
+        # Use 60 days for institutional-grade analysis (balance quality + speed)
+        # Still provides solid statistical significance
         self.historical_analyzer = HistoricalMoveAnalyzer(
             db_path="data/historical_moves.db",
-            lookback_days=90
+            lookback_days=60
         )
 
         # Initialize strategy validator for backtesting (keep enabled - it's valuable)
-        self.strategy_validator = StrategyValidator(lookback_days=90)
+        self.strategy_validator = StrategyValidator(lookback_days=60)
 
         # Initialize sentiment pre-screener for targeted symbol selection
         self.sentiment_prescreener = SentimentPreScreener(iv_history=self.iv_history)
