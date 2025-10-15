@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from datetime import datetime, timezone
 from math import isfinite
@@ -91,7 +92,6 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
         self.sentiment_prescreener = SentimentPreScreener(iv_history=self.iv_history)
 
         # Check environment variable for pre-screening mode
-        import os
         # TEMPORARILY DISABLED for speed - sentiment pre-screening adds 30-60s
         # Re-enable when we implement progressive results or caching
         self.use_sentiment_prescreening = os.getenv('USE_SENTIMENT_PRESCREENING', '0') == '1'
