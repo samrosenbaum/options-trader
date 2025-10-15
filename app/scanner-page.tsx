@@ -2566,7 +2566,7 @@ export default function ScannerPage({ user }: ScannerPageProps) {
                 <p className="mt-1 text-sm text-blue-800 dark:text-blue-200">
                   Our enhanced scanner analyzes historical patterns, sentiment signals, volume data, and institutional-grade probabilities.
                   This comprehensive analysis typically takes <span className="font-semibold">1-4 minutes</span>.
-                  Don't worry - we're working hard to find you the best opportunities!
+                  Don&apos;t worry - we&apos;re working hard to find you the best opportunities!
                 </p>
               </div>
             </div>
