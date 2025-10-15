@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server"
 
-import { resolvePythonExecutable } from "@/lib/server/python"
-import { determineScannerExecutionPolicy } from "@/lib/server/scanner-runtime"
-import { ensureOptionGreeks } from "@/lib/math/greeks"
 import { createClient } from "@/lib/supabase/server"
+
+// Commented out - not used after switching to cache-only mode
+// import { ensureOptionGreeks } from "@/lib/math/greeks"
 
 /**
  * Enhanced Options Scan API Endpoint
@@ -205,20 +205,10 @@ interface EnhancedScannerResponse {
 export const runtime = "nodejs"
 export const maxDuration = 300 // 5 minutes for enhanced analysis
 
-const FALLBACK_TIMEOUT_MS = 280_000 // 4 minutes 40 seconds - give institutional scanner time to complete
-const DEBUG_LOG_TAIL_LENGTH = 2_000
-
-const buildLogTail = (value: string | undefined) => {
-  if (!value) {
-    return undefined
-  }
-
-  if (value.length <= DEBUG_LOG_TAIL_LENGTH) {
-    return value
-  }
-
-  return value.slice(value.length - DEBUG_LOG_TAIL_LENGTH)
-}
+// Commented out - not used after switching to cache-only mode
+// const FALLBACK_TIMEOUT_MS = 280_000
+// const DEBUG_LOG_TAIL_LENGTH = 2_000
+// const buildLogTail = (value: string | undefined) => { ... }
 
 const mergeDebugInfo = (
   reason: string,
@@ -352,7 +342,8 @@ const normalizePercent = (value: unknown): number | null => {
   return value * 100
 }
 
-const sanitizeReturns = (returns: EnhancedScannerOpportunity["returnsAnalysis"]): EnhancedScannerOpportunity["returnsAnalysis"] => {
+// Commented out - not used after switching to cache-only mode
+/* const sanitizeReturns = (returns: EnhancedScannerOpportunity["returnsAnalysis"]): EnhancedScannerOpportunity["returnsAnalysis"] => {
   if (!Array.isArray(returns)) {
     return []
   }
@@ -361,9 +352,10 @@ const sanitizeReturns = (returns: EnhancedScannerOpportunity["returnsAnalysis"])
     move: entry.move,
     return: normalizePercent(entry.return) ?? 0,
   }))
-}
+} */
 
-const parseScannerJson = (stdout: string, stderr: string): EnhancedScannerResponse | null => {
+// Commented out - not used after switching to cache-only mode
+/* const parseScannerJson = (stdout: string, stderr: string): EnhancedScannerResponse | null => {
   const attemptParse = (raw: string): EnhancedScannerResponse | null => {
     const trimmed = raw.trim()
     if (!trimmed) {
@@ -395,16 +387,18 @@ const parseScannerJson = (stdout: string, stderr: string): EnhancedScannerRespon
   }
 
   return attemptParse(stdout) ?? attemptParse(`${stdout}\\n${stderr}`)
-}
+} */
 
-interface SanitizedPayload {
+// Commented out - not used after switching to cache-only mode
+/* interface SanitizedPayload {
   opportunities: EnhancedScannerOpportunity[]
   metadata: EnhancedScannerMetadata & Record<string, unknown>
   timestamp: string
   totalEvaluated: number
-}
+} */
 
-const sanitizeScannerResponse = (parsed: EnhancedScannerResponse): SanitizedPayload => {
+// Commented out - not used after switching to cache-only mode
+/* const sanitizeScannerResponse = (parsed: EnhancedScannerResponse): SanitizedPayload => {
   const metadata: EnhancedScannerMetadata & Record<string, unknown> = {
     ...(parsed.metadata ?? {}),
   }
@@ -486,9 +480,10 @@ const sanitizeScannerResponse = (parsed: EnhancedScannerResponse): SanitizedPayl
     timestamp,
     totalEvaluated,
   }
-}
+} */
 
-const buildSuccessResponse = (payload: SanitizedPayload) => {
+// Commented out - not used after switching to cache-only mode
+/* const buildSuccessResponse = (payload: SanitizedPayload) => {
   const metadata = {
     ...payload.metadata,
   }
@@ -503,7 +498,7 @@ const buildSuccessResponse = (payload: SanitizedPayload) => {
     metadata,
     enhanced: true, // Flag to indicate this is from the enhanced scanner
   })
-}
+} */
 
 interface ConstraintPayload {
   portfolioSize?: number
@@ -664,7 +659,6 @@ const fetchCachedScanResults = async (filterMode: FilterMode = "strict") => {
 }
 
 const executeEnhancedScanner = async ({
-  constraints,
   debugContext,
   filterMode,
 }: {
@@ -672,7 +666,6 @@ const executeEnhancedScanner = async ({
   debugContext?: Record<string, unknown>
   filterMode?: FilterMode
 }) => {
-  const forcedPolicy = determineScannerExecutionPolicy()
   const resolvedMode: FilterMode = filterMode === "strict" ? "strict" : "relaxed"
 
   // Try to fetch cached results first for instant response

@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef, type ReactNode } from 'react'
 import RealTimeProgress from '../components/real-time-progress'
 import { MontyLoading } from '../components/monty-loading'
+import { ScanStatusBanner } from '../components/scan-status-banner'
 import { createClient } from '@/lib/supabase/client'
 import type { Database } from '@/lib/types/database.types'
 import type { PositionSizingRecommendation } from '@/lib/types/opportunity'
@@ -2553,6 +2554,9 @@ export default function ScannerPage({ user }: ScannerPageProps) {
               </div>
 
       <div className="max-w-7xl mx-auto px-6 py-8">
+        {/* Scan Status Banner - Shows cache age and countdown to next scan */}
+        {activeTab === 'options' && !isLoading && <ScanStatusBanner mode={scanMode} />}
+
         {/* Loading State - Monty the Money Printer Piggy! */}
         {isLoading && <MontyLoading />}
 

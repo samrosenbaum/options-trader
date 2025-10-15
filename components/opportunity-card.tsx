@@ -850,6 +850,26 @@ interface OpportunityCardProps {
 
 const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps) => {
   const [isExpanded, setIsExpanded] = React.useState(false)
+  const [loadingBacktest, setLoadingBacktest] = React.useState(false)
+  const [enhancedBacktest, setEnhancedBacktest] = React.useState<{
+    winRate: number
+    avgReturn: number
+    sharpeRatio: number
+    maxDrawdown: number
+    similarTradesFound: number
+    summary: string
+    confidence: 'high' | 'medium' | 'low'
+  } | null>(null)
+  const [loadingHistorical, setLoadingHistorical] = React.useState(false)
+  const [enhancedHistorical, setEnhancedHistorical] = React.useState<{
+    requiredMove: number
+    historicalFrequency: number
+    recentExamples: Array<{ date: string; daysToTarget: number }>
+    direction: 'up' | 'down'
+    summary: string
+    confidence: 'high' | 'medium' | 'low'
+  } | null>(null)
+
   const scenario = calculateInvestmentScenario(opportunity, investmentAmount)
   const isPerContractView = scenario.basis === 'perContract'
 
@@ -896,6 +916,59 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
       addItem(watchlistPayload)
     }
   }, [addItem, removeItem, watchlistPayload, watchlistId, onWatchlist])
+
+  // Enhancement functions for on-demand deep dive
+  const runBacktest = React.useCallback(async () => {
+    setLoadingBacktest(true)
+    try {
+      const response = await fetch('/api/enhance/backtest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          symbol: opportunity.symbol,
+          optionType: opportunity.optionType,
+          strike: opportunity.strike,
+          stockPrice: opportunity.stockPrice,
+          premium: opportunity.premium,
+          daysToExpiration: opportunity.daysToExpiration,
+          impliedVolatility: opportunity.moveAnalysis?.impliedVol ?? null
+        })
+      })
+      const data = await response.json()
+      if (data.success && data.backtest) {
+        setEnhancedBacktest(data.backtest)
+      }
+    } catch (error) {
+      console.error('Backtest failed:', error)
+    } finally {
+      setLoadingBacktest(false)
+    }
+  }, [opportunity])
+
+  const runHistorical = React.useCallback(async () => {
+    setLoadingHistorical(true)
+    try {
+      const response = await fetch('/api/enhance/historical', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          symbol: opportunity.symbol,
+          optionType: opportunity.optionType,
+          strike: opportunity.strike,
+          stockPrice: opportunity.stockPrice,
+          daysToExpiration: opportunity.daysToExpiration
+        })
+      })
+      const data = await response.json()
+      if (data.success && data.historical) {
+        setEnhancedHistorical(data.historical)
+      }
+    } catch (error) {
+      console.error('Historical analysis failed:', error)
+    } finally {
+      setLoadingHistorical(false)
+    }
+  }, [opportunity])
 
   const watchlistButtonLabel = onWatchlist ? 'Remove from Watchlist' : 'Add to Watchlist'
   const watchlistHelperText = onWatchlist ? 'Saved to your watchlist' : 'Keep an eye on this contract later'
@@ -1774,7 +1847,202 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
             </section>
           )}
 
-          {/* Backtest Validation Section */}
+          {/* Enhancement Button: Backtest - Show when no backtest data available */}
+          {!opportunity.backtestValidation && !enhancedBacktest && (
+            <section className="border-2 border-dashed border-purple-300 dark:border-purple-700 rounded-3xl p-6 bg-purple-50/30 dark:bg-purple-950/10">
+              <div className="text-center">
+                <h5 className="text-lg font-semibold text-purple-900 dark:text-purple-100 mb-2">
+                  🎯 365-Day Backtest Available
+                </h5>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+                  See how similar trades performed over the past year. Get win rate, average return, and confidence metrics.
+                </p>
+                <button
+                  onClick={runBacktest}
+                  disabled={loadingBacktest}
+                  className="px-6 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white font-semibold rounded-xl transition-colors duration-200 shadow-lg hover:shadow-xl disabled:cursor-not-allowed"
+                >
+                  {loadingBacktest ? (
+                    <span className="flex items-center gap-2">
+                      <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Running 365-Day Backtest...
+                    </span>
+                  ) : (
+                    '🔍 Run 365-Day Backtest'
+                  )}
+                </button>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
+                  Takes 5-10 seconds
+                </p>
+              </div>
+            </section>
+          )}
+
+          {/* Backtest Results from Enhancement */}
+          {enhancedBacktest && (
+            <section className="bg-gradient-to-br from-purple-50 via-purple-50/50 to-white dark:from-purple-950/30 dark:via-purple-900/20 dark:to-slate-900 rounded-3xl p-6 border-2 border-purple-200 dark:border-purple-800">
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-2">
+                  <h5 className="text-lg font-bold text-purple-900 dark:text-purple-100">🎯 365-Day Backtest Results</h5>
+                  <span className={`px-3 py-1 rounded-lg text-xs font-bold ${
+                    enhancedBacktest.confidence === 'high'
+                      ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                      : enhancedBacktest.confidence === 'medium'
+                        ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                        : 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
+                  }`}>
+                    {enhancedBacktest.confidence.toUpperCase()} CONFIDENCE
+                  </span>
+                </div>
+                <p className="text-sm text-purple-800 dark:text-purple-200 leading-relaxed font-medium">
+                  {enhancedBacktest.summary}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="bg-white/70 dark:bg-slate-900/50 rounded-xl p-4 border border-purple-200 dark:border-purple-800">
+                  <div className="text-xs font-semibold text-purple-600 dark:text-purple-400 mb-1 uppercase tracking-wide">Win Rate</div>
+                  <div className={`text-3xl font-bold ${
+                    enhancedBacktest.winRate >= 60
+                      ? 'text-green-600 dark:text-green-400'
+                      : enhancedBacktest.winRate >= 50
+                        ? 'text-yellow-600 dark:text-yellow-400'
+                        : 'text-red-600 dark:text-red-400'
+                  }`}>
+                    {enhancedBacktest.winRate.toFixed(0)}%
+                  </div>
+                </div>
+                <div className="bg-white/70 dark:bg-slate-900/50 rounded-xl p-4 border border-purple-200 dark:border-purple-800">
+                  <div className="text-xs font-semibold text-purple-600 dark:text-purple-400 mb-1 uppercase tracking-wide">Avg Return</div>
+                  <div className={`text-3xl font-bold ${
+                    enhancedBacktest.avgReturn >= 0
+                      ? 'text-green-600 dark:text-green-400'
+                      : 'text-red-600 dark:text-red-400'
+                  }`}>
+                    {enhancedBacktest.avgReturn >= 0 ? '+' : ''}{enhancedBacktest.avgReturn.toFixed(1)}%
+                  </div>
+                </div>
+                <div className="bg-white/70 dark:bg-slate-900/50 rounded-xl p-4 border border-purple-200 dark:border-purple-800">
+                  <div className="text-xs font-semibold text-purple-600 dark:text-purple-400 mb-1 uppercase tracking-wide">Sharpe Ratio</div>
+                  <div className="text-3xl font-bold text-slate-900 dark:text-white">
+                    {enhancedBacktest.sharpeRatio.toFixed(2)}
+                  </div>
+                </div>
+                <div className="bg-white/70 dark:bg-slate-900/50 rounded-xl p-4 border border-purple-200 dark:border-purple-800">
+                  <div className="text-xs font-semibold text-purple-600 dark:text-purple-400 mb-1 uppercase tracking-wide">Sample Size</div>
+                  <div className="text-3xl font-bold text-slate-900 dark:text-white">
+                    {enhancedBacktest.similarTradesFound}
+                  </div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400">
+                    trades
+                  </div>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* Enhancement Button: Historical Patterns - Show when no historical data available */}
+          {!opportunity.historicalContext && !enhancedHistorical && (
+            <section className="border-2 border-dashed border-blue-300 dark:border-blue-700 rounded-3xl p-6 bg-blue-50/30 dark:bg-blue-950/10">
+              <div className="text-center">
+                <h5 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-2">
+                  📊 Historical Price Patterns Available
+                </h5>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+                  Analyze how often similar price moves have occurred historically. See frequency and recent examples.
+                </p>
+                <button
+                  onClick={runHistorical}
+                  disabled={loadingHistorical}
+                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold rounded-xl transition-colors duration-200 shadow-lg hover:shadow-xl disabled:cursor-not-allowed"
+                >
+                  {loadingHistorical ? (
+                    <span className="flex items-center gap-2">
+                      <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Analyzing Historical Patterns...
+                    </span>
+                  ) : (
+                    '📈 Analyze Historical Patterns'
+                  )}
+                </button>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
+                  Takes 3-5 seconds
+                </p>
+              </div>
+            </section>
+          )}
+
+          {/* Historical Analysis Results from Enhancement */}
+          {enhancedHistorical && (
+            <section className="bg-gradient-to-br from-blue-50 via-blue-50/50 to-white dark:from-blue-950/30 dark:via-blue-900/20 dark:to-slate-900 rounded-3xl p-6 border-2 border-blue-200 dark:border-blue-800">
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-2">
+                  <h5 className="text-lg font-bold text-blue-900 dark:text-blue-100">📊 Historical Pattern Analysis</h5>
+                  <span className={`px-3 py-1 rounded-lg text-xs font-bold ${
+                    enhancedHistorical.confidence === 'high'
+                      ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                      : enhancedHistorical.confidence === 'medium'
+                        ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                        : 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
+                  }`}>
+                    {enhancedHistorical.confidence.toUpperCase()} CONFIDENCE
+                  </span>
+                </div>
+                <p className="text-sm text-blue-800 dark:text-blue-200 leading-relaxed font-medium">
+                  {enhancedHistorical.summary}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div className="bg-white/70 dark:bg-slate-900/50 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
+                  <div className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1 uppercase tracking-wide">Required Move</div>
+                  <div className={`text-3xl font-bold ${
+                    enhancedHistorical.direction === 'up'
+                      ? 'text-green-600 dark:text-green-400'
+                      : 'text-red-600 dark:text-red-400'
+                  }`}>
+                    {enhancedHistorical.direction === 'up' ? '↗' : '↘'} {enhancedHistorical.requiredMove.toFixed(1)}%
+                  </div>
+                </div>
+                <div className="bg-white/70 dark:bg-slate-900/50 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
+                  <div className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1 uppercase tracking-wide">Historical Frequency</div>
+                  <div className="text-3xl font-bold text-slate-900 dark:text-white">
+                    {(enhancedHistorical.historicalFrequency * 100).toFixed(0)}%
+                  </div>
+                </div>
+                <div className="bg-white/70 dark:bg-slate-900/50 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
+                  <div className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1 uppercase tracking-wide">Recent Examples</div>
+                  <div className="text-3xl font-bold text-slate-900 dark:text-white">
+                    {enhancedHistorical.recentExamples.length}
+                  </div>
+                </div>
+              </div>
+
+              {enhancedHistorical.recentExamples.length > 0 && (
+                <div className="bg-white/70 dark:bg-slate-900/50 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
+                  <div className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-2 uppercase tracking-wide">Most Recent Occurrences</div>
+                  <div className="space-y-1">
+                    {enhancedHistorical.recentExamples.slice(0, 3).map((example, idx) => (
+                      <div key={idx} className="text-sm text-slate-700 dark:text-slate-300 flex justify-between">
+                        <span>{new Date(example.date).toLocaleDateString()}</span>
+                        <span className="text-slate-500 dark:text-slate-400">
+                          {example.daysToTarget} days to target
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </section>
+          )}
+
+          {/* Backtest Validation Section - Original from scanner */}
           {opportunity.backtestValidation && opportunity.backtestValidation.similarTradesFound >= 5 && (
             <section className="bg-gradient-to-br from-purple-50 via-purple-50/50 to-white dark:from-purple-950/30 dark:via-purple-900/20 dark:to-slate-900 rounded-3xl p-6 border-2 border-purple-200 dark:border-purple-800">
               <div className="mb-6">

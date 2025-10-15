@@ -355,7 +355,7 @@ export function OpportunityCard({ opportunity, portfolioSize = 10000 }: { opport
             <span className="text-gray-600"> ({positionExample.allocationPercent.toFixed(1)}% of ${portfolioSize.toLocaleString()})</span>
           </div>
           <div className="text-xs text-purple-700 mt-1">
-            {opportunity.positionSizing?.riskBudgetTier} tier • Kelly: {(opportunity.positionSizing.kellyFraction * 100).toFixed(1)}%
+            {opportunity.positionSizing?.riskBudgetTier} tier • Kelly: {((opportunity.positionSizing?.kellyFraction ?? 0) * 100).toFixed(1)}%
           </div>
         </div>
       )}

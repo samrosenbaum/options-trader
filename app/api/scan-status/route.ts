@@ -58,7 +58,7 @@ function getNextScanTime(currentMinute: number, isRelaxed: boolean): number {
   return minutesUntil * 60
 }
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
     const supabase = await createClient()
 
@@ -72,22 +72,29 @@ export async function GET(request: Request) {
     const currentMinute = now.getMinutes()
     const currentSecond = now.getSeconds()
 
+    // Type-safe data extraction
+    const strictRow = strictData.data as Record<string, unknown> | null
+    const relaxedRow = relaxedData.data as Record<string, unknown> | null
+
+    const strictAgeMinutes = typeof strictRow?.age_minutes === 'number' ? strictRow.age_minutes : 0
+    const relaxedAgeMinutes = typeof relaxedRow?.age_minutes === 'number' ? relaxedRow.age_minutes : 0
+
     const strictStatus: CacheStatus = {
       available: !strictData.error && !!strictData.data,
-      ageMinutes: strictData.data?.age_minutes || 0,
-      opportunityCount: strictData.data?.opportunities?.length || 0,
-      scanTimestamp: strictData.data?.scan_timestamp || null,
+      ageMinutes: strictAgeMinutes,
+      opportunityCount: Array.isArray(strictRow?.opportunities) ? strictRow.opportunities.length : 0,
+      scanTimestamp: typeof strictRow?.scan_timestamp === 'string' ? strictRow.scan_timestamp : null,
       nextScanIn: getNextScanTime(currentMinute, false) - currentSecond,
-      isStale: (strictData.data?.age_minutes || 999) > 15
+      isStale: strictAgeMinutes > 15
     }
 
     const relaxedStatus: CacheStatus = {
       available: !relaxedData.error && !!relaxedData.data,
-      ageMinutes: relaxedData.data?.age_minutes || 0,
-      opportunityCount: relaxedData.data?.opportunities?.length || 0,
-      scanTimestamp: relaxedData.data?.scan_timestamp || null,
+      ageMinutes: relaxedAgeMinutes,
+      opportunityCount: Array.isArray(relaxedRow?.opportunities) ? relaxedRow.opportunities.length : 0,
+      scanTimestamp: typeof relaxedRow?.scan_timestamp === 'string' ? relaxedRow.scan_timestamp : null,
       nextScanIn: getNextScanTime(currentMinute, true) - currentSecond,
-      isStale: (relaxedData.data?.age_minutes || 999) > 15
+      isStale: relaxedAgeMinutes > 15
     }
 
     // If next scan is negative or very small, assume it's running now
