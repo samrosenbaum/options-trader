@@ -35,6 +35,7 @@ export interface SwingSignalNewsHeadline {
   publisher?: string
   sentiment_score?: number
   sentiment_label?: string
+  macro_events?: string[]
 }
 
 export interface SwingSignalMetadata extends Record<string, unknown> {

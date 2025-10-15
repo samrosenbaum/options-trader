@@ -3,6 +3,12 @@ import pandas as pd
 from datetime import datetime, timedelta
 import json
 import re
+import sys
+import os
+
+# Add parent directory to path for imports
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from src.analysis.news_sentiment import detect_macro_events
 
 def analyze_sentiment(text):
     """Enhanced sentiment analysis with options-specific keywords"""
@@ -155,7 +161,8 @@ def get_political_news():
                             
                             if any(keyword in content for keyword in political_keywords):
                                 sentiment = analyze_sentiment(title_text + ' ' + desc_text)
-                                
+                                macro_events = detect_macro_events(title_text + ' ' + desc_text)
+
                                 political_news.append({
                                     'id': str(hash(title_text)),
                                     'headline': title_text,
@@ -165,7 +172,8 @@ def get_political_news():
                                     'datetime': int(datetime.now().timestamp()),
                                     'related': ['POLITICAL'],
                                     'sentiment': sentiment,
-                                    'category': 'political'
+                                    'category': 'political',
+                                    'macro_events': macro_events if macro_events else []
                                 })
             except Exception as e:
                 print(f"Error fetching from {source}: {e}")
@@ -194,12 +202,17 @@ def get_stock_news(symbols):
                 continue
             
             for item in news[:5]:  # Top 5 news per symbol
-                sentiment = analyze_sentiment(item.get('title', '') + ' ' + item.get('summary', ''))
-                
+                title_text = item.get('title', '')
+                summary_text = item.get('summary', '')
+                full_text = title_text + ' ' + summary_text
+
+                sentiment = analyze_sentiment(full_text)
+                macro_events = detect_macro_events(full_text)
+
                 # Determine news category
-                content = (item.get('title', '') + ' ' + item.get('summary', '')).lower()
+                content = full_text.lower()
                 category = 'general'
-                
+
                 if any(word in content for word in ['earnings', 'quarterly', 'guidance', 'forecast']):
                     category = 'earnings'
                 elif any(word in content for word in ['merger', 'acquisition', 'buyout', 'deal']):
@@ -210,18 +223,19 @@ def get_stock_news(symbols):
                     category = 'insider'
                 elif any(word in content for word in get_political_keywords()):
                     category = 'political'
-                
+
                 news_item = {
                     'id': item.get('uuid', str(hash(item.get('title', '')))),
-                    'headline': item.get('title', 'No title'),
-                    'summary': item.get('summary', '')[:200],
+                    'headline': title_text if title_text else 'No title',
+                    'summary': summary_text[:200],
                     'source': item.get('publisher', 'Unknown'),
                     'url': item.get('link', ''),
                     'datetime': item.get('providerPublishTime', int(datetime.now().timestamp())),
                     'related': [symbol],
                     'sentiment': sentiment,
                     'category': category,
-                    'impact_score': calculate_news_impact(content, sentiment)
+                    'impact_score': calculate_news_impact(content, sentiment),
+                    'macro_events': macro_events if macro_events else []
                 }
                 all_news.append(news_item)
                 

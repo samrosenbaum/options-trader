@@ -6,6 +6,16 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ExternalLink, TrendingUp, TrendingDown, Minus, RefreshCw } from "lucide-react"
 
+// Macro event badge styling
+const MACRO_EVENT_DISPLAY: Record<string, { label: string; variant: string; emoji: string }> = {
+  trade_war: { label: "Trade War", variant: "destructive", emoji: "⚔️" },
+  geopolitical: { label: "Geopolitical", variant: "destructive", emoji: "🌍" },
+  monetary_policy: { label: "Fed Policy", variant: "default", emoji: "🏦" },
+  economic_data: { label: "Economic Data", variant: "secondary", emoji: "📊" },
+  sector_events: { label: "Sector Event", variant: "secondary", emoji: "🏭" },
+  market_structure: { label: "Market Event", variant: "destructive", emoji: "⚠️" },
+}
+
 interface NewsItem {
   id: string
   headline: string
@@ -18,6 +28,7 @@ interface NewsItem {
     label: "bullish" | "bearish" | "neutral"
     score: number
   }
+  macro_events?: string[]
 }
 
 export function LiveNewsFeed() {
@@ -99,7 +110,28 @@ export function LiveNewsFeed() {
                       </a>
                     </div>
                     <p className="text-xs text-muted-foreground line-clamp-2">{item.summary}</p>
-                    <div className="flex items-center gap-2">
+
+                    {/* Macro Event Alerts - Informational Only */}
+                    {item.macro_events && item.macro_events.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {item.macro_events.map((event) => {
+                          const display = MACRO_EVENT_DISPLAY[event]
+                          if (!display) return null
+                          return (
+                            <Badge
+                              key={event}
+                              variant={display.variant as "default" | "destructive" | "secondary" | "outline"}
+                              className="text-xs"
+                            >
+                              <span className="mr-1">{display.emoji}</span>
+                              {display.label}
+                            </Badge>
+                          )
+                        })}
+                      </div>
+                    )}
+
+                    <div className="flex items-center gap-2 flex-wrap">
                       <Badge variant="outline" className="text-xs">
                         {item.source}
                       </Badge>

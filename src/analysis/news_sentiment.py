@@ -20,6 +20,7 @@ class NewsHeadline:
     sentiment_score: float
     sentiment_label: str
     published_at: Optional[datetime] = None
+    macro_events: Optional[List[str]] = None  # Detected macro events (Trump/China, Fed, etc.)
 
     def to_dict(self) -> Dict[str, object]:
         return {
@@ -30,6 +31,7 @@ class NewsHeadline:
             "sentiment_score": self.sentiment_score,
             "sentiment_label": self.sentiment_label,
             "published_at": self.published_at.isoformat() if self.published_at else None,
+            "macro_events": self.macro_events or [],
         }
 
 
@@ -72,6 +74,32 @@ INTENSIFIERS: Iterable[str] = (
     "record",
     "unprecedented",
 )
+
+# Macro event detection - these don't affect sentiment scoring, just provide context
+MACRO_EVENT_CATEGORIES: Dict[str, Iterable[str]] = {
+    "trade_war": ("tariff", "trade war", "china trade", "sanctions", "embargo", "duties", "import tax", "export ban"),
+    "geopolitical": ("trump", "biden", "xi jinping", "putin", "ukraine", "taiwan", "israel", "middle east"),
+    "monetary_policy": ("fed", "federal reserve", "interest rate", "rate hike", "rate cut", "powell", "fomc", "quantitative"),
+    "economic_data": ("inflation", "cpi", "jobs report", "unemployment", "gdp", "retail sales", "housing starts", "pmi"),
+    "sector_events": ("chip ban", "semiconductor", "oil embargo", "opec", "bank crisis", "tech regulation", "ai regulation"),
+    "market_structure": ("circuit breaker", "trading halt", "market crash", "flash crash", "short squeeze", "gamma squeeze"),
+}
+
+
+def detect_macro_events(text: str) -> List[str]:
+    """
+    Detect macro market events in text (Trump/China, Fed, etc.).
+    Returns list of detected event categories for informational purposes only.
+    Does NOT affect sentiment scoring or filtering.
+    """
+    lowered = text.lower()
+    detected = []
+
+    for category, terms in MACRO_EVENT_CATEGORIES.items():
+        if any(term in lowered for term in terms):
+            detected.append(category)
+
+    return detected
 
 
 def score_sentiment(text: str) -> Dict[str, object]:
@@ -162,6 +190,7 @@ def fetch_symbol_news(symbol: str, limit: int = 5) -> List[NewsHeadline]:
             published_at = None
 
         sentiment = score_sentiment(f"{title} {summary}")
+        macro_events = detect_macro_events(f"{title} {summary}")
         news_items.append(
             NewsHeadline(
                 title=title,
@@ -171,6 +200,7 @@ def fetch_symbol_news(symbol: str, limit: int = 5) -> List[NewsHeadline]:
                 sentiment_score=sentiment["score"],
                 sentiment_label=sentiment["label"],
                 published_at=published_at,
+                macro_events=macro_events if macro_events else None,
             )
         )
 

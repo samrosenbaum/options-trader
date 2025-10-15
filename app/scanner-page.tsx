@@ -4,6 +4,8 @@ import { useState, useEffect, useMemo, useCallback, useRef, type ReactNode } fro
 import Image from 'next/image'
 import RealTimeProgress from '../components/real-time-progress'
 import LiveTicker from '../components/live-ticker'
+import { PoliticianTradesFeed } from '../components/politician-trades-feed'
+import { LiveNewsFeed } from '../components/live-news-feed'
 import { createClient } from '@/lib/supabase/client'
 import type { Database } from '@/lib/types/database.types'
 import type { PositionSizingRecommendation } from '@/lib/types/opportunity'
@@ -2612,6 +2614,12 @@ export default function ScannerPage({ user }: ScannerPageProps) {
               <p className="text-2xl font-bold text-blue-400">{opportunities.filter(o => o.catalysts && o.catalysts.length > 0).length}</p>
             </div>
           </div>
+        </div>
+
+        {/* Market Intelligence Feeds */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <PoliticianTradesFeed />
+          <LiveNewsFeed />
         </div>
 
         {isRelaxedMode && !isLoading && !fallbackActive && (
