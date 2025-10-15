@@ -1,0 +1,44 @@
+name: Background Scanner
+
+on:
+  schedule:
+    # Run every 10 minutes
+    - cron: '*/10 * * * *'
+  workflow_dispatch:  # Allow manual trigger from GitHub Actions tab
+
+jobs:
+  background-scan:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'  # Cache pip dependencies for faster runs
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run background scanner
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          python3 scripts/background_scanner.py --filter-mode strict
+
+      - name: Check results
+        if: success()
+        run: |
+          echo "✅ Background scan completed successfully"
+
+      - name: Report failure
+        if: failure()
+        run: |
+          echo "❌ Background scan failed"
+          exit 1
