@@ -109,9 +109,9 @@ def run_background_scan(filter_mode: str = 'strict', max_symbols: int = None) ->
     print(f"🚀 BACKGROUND SCANNER STARTED - {datetime.now().isoformat()}", file=sys.stderr)
     print("="*80, file=sys.stderr)
 
-    # AGGRESSIVE OPTIMIZATIONS for speed
-    os.environ['USE_SENTIMENT_PRESCREENING'] = '0'  # Disable pre-screening (too slow)
-    os.environ['DISABLE_BACKTESTING'] = '1'  # Disable backtesting (too slow for background)
+    # SMART optimizations - keep quality high, just disable slow non-essential features
+    os.environ['USE_SENTIMENT_PRESCREENING'] = '0'  # Disable pre-screening (can be slow)
+    os.environ['DISABLE_BACKTESTING'] = '0'  # Keep backtesting ENABLED - it's valuable!
 
     start_time = time.time()
 
@@ -120,15 +120,15 @@ def run_background_scan(filter_mode: str = 'strict', max_symbols: int = None) ->
     signal.alarm(240)  # 4 minutes
 
     try:
-        # Run SUPER OPTIMIZED scan - VERY limited symbols for speed
-        # Default to 10 symbols if not specified (must complete in <5 min)
+        # Run INSTITUTIONAL-GRADE scan with enough symbols for quality
+        # Default to 20 symbols if not specified (balance coverage + speed)
         if max_symbols is None:
-            max_symbols = 10
-            print(f"⚡ Running SUPER OPTIMIZED background scan (max_symbols={max_symbols} for SPEED)", file=sys.stderr)
+            max_symbols = 20
+            print(f"⚡ INSTITUTIONAL MODE: {max_symbols} symbols + 90 days history + backtesting ENABLED", file=sys.stderr)
         else:
             print(f"📊 Running background scan (filter_mode={filter_mode}, max_symbols={max_symbols})", file=sys.stderr)
 
-        print(f"⏰ Timeout set to 4 minutes - scan MUST complete before then", file=sys.stderr)
+        print(f"⏰ TIMEOUT: 4 minutes - will abort if scan hangs", file=sys.stderr)
 
         result = run_enhanced_scan(
             max_symbols=max_symbols,

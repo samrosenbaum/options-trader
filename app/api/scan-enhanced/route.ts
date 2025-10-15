@@ -205,7 +205,7 @@ interface EnhancedScannerResponse {
 export const runtime = "nodejs"
 export const maxDuration = 300 // 5 minutes for enhanced analysis
 
-const FALLBACK_TIMEOUT_MS = 120_000 // 2 minutes - optimized scanner should complete faster now
+const FALLBACK_TIMEOUT_MS = 280_000 // 4 minutes 40 seconds - give institutional scanner time to complete
 const DEBUG_LOG_TAIL_LENGTH = 2_000
 
 const buildLogTail = (value: string | undefined) => {
