@@ -1,11 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo, useCallback, useRef, type ReactNode } from 'react'
-import Image from 'next/image'
 import RealTimeProgress from '../components/real-time-progress'
-import LiveTicker from '../components/live-ticker'
-import { PoliticianTradesFeed } from '../components/politician-trades-feed'
-import { LiveNewsFeed } from '../components/live-news-feed'
 import { MontyLoading } from '../components/monty-loading'
 import { createClient } from '@/lib/supabase/client'
 import type { Database } from '@/lib/types/database.types'
@@ -2549,11 +2545,6 @@ export default function ScannerPage({ user }: ScannerPageProps) {
                 </div>
               </div>
 
-      {/* Live Ticker */}
-      <div className="max-w-7xl mx-auto px-6 py-4">
-        <LiveTicker />
-      </div>
-
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Scan Progress */}
         <RealTimeProgress
@@ -2606,12 +2597,6 @@ export default function ScannerPage({ user }: ScannerPageProps) {
             </div>
           </div>
         )}
-
-        {/* Market Intelligence Feeds */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <PoliticianTradesFeed />
-          <LiveNewsFeed />
-        </div>
 
         {isRelaxedMode && !isLoading && !fallbackActive && (
           <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-6 py-4 text-left text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100">

@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
+import { BarChart3, Eye, Briefcase, Newspaper } from 'lucide-react'
 
 export default function Navigation({ userEmail }: { userEmail?: string }) {
   const pathname = usePathname()
@@ -18,9 +19,10 @@ export default function Navigation({ userEmail }: { userEmail?: string }) {
   }
 
   const navItems = [
-    { href: '/', label: 'Scanner', icon: '📊' },
-    { href: '/watchlist', label: 'Watchlist', icon: '👀' },
-    { href: '/portfolio', label: 'Portfolio', icon: '💼' },
+    { href: '/', label: 'Scanner', icon: BarChart3 },
+    { href: '/market-info', label: 'Market Info', icon: Newspaper },
+    { href: '/watchlist', label: 'Watchlist', icon: Eye },
+    { href: '/portfolio', label: 'Portfolio', icon: Briefcase },
   ]
 
   return (
@@ -50,17 +52,18 @@ export default function Navigation({ userEmail }: { userEmail?: string }) {
           <div className="flex items-center gap-1">
             {navItems.map((item) => {
               const isActive = pathname === item.href
+              const IconComponent = item.icon
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
                     isActive
                       ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
                       : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
                   }`}
                 >
-                  <span className="mr-2">{item.icon}</span>
+                  <IconComponent className="w-4 h-4" />
                   {item.label}
                 </Link>
               )
