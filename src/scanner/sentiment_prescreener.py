@@ -26,6 +26,14 @@ from src.scanner.iv_rank_history import IVRankHistory
 class SentimentPreScreener:
     """Pre-screen symbols based on live market sentiment and activity."""
 
+    # ETFs and index funds to skip for earnings checks (they don't have earnings)
+    ETF_EXCLUSIONS = {
+        'SPY', 'QQQ', 'IWM', 'DIA', 'VXX', 'TLT', 'GLD', 'SLV', 'USO',
+        'XLE', 'XLF', 'XLK', 'XLV', 'XLI', 'XLP', 'XLY', 'XLU', 'XLB', 'XLRE',
+        'EEM', 'VWO', 'EFA', 'AGG', 'BND', 'LQD', 'HYG', 'JNK',
+        'SMH', 'XOP', 'XBI', 'IBB', 'XRT', 'XHB', 'ITB', 'ARKK', 'ARKG', 'ARKW'
+    }
+
     def __init__(self, iv_history: Optional[IVRankHistory] = None):
         """
         Initialize pre-screener.
@@ -236,7 +244,10 @@ class SentimentPreScreener:
             earnings_plays = []
             today = datetime.now()
 
-            for symbol in universe[:50]:  # Sample first 50
+            # Filter out ETFs before checking (they don't have earnings)
+            filtered_universe = [s for s in universe[:50] if s.upper() not in self.ETF_EXCLUSIONS]
+
+            for symbol in filtered_universe:
                 try:
                     ticker = yf.Ticker(symbol)
                     calendar = ticker.calendar
