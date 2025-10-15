@@ -2579,6 +2579,9 @@ export default function ScannerPage({ user }: ScannerPageProps) {
           }}
         />
 
+        {/* Loading State - Monty the Money Printer Piggy! */}
+        {isLoading && <MontyLoading />}
+
         {/* Stats Cards - Robinhood-inspired dark design */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-8">
           <div className="bg-zinc-900 rounded-xl p-5 border border-zinc-800 hover:border-zinc-700 transition-colors">
@@ -2676,9 +2679,6 @@ export default function ScannerPage({ user }: ScannerPageProps) {
             </div>
           </div>
         )}
-
-        {/* Loading State - Monty the Money Printer Piggy! */}
-        {isLoading && <MontyLoading />}
 
         {/* Empty State */}
         {!isLoading && opportunities.length === 0 && (
