@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import date, datetime
 from typing import Any, Dict, List, Literal
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 
 
 class OptionGreeks(BaseModel):
@@ -17,6 +17,11 @@ class OptionGreeks(BaseModel):
 
 class OptionContract(BaseModel):
     """Structured view of an option contract used by the scoring engine."""
+
+    model_config = ConfigDict(
+        populate_by_name=True,
+        arbitrary_types_allowed=True
+    )
 
     symbol: str
     option_type: Literal["call", "put"] = Field(alias="type")
@@ -32,11 +37,8 @@ class OptionContract(BaseModel):
     greeks: OptionGreeks = Field(default_factory=OptionGreeks)
     raw: Dict[str, Any] = Field(default_factory=dict)
 
-    class Config:
-        allow_population_by_field_name = True
-        arbitrary_types_allowed = True
-
-    @validator("expiration", pre=True)
+    @field_validator("expiration", mode="before")
+    @classmethod
     def parse_expiration(cls, value: Any) -> date:
         if isinstance(value, date):
             return value
@@ -46,11 +48,13 @@ class OptionContract(BaseModel):
             return datetime.strptime(value, "%Y-%m-%d").date()
         raise ValueError("Unsupported expiration format")
 
-    @validator("volume", "open_interest", pre=True)
+    @field_validator("volume", "open_interest", mode="before")
+    @classmethod
     def coerce_int(cls, value: Any) -> int:
         return int(value or 0)
 
-    @validator("implied_volatility", "last_price", "bid", "ask", "stock_price", "strike", pre=True)
+    @field_validator("implied_volatility", "last_price", "bid", "ask", "stock_price", "strike", mode="before")
+    @classmethod
     def coerce_float(cls, value: Any) -> float:
         return float(value or 0.0)
 

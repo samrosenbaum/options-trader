@@ -501,6 +501,8 @@ class SmartOptionsScanner:
         rejected_mask = ~working_data.index.isin(liquid_options.index)
         rejected_options = working_data[rejected_mask]
         for idx, row in rejected_options.iterrows():
+            # Extract symbol from row data for use in try/except blocks
+            row_symbol = row.get('symbol', 'UNKNOWN')
             try:
                 # Determine specific rejection reason
                 reasons = []
@@ -518,14 +520,14 @@ class SmartOptionsScanner:
                 rejection_reason = " & ".join(reasons) if reasons else "unknown"
 
                 self.rejection_tracker.log_rejection(
-                    symbol=symbol,
+                    symbol=row_symbol,
                     option_data=row.to_dict(),
                     rejection_reason=rejection_reason,
                     filter_stage="liquidity_strict"
                 )
             except Exception as e:
                 # Don't fail scanning if logging fails
-                print(f"⚠️  Failed to log rejection for {symbol}: {e}", file=sys.stderr)
+                print(f"⚠️  Failed to log rejection for {row_symbol}: {e}", file=sys.stderr)
                 pass
 
         snapshot_live = self._snapshot_is_live()

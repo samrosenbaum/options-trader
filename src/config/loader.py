@@ -14,7 +14,7 @@ try:  # pragma: no cover - exercised indirectly in environments with PyYAML
     _safe_load = yaml.safe_load
 except ModuleNotFoundError:  # pragma: no cover - executed in minimal environments
     from ._yaml_compat import safe_load as _safe_load
-from pydantic import BaseModel, Field, root_validator, validator
+from pydantic import BaseModel, Field, model_validator, field_validator, ConfigDict
 
 from src.scoring.config import DEFAULT_SCORER_CONFIG
 
@@ -55,16 +55,16 @@ ENVIRONMENT_VARIABLE = "APP_ENV"
 class ScoringSettings(BaseModel):
     """Scoring configuration wrapper for the composite engine."""
 
+    model_config = ConfigDict(extra="allow")
+
     enabled: List[str] = Field(default_factory=lambda: list(DEFAULT_SCORER_CONFIG.get("enabled", [])))
     weights: Dict[str, float] = Field(default_factory=lambda: dict(DEFAULT_SCORER_CONFIG.get("weights", {})))
     score_bounds: Dict[str, float] = Field(default_factory=lambda: dict(DEFAULT_SCORER_CONFIG.get("score_bounds", {})))
     extra: Dict[str, Any] = Field(default_factory=dict)
 
-    class Config:
-        extra = "allow"
-
-    @root_validator(pre=True)
-    def _capture_extra(cls, values: Dict[str, Any]) -> Dict[str, Any]:  # type: ignore[override]
+    @model_validator(mode="before")
+    @classmethod
+    def _capture_extra(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         known_keys = {"enabled", "weights", "score_bounds", "extra"}
         extras = {key: values[key] for key in list(values.keys()) if key not in known_keys}
         merged_extra = dict(values.get("extra", {}))
@@ -74,8 +74,9 @@ class ScoringSettings(BaseModel):
         values["extra"] = merged_extra
         return values
 
-    @validator("weights", pre=True)
-    def _coerce_weights(cls, value: Mapping[str, Any]) -> Dict[str, float]:  # type: ignore[override]
+    @field_validator("weights", mode="before")
+    @classmethod
+    def _coerce_weights(cls, value: Mapping[str, Any]) -> Dict[str, float]:
         return {key: float(val) for key, val in dict(value or {}).items()}
 
     def to_engine_config(self) -> Dict[str, Any]:
@@ -97,8 +98,9 @@ class FetcherSettings(BaseModel):
     max_priority_symbols: Optional[int] = None
     max_runtime_seconds: Optional[float] = Field(default=75)
 
-    @validator("max_runtime_seconds", pre=True)
-    def _normalize_runtime(cls, value: Any) -> Optional[float]:  # type: ignore[override]
+    @field_validator("max_runtime_seconds", mode="before")
+    @classmethod
+    def _normalize_runtime(cls, value: Any) -> Optional[float]:
         if value is None:
             return None
         try:
@@ -119,8 +121,9 @@ class ScannerSettings(BaseModel):
     batch_size: Optional[int] = None
     rotation_mode: str = "round_robin"
 
-    @validator("rotation_mode")
-    def _normalize_rotation_mode(cls, value: str) -> str:  # type: ignore[override]
+    @field_validator("rotation_mode")
+    @classmethod
+    def _normalize_rotation_mode(cls, value: str) -> str:
         resolved = (value or "round_robin").strip().lower()
         if resolved not in {"round_robin", "random"}:
             return "round_robin"
@@ -145,6 +148,8 @@ class StorageSettings(BaseModel):
 class AppSettings(BaseModel):
     """Fully resolved application settings loaded from YAML."""
 
+    model_config = ConfigDict(frozen=True)
+
     env: str
     watchlists: Dict[str, List[str]]
     scoring: ScoringSettings
@@ -154,15 +159,14 @@ class AppSettings(BaseModel):
     cache: CacheSettings
     storage: StorageSettings
 
-    class Config:
-        frozen = True
-
-    @validator("env")
-    def _normalize_env(cls, value: str) -> str:  # type: ignore[override]
+    @field_validator("env")
+    @classmethod
+    def _normalize_env(cls, value: str) -> str:
         return value.lower()
 
-    @validator("watchlists", pre=True)
-    def _coerce_watchlists(cls, value: Mapping[str, Any]) -> Dict[str, List[str]]:  # type: ignore[override]
+    @field_validator("watchlists", mode="before")
+    @classmethod
+    def _coerce_watchlists(cls, value: Mapping[str, Any]) -> Dict[str, List[str]]:
         return {key: list(items or []) for key, items in dict(value or {}).items()}
 
     def get_watchlist(self, name: str = "default") -> List[str]:
@@ -202,7 +206,7 @@ def _build_settings(env: str) -> AppSettings:
     overrides = _load_yaml(config_path)
     merged = _deep_merge(merged, overrides)
     merged["env"] = env
-    return AppSettings.parse_obj(merged)
+    return AppSettings.model_validate(merged)
 
 
 @lru_cache(maxsize=None)
