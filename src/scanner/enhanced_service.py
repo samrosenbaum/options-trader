@@ -246,7 +246,7 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
             enhanced_opportunities = self.enhanced_scanner.scan_opportunities(
                 [enhanced_opp_data],
                 min_quality=DataQuality.LOW,  # Let institutional filters do the heavy lifting
-                min_composite_score=25.0,  # Relaxed to allow more opportunities (was 35, originally 50)
+                min_composite_score=0.0,  # DISABLED - let institutional filters do ALL filtering with min 10 fallback
                 max_results=1
             )
             
@@ -706,10 +706,10 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
                 backtest_sample_size >= 20 and backtest_win_rate >= 0.70   # 70%+ with 20+ trades
             )
 
-            # Check if passes all filters (VERY relaxed for realistic market conditions)
-            passes_probability = prob_of_profit >= 0.05  # 5% probability (options are leveraged - even small edge is valuable)
-            passes_risk_score = risk_adjusted_score >= 15  # Lower bar (was 20, 35 before that)
-            passes_delta = delta >= 0.005  # 0.5% delta minimum (very low bar)
+            # Check if passes all filters (EXTREMELY relaxed - nearly disabled to surface opportunities)
+            passes_probability = prob_of_profit >= 0.01  # 1% probability (extremely low bar)
+            passes_risk_score = risk_adjusted_score >= 5  # Very low bar (was 15, 20, 35)
+            passes_delta = delta >= 0.001  # 0.1% delta minimum (extremely low bar)
 
             # If strong backtest, only require probability check (relaxed)
             if has_strong_backtest:

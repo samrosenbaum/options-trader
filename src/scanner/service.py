@@ -488,11 +488,11 @@ class SmartOptionsScanner:
             if col in working_data.columns:
                 working_data[col] = pd.to_numeric(working_data[col], errors="coerce")
 
-        # RELAXED liquidity filters - options make money daily!
+        # EXTREMELY RELAXED liquidity filters - surface as many opportunities as possible
         liquid_options = working_data[
-            (working_data["volume"] > 20)  # Lowered from 100 - be realistic
-            & (working_data["openInterest"] > 50)  # Lowered from 500 - way too strict!
-            & (working_data["lastPrice"] > 0.05)  # Lowered from 0.1
+            (working_data["volume"] > 5)  # Very low bar - any volume is better than none
+            & (working_data["openInterest"] > 10)  # Very low bar for OI
+            & (working_data["lastPrice"] > 0.02)  # $0.02 minimum - penny options OK
             & (working_data["bid"] > 0)
             & (working_data["ask"] > 0)
         ].copy()
@@ -506,12 +506,12 @@ class SmartOptionsScanner:
             try:
                 # Determine specific rejection reason
                 reasons = []
-                if row.get("volume", 0) <= 20:
-                    reasons.append(f"volume={row.get('volume', 0):.0f}≤20")
-                if row.get("openInterest", 0) <= 50:
-                    reasons.append(f"OI={row.get('openInterest', 0):.0f}≤50")
-                if row.get("lastPrice", 0) <= 0.05:
-                    reasons.append(f"price=${row.get('lastPrice', 0):.2f}≤0.05")
+                if row.get("volume", 0) <= 5:
+                    reasons.append(f"volume={row.get('volume', 0):.0f}≤5")
+                if row.get("openInterest", 0) <= 10:
+                    reasons.append(f"OI={row.get('openInterest', 0):.0f}≤10")
+                if row.get("lastPrice", 0) <= 0.02:
+                    reasons.append(f"price=${row.get('lastPrice', 0):.2f}≤0.02")
                 if row.get("bid", 0) <= 0:
                     reasons.append("bid≤0")
                 if row.get("ask", 0) <= 0:
@@ -533,11 +533,11 @@ class SmartOptionsScanner:
         snapshot_live = self._snapshot_is_live()
 
         if liquid_options.empty:
-            # Fallback filters - even more relaxed (options make money daily!)
+            # Ultra-fallback filters - accept almost anything with basic liquidity
             relaxed_filters = [
-                working_data.get("volume") > 5 if "volume" in working_data else None,  # Lowered from 50
-                working_data.get("openInterest") > 10 if "openInterest" in working_data else None,  # Lowered from 250!
-                working_data.get("lastPrice") > 0.02 if "lastPrice" in working_data else None,  # Lowered from 0.05
+                working_data.get("volume") > 1 if "volume" in working_data else None,  # Any volume
+                working_data.get("openInterest") > 1 if "openInterest" in working_data else None,  # Any OI
+                working_data.get("lastPrice") > 0.01 if "lastPrice" in working_data else None,  # $0.01 minimum
                 working_data.get("bid") > 0 if "bid" in working_data else None,
                 working_data.get("ask") > 0 if "ask" in working_data else None,
             ]
