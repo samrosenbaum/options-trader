@@ -650,7 +650,7 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
     def _apply_institutional_filters(
         self,
         opportunities: List[Dict[str, Any]],
-        min_results: int = 5,
+        min_results: int = 10,  # Increased from 5 - ensure enough opportunities surface
         max_results: int = 20,
         max_per_symbol: int = 5
     ) -> List[Dict[str, Any]]:
@@ -706,10 +706,10 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
                 backtest_sample_size >= 20 and backtest_win_rate >= 0.70   # 70%+ with 20+ trades
             )
 
-            # Check if passes all filters (relaxed for realistic market conditions)
-            passes_probability = prob_of_profit >= 0.08  # Lowered from 0.12 to 8% (options make money daily!)
-            passes_risk_score = risk_adjusted_score >= 20  # Lowered from 35 to 20 (was rejecting everything)
-            passes_delta = delta >= 0.01  # Lowered from 0.015 to 1% (more opportunities)
+            # Check if passes all filters (VERY relaxed for realistic market conditions)
+            passes_probability = prob_of_profit >= 0.05  # 5% probability (options are leveraged - even small edge is valuable)
+            passes_risk_score = risk_adjusted_score >= 15  # Lower bar (was 20, 35 before that)
+            passes_delta = delta >= 0.005  # 0.5% delta minimum (very low bar)
 
             # If strong backtest, only require probability check (relaxed)
             if has_strong_backtest:
