@@ -35,15 +35,37 @@ def timeout_handler(signum, frame):
 
 def make_json_serializable(obj):
     """Recursively convert objects to JSON-serializable format."""
-    if hasattr(obj, 'to_dict'):
+    from datetime import datetime, date
+    import numpy as np
+    import pandas as pd
+
+    if obj is None:
+        return None
+    elif hasattr(obj, 'to_dict'):
         # Handle QualityIssue and other objects with to_dict() method
         return make_json_serializable(obj.to_dict())
+    elif isinstance(obj, (datetime, date, pd.Timestamp)):
+        # Convert datetime objects to ISO format strings
+        return obj.isoformat()
+    elif isinstance(obj, (np.integer, np.floating)):
+        # Convert numpy numbers to Python numbers
+        return obj.item()
+    elif isinstance(obj, np.ndarray):
+        # Convert numpy arrays to lists
+        return obj.tolist()
     elif isinstance(obj, dict):
         return {k: make_json_serializable(v) for k, v in obj.items()}
     elif isinstance(obj, (list, tuple)):
         return [make_json_serializable(item) for item in obj]
-    else:
+    elif isinstance(obj, (int, float, str, bool)):
+        # Basic JSON-serializable types
         return obj
+    else:
+        # Last resort: try to convert to string
+        try:
+            return str(obj)
+        except Exception:
+            return None
 
 
 def save_scan_to_supabase(
