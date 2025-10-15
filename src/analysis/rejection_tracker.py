@@ -5,6 +5,8 @@ This module logs rejected options and their rejection reasons, then tracks their
 next-day performance to identify patterns of "good opportunities we missed" vs
 "correctly filtered garbage".
 
+Now uses Supabase for permanent cloud storage instead of local SQLite.
+
 Usage:
     from src.analysis.rejection_tracker import RejectionTracker
 
@@ -23,10 +25,9 @@ Usage:
 """
 
 import json
-import sqlite3
+import os
 from dataclasses import dataclass, asdict
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 from typing import Dict, List, Optional, Any
 import yfinance as yf
 
@@ -76,64 +77,29 @@ class MissedOpportunity:
 
 
 class RejectionTracker:
-    """Tracks rejected options and analyzes their performance."""
+    """Tracks rejected options and analyzes their performance using Supabase."""
 
-    def __init__(self, db_path: Optional[str] = None):
-        """
-        Initialize rejection tracker.
+    def __init__(self):
+        """Initialize rejection tracker with Supabase connection."""
+        try:
+            from supabase import create_client, Client
 
-        Args:
-            db_path: Path to SQLite database. Defaults to data/rejection_tracker.db
-        """
-        if db_path is None:
-            db_path = str(Path(__file__).parent.parent.parent / "data" / "rejection_tracker.db")
+            url = os.environ.get("NEXT_PUBLIC_SUPABASE_URL")
+            key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY") or os.environ.get("NEXT_PUBLIC_SUPABASE_ANON_KEY")
 
-        self.db_path = db_path
-        self._init_database()
+            if not url or not key:
+                raise ValueError(
+                    "Missing Supabase credentials. Set NEXT_PUBLIC_SUPABASE_URL and "
+                    "SUPABASE_SERVICE_ROLE_KEY (or NEXT_PUBLIC_SUPABASE_ANON_KEY) environment variables."
+                )
 
-    def _init_database(self) -> None:
-        """Create database tables if they don't exist."""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
+            self.supabase: Client = create_client(url, key)
+            self.table_name = "rejected_options"
 
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS rejected_options (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                symbol TEXT NOT NULL,
-                strike REAL NOT NULL,
-                expiration TEXT NOT NULL,
-                option_type TEXT NOT NULL,
-                rejection_reason TEXT NOT NULL,
-                filter_stage TEXT NOT NULL,
-                rejected_at TEXT NOT NULL,
-                stock_price REAL NOT NULL,
-                option_price REAL NOT NULL,
-                volume INTEGER NOT NULL,
-                open_interest INTEGER NOT NULL,
-                implied_volatility REAL,
-                delta REAL,
-                probability_score REAL,
-                risk_adjusted_score REAL,
-                quality_score REAL,
-                next_day_price REAL,
-                price_change_percent REAL,
-                was_profitable INTEGER
+        except ImportError:
+            raise ImportError(
+                "supabase package not installed. Run: pip install supabase"
             )
-        """)
-
-        # Index for fast lookups
-        cursor.execute("""
-            CREATE INDEX IF NOT EXISTS idx_rejected_at
-            ON rejected_options(rejected_at)
-        """)
-
-        cursor.execute("""
-            CREATE INDEX IF NOT EXISTS idx_symbol_expiration
-            ON rejected_options(symbol, expiration)
-        """)
-
-        conn.commit()
-        conn.close()
 
     def log_rejection(
         self,
@@ -153,46 +119,33 @@ class RejectionTracker:
             filter_stage: Which filter rejected it (e.g., "liquidity", "quality", "scoring")
             scores: Optional dict with probability_score, risk_adjusted_score, quality_score
         """
-        rejected = RejectedOption(
-            symbol=symbol,
-            strike=option_data.get("strike", 0),
-            expiration=option_data.get("expiration", ""),
-            option_type=option_data.get("type", "call"),
-            rejection_reason=rejection_reason,
-            filter_stage=filter_stage,
-            rejected_at=datetime.now(timezone.utc),
-            stock_price=option_data.get("stock_price", 0),
-            option_price=option_data.get("lastPrice", 0),
-            volume=option_data.get("volume", 0),
-            open_interest=option_data.get("openInterest", 0),
-            implied_volatility=option_data.get("impliedVolatility"),
-            delta=option_data.get("delta"),
-            probability_score=scores.get("probability_score") if scores else None,
-            risk_adjusted_score=scores.get("risk_adjusted_score") if scores else None,
-            quality_score=scores.get("quality_score") if scores else None,
-        )
+        try:
+            # Build rejection record
+            record = {
+                "symbol": symbol,
+                "strike": float(option_data.get("strike", 0)),
+                "expiration": option_data.get("expiration", ""),
+                "option_type": str(option_data.get("type", option_data.get("optionType", "call"))).lower(),
+                "rejection_reason": rejection_reason,
+                "filter_stage": filter_stage,
+                "rejected_at": datetime.now(timezone.utc).isoformat(),
+                "stock_price": float(option_data.get("stock_price", option_data.get("stockPrice", 0))),
+                "option_price": float(option_data.get("lastPrice", 0)),
+                "volume": int(option_data.get("volume", 0)),
+                "open_interest": int(option_data.get("openInterest", 0)),
+                "implied_volatility": float(option_data.get("impliedVolatility")) if option_data.get("impliedVolatility") else None,
+                "delta": float(option_data.get("delta")) if option_data.get("delta") else None,
+                "probability_score": scores.get("probability_score") if scores else None,
+                "risk_adjusted_score": scores.get("risk_adjusted_score") if scores else None,
+                "quality_score": scores.get("quality_score") if scores else None,
+            }
 
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
+            # Insert into Supabase
+            self.supabase.table(self.table_name).insert(record).execute()
 
-        cursor.execute("""
-            INSERT INTO rejected_options (
-                symbol, strike, expiration, option_type,
-                rejection_reason, filter_stage, rejected_at,
-                stock_price, option_price, volume, open_interest,
-                implied_volatility, delta,
-                probability_score, risk_adjusted_score, quality_score
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            rejected.symbol, rejected.strike, rejected.expiration, rejected.option_type,
-            rejected.rejection_reason, rejected.filter_stage, rejected.rejected_at.isoformat(),
-            rejected.stock_price, rejected.option_price, rejected.volume, rejected.open_interest,
-            rejected.implied_volatility, rejected.delta,
-            rejected.probability_score, rejected.risk_adjusted_score, rejected.quality_score
-        ))
-
-        conn.commit()
-        conn.close()
+        except Exception as e:
+            # Don't fail scanning if logging fails
+            print(f"⚠️  Failed to log rejection to Supabase: {e}")
 
     def update_next_day_performance(self, days_ago: int = 1) -> int:
         """
@@ -204,63 +157,68 @@ class RejectionTracker:
         Returns:
             Number of records updated
         """
-        target_date = datetime.now(timezone.utc) - timedelta(days=days_ago)
-        target_date_str = target_date.strftime("%Y-%m-%d")
+        try:
+            target_date = datetime.now(timezone.utc) - timedelta(days=days_ago)
+            target_date_start = target_date.replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
+            target_date_end = target_date.replace(hour=23, minute=59, second=59, microsecond=999999).isoformat()
 
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
+            # Get rejections from target date that haven't been updated yet
+            response = self.supabase.table(self.table_name).select("*").gte(
+                "rejected_at", target_date_start
+            ).lte(
+                "rejected_at", target_date_end
+            ).is_(
+                "next_day_price", "null"
+            ).execute()
 
-        # Get rejections from target date that haven't been updated yet
-        cursor.execute("""
-            SELECT id, symbol, strike, expiration, option_type, option_price
-            FROM rejected_options
-            WHERE DATE(rejected_at) = ?
-            AND next_day_price IS NULL
-        """, (target_date_str,))
+            rows = response.data
+            updated = 0
 
-        rows = cursor.fetchall()
-        updated = 0
+            for row in rows:
+                record_id = row["id"]
+                symbol = row["symbol"]
+                strike = row["strike"]
+                expiration = row["expiration"]
+                option_type = row["option_type"]
+                original_price = row["option_price"]
 
-        for row in rows:
-            option_id, symbol, strike, expiration, option_type, original_price = row
+                try:
+                    # Fetch current option price
+                    ticker = yf.Ticker(symbol)
+                    exp_date = datetime.strptime(expiration, "%Y-%m-%d").strftime("%Y-%m-%d")
 
-            try:
-                # Fetch current option price
-                ticker = yf.Ticker(symbol)
-                exp_date = datetime.strptime(expiration, "%Y-%m-%d").strftime("%Y-%m-%d")
+                    if option_type.lower() == "call":
+                        chain = ticker.option_chain(exp_date).calls
+                    else:
+                        chain = ticker.option_chain(exp_date).puts
 
-                if option_type.lower() == "call":
-                    chain = ticker.option_chain(exp_date).calls
-                else:
-                    chain = ticker.option_chain(exp_date).puts
+                    # Find matching strike
+                    option_row = chain[chain["strike"] == strike]
 
-                # Find matching strike
-                option_row = chain[chain["strike"] == strike]
+                    if not option_row.empty:
+                        current_price = float(option_row.iloc[0]["lastPrice"])
+                        price_change = ((current_price - original_price) / original_price) * 100
+                        is_profitable = price_change > 0
 
-                if not option_row.empty:
-                    current_price = float(option_row.iloc[0]["lastPrice"])
-                    price_change = ((current_price - original_price) / original_price) * 100
-                    is_profitable = price_change > 0
+                        # Update record in Supabase
+                        self.supabase.table(self.table_name).update({
+                            "next_day_price": current_price,
+                            "price_change_percent": price_change,
+                            "was_profitable": is_profitable
+                        }).eq("id", record_id).execute()
 
-                    cursor.execute("""
-                        UPDATE rejected_options
-                        SET next_day_price = ?,
-                            price_change_percent = ?,
-                            was_profitable = ?
-                        WHERE id = ?
-                    """, (current_price, price_change, 1 if is_profitable else 0, option_id))
+                        updated += 1
 
-                    updated += 1
+                except Exception as e:
+                    # Skip if option data unavailable (expired, delisted, etc.)
+                    print(f"Could not fetch next-day price for {symbol} {strike} {option_type}: {e}")
+                    continue
 
-            except Exception as e:
-                # Skip if option data unavailable (expired, delisted, etc.)
-                print(f"Could not fetch next-day price for {symbol} {strike} {option_type}: {e}")
-                continue
+            return updated
 
-        conn.commit()
-        conn.close()
-
-        return updated
+        except Exception as e:
+            print(f"Error updating next-day performance: {e}")
+            return 0
 
     def analyze_missed_opportunities(
         self,
@@ -277,109 +235,133 @@ class RejectionTracker:
         Returns:
             Dictionary with analysis results
         """
-        start_date = datetime.now(timezone.utc) - timedelta(days=days_back)
+        try:
+            start_date = datetime.now(timezone.utc) - timedelta(days=days_back)
 
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
+            # Get profitable rejections
+            profitable_response = self.supabase.table(self.table_name).select("*").gte(
+                "rejected_at", start_date.isoformat()
+            ).eq(
+                "was_profitable", True
+            ).gte(
+                "price_change_percent", min_profit_percent
+            ).order(
+                "price_change_percent", desc=True
+            ).execute()
 
-        # Get profitable rejections
-        cursor.execute("""
-            SELECT *
-            FROM rejected_options
-            WHERE rejected_at >= ?
-            AND was_profitable = 1
-            AND price_change_percent >= ?
-            ORDER BY price_change_percent DESC
-        """, (start_date.isoformat(), min_profit_percent))
+            profitable_rejections = profitable_response.data
 
-        profitable_rejections = cursor.fetchall()
+            # Get all rejections for comparison
+            stats_response = self.supabase.rpc(
+                "get_rejection_stats",
+                {"start_date": start_date.isoformat()}
+            ).execute()
 
-        # Get all rejections for comparison
-        cursor.execute("""
-            SELECT COUNT(*) as total,
-                   AVG(CASE WHEN was_profitable = 1 THEN 1 ELSE 0 END) as profitable_rate,
-                   AVG(price_change_percent) as avg_change
-            FROM rejected_options
-            WHERE rejected_at >= ?
-            AND next_day_price IS NOT NULL
-        """, (start_date.isoformat(),))
+            # Fallback if RPC doesn't exist - calculate manually
+            all_response = self.supabase.table(self.table_name).select("*").gte(
+                "rejected_at", start_date.isoformat()
+            ).not_.is_(
+                "next_day_price", "null"
+            ).execute()
 
-        stats = cursor.fetchone()
+            all_rejections = all_response.data
+            total = len(all_rejections)
+            profitable_count = len([r for r in all_rejections if r.get("was_profitable")])
+            profitable_rate = profitable_count / total if total > 0 else 0
+            avg_change = sum(r.get("price_change_percent", 0) for r in all_rejections) / total if total > 0 else 0
 
-        # Analyze rejection reasons
-        cursor.execute("""
-            SELECT rejection_reason,
-                   COUNT(*) as count,
-                   AVG(CASE WHEN was_profitable = 1 THEN 1 ELSE 0 END) as profitable_rate,
-                   AVG(price_change_percent) as avg_change
-            FROM rejected_options
-            WHERE rejected_at >= ?
-            AND next_day_price IS NOT NULL
-            GROUP BY rejection_reason
-            ORDER BY profitable_rate DESC
-        """, (start_date.isoformat(),))
+            # Analyze rejection reasons
+            reason_stats = {}
+            for row in all_rejections:
+                reason = row["rejection_reason"]
+                if reason not in reason_stats:
+                    reason_stats[reason] = {
+                        "count": 0,
+                        "profitable_count": 0,
+                        "total_change": 0
+                    }
+                reason_stats[reason]["count"] += 1
+                if row.get("was_profitable"):
+                    reason_stats[reason]["profitable_count"] += 1
+                reason_stats[reason]["total_change"] += row.get("price_change_percent", 0)
 
-        reason_analysis = cursor.fetchall()
+            reason_analysis = []
+            for reason, stats in reason_stats.items():
+                count = stats["count"]
+                profitable_rate_reason = stats["profitable_count"] / count if count > 0 else 0
+                avg_change_reason = stats["total_change"] / count if count > 0 else 0
+                reason_analysis.append((reason, count, profitable_rate_reason, avg_change_reason))
 
-        conn.close()
+            reason_analysis.sort(key=lambda x: x[2], reverse=True)
 
-        # Build missed opportunities list
-        missed_opps = []
-        for row in profitable_rejections:
-            option = RejectedOption(
-                symbol=row[1],
-                strike=row[2],
-                expiration=row[3],
-                option_type=row[4],
-                rejection_reason=row[5],
-                filter_stage=row[6],
-                rejected_at=datetime.fromisoformat(row[7]),
-                stock_price=row[8],
-                option_price=row[9],
-                volume=row[10],
-                open_interest=row[11],
-                implied_volatility=row[12],
-                delta=row[13],
-                probability_score=row[14],
-                risk_adjusted_score=row[15],
-                quality_score=row[16],
-                next_day_price=row[17],
-                price_change_percent=row[18],
-                was_profitable=bool(row[19])
-            )
+            # Build missed opportunities list
+            missed_opps = []
+            for row in profitable_rejections:
+                option = RejectedOption(
+                    symbol=row["symbol"],
+                    strike=row["strike"],
+                    expiration=row["expiration"],
+                    option_type=row["option_type"],
+                    rejection_reason=row["rejection_reason"],
+                    filter_stage=row["filter_stage"],
+                    rejected_at=datetime.fromisoformat(row["rejected_at"]),
+                    stock_price=row["stock_price"],
+                    option_price=row["option_price"],
+                    volume=row["volume"],
+                    open_interest=row["open_interest"],
+                    implied_volatility=row.get("implied_volatility"),
+                    delta=row.get("delta"),
+                    probability_score=row.get("probability_score"),
+                    risk_adjusted_score=row.get("risk_adjusted_score"),
+                    quality_score=row.get("quality_score"),
+                    next_day_price=row.get("next_day_price"),
+                    price_change_percent=row.get("price_change_percent"),
+                    was_profitable=row.get("was_profitable")
+                )
 
-            # Generate pattern tags
-            tags = []
-            if option.volume < 20:
-                tags.append("low_volume_but_profitable")
-            if option.open_interest < 50:
-                tags.append("low_oi_but_profitable")
-            if option.quality_score and option.quality_score < 50:
-                tags.append("low_quality_score_but_profitable")
+                # Generate pattern tags
+                tags = []
+                if option.volume < 20:
+                    tags.append("low_volume_but_profitable")
+                if option.open_interest < 50:
+                    tags.append("low_oi_but_profitable")
+                if option.quality_score and option.quality_score < 50:
+                    tags.append("low_quality_score_but_profitable")
 
-            missed_opps.append(MissedOpportunity(
-                option=option,
-                profit_percent=option.price_change_percent,
-                what_we_missed=f"{option.symbol} {option.option_type} ${option.strike} gained {option.price_change_percent:.1f}% but was rejected for: {option.rejection_reason}",
-                pattern_tags=tags
-            ))
+                missed_opps.append(MissedOpportunity(
+                    option=option,
+                    profit_percent=option.price_change_percent,
+                    what_we_missed=f"{option.symbol} {option.option_type} ${option.strike} gained {option.price_change_percent:.1f}% but was rejected for: {option.rejection_reason}",
+                    pattern_tags=tags
+                ))
 
-        return {
-            "total_rejections": stats[0] if stats else 0,
-            "profitable_rejection_rate": stats[1] if stats else 0,
-            "avg_price_change": stats[2] if stats else 0,
-            "missed_opportunities": missed_opps,
-            "rejection_reason_analysis": [
-                {
-                    "reason": r[0],
-                    "count": r[1],
-                    "profitable_rate": r[2],
-                    "avg_change": r[3]
-                }
-                for r in reason_analysis
-            ],
-            "recommendations": self._generate_recommendations(reason_analysis)
-        }
+            return {
+                "total_rejections": total,
+                "profitable_rejection_rate": profitable_rate,
+                "avg_price_change": avg_change,
+                "missed_opportunities": missed_opps,
+                "rejection_reason_analysis": [
+                    {
+                        "reason": r[0],
+                        "count": r[1],
+                        "profitable_rate": r[2],
+                        "avg_change": r[3]
+                    }
+                    for r in reason_analysis
+                ],
+                "recommendations": self._generate_recommendations(reason_analysis)
+            }
+
+        except Exception as e:
+            print(f"Error analyzing missed opportunities: {e}")
+            return {
+                "total_rejections": 0,
+                "profitable_rejection_rate": 0,
+                "avg_price_change": 0,
+                "missed_opportunities": [],
+                "rejection_reason_analysis": [],
+                "recommendations": []
+            }
 
     def _generate_recommendations(self, reason_analysis: List[tuple]) -> List[str]:
         """Generate filter tuning recommendations based on rejection patterns."""
@@ -416,7 +398,7 @@ def print_analysis_report(analysis: Dict[str, Any]) -> None:
     for i, opp in enumerate(analysis['missed_opportunities'][:10], 1):  # Top 10
         print(f"\n  {i}. {opp.what_we_missed}")
         print(f"     Volume: {opp.option.volume}, OI: {opp.option.open_interest}")
-        print(f"     Tags: {', '.join(opp.pattern_tags)}")
+        print(f"     Tags: {', '.join(opp.pattern_tags) if opp.pattern_tags else 'none'}")
 
     print(f"\n🔍 Rejection Reason Analysis:")
     for reason_data in analysis['rejection_reason_analysis']:

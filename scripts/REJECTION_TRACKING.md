@@ -2,12 +2,15 @@
 
 This system tracks options that were filtered out by the scanner and analyzes their next-day performance to validate filter tuning decisions.
 
+**Now using Supabase** for permanent cloud storage - no more worrying about Render's ephemeral filesystem!
+
 ## How It Works
 
 1. **During Scanning**: The scanner logs every option that gets rejected, including:
    - Which filter rejected it (liquidity, quality, institutional)
    - Specific rejection reason (volume too low, delta too small, etc.)
    - Full option details (price, volume, OI, greeks, scores)
+   - **Stored in Supabase `rejected_options` table**
 
 2. **Next Day**: Fetch current prices for rejected options to see if they would have been profitable
 
@@ -15,6 +18,37 @@ This system tracks options that were filtered out by the scanner and analyzes th
    - Which filters have high false-positive rates (rejecting profitable options)
    - Pattern detection (e.g., "low volume but profitable")
    - Actionable recommendations for filter tuning
+
+## Setup
+
+### 1. Run Supabase Migration
+
+The `rejected_options` table needs to be created in your Supabase database:
+
+```bash
+# Apply the migration via Supabase CLI
+supabase db push
+
+# Or manually run the SQL in Supabase Studio:
+# supabase/migrations/004_add_rejection_tracker.sql
+```
+
+### 2. Environment Variables
+
+Make sure these are set in your Render environment (and `.env.local` for local dev):
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key  # For backend scanner
+# OR
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key  # Fallback
+```
+
+### 3. Install Dependencies
+
+```bash
+pip install supabase
+```
 
 ## Usage
 
@@ -117,38 +151,40 @@ REJECTION TRACKER ANALYSIS
 ================================================================================
 ```
 
-## Database
+## Database (Supabase)
 
-Rejection data is stored in `data/rejection_tracker.db` (SQLite).
+Rejection data is stored in the `rejected_options` table in your Supabase database.
 
 ### Schema
 
 ```sql
 CREATE TABLE rejected_options (
-    id INTEGER PRIMARY KEY,
+    id UUID PRIMARY KEY,
     symbol TEXT,
-    strike REAL,
-    expiration TEXT,
+    strike NUMERIC,
+    expiration DATE,
     option_type TEXT,
     rejection_reason TEXT,
     filter_stage TEXT,
-    rejected_at TEXT,
-    stock_price REAL,
-    option_price REAL,
+    rejected_at TIMESTAMP WITH TIME ZONE,
+    stock_price NUMERIC,
+    option_price NUMERIC,
     volume INTEGER,
     open_interest INTEGER,
-    implied_volatility REAL,
-    delta REAL,
-    probability_score REAL,
-    risk_adjusted_score REAL,
-    quality_score REAL,
-    next_day_price REAL,
-    price_change_percent REAL,
-    was_profitable INTEGER
+    implied_volatility NUMERIC,
+    delta NUMERIC,
+    probability_score NUMERIC,
+    risk_adjusted_score NUMERIC,
+    quality_score NUMERIC,
+    next_day_price NUMERIC,
+    price_change_percent NUMERIC,
+    was_profitable BOOLEAN,
+    created_at TIMESTAMP WITH TIME ZONE,
+    updated_at TIMESTAMP WITH TIME ZONE
 );
 ```
 
-### Query Examples
+### Query Examples (Supabase Studio)
 
 ```sql
 -- Find most profitable rejection reason in last 7 days
@@ -156,10 +192,10 @@ SELECT
     rejection_reason,
     COUNT(*) as count,
     AVG(price_change_percent) as avg_gain,
-    AVG(CASE WHEN was_profitable = 1 THEN 1.0 ELSE 0.0 END) as win_rate
+    AVG(CASE WHEN was_profitable = true THEN 1.0 ELSE 0.0 END) as win_rate
 FROM rejected_options
-WHERE rejected_at >= datetime('now', '-7 days')
-    AND was_profitable = 1
+WHERE rejected_at >= NOW() - INTERVAL '7 days'
+    AND was_profitable = true
 GROUP BY rejection_reason
 ORDER BY avg_gain DESC
 LIMIT 10;
@@ -168,10 +204,22 @@ LIMIT 10;
 SELECT symbol, strike, option_type, volume, price_change_percent
 FROM rejected_options
 WHERE volume < 20
-    AND was_profitable = 1
-    AND rejected_at >= datetime('now', '-7 days')
+    AND was_profitable = true
+    AND rejected_at >= NOW() - INTERVAL '7 days'
 ORDER BY price_change_percent DESC;
+
+-- Use the pre-built analysis view
+SELECT * FROM rejection_analysis
+ORDER BY profitable_rate DESC;
 ```
+
+## Benefits of Supabase vs SQLite
+
+✅ **Permanent storage** - Data persists across Render deploys
+✅ **No disk management** - Supabase handles backups and scaling
+✅ **Easy queries** - Use Supabase Studio to explore data
+✅ **Potential dashboard** - Could build UI to view rejections in real-time
+✅ **Multi-instance** - Multiple Render instances can share data
 
 ## Filter Tuning Workflow
 
@@ -188,3 +236,4 @@ ORDER BY price_change_percent DESC;
 - Next-day prices are fetched via yfinance (may have rate limits)
 - Expired options will fail to fetch prices (expected behavior)
 - Recommendations require statistical significance (5-10+ samples)
+- Data is queryable via Supabase Studio or API
