@@ -121,9 +121,9 @@ def run_background_scan(filter_mode: str = 'strict', max_symbols: int = None) ->
 
     try:
         # Run INSTITUTIONAL-GRADE scan with enough symbols for quality
-        # Default to 20 symbols if not specified (balance coverage + speed)
+        # Default to 30 symbols if not specified (balance coverage + speed)
         if max_symbols is None:
-            max_symbols = 20
+            max_symbols = 30
             print(f"⚡ INSTITUTIONAL MODE: {max_symbols} symbols + 90 days history + backtesting ENABLED", file=sys.stderr)
         else:
             print(f"📊 Running background scan (filter_mode={filter_mode}, max_symbols={max_symbols})", file=sys.stderr)
