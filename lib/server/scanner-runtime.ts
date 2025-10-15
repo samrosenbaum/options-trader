@@ -92,12 +92,26 @@ const providerDetectors: Array<() => ScannerExecutionPolicy | null> = [
 ]
 
 export const determineScannerExecutionPolicy = (): ScannerExecutionPolicy | null => {
+  console.log('🔍 Checking scanner execution policy...')
+  console.log('Environment:', {
+    DISABLE_PYTHON_SCANNER: process.env.DISABLE_PYTHON_SCANNER,
+    NEXT_RUNTIME: process.env.NEXT_RUNTIME,
+    VERCEL: process.env.VERCEL,
+    RAILWAY_STATIC_URL: process.env.RAILWAY_STATIC_URL,
+    RENDER: process.env.RENDER,
+    PYTHON_EXECUTABLE: process.env.PYTHON_EXECUTABLE,
+    AWS_REGION: process.env.AWS_REGION,
+    LAMBDA_TASK_ROOT: process.env.LAMBDA_TASK_ROOT,
+  })
+
   for (const detector of providerDetectors) {
     const policy = detector()
     if (policy?.forceFallback) {
+      console.error('❌ FORCED FALLBACK TRIGGERED:', policy)
       return policy
     }
   }
 
+  console.log('✅ No fallback policy - Python scanner will run')
   return null
 }
