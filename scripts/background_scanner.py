@@ -73,11 +73,11 @@ def save_scan_to_supabase(
         scan_data = {
             'scan_timestamp': datetime.now().isoformat(),
             'filter_mode': filter_mode,
-            'opportunities': json.dumps(opportunities),  # Store as JSON
+            'opportunities': opportunities,  # Supabase will auto-convert to JSONB
             'total_evaluated': total_evaluated,
             'symbols_scanned': symbols_scanned,
             'scan_duration_seconds': scan_duration,
-            'metadata': json.dumps(metadata),
+            'metadata': metadata,  # Supabase will auto-convert to JSONB
         }
 
         # Insert into Supabase
