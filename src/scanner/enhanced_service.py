@@ -77,14 +77,15 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
         )
 
         # Initialize historical move analyzer
-        # Reduced from 365 to 90 days for faster queries (still provides solid sample size)
+        # Reduced to 30 days for FAST background scanning
+        # (90/365 days too slow for cron jobs that need to complete in <5 min)
         self.historical_analyzer = HistoricalMoveAnalyzer(
             db_path="data/historical_moves.db",
-            lookback_days=90
+            lookback_days=30
         )
 
         # Initialize strategy validator for backtesting
-        self.strategy_validator = StrategyValidator(lookback_days=90)
+        self.strategy_validator = StrategyValidator(lookback_days=30)
 
         # Initialize sentiment pre-screener for targeted symbol selection
         self.sentiment_prescreener = SentimentPreScreener(iv_history=self.iv_history)

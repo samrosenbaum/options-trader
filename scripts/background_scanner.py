@@ -97,14 +97,20 @@ def run_background_scan(filter_mode: str = 'strict', max_symbols: int = None) ->
     print(f"🚀 BACKGROUND SCANNER STARTED - {datetime.now().isoformat()}", file=sys.stderr)
     print("="*80, file=sys.stderr)
 
-    # Enable sentiment pre-screening for background scans (we have time!)
-    os.environ['USE_SENTIMENT_PRESCREENING'] = '1'
+    # DISABLE sentiment pre-screening for background scans - it's too slow
+    # and causes duplicate runs
+    os.environ['USE_SENTIMENT_PRESCREENING'] = '0'
 
     start_time = time.time()
 
     try:
-        # Run full enhanced scan with ALL features
-        print(f"📊 Running FULL enhanced scan (filter_mode={filter_mode}, max_symbols={max_symbols or 'unlimited'})", file=sys.stderr)
+        # Run OPTIMIZED scan - limit symbols for speed
+        # Default to 15 symbols if not specified (balances coverage vs speed)
+        if max_symbols is None:
+            max_symbols = 15
+            print(f"📊 Running OPTIMIZED background scan (max_symbols={max_symbols} for speed)", file=sys.stderr)
+        else:
+            print(f"📊 Running background scan (filter_mode={filter_mode}, max_symbols={max_symbols})", file=sys.stderr)
 
         result = run_enhanced_scan(
             max_symbols=max_symbols,
