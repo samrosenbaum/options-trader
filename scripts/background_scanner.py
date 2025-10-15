@@ -109,9 +109,15 @@ def run_background_scan(filter_mode: str = 'strict', max_symbols: int = None) ->
     print(f"🚀 BACKGROUND SCANNER STARTED - {datetime.now().isoformat()}", file=sys.stderr)
     print("="*80, file=sys.stderr)
 
-    # SMART optimizations - keep quality high, just disable slow non-essential features
-    os.environ['USE_SENTIMENT_PRESCREENING'] = '0'  # Disable pre-screening (can be slow)
-    os.environ['DISABLE_BACKTESTING'] = '0'  # Keep backtesting ENABLED - it's valuable!
+    # AGGRESSIVE optimizations - must complete under 4 minutes to avoid Render timeout
+    os.environ['USE_SENTIMENT_PRESCREENING'] = '0'  # Disable pre-screening (saves 30-60s)
+
+    # Check if backtesting should be disabled (default: enabled unless env var set)
+    disable_backtest = os.environ.get('DISABLE_BACKTESTING', '0')
+    if disable_backtest == '1':
+        print(f"⚡ Backtesting DISABLED for speed (will complete faster)", file=sys.stderr)
+    else:
+        print(f"📊 Backtesting ENABLED (may take longer but provides better data)", file=sys.stderr)
 
     start_time = time.time()
 
@@ -120,11 +126,12 @@ def run_background_scan(filter_mode: str = 'strict', max_symbols: int = None) ->
     signal.alarm(240)  # 4 minutes
 
     try:
-        # Run INSTITUTIONAL-GRADE scan with enough symbols for quality
-        # Default to 25 symbols if not specified (balance coverage + speed to stay under 4 min)
+        # Run OPTIMIZED scan with SPEED priority to stay under 4 minute timeout
+        # Default to 20 symbols if not specified (reduced from 25 for faster completion)
         if max_symbols is None:
-            max_symbols = 25
-            print(f"⚡ INSTITUTIONAL MODE: {max_symbols} symbols + 90 days history + backtesting ENABLED", file=sys.stderr)
+            max_symbols = 20
+            backtest_status = "DISABLED" if disable_backtest == '1' else "ENABLED"
+            print(f"⚡ FAST MODE: {max_symbols} symbols + 30 days history + backtesting {backtest_status}", file=sys.stderr)
         else:
             print(f"📊 Running background scan (filter_mode={filter_mode}, max_symbols={max_symbols})", file=sys.stderr)
 

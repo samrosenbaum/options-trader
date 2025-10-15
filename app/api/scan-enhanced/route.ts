@@ -690,7 +690,19 @@ const executeEnhancedScanner = async ({
     })
   }
 
-  console.log(`📡 No fresh cache available, running live scan...`)
+  // ALWAYS serve from cache - never run live scans (they timeout)
+  // The cron jobs refresh the cache every 10 minutes
+  console.log(`⚠️  No cache available for ${resolvedMode} mode - cron job hasn't run yet`)
+  return buildFallbackResponse(
+    'cache_miss',
+    `No ${resolvedMode} mode scan available yet. Cron jobs run every 10 minutes to populate the cache.`,
+    {
+      filterMode: resolvedMode,
+      cacheWaitTime: 'up to 10 minutes',
+      suggestion: 'Please wait a few minutes and try again. Background scanner runs every 10 minutes.',
+      ...( debugContext ?? {}),
+    }
+  )
 
   if (forcedPolicy?.forceFallback) {
     console.warn(
