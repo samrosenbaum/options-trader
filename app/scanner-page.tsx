@@ -2546,6 +2546,9 @@ export default function ScannerPage({ user }: ScannerPageProps) {
               </div>
 
       <div className="max-w-7xl mx-auto px-6 py-8">
+        {/* Loading State - Monty the Money Printer Piggy! */}
+        {isLoading && <MontyLoading />}
+
         {/* Scan Progress */}
         <RealTimeProgress
           isScanning={isLoading || cryptoLoading}
@@ -2554,9 +2557,6 @@ export default function ScannerPage({ user }: ScannerPageProps) {
             console.log('Scan completed with results:', results)
           }}
         />
-
-        {/* Loading State - Monty the Money Printer Piggy! */}
-        {isLoading && <MontyLoading />}
 
         {/* Stats Cards - Robinhood-inspired dark design (hidden while loading) */}
         {!isLoading && (
