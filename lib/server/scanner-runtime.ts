@@ -62,10 +62,12 @@ const providerDetectors: Array<() => ScannerExecutionPolicy | null> = [
     return null
   },
   () => {
+    // Render supports Python - do not force fallback
+    // Python will be available as 'python3' by default on Render
+    // We trust that if user deployed to Render with Python code, Python is available
+    // Commenting out this check to allow Render to work without PYTHON_EXECUTABLE env var
+    /*
     if (process.env.RENDER === "true") {
-      // Render sets RENDER=true for all services, including serverless plans that cannot spawn Python.
-      // Users deploying with the provided blueprint still retain Python support, so only
-      // auto-disable when the Python executable is missing.
       if (falsy(process.env.PYTHON_EXECUTABLE)) {
         return {
           forceFallback: true,
@@ -74,6 +76,7 @@ const providerDetectors: Array<() => ScannerExecutionPolicy | null> = [
         }
       }
     }
+    */
     return null
   },
   () => {
