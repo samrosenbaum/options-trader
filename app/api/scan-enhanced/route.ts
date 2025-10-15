@@ -3,13 +3,16 @@ import { NextResponse } from "next/server"
 import { resolvePythonExecutable } from "@/lib/server/python"
 import { determineScannerExecutionPolicy } from "@/lib/server/scanner-runtime"
 import { ensureOptionGreeks } from "@/lib/math/greeks"
+import { createClient } from "@/lib/supabase/server"
 
 /**
  * Enhanced Options Scan API Endpoint
- * 
+ *
  * This endpoint uses the new institutional-grade scanner that combines:
+ * - Background cached scans for instant results (<2 seconds)
+ * - Falls back to live scan if cache is stale (>15 minutes old)
  * - Data quality validation with 5-tier scoring
- * - Unified probability calculations with confidence intervals  
+ * - Unified probability calculations with confidence intervals
  * - Professional Greeks including advanced Greeks
  * - Risk-adjusted scoring and filtering
  */
@@ -593,6 +596,57 @@ const mergeConstraints = (
   return Object.keys(merged).length > 0 ? merged : undefined
 }
 
+/**
+ * Fetch cached scan results from Supabase
+ * Returns cached results if available and fresh (< 15 minutes old)
+ */
+const fetchCachedScanResults = async (filterMode: FilterMode = "strict") => {
+  try {
+    const supabase = await createClient()
+
+    const { data, error } = await supabase
+      .rpc('get_latest_scan', { p_filter_mode: filterMode })
+      .single()
+
+    if (error) {
+      console.warn(`No cached scan found for ${filterMode} mode:`, error.message)
+      return null
+    }
+
+    if (!data) {
+      console.warn(`No cached scan data available for ${filterMode} mode`)
+      return null
+    }
+
+    const ageMinutes = data.age_minutes || 0
+
+    // Cache is stale if older than 15 minutes
+    if (ageMinutes > 15) {
+      console.warn(`Cached scan is stale (${ageMinutes.toFixed(1)} minutes old), will run live scan`)
+      return null
+    }
+
+    console.log(`✅ Serving cached scan (${ageMinutes.toFixed(1)} minutes old, ${data.opportunities?.length || 0} opportunities)`)
+
+    return {
+      opportunities: data.opportunities || [],
+      metadata: {
+        ...(data.metadata || {}),
+        totalEvaluated: data.total_evaluated || 0,
+        symbolsScanned: data.symbols_scanned || [],
+        cacheHit: true,
+        cacheAgeMinutes: ageMinutes,
+        cacheTimestamp: data.scan_timestamp,
+        scanDuration: data.scan_duration_seconds,
+        source: 'cached_background_scan',
+      },
+    }
+  } catch (error) {
+    console.error('Error fetching cached scan:', error)
+    return null
+  }
+}
+
 const executeEnhancedScanner = async ({
   constraints,
   debugContext,
@@ -604,6 +658,23 @@ const executeEnhancedScanner = async ({
 }) => {
   const forcedPolicy = determineScannerExecutionPolicy()
   const resolvedMode: FilterMode = filterMode === "strict" ? "strict" : "relaxed"
+
+  // Try to fetch cached results first for instant response
+  console.log(`⚡ Checking cache for ${resolvedMode} mode results...`)
+  const cachedResults = await fetchCachedScanResults(resolvedMode)
+
+  if (cachedResults) {
+    // Cache hit! Serve instantly
+    console.log(`🚀 Serving cached results (${cachedResults.metadata.cacheAgeMinutes?.toFixed(1)} min old)`)
+
+    return NextResponse.json({
+      success: true,
+      opportunities: cachedResults.opportunities,
+      metadata: cachedResults.metadata,
+    })
+  }
+
+  console.log(`📡 No fresh cache available, running live scan...`)
 
   if (forcedPolicy?.forceFallback) {
     console.warn(
