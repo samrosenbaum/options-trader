@@ -6,11 +6,32 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { BarChart3, Eye, Briefcase, Newspaper } from 'lucide-react'
+import { useState, useEffect } from 'react'
+
+const FUN_GREETINGS = [
+  "Looking sharp today!",
+  "Ready to print money?",
+  "Let's get those gains!",
+  "Time to make it rain!",
+  "Future millionaire spotted!",
+  "Money moves only!",
+  "Wealth builder in the house!",
+  "You're crushing it!",
+  "Born to trade!",
+  "Opportunity seeker online!",
+]
 
 export default function Navigation({ userEmail }: { userEmail?: string }) {
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
+  const [greeting, setGreeting] = useState('')
+
+  useEffect(() => {
+    // Pick a random greeting on mount
+    const randomGreeting = FUN_GREETINGS[Math.floor(Math.random() * FUN_GREETINGS.length)]
+    setGreeting(randomGreeting)
+  }, [])
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
@@ -72,9 +93,9 @@ export default function Navigation({ userEmail }: { userEmail?: string }) {
 
           {/* User Menu */}
           <div className="flex items-center gap-4">
-            {userEmail && (
-              <span className="text-sm text-slate-600 dark:text-slate-400 hidden sm:block">
-                {userEmail}
+            {userEmail && greeting && (
+              <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400 hidden sm:block">
+                {greeting}
               </span>
             )}
             <button
