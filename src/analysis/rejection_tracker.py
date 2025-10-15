@@ -25,6 +25,7 @@ Usage:
 """
 
 import json
+import math
 import os
 from dataclasses import dataclass, asdict
 from datetime import datetime, timedelta, timezone
@@ -101,6 +102,31 @@ class RejectionTracker:
                 "supabase package not installed. Run: pip install supabase"
             )
 
+    @staticmethod
+    def _safe_int(value, default=0):
+        """Convert value to int, handling NaN and None."""
+        if value is None:
+            return default
+        try:
+            if math.isnan(float(value)):
+                return default
+            return int(float(value))
+        except (ValueError, TypeError):
+            return default
+
+    @staticmethod
+    def _safe_float(value, default=0.0):
+        """Convert value to float, handling NaN and None."""
+        if value is None:
+            return default
+        try:
+            result = float(value)
+            if math.isnan(result):
+                return default
+            return result
+        except (ValueError, TypeError):
+            return default
+
     def log_rejection(
         self,
         symbol: str,
@@ -120,21 +146,21 @@ class RejectionTracker:
             scores: Optional dict with probability_score, risk_adjusted_score, quality_score
         """
         try:
-            # Build rejection record
+            # Build rejection record with safe NaN handling
             record = {
                 "symbol": symbol,
-                "strike": float(option_data.get("strike", 0)),
+                "strike": self._safe_float(option_data.get("strike"), 0),
                 "expiration": option_data.get("expiration", ""),
                 "option_type": str(option_data.get("type", option_data.get("optionType", "call"))).lower(),
                 "rejection_reason": rejection_reason,
                 "filter_stage": filter_stage,
                 "rejected_at": datetime.now(timezone.utc).isoformat(),
-                "stock_price": float(option_data.get("stock_price", option_data.get("stockPrice", 0))),
-                "option_price": float(option_data.get("lastPrice", 0)),
-                "volume": int(option_data.get("volume", 0)),
-                "open_interest": int(option_data.get("openInterest", 0)),
-                "implied_volatility": float(option_data.get("impliedVolatility")) if option_data.get("impliedVolatility") else None,
-                "delta": float(option_data.get("delta")) if option_data.get("delta") else None,
+                "stock_price": self._safe_float(option_data.get("stock_price", option_data.get("stockPrice")), 0),
+                "option_price": self._safe_float(option_data.get("lastPrice"), 0),
+                "volume": self._safe_int(option_data.get("volume"), 0),
+                "open_interest": self._safe_int(option_data.get("openInterest"), 0),
+                "implied_volatility": self._safe_float(option_data.get("impliedVolatility")) if option_data.get("impliedVolatility") else None,
+                "delta": self._safe_float(option_data.get("delta")) if option_data.get("delta") else None,
                 "probability_score": scores.get("probability_score") if scores else None,
                 "risk_adjusted_score": scores.get("risk_adjusted_score") if scores else None,
                 "quality_score": scores.get("quality_score") if scores else None,
