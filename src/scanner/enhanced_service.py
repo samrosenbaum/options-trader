@@ -675,10 +675,51 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
 
             # Data quality filter
             data_quality = enhanced_analysis.get('dataQuality', {})
-            quality_level = data_quality.get('quality', 'UNKNOWN')
+            quality_level_raw = data_quality.get('quality', 'UNKNOWN')
+            quality_level = str(quality_level_raw).strip().lower() if quality_level_raw is not None else 'unknown'
 
-            if quality_level == 'REJECTED':
-                print(f"🚫 Filtered out {opp['symbol']} due to {quality_level} data quality", file=sys.stderr)
+            if quality_level == 'rejected':
+                # Treat rejected-quality opportunities the same as any other
+                # filter failure so the relaxed fallback can still surface the
+                # "best available" candidates.  The previous implementation
+                # skipped these outright which meant ``rejected_with_scores``
+                # never accumulated entries and the fallback logic had nothing
+                # to promote, ultimately returning zero opportunities.
+                opp.setdefault('_filter_failures', []).append('data quality rejected')
+                opp['_filter_score'] = self._calculate_filter_score(opp)
+                rejected_with_scores.append(opp)
+                print(f"🚫 Filtered out {opp['symbol']} due to rejected data quality", file=sys.stderr)
+
+                # Record the rejection for diagnostics so we can analyze which
+                # symbols routinely fail the data quality checks.
+                try:
+                    option_data = {
+                        'symbol': opp.get('symbol'),
+                        'strike': opp.get('strike'),
+                        'expiration': opp.get('expiration'),
+                        'type': opp.get('optionType', 'call'),
+                        'stock_price': opp.get('stockPrice'),
+                        'lastPrice': opp.get('premium', 0) / 100,
+                        'volume': opp.get('volume'),
+                        'openInterest': opp.get('openInterest'),
+                        'impliedVolatility': opp.get('impliedVolatility'),
+                        'delta': enhanced_analysis.get('greeks', {}).get('delta'),
+                    }
+
+                    self.rejection_tracker.log_rejection(
+                        symbol=opp.get('symbol', 'UNKNOWN'),
+                        option_data=option_data,
+                        rejection_reason='data quality rejected',
+                        filter_stage="institutional_filters",
+                        scores={
+                            'probability_score': enhanced_analysis.get('probabilityAnalysis', {}).get('probabilityOfProfit', 0) * 100,
+                            'risk_adjusted_score': opp.get('riskAdjustedScore', opp.get('score')),
+                            'quality_score': data_quality.get('score'),
+                        },
+                    )
+                except Exception as e:
+                    print(f"⚠️  Failed to log institutional data quality rejection: {e}", file=sys.stderr)
+
                 continue
 
             # Probability filter
