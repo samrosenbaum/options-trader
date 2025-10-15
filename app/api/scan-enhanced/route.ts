@@ -597,6 +597,22 @@ const mergeConstraints = (
 }
 
 /**
+ * Type definition for cached scan results from Supabase RPC
+ */
+interface CachedScanResponse {
+  id: string
+  scan_id: string
+  scan_timestamp: string
+  filter_mode: string
+  opportunities: Record<string, unknown>[]
+  total_evaluated: number
+  symbols_scanned: string[]
+  scan_duration_seconds: number
+  metadata: Record<string, unknown>
+  age_minutes: number
+}
+
+/**
  * Fetch cached scan results from Supabase
  * Returns cached results if available and fresh (< 15 minutes old)
  */
@@ -606,7 +622,7 @@ const fetchCachedScanResults = async (filterMode: FilterMode = "strict") => {
 
     const { data, error } = await supabase
       .rpc('get_latest_scan', { p_filter_mode: filterMode })
-      .single()
+      .single() as { data: CachedScanResponse | null; error: Error | null }
 
     if (error) {
       console.warn(`No cached scan found for ${filterMode} mode:`, error.message)

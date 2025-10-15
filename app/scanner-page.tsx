@@ -614,19 +614,6 @@ const renderOpportunityCard = (
     isOnWatchlist: boolean
   }
 ) => {
-  const scenario = calculateInvestmentScenario(opp, investmentAmount)
-  const isPerContractView = scenario.basis === 'perContract'
-  const potentialReturnDisplay = isPerContractView
-    ? scenario.potentialReturnAmountPerContract
-    : scenario.potentialReturnAmount
-  const maxReturnDisplay = isPerContractView
-    ? scenario.maxReturnAmountPerContract
-    : scenario.maxReturnAmount
-  const maxLossDisplay = isPerContractView
-    ? scenario.maxLossAmountPerContract
-    : scenario.maxLossAmount
-  const maxLossPercentDisplay = Math.abs(opp.maxLossPercent ?? 0)
-
   const positionSizing = opp.positionSizing ?? null
   const hasPositionSizing = Boolean(positionSizing)
   const riskBudgetMeta = getRiskBudgetMeta(positionSizing?.riskBudgetTier)
