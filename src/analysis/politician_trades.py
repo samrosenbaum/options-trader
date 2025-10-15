@@ -120,11 +120,11 @@ def fetch_recent_trades(symbols: Optional[List[str]] = None, days_back: int = 30
     """
     Fetch recent politician trades.
 
-    NOTE: Currently returns demo data. Capitol Trades website has anti-scraping protections.
-    For real-time data, consider:
-    - Quiver Quantitative API ($30-50/month) - Most comprehensive
-    - Capitol Trades API (requires subscription)
-    - Other congressional trading APIs
+    NOTE: Currently returns demo data. Free sources have limitations:
+    - Capitol Trades: Has anti-scraping protections
+    - Senate/House official sites: Complex XML/PDF parsing required
+
+    For real-time data, use Quiver Quantitative API ($30-50/month).
 
     Args:
         symbols: Optional list of symbols to filter. If None, fetches all recent trades.
@@ -135,135 +135,109 @@ def fetch_recent_trades(symbols: Optional[List[str]] = None, days_back: int = 30
     """
     trades = []
 
-    # Try to fetch real data from Capitol Trades
+    # Try alternative free sources
     try:
-        # Use Capitol Trades public trades page (HTML scraping)
-        base_url = "https://www.capitoltrades.com/trades"
+        # Attempt 1: Try Senate Stock Watcher (if available)
+        print("Attempting to fetch from alternative sources...", flush=True)
+
+        # Try a simple API endpoint approach (some services have public APIs)
+        test_url = "https://house-stock-watcher-data.s3-us-west-2.amazonaws.com/data/all_transactions.json"
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         }
 
-        # Add symbol filter if provided
-        if symbols and len(symbols) == 1:
-            url = f"{base_url}?symbol={symbols[0]}"
-        else:
-            url = base_url
-
-        response = requests.get(url, timeout=15, headers=headers)
+        response = requests.get(test_url, timeout=15, headers=headers)
 
         if response.status_code == 200:
-            # Parse HTML to extract trade data
-            from bs4 import BeautifulSoup
-            soup = BeautifulSoup(response.content, 'html.parser')
+            # Parse JSON data from House Stock Watcher
+            try:
+                import json
+                data = response.json()
 
-            # Find trade cards/rows in the HTML
-            # Capitol Trades uses a table structure with class 'q-table'
-            trade_rows = soup.find_all('tr', class_='q-tr')[:50]  # Limit to 50 trades
+                # Limit to recent trades
+                for item in data[:50]:
+                    try:
+                        # Extract fields from JSON
+                        politician_name = item.get('representative', 'Unknown')
+                        ticker = item.get('ticker', '').strip().upper()
 
-            for row in trade_rows:
-                try:
-                    # Extract politician info
-                    politician_cell = row.find('td', class_='q-column--politician')
-                    if not politician_cell:
-                        continue
+                        if not ticker or ticker == '--' or ticker == 'N/A':
+                            continue
 
-                    politician_link = politician_cell.find('a')
-                    politician_name = politician_link.text.strip() if politician_link else "Unknown"
+                        # Filter by symbols if provided
+                        if symbols and ticker not in symbols:
+                            continue
 
-                    # Extract party and chamber info
-                    party_info = politician_cell.find('span', class_='q-field--party')
-                    party = "Unknown"
-                    chamber = "Unknown"
+                        # Parse transaction type
+                        tx_type = item.get('transaction_type', 'purchase').lower()
+                        transaction_type = "purchase"
+                        if "sale" in tx_type or "sold" in tx_type:
+                            transaction_type = "sale"
+                        elif "exchange" in tx_type:
+                            transaction_type = "exchange"
 
-                    if party_info:
-                        party_text = party_info.text.strip()
-                        if 'D' in party_text or 'Democrat' in party_text:
+                        # Get amount range
+                        amount_range = item.get('amount', '$1,001 - $15,000')
+
+                        # Parse dates
+                        trade_date = None
+                        disclosure_date = None
+
+                        if item.get('transaction_date'):
+                            try:
+                                trade_date = datetime.strptime(item['transaction_date'], "%Y-%m-%d")
+                                trade_date = trade_date.replace(tzinfo=timezone.utc)
+                            except Exception:
+                                pass
+
+                        if item.get('disclosure_date'):
+                            try:
+                                disclosure_date = datetime.strptime(item['disclosure_date'], "%Y-%m-%d")
+                                disclosure_date = disclosure_date.replace(tzinfo=timezone.utc)
+                            except Exception:
+                                pass
+
+                        # Infer party from name or data
+                        party = item.get('party', 'Unknown')
+                        if party in ['D', 'Democratic']:
                             party = "Democrat"
-                        elif 'R' in party_text or 'Republican' in party_text:
+                        elif party in ['R', 'Republican']:
                             party = "Republican"
 
-                        if 'House' in party_text or 'Representative' in politician_name:
-                            chamber = "House"
-                        elif 'Senate' in party_text or 'Senator' in politician_name:
-                            chamber = "Senate"
+                        trade = PoliticianTrade(
+                            politician_name=politician_name,
+                            party=party,
+                            chamber="House",  # This dataset is House only
+                            ticker=ticker,
+                            transaction_type=transaction_type,
+                            amount_range=amount_range,
+                            trade_date=trade_date,
+                            disclosure_date=disclosure_date,
+                        )
 
-                    # Extract ticker
-                    ticker_cell = row.find('td', class_='q-column--ticker')
-                    ticker = ticker_cell.text.strip() if ticker_cell else None
+                        trades.append(trade)
 
-                    if not ticker or ticker == '--':
+                    except Exception as e:
+                        print(f"Error parsing trade item: {e}", flush=True)
                         continue
 
-                    # Filter by symbols if provided
-                    if symbols and ticker not in symbols:
-                        continue
+                if trades:
+                    print(f"Successfully fetched {len(trades)} trades from House Stock Watcher", flush=True)
 
-                    # Extract transaction type
-                    trade_type_cell = row.find('td', class_='q-column--txType')
-                    trade_type_text = trade_type_cell.text.strip().lower() if trade_type_cell else "purchase"
-
-                    transaction_type = "purchase"
-                    if "sale" in trade_type_text or "sold" in trade_type_text:
-                        transaction_type = "sale"
-                    elif "exchange" in trade_type_text:
-                        transaction_type = "exchange"
-
-                    # Extract amount range
-                    amount_cell = row.find('td', class_='q-column--size')
-                    amount_range = amount_cell.text.strip() if amount_cell else "$1,001 - $15,000"
-
-                    # Extract dates
-                    trade_date_cell = row.find('td', class_='q-column--txDate')
-                    disclosure_date_cell = row.find('td', class_='q-column--pubDate')
-
-                    trade_date = None
-                    disclosure_date = None
-
-                    if trade_date_cell:
-                        try:
-                            trade_date_str = trade_date_cell.text.strip()
-                            trade_date = datetime.strptime(trade_date_str, "%Y-%m-%d")
-                            trade_date = trade_date.replace(tzinfo=timezone.utc)
-                        except Exception:
-                            pass
-
-                    if disclosure_date_cell:
-                        try:
-                            disclosure_date_str = disclosure_date_cell.text.strip()
-                            disclosure_date = datetime.strptime(disclosure_date_str, "%Y-%m-%d")
-                            disclosure_date = disclosure_date.replace(tzinfo=timezone.utc)
-                        except Exception:
-                            pass
-
-                    # Create trade object
-                    trade = PoliticianTrade(
-                        politician_name=politician_name,
-                        party=party,
-                        chamber=chamber,
-                        ticker=ticker,
-                        transaction_type=transaction_type,
-                        amount_range=amount_range,
-                        trade_date=trade_date,
-                        disclosure_date=disclosure_date,
-                    )
-
-                    trades.append(trade)
-
-                except Exception as e:
-                    print(f"Error parsing trade row: {e}")
-                    continue
+            except Exception as e:
+                print(f"Error parsing JSON data: {e}", flush=True)
 
         else:
-            print(f"Error fetching Capitol Trades: HTTP {response.status_code}")
-            print("Falling back to demo data...")
+            print(f"Error fetching data: HTTP {response.status_code}", flush=True)
+            print("Falling back to demo data...", flush=True)
 
     except Exception as e:
-        print(f"Error fetching politician trades: {e}")
-        print("Falling back to demo data...")
+        print(f"Error fetching politician trades: {e}", flush=True)
+        print("Falling back to demo data...", flush=True)
 
     # If no trades fetched from real source, use demo data
     if not trades:
-        print("Using demo politician trades data")
+        print("No real data available - using demo politician trades", flush=True)
         trades = _get_demo_trades()
 
     # Filter by symbols if provided

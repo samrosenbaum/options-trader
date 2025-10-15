@@ -202,9 +202,10 @@ class OptionsDataQualityValidator:
         price_age_seconds = opp.get('_price_age_seconds')
         if price_age_seconds is not None:
             age_minutes = price_age_seconds / 60.0
-            
+            is_market_open = self._is_market_hours()
+
             # During market hours, prices should be fresh
-            if self._is_market_hours() and age_minutes > self.max_price_age_minutes:
+            if is_market_open and age_minutes > self.max_price_age_minutes:
                 if age_minutes > 60:  # Over 1 hour old
                     issues.append(QualityIssue(
                         severity="critical",
@@ -215,24 +216,28 @@ class OptionsDataQualityValidator:
                     ))
                 else:
                     issues.append(QualityIssue(
-                        severity="warning", 
+                        severity="warning",
                         message=f"Stock price is {age_minutes:.0f} minutes old",
                         impact_points=15.0,
                         field="_price_age_seconds",
                         value=price_age_seconds
                     ))
-            elif age_minutes > 30:  # Warn if price is more than 30 minutes old anytime
+            elif not is_market_open and age_minutes > 1440:  # More than 24 hours old when markets closed
+                # When markets are closed, be more lenient - only warn if data is >24 hours old
                 issues.append(QualityIssue(
                     severity="warning",
-                    message=f"Stock price is {age_minutes:.0f} minutes old",
-                    impact_points=10.0,
-                    field="_price_age_seconds", 
+                    message=f"Stock price is {age_minutes / 60:.1f} hours old (markets closed)",
+                    impact_points=5.0,  # Reduced penalty when markets closed
+                    field="_price_age_seconds",
                     value=price_age_seconds
                 ))
         
         # Check price source quality
         price_source = opp.get('_price_source', '')
-        if 'STALE' in price_source.upper():
+        is_market_open = self._is_market_hours()
+
+        if 'STALE' in price_source.upper() and is_market_open:
+            # Only penalize stale sources during market hours
             issues.append(QualityIssue(
                 severity="warning",
                 message=f"Price from stale source: {price_source}",
@@ -240,11 +245,21 @@ class OptionsDataQualityValidator:
                 field="_price_source",
                 value=price_source
             ))
-        elif 'previousClose' in price_source and self._is_market_hours():
+        elif 'previousClose' in price_source and is_market_open:
+            # Using previous close during market hours is bad
             issues.append(QualityIssue(
                 severity="critical",
                 message="Using previous day's close during market hours",
                 impact_points=35.0,
+                field="_price_source",
+                value=price_source
+            ))
+        elif 'previousClose' in price_source and not is_market_open:
+            # Using previous close when markets are closed is fine, just note it
+            issues.append(QualityIssue(
+                severity="info",
+                message=f"Using previous close (markets closed)",
+                impact_points=0.0,  # No penalty
                 field="_price_source",
                 value=price_source
             ))
@@ -319,12 +334,13 @@ class OptionsDataQualityValidator:
     def _validate_liquidity(self, opp: Dict[str, Any]) -> List[QualityIssue]:
         """Validate option liquidity."""
         issues = []
-        
+
         volume = opp.get('volume', 0)
         open_interest = opp.get('openInterest', 0)
-        
-        # Check volume
-        if volume == 0:
+        is_market_open = self._is_market_hours()
+
+        # Check volume - be lenient when markets are closed
+        if volume == 0 and is_market_open:
             issues.append(QualityIssue(
                 severity="critical",
                 message="Zero volume - no trading activity",
@@ -332,33 +348,45 @@ class OptionsDataQualityValidator:
                 field="volume",
                 value=volume
             ))
-        elif volume < self.min_volume:
+        elif volume == 0 and not is_market_open:
+            # Zero volume is normal when markets are closed
+            issues.append(QualityIssue(
+                severity="info",
+                message="Zero volume (markets closed - normal)",
+                impact_points=0.0,  # No penalty
+                field="volume",
+                value=volume
+            ))
+        elif volume < self.min_volume and is_market_open:
             issues.append(QualityIssue(
                 severity="warning",
                 message=f"Low volume: {volume} (min recommended: {self.min_volume})",
                 impact_points=20.0,
-                field="volume", 
+                field="volume",
                 value=volume
             ))
-        
-        # Check open interest
+
+        # Check open interest - more important than volume
         if open_interest == 0:
+            # Zero OI is always concerning, but less critical when markets are closed
+            severity = "warning" if not is_market_open else "critical"
+            impact = 15.0 if not is_market_open else 40.0
             issues.append(QualityIssue(
-                severity="critical",
-                message="Zero open interest - completely illiquid",
-                impact_points=40.0,
+                severity=severity,
+                message="Zero open interest - illiquid contract",
+                impact_points=impact,
                 field="openInterest",
                 value=open_interest
             ))
         elif open_interest < self.min_open_interest:
             issues.append(QualityIssue(
-                severity="warning", 
+                severity="warning",
                 message=f"Low open interest: {open_interest} (min recommended: {self.min_open_interest})",
-                impact_points=15.0,
+                impact_points=10.0,  # Reduced from 15.0
                 field="openInterest",
                 value=open_interest
             ))
-            
+
         return issues
     
     def _validate_implied_volatility(self, opp: Dict[str, Any]) -> List[QualityIssue]:
