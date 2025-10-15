@@ -19,7 +19,7 @@ services:
     autoDeploy: true
 
   # Background scanner (strict mode) - runs every 10 minutes at :00, :10, :20, :30, :40, :50
-  # CRITICAL: Must complete in under 4 minutes to avoid timeout
+  # FAST SCAN: Shows opportunities quickly, users can enhance on-demand
   - type: cron
     name: options-scanner-strict
     runtime: python
@@ -36,12 +36,10 @@ services:
         value: production
       - key: PYTHON_EXECUTABLE
         value: ./venv/bin/python3
-      - key: DISABLE_BACKTESTING
-        value: "1"  # Disable backtesting for speed - it adds 2-3 minutes
     autoDeploy: true
 
   # Background scanner (relaxed mode) - runs every 10 minutes at :05, :15, :25, :35, :45, :55
-  # CRITICAL: Must complete in under 4 minutes to avoid timeout
+  # FAST SCAN: Shows opportunities quickly, users can enhance on-demand
   - type: cron
     name: options-scanner-relaxed
     runtime: python
@@ -58,6 +56,4 @@ services:
         value: production
       - key: PYTHON_EXECUTABLE
         value: ./venv/bin/python3
-      - key: DISABLE_BACKTESTING
-        value: "1"  # Disable backtesting for speed - it adds 2-3 minutes
     autoDeploy: true

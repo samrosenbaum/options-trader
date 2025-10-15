@@ -309,20 +309,17 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
             if enhanced_opp.warnings:
                 result['enhancedWarnings'] = enhanced_opp.warnings
 
-            # Add historical move analysis
-            historical_context = self._get_historical_context(
-                symbol=legacy_opp['symbol'],
-                strike=legacy_opp['strike'],
-                stock_price=legacy_opp['stockPrice'],
-                option_type=legacy_opp['optionType'],
-                expiration=legacy_opp['expiration'],
-                premium=legacy_opp['premium']
-            )
-            if historical_context and historical_context.get('available'):
-                result['historicalContext'] = historical_context
+            # Skip historical move analysis during initial scan for speed
+            # Users can request this on-demand via /api/enhance/historical
+            # Uncomment to enable in scan (adds ~30 seconds):
+            # historical_context = self._get_historical_context(...)
+            # if historical_context and historical_context.get('available'):
+            #     result['historicalContext'] = historical_context
 
-            # Add backtesting validation (skip if disabled for speed)
-            disable_backtesting = os.getenv('DISABLE_BACKTESTING', '0') == '1'
+            # Skip backtesting during initial scan for speed
+            # Users can request this on-demand via /api/enhance/backtest for 365-day analysis
+            # This saves 2-3 minutes during the scan
+            disable_backtesting = os.getenv('DISABLE_BACKTESTING', '1') == '1'  # Default: DISABLED
             if not disable_backtesting:
                 backtest_result = self._validate_strategy(
                     symbol=legacy_opp['symbol'],
