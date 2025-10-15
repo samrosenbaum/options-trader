@@ -100,7 +100,7 @@ class SmartOptionsScanner:
         except Exception:
             sqlite_path = None
         self.iv_history = IVRankHistory(sqlite_path)
-        self.historical_moves = HistoricalMoveAnalyzer(db_path=sqlite_path, lookback_days=180)  # Reduced from 365 to save memory
+        self.historical_moves = HistoricalMoveAnalyzer(db_path=sqlite_path, lookback_days=365)
         self.swing_analyzer: SwingSignalAnalyzer | None = None
         self._swing_signal_cache: Dict[str, Optional[Dict[str, Any]]] = {}
         self._swing_error_cache: Dict[str, str] = {}

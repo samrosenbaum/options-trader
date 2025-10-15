@@ -62,7 +62,7 @@ class SwingSignalAnalyzer:
     def __init__(
         self,
         *,
-        lookback: str = "2mo",  # Reduced from 6mo to save memory (Render 512MB limit)
+        lookback: str = "6mo",  # Full lookback for maximum analysis power
         interval: str = "1d",
         news_limit: int = 5,
         price_fetcher: Optional[PriceFetcher] = None,
@@ -181,9 +181,8 @@ class SwingSignalAnalyzer:
 
     def _fetch_market_context(self) -> Dict[str, float]:
         try:
-            # Reduced from 3mo to 1mo to save memory (Render 512MB limit)
-            vix = yf.download("^VIX", period="1mo", interval="1d", progress=False, timeout=10)
-            spy = yf.download("SPY", period="1mo", interval="1d", progress=False, timeout=10)
+            vix = yf.download("^VIX", period="3mo", interval="1d", progress=False, timeout=10)
+            spy = yf.download("SPY", period="3mo", interval="1d", progress=False, timeout=10)
         except Exception:
             return {}
 
