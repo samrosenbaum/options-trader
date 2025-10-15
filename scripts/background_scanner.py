@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
 """
-Background Scanner - Runs Full Analysis and Caches Results
+Background Scanner - Runs FAST Analysis and Caches Results
 
-This script runs a complete institutional-grade scan with ALL features enabled
+This script runs an OPTIMIZED scan (limited symbols, reduced history)
 and stores the results in Supabase for instant serving to users.
 
 Designed to be run on a schedule (every 10 minutes via cron/scheduler).
+Must complete in <5 minutes to avoid cron timeout.
 """
 
 import json
 import os
+import signal
 import sys
 import time
 from datetime import datetime
@@ -19,6 +21,16 @@ from typing import Any, Dict, List
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from src.scanner.enhanced_service import run_enhanced_scan
+
+
+class TimeoutError(Exception):
+    """Raised when scan exceeds timeout."""
+    pass
+
+
+def timeout_handler(signum, frame):
+    """Handle timeout signal."""
+    raise TimeoutError("Scanner exceeded 4 minute timeout")
 
 
 def save_scan_to_supabase(
@@ -97,26 +109,35 @@ def run_background_scan(filter_mode: str = 'strict', max_symbols: int = None) ->
     print(f"🚀 BACKGROUND SCANNER STARTED - {datetime.now().isoformat()}", file=sys.stderr)
     print("="*80, file=sys.stderr)
 
-    # DISABLE sentiment pre-screening for background scans - it's too slow
-    # and causes duplicate runs
-    os.environ['USE_SENTIMENT_PRESCREENING'] = '0'
+    # AGGRESSIVE OPTIMIZATIONS for speed
+    os.environ['USE_SENTIMENT_PRESCREENING'] = '0'  # Disable pre-screening (too slow)
+    os.environ['DISABLE_BACKTESTING'] = '1'  # Disable backtesting (too slow for background)
 
     start_time = time.time()
 
+    # Set 4 minute timeout (Render cron jobs have ~5 min limit)
+    signal.signal(signal.SIGALRM, timeout_handler)
+    signal.alarm(240)  # 4 minutes
+
     try:
-        # Run OPTIMIZED scan - limit symbols for speed
-        # Default to 15 symbols if not specified (balances coverage vs speed)
+        # Run SUPER OPTIMIZED scan - VERY limited symbols for speed
+        # Default to 10 symbols if not specified (must complete in <5 min)
         if max_symbols is None:
-            max_symbols = 15
-            print(f"📊 Running OPTIMIZED background scan (max_symbols={max_symbols} for speed)", file=sys.stderr)
+            max_symbols = 10
+            print(f"⚡ Running SUPER OPTIMIZED background scan (max_symbols={max_symbols} for SPEED)", file=sys.stderr)
         else:
             print(f"📊 Running background scan (filter_mode={filter_mode}, max_symbols={max_symbols})", file=sys.stderr)
+
+        print(f"⏰ Timeout set to 4 minutes - scan MUST complete before then", file=sys.stderr)
 
         result = run_enhanced_scan(
             max_symbols=max_symbols,
             force_refresh=True,  # Always fetch fresh data
             allow_relaxed_fallback=(filter_mode == 'relaxed'),
         )
+
+        # Cancel the alarm
+        signal.alarm(0)
 
         scan_duration = time.time() - start_time
 
@@ -147,7 +168,13 @@ def run_background_scan(filter_mode: str = 'strict', max_symbols: int = None) ->
         else:
             print(f"⚠️  BACKGROUND SCAN COMPLETED but failed to cache results", file=sys.stderr)
 
+    except TimeoutError as e:
+        signal.alarm(0)  # Cancel alarm
+        print(f"\n❌ BACKGROUND SCAN TIMEOUT: {e}", file=sys.stderr)
+        print(f"⚠️  Scanner took longer than 4 minutes - consider reducing max_symbols", file=sys.stderr)
+        sys.exit(1)
     except Exception as e:
+        signal.alarm(0)  # Cancel alarm
         print(f"\n❌ BACKGROUND SCAN FAILED: {e}", file=sys.stderr)
         import traceback
         traceback.print_exc()

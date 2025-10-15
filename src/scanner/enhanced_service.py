@@ -320,33 +320,35 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
             if historical_context and historical_context.get('available'):
                 result['historicalContext'] = historical_context
 
-            # Add backtesting validation
-            backtest_result = self._validate_strategy(
-                symbol=legacy_opp['symbol'],
-                option_type=legacy_opp['optionType'],
-                strike=legacy_opp['strike'],
-                stock_price=legacy_opp['stockPrice'],
-                premium=legacy_opp['premium'] / 100,  # Convert per-contract to per-share
-                days_to_expiration=legacy_opp.get('daysToExpiration', 30),
-                implied_volatility=legacy_opp.get('impliedVolatility', 0.5)
-            )
-            if backtest_result:
-                result['backtestValidation'] = backtest_result.to_dict()
-
-                # Update risk level based on backtest data
-                result['riskLevel'] = self._assess_risk_with_backtest(
-                    current_risk=result.get('riskLevel', 'medium'),
-                    backtest_result=backtest_result,
-                    probability=result.get('probabilityOfProfit', 50)
+            # Add backtesting validation (skip if disabled for speed)
+            disable_backtesting = os.getenv('DISABLE_BACKTESTING', '0') == '1'
+            if not disable_backtesting:
+                backtest_result = self._validate_strategy(
+                    symbol=legacy_opp['symbol'],
+                    option_type=legacy_opp['optionType'],
+                    strike=legacy_opp['strike'],
+                    stock_price=legacy_opp['stockPrice'],
+                    premium=legacy_opp['premium'] / 100,  # Convert per-contract to per-share
+                    days_to_expiration=legacy_opp.get('daysToExpiration', 30),
+                    implied_volatility=legacy_opp.get('impliedVolatility', 0.5)
                 )
+                if backtest_result:
+                    result['backtestValidation'] = backtest_result.to_dict()
 
-                # Recalculate Kelly fraction using backtest win rate instead of theoretical probability
-                if 'positionSizing' in result:
-                    updated_sizing = self._recalculate_kelly_with_backtest(
-                        position_sizing=result['positionSizing'],
-                        backtest_win_rate=backtest_result.win_rate,
-                        sample_size=backtest_result.similar_trades_found
+                    # Update risk level based on backtest data
+                    result['riskLevel'] = self._assess_risk_with_backtest(
+                        current_risk=result.get('riskLevel', 'medium'),
+                        backtest_result=backtest_result,
+                        probability=result.get('probabilityOfProfit', 50)
                     )
+
+                    # Recalculate Kelly fraction using backtest win rate instead of theoretical probability
+                    if 'positionSizing' in result:
+                        updated_sizing = self._recalculate_kelly_with_backtest(
+                            position_sizing=result['positionSizing'],
+                            backtest_win_rate=backtest_result.win_rate,
+                            sample_size=backtest_result.similar_trades_found
+                        )
                     if updated_sizing:
                         result['positionSizing'] = updated_sizing
 
