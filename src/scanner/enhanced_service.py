@@ -75,14 +75,14 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
             }
         )
 
-        # Initialize historical move analyzer
+        # Initialize historical move analyzer (reduced lookback to save memory)
         self.historical_analyzer = HistoricalMoveAnalyzer(
             db_path="data/historical_moves.db",
-            lookback_days=365
+            lookback_days=180  # Reduced from 365 to fit in Render's 512MB limit
         )
 
-        # Initialize strategy validator for backtesting
-        self.strategy_validator = StrategyValidator(lookback_days=365)
+        # Initialize strategy validator for backtesting (reduced lookback to save memory)
+        self.strategy_validator = StrategyValidator(lookback_days=180)  # Reduced from 365
 
         # Initialize sentiment pre-screener for targeted symbol selection
         self.sentiment_prescreener = SentimentPreScreener(iv_history=self.iv_history)

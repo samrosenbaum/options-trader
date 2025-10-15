@@ -73,7 +73,7 @@ class BacktestResult:
 class StrategyValidator:
     """Validates strategies by finding and analyzing similar historical patterns."""
 
-    def __init__(self, lookback_days: int = 365):
+    def __init__(self, lookback_days: int = 180):  # Reduced from 365 to save memory (Render 512MB limit)
         """Initialize validator with lookback period."""
         self.lookback_days = lookback_days
         self._price_cache: Dict[str, pd.DataFrame] = {}

@@ -86,12 +86,12 @@ class HistoricalMoveStats:
 class HistoricalMoveAnalyzer:
     """Analyzes historical price movements to validate probability estimates."""
 
-    def __init__(self, db_path: Optional[str] = None, lookback_days: int = 365):
+    def __init__(self, db_path: Optional[str] = None, lookback_days: int = 180):  # Reduced from 365 to save memory
         """Initialize the analyzer.
 
         Args:
             db_path: Path to SQLite database for caching historical data
-            lookback_days: How many days of history to analyze (default 1 year)
+            lookback_days: How many days of history to analyze (default 180 days, reduced to fit Render 512MB)
         """
         self.lookback_days = lookback_days
         self.db_path = db_path
