@@ -19,6 +19,7 @@ import pandas as pd
 
 from scripts.bulk_options_fetcher import BulkOptionsFetcher
 from src.analysis import SwingSignal, SwingSignalAnalyzer
+from src.analysis.rejection_tracker import RejectionTracker
 from src.config import AppSettings, get_settings
 from src.scanner.historical_moves import HistoricalMoveAnalyzer
 from src.scanner.iv_rank_history import IVRankHistory
@@ -715,6 +716,38 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
 
                 rejected_with_scores.append(opp)
                 print(f"🚫 Filtered out {opp['symbol']} due to: {', '.join(opp['_filter_failures'])}", file=sys.stderr)
+
+                # Log rejection for retrospective analysis
+                try:
+                    # Build option data dict from opportunity
+                    option_data = {
+                        'symbol': opp.get('symbol'),
+                        'strike': opp.get('strike'),
+                        'expiration': opp.get('expiration'),
+                        'type': opp.get('optionType', 'call'),
+                        'stock_price': opp.get('stockPrice'),
+                        'lastPrice': opp.get('premium', 0) / 100,  # Convert to per-share
+                        'volume': opp.get('volume'),
+                        'openInterest': opp.get('openInterest'),
+                        'impliedVolatility': opp.get('impliedVolatility'),
+                        'delta': greeks.get('delta')
+                    }
+
+                    self.rejection_tracker.log_rejection(
+                        symbol=opp.get('symbol', 'UNKNOWN'),
+                        option_data=option_data,
+                        rejection_reason=', '.join(opp['_filter_failures']),
+                        filter_stage="institutional_filters",
+                        scores={
+                            'probability_score': prob_of_profit * 100,  # Convert to percentage
+                            'risk_adjusted_score': risk_adjusted_score,
+                            'quality_score': data_quality.get('score')
+                        }
+                    )
+                except Exception as e:
+                    # Don't fail scanning if logging fails
+                    print(f"⚠️  Failed to log institutional filter rejection: {e}", file=sys.stderr)
+                    pass
 
         # Fallback mode: If we don't have enough results, return best available
         if len(filtered) < min_results and rejected_with_scores:

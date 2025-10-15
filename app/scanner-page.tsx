@@ -6,6 +6,7 @@ import RealTimeProgress from '../components/real-time-progress'
 import LiveTicker from '../components/live-ticker'
 import { PoliticianTradesFeed } from '../components/politician-trades-feed'
 import { LiveNewsFeed } from '../components/live-news-feed'
+import { MontyLoading } from '../components/monty-loading'
 import { createClient } from '@/lib/supabase/client'
 import type { Database } from '@/lib/types/database.types'
 import type { PositionSizingRecommendation } from '@/lib/types/opportunity'
@@ -2676,15 +2677,8 @@ export default function ScannerPage({ user }: ScannerPageProps) {
           </div>
         )}
 
-        {/* Loading State */}
-        {isLoading && (
-          <div className="text-center py-16">
-            <div className="inline-flex items-center gap-3 text-slate-600 dark:text-slate-400">
-              <div className="w-5 h-5 border-2 border-slate-300 border-t-slate-900 dark:border-slate-600 dark:border-t-white rounded-full animate-spin"></div>
-              <span className="font-medium">Scanning for opportunities...</span>
-            </div>
-          </div>
-        )}
+        {/* Loading State - Monty the Money Printer Piggy! */}
+        {isLoading && <MontyLoading />}
 
         {/* Empty State */}
         {!isLoading && opportunities.length === 0 && (

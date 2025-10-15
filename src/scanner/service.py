@@ -16,6 +16,7 @@ import yfinance as yf
 
 from scripts.bulk_options_fetcher import BulkOptionsFetcher
 from src.analysis import SwingSignal, SwingSignalAnalyzer
+from src.analysis.rejection_tracker import RejectionTracker
 from src.config import AppSettings, get_settings
 from src.scanner.historical_moves import HistoricalMoveAnalyzer
 from src.scanner.iv_rank_history import IVRankHistory
@@ -115,6 +116,9 @@ class SmartOptionsScanner:
             VolumeProfileAnalyzer(weight=0.20),  # 20% weight
         ])
         self.relaxed_scan_info: Dict[str, Any] | None = None
+
+        # Initialize rejection tracker for filter optimization
+        self.rejection_tracker = RejectionTracker()
 
     @property
     def batch_size(self) -> int:
@@ -492,6 +496,37 @@ class SmartOptionsScanner:
             & (working_data["bid"] > 0)
             & (working_data["ask"] > 0)
         ].copy()
+
+        # Log rejected options for retrospective analysis
+        rejected_mask = ~working_data.index.isin(liquid_options.index)
+        rejected_options = working_data[rejected_mask]
+        for idx, row in rejected_options.iterrows():
+            try:
+                # Determine specific rejection reason
+                reasons = []
+                if row.get("volume", 0) <= 20:
+                    reasons.append(f"volume={row.get('volume', 0):.0f}≤20")
+                if row.get("openInterest", 0) <= 50:
+                    reasons.append(f"OI={row.get('openInterest', 0):.0f}≤50")
+                if row.get("lastPrice", 0) <= 0.05:
+                    reasons.append(f"price=${row.get('lastPrice', 0):.2f}≤0.05")
+                if row.get("bid", 0) <= 0:
+                    reasons.append("bid≤0")
+                if row.get("ask", 0) <= 0:
+                    reasons.append("ask≤0")
+
+                rejection_reason = " & ".join(reasons) if reasons else "unknown"
+
+                self.rejection_tracker.log_rejection(
+                    symbol=symbol,
+                    option_data=row.to_dict(),
+                    rejection_reason=rejection_reason,
+                    filter_stage="liquidity_strict"
+                )
+            except Exception as e:
+                # Don't fail scanning if logging fails
+                print(f"⚠️  Failed to log rejection for {symbol}: {e}", file=sys.stderr)
+                pass
 
         snapshot_live = self._snapshot_is_live()
 
