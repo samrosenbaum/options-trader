@@ -165,17 +165,29 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
                 # Fall back to legacy opportunity
                 enhanced_opportunities.append(legacy_opp)
                 
+        print(f"📋 Before institutional filtering: {len(enhanced_opportunities)} opportunities", file=sys.stderr)
+
         # Apply institutional-grade filtering
         filtered_opportunities = self._apply_institutional_filters(
             enhanced_opportunities,
             max_results=self.max_results,
             max_per_symbol=self.max_per_symbol
         )
-        
+
+        print(f"📊 After institutional filtering: {len(filtered_opportunities)} opportunities", file=sys.stderr)
+
         # Re-sort by risk-adjusted score
         filtered_opportunities.sort(key=lambda x: x.get('riskAdjustedScore', x.get('score', 0)), reverse=True)
-        
-        print(f"✅ Enhanced analysis complete: {len(filtered_opportunities)} institutional-grade opportunities", file=sys.stderr)
+
+        if len(filtered_opportunities) > 0:
+            print(f"✅ Enhanced analysis complete: {len(filtered_opportunities)} institutional-grade opportunities", file=sys.stderr)
+            # Log top 3 opportunities
+            for i, opp in enumerate(filtered_opportunities[:3], 1):
+                print(f"  {i}. {opp['symbol']} - Score: {opp.get('riskAdjustedScore', 0):.1f} - Type: {opp['optionType']} ${opp['strike']}", file=sys.stderr)
+        else:
+            print("⚠️  No opportunities passed institutional-grade filters!", file=sys.stderr)
+            print(f"   Original count: {len(legacy_opportunities)} → Enhanced: {len(enhanced_opportunities)} → Filtered: 0", file=sys.stderr)
+
         return filtered_opportunities
 
     def _enhance_opportunity(self, legacy_opp: Dict[str, Any], options_data: pd.DataFrame) -> Optional[Dict[str, Any]]:
