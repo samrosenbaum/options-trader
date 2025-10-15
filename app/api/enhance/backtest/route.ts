@@ -133,8 +133,8 @@ else:
         try {
           const parsed = JSON.parse(stdout.trim())
           resolve(parsed)
-        } catch (error) {
-          console.error("Failed to parse backtest output:", stdout)
+        } catch (parseError) {
+          console.error("Failed to parse backtest output:", stdout, parseError)
           reject(new Error("Failed to parse backtest output"))
         }
       })
@@ -145,12 +145,12 @@ else:
       backtest: result,
       timestamp: new Date().toISOString(),
     })
-  } catch (error) {
-    console.error("Error running backtest:", error)
+  } catch (err) {
+    console.error("Error running backtest:", err)
     return NextResponse.json(
       {
         error: "Failed to run backtest",
-        details: error instanceof Error ? error.message : String(error),
+        details: err instanceof Error ? err.message : String(err),
       },
       { status: 500 }
     )

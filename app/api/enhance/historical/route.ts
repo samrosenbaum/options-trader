@@ -144,8 +144,8 @@ print(json.dumps(output))
         try {
           const parsed = JSON.parse(stdout.trim())
           resolve(parsed)
-        } catch (error) {
-          console.error("Failed to parse historical analysis output:", stdout)
+        } catch (parseError) {
+          console.error("Failed to parse historical analysis output:", stdout, parseError)
           reject(new Error("Failed to parse historical analysis output"))
         }
       })
@@ -156,12 +156,12 @@ print(json.dumps(output))
       historical: result,
       timestamp: new Date().toISOString(),
     })
-  } catch (error) {
-    console.error("Error running historical analysis:", error)
+  } catch (err) {
+    console.error("Error running historical analysis:", err)
     return NextResponse.json(
       {
         error: "Failed to run historical analysis",
-        details: error instanceof Error ? error.message : String(error),
+        details: err instanceof Error ? err.message : String(err),
       },
       { status: 500 }
     )
