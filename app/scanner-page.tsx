@@ -2582,43 +2582,45 @@ export default function ScannerPage({ user }: ScannerPageProps) {
         {/* Loading State - Monty the Money Printer Piggy! */}
         {isLoading && <MontyLoading />}
 
-        {/* Stats Cards - Robinhood-inspired dark design */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-8">
-          <div className="bg-zinc-900 rounded-xl p-5 border border-zinc-800 hover:border-zinc-700 transition-colors">
-            <div className="space-y-1">
-              <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide">Scanned</p>
-              <p className="text-2xl font-bold text-white">{totalEvaluated}</p>
+        {/* Stats Cards - Robinhood-inspired dark design (hidden while loading) */}
+        {!isLoading && (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-8">
+            <div className="bg-zinc-900 rounded-xl p-5 border border-zinc-800 hover:border-zinc-700 transition-colors">
+              <div className="space-y-1">
+                <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide">Scanned</p>
+                <p className="text-2xl font-bold text-white">{totalEvaluated}</p>
+              </div>
             </div>
-          </div>
 
-          <div className="bg-zinc-900 rounded-xl p-5 border border-zinc-800 hover:border-emerald-500/30 transition-colors">
-            <div className="space-y-1">
-              <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide">Found</p>
-              <p className="text-2xl font-bold text-emerald-400">{opportunities.length}</p>
+            <div className="bg-zinc-900 rounded-xl p-5 border border-zinc-800 hover:border-emerald-500/30 transition-colors">
+              <div className="space-y-1">
+                <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide">Found</p>
+                <p className="text-2xl font-bold text-emerald-400">{opportunities.length}</p>
+              </div>
             </div>
-          </div>
 
-          <div className="bg-zinc-900 rounded-xl p-5 border border-zinc-800 hover:border-red-500/30 transition-colors">
-            <div className="space-y-1">
-              <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide">High Score</p>
-              <p className="text-2xl font-bold text-red-400">{opportunities.filter(o => o.score >= 90).length}</p>
+            <div className="bg-zinc-900 rounded-xl p-5 border border-zinc-800 hover:border-red-500/30 transition-colors">
+              <div className="space-y-1">
+                <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide">High Score</p>
+                <p className="text-2xl font-bold text-red-400">{opportunities.filter(o => o.score >= 90).length}</p>
+              </div>
             </div>
-          </div>
 
-          <div className="bg-zinc-900 rounded-xl p-5 border border-zinc-800 hover:border-orange-500/30 transition-colors">
-            <div className="space-y-1">
-              <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide">Volume</p>
-              <p className="text-2xl font-bold text-orange-400">{opportunities.filter(o => o.volumeRatio > 2).length}</p>
+            <div className="bg-zinc-900 rounded-xl p-5 border border-zinc-800 hover:border-orange-500/30 transition-colors">
+              <div className="space-y-1">
+                <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide">Volume</p>
+                <p className="text-2xl font-bold text-orange-400">{opportunities.filter(o => o.volumeRatio > 2).length}</p>
+              </div>
             </div>
-          </div>
 
-          <div className="bg-zinc-900 rounded-xl p-5 border border-zinc-800 hover:border-blue-500/30 transition-colors">
-            <div className="space-y-1">
-              <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide">Catalysts</p>
-              <p className="text-2xl font-bold text-blue-400">{opportunities.filter(o => o.catalysts && o.catalysts.length > 0).length}</p>
+            <div className="bg-zinc-900 rounded-xl p-5 border border-zinc-800 hover:border-blue-500/30 transition-colors">
+              <div className="space-y-1">
+                <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide">Catalysts</p>
+                <p className="text-2xl font-bold text-blue-400">{opportunities.filter(o => o.catalysts && o.catalysts.length > 0).length}</p>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Market Intelligence Feeds */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
