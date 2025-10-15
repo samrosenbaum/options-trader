@@ -33,6 +33,19 @@ def timeout_handler(signum, frame):
     raise TimeoutError("Scanner exceeded 4 minute timeout")
 
 
+def make_json_serializable(obj):
+    """Recursively convert objects to JSON-serializable format."""
+    if hasattr(obj, 'to_dict'):
+        # Handle QualityIssue and other objects with to_dict() method
+        return make_json_serializable(obj.to_dict())
+    elif isinstance(obj, dict):
+        return {k: make_json_serializable(v) for k, v in obj.items()}
+    elif isinstance(obj, (list, tuple)):
+        return [make_json_serializable(item) for item in obj]
+    else:
+        return obj
+
+
 def save_scan_to_supabase(
     opportunities: List[Dict[str, Any]],
     metadata: Dict[str, Any],
@@ -69,15 +82,15 @@ def save_scan_to_supabase(
 
         supabase: Client = create_client(url, key)
 
-        # Prepare data for storage
+        # Prepare data for storage - ensure everything is JSON-serializable
         scan_data = {
             'scan_timestamp': datetime.now().isoformat(),
             'filter_mode': filter_mode,
-            'opportunities': opportunities,  # Supabase will auto-convert to JSONB
+            'opportunities': make_json_serializable(opportunities),
             'total_evaluated': total_evaluated,
             'symbols_scanned': symbols_scanned,
             'scan_duration_seconds': scan_duration,
-            'metadata': metadata,  # Supabase will auto-convert to JSONB
+            'metadata': make_json_serializable(metadata),
         }
 
         # Insert into Supabase
@@ -127,9 +140,9 @@ def run_background_scan(filter_mode: str = 'strict', max_symbols: int = None) ->
 
     try:
         # Run OPTIMIZED scan with SPEED priority to stay under 4 minute timeout
-        # Default to 20 symbols if not specified (reduced from 25 for faster completion)
+        # Default to 15 symbols if not specified (reduced for faster completion)
         if max_symbols is None:
-            max_symbols = 20
+            max_symbols = 15
             backtest_status = "DISABLED" if disable_backtest == '1' else "ENABLED"
             print(f"⚡ FAST MODE: {max_symbols} symbols + 30 days history + backtesting {backtest_status}", file=sys.stderr)
         else:

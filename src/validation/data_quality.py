@@ -34,6 +34,16 @@ class QualityIssue:
     field: str
     value: Any = None
 
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to JSON-serializable dictionary."""
+        return {
+            'severity': self.severity,
+            'message': self.message,
+            'impact_points': self.impact_points,
+            'field': self.field,
+            'value': self.value
+        }
+
 
 @dataclass
 class QualityReport:
