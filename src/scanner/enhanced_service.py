@@ -61,8 +61,8 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
         self.enhanced_scanner = EnhancedOptionsScanner(
             data_quality_config={
                 'max_spread_pct': 0.15,  # 15% maximum spread - strict for good execution
-                'min_volume': 10,  # Minimum 10 volume for reliable fills
-                'min_open_interest': 50,  # Minimum 50 OI for liquidity
+                'min_volume': 5,  # Lowered from 10 - options make money daily!
+                'min_open_interest': 10,  # Lowered from 50 - more realistic for smaller stocks
                 'max_price_age_minutes': 15  # Fresh data for accurate pricing
             },
             probability_config={
@@ -227,7 +227,7 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
             enhanced_opportunities = self.enhanced_scanner.scan_opportunities(
                 [enhanced_opp_data],
                 min_quality=DataQuality.LOW,  # Let institutional filters do the heavy lifting
-                min_composite_score=35.0,  # Relaxed to allow more opportunities (was 50)
+                min_composite_score=25.0,  # Relaxed to allow more opportunities (was 35, originally 50)
                 max_results=1
             )
             
@@ -685,10 +685,10 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
                 backtest_sample_size >= 20 and backtest_win_rate >= 0.70   # 70%+ with 20+ trades
             )
 
-            # Check if passes all filters
-            passes_probability = prob_of_profit >= 0.12
-            passes_risk_score = risk_adjusted_score >= 35
-            passes_delta = delta >= 0.015
+            # Check if passes all filters (relaxed for realistic market conditions)
+            passes_probability = prob_of_profit >= 0.08  # Lowered from 0.12 to 8% (options make money daily!)
+            passes_risk_score = risk_adjusted_score >= 20  # Lowered from 35 to 20 (was rejecting everything)
+            passes_delta = delta >= 0.01  # Lowered from 0.015 to 1% (more opportunities)
 
             # If strong backtest, only require probability check (relaxed)
             if has_strong_backtest:

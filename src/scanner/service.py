@@ -484,10 +484,11 @@ class SmartOptionsScanner:
             if col in working_data.columns:
                 working_data[col] = pd.to_numeric(working_data[col], errors="coerce")
 
+        # RELAXED liquidity filters - options make money daily!
         liquid_options = working_data[
-            (working_data["volume"] > 100)
-            & (working_data["openInterest"] > 500)
-            & (working_data["lastPrice"] > 0.1)
+            (working_data["volume"] > 20)  # Lowered from 100 - be realistic
+            & (working_data["openInterest"] > 50)  # Lowered from 500 - way too strict!
+            & (working_data["lastPrice"] > 0.05)  # Lowered from 0.1
             & (working_data["bid"] > 0)
             & (working_data["ask"] > 0)
         ].copy()
@@ -495,10 +496,11 @@ class SmartOptionsScanner:
         snapshot_live = self._snapshot_is_live()
 
         if liquid_options.empty:
+            # Fallback filters - even more relaxed (options make money daily!)
             relaxed_filters = [
-                working_data.get("volume") > 50 if "volume" in working_data else None,
-                working_data.get("openInterest") > 250 if "openInterest" in working_data else None,
-                working_data.get("lastPrice") > 0.05 if "lastPrice" in working_data else None,
+                working_data.get("volume") > 5 if "volume" in working_data else None,  # Lowered from 50
+                working_data.get("openInterest") > 10 if "openInterest" in working_data else None,  # Lowered from 250!
+                working_data.get("lastPrice") > 0.02 if "lastPrice" in working_data else None,  # Lowered from 0.05
                 working_data.get("bid") > 0 if "bid" in working_data else None,
                 working_data.get("ask") > 0 if "ask" in working_data else None,
             ]
@@ -638,15 +640,15 @@ class SmartOptionsScanner:
             probability_percent = self.estimate_probability_percent(probability_score)
             expected_roi = metrics["expectedMoveRoiPercent"]  # 1 SD move (realistic)
 
-            # Define quality thresholds - prioritize probable winners
-            high_probability = probability_percent >= 30  # Good chance of profit (lowered from 35)
-            reasonable_return = expected_roi >= 15  # Solid return on 1 SD move (lowered from 20)
+            # Define quality thresholds - prioritize probable winners (RELAXED for realistic markets)
+            high_probability = probability_percent >= 20  # Lowered from 30 (options make money daily!)
+            reasonable_return = expected_roi >= 10  # Lowered from 15 (more realistic)
 
             # Quality criteria: High score + reasonable probability + decent expected returns
             # Removed the "high_asymmetry" path that surfaced lottery tickets
             quality_setup = (
                 expected_roi > 0
-                and score >= 60  # Lowered from 65
+                and score >= 50  # Lowered from 60 to surface more opportunities
                 and high_probability
                 and reasonable_return
             )
@@ -654,9 +656,9 @@ class SmartOptionsScanner:
             # Relaxed criteria used as a safety net when nothing meets the strict filter
             relaxed_setup = (
                 not quality_setup
-                and expected_roi >= 8
-                and probability_percent >= 15
-                and score >= 55
+                and expected_roi >= 5  # Lowered from 8
+                and probability_percent >= 10  # Lowered from 15
+                and score >= 45  # Lowered from 55
             )
 
             if not quality_setup and not relaxed_setup:
