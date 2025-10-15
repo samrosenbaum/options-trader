@@ -50,7 +50,7 @@ min_composite_score=25.0
 min_composite_score=0.0  # DISABLED - let institutional filters handle it
 ```
 
-### 2. ✅ Drastically Relaxed Liquidity Filters
+### 2. ✅ Sensible Liquidity Filters (Not Too Strict)
 ```python
 # BEFORE
 volume > 20
@@ -58,10 +58,18 @@ openInterest > 50
 lastPrice > $0.05
 
 # AFTER
-volume > 5        # 75% reduction
-openInterest > 10  # 80% reduction
-lastPrice > $0.02  # 60% reduction
+volume > 10        # Minimum for actual tradability
+openInterest > 25  # Some liquidity required
+lastPrice > $0.05  # Avoid penny options with terrible spreads
+
+# Fallback: volume > 5, OI > 10, price > $0.03
 ```
+
+**Why not go lower?** Volume of 1-5 means the option is illiquid and untradeable. You'd face:
+- Massive bid-ask spreads
+- No ability to exit
+- High slippage
+- Getting trapped in losing positions
 
 ### 3. ✅ Extremely Relaxed Institutional Filters
 ```python
@@ -76,25 +84,32 @@ risk_score >= 5           # 67% reduction
 delta >= 0.1%       (0.001) # 80% reduction
 ```
 
-### 4. ✅ Ultra-Permissive Fallback Filters
+### 4. ✅ Increased Symbol Coverage
 ```python
-# If even the relaxed filters fail, fallback to:
-volume > 1
-openInterest > 1
-lastPrice > $0.01
+# BEFORE
+max_symbols = 20
+
+# AFTER
+max_symbols = 30  # 50% more coverage to find opportunities
 ```
+
+More symbols = more chances to find options that pass filters.
 
 ---
 
 ## What This Means
 
-### Before
-- Liquidity: ~20-30 options → Composite score: ~5-8 → Institutional: 2-4 **FINAL**
+### Before (20 symbols)
+- Liquidity (vol>20, OI>50): ~20-30 options
+- Composite score (≥25): ~5-8 options
+- Institutional filters: 2-4 **FINAL** ❌
 
-### After
-- Liquidity: ~100-150 options → Composite score: ALL (disabled) → Institutional: 10-20+ **FINAL**
+### After (30 symbols)
+- Liquidity (vol>10, OI>25): ~60-90 TRADEABLE options
+- Composite score (disabled): ALL 60-90 pass through ✅
+- Institutional filters (relaxed): 10-20+ **FINAL** ✅
 
-The minimum-10 fallback mechanism now has **enough opportunities** to actually work.
+The minimum-10 fallback mechanism now has **enough tradeable opportunities** to work.
 
 ---
 
