@@ -6,6 +6,7 @@ import { MontyLoading } from '../components/monty-loading'
 import { createClient } from '@/lib/supabase/client'
 import type { Database } from '@/lib/types/database.types'
 import type { PositionSizingRecommendation } from '@/lib/types/opportunity'
+import { useWatchlist } from '@/components/watchlist-context'
 
 interface MoveAnalysisFactor {
   label: string
@@ -284,6 +285,8 @@ interface Opportunity {
   directionalBias?: EnhancedDirectionalBias | null
   enhancedDirectionalBias?: EnhancedDirectionalBias | null
   positionSizing?: PositionSizingRecommendation | null
+  _fallback?: boolean
+  _fallbackReason?: string
 }
 
 type FilterMode = 'strict' | 'relaxed'
@@ -607,6 +610,8 @@ const renderOpportunityCard = (
     riskRewardExplanation: string | null
     greeksExplanation: string[]
     moveThesis: ReactNode
+    onAddToWatchlist: () => void
+    isOnWatchlist: boolean
   }
 ) => {
   const scenario = calculateInvestmentScenario(opp, investmentAmount)
@@ -647,6 +652,8 @@ const renderOpportunityCard = (
     riskRewardExplanation,
     greeksExplanation,
     moveThesis,
+    onAddToWatchlist,
+    isOnWatchlist: isAlreadyOnWatchlist,
   } = extras
 
   const normalizedRiskLabel = opp.riskLevel
@@ -697,6 +704,11 @@ const renderOpportunityCard = (
             {positionSizing && (positionSizing.recommendedFraction === 0 || (positionSizing.recommendedFraction && positionSizing.recommendedFraction < 0.01)) && (
               <span className="px-3 py-1 rounded-lg text-xs font-bold border-2 border-amber-400 bg-amber-100 text-amber-800 dark:border-amber-600 dark:bg-amber-900/40 dark:text-amber-300">
                 ⚠️ HIGH RISK
+              </span>
+            )}
+            {opp._fallback && (
+              <span className="px-3 py-1 rounded-lg text-xs font-bold border-2 border-blue-400 bg-blue-100 text-blue-800 dark:border-blue-600 dark:bg-blue-900/40 dark:text-blue-300" title={opp._fallbackReason || "Close to passing filters"}>
+                ℹ️ FALLBACK
               </span>
             )}
           </div>
@@ -869,7 +881,34 @@ const renderOpportunityCard = (
         </div>
       )}
 
-      <div className="mt-6 flex justify-end">
+      <div className="mt-6 flex justify-between items-center gap-3">
+        <button
+          type="button"
+          onClick={onAddToWatchlist}
+          disabled={isAlreadyOnWatchlist}
+          className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wide shadow-sm transition-colors ${
+            isAlreadyOnWatchlist
+              ? 'border border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 cursor-not-allowed'
+              : 'border border-emerald-500 bg-emerald-500 text-white hover:bg-emerald-600 dark:border-emerald-600 dark:bg-emerald-600 dark:hover:bg-emerald-700'
+          }`}
+        >
+          {isAlreadyOnWatchlist ? (
+            <>
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+              On Watchlist
+            </>
+          ) : (
+            <>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Add to Watchlist
+            </>
+          )}
+        </button>
+
         <button
           type="button"
           onClick={onToggle}
@@ -919,6 +958,7 @@ const renderOpportunityCard = (
 }
 
 export default function ScannerPage({ user }: ScannerPageProps) {
+  const { addItem: addToWatchlist, isOnWatchlist } = useWatchlist()
   const [opportunities, setOpportunities] = useState<Opportunity[]>([])
   const [totalEvaluated, setTotalEvaluated] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
@@ -2801,6 +2841,19 @@ export default function ScannerPage({ user }: ScannerPageProps) {
                   riskRewardExplanation: getRiskRewardExplanation(opp),
                   greeksExplanation: getGreeksExplanation(opp),
                   moveThesis: renderMoveThesis(opp),
+                  onAddToWatchlist: () => addToWatchlist({
+                    id: cardId,
+                    symbol: opp.symbol,
+                    optionType: opp.optionType,
+                    strike: opp.strike,
+                    expiration: opp.expiration,
+                    premium: opp.premium,
+                    score: opp.score,
+                    riskLevel: opp.riskLevel,
+                    daysToExpiration: opp.daysToExpiration,
+                    tradeSummary: opp.tradeSummary,
+                  }),
+                  isOnWatchlist: isOnWatchlist(cardId),
                 }
 
                 return renderOpportunityCard(
