@@ -905,7 +905,7 @@ class SmartOptionsScanner:
                 relaxed_info["applied"] = True
                 relaxed_info["appliedStage"] = "quality"
 
-        # Hybrid filtering: Prefer positive-edge trades, but show some negative-edge if that's all we have
+        # Hybrid filtering: Send positive-edge first, then limited negative-edge for collapsible section
         positive_edge = []
         negative_edge = []
 
@@ -918,15 +918,18 @@ class SmartOptionsScanner:
             else:
                 negative_edge.append(opp)
 
-        # Prefer positive-edge opportunities
+        # Send both types to frontend - UI will separate them
         if positive_edge:
             print(f"✅ Found {len(positive_edge)} opportunities with positive expected edge", file=sys.stderr)
-            opportunities = positive_edge
+            # Include positive edge + top 5 negative edge for collapsible section
+            opportunities = positive_edge + negative_edge[:5]
+            if negative_edge:
+                print(f"📊 Including {min(5, len(negative_edge))} negative-edge opportunities in collapsible section", file=sys.stderr)
         elif negative_edge:
-            # No positive edge found - show top 5 anyway with clear warning
-            print(f"⚠️  No positive-edge opportunities found. Showing top 5 for educational purposes.", file=sys.stderr)
+            # No positive edge found - show top 10 anyway with clear warning
+            print(f"⚠️  No positive-edge opportunities found. Showing top 10 for educational purposes.", file=sys.stderr)
             print(f"💡 These trades have negative expected value based on probability analysis.", file=sys.stderr)
-            opportunities = negative_edge[:5]
+            opportunities = negative_edge[:10]
         else:
             print(f"❌ No opportunities passed filtering", file=sys.stderr)
             opportunities = []
