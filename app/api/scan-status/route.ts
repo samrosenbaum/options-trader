@@ -79,10 +79,14 @@ export async function GET() {
     const strictAgeMinutes = typeof strictRow?.age_minutes === 'number' ? strictRow.age_minutes : 0
     const relaxedAgeMinutes = typeof relaxedRow?.age_minutes === 'number' ? relaxedRow.age_minutes : 0
 
+    // Extract opportunity counts (JSONB arrays from Supabase)
+    const strictOpps = (strictRow?.opportunities as unknown[]) || []
+    const relaxedOpps = (relaxedRow?.opportunities as unknown[]) || []
+
     const strictStatus: CacheStatus = {
       available: !strictData.error && !!strictData.data,
       ageMinutes: strictAgeMinutes,
-      opportunityCount: Array.isArray(strictRow?.opportunities) ? strictRow.opportunities.length : 0,
+      opportunityCount: strictOpps.length || 0,
       scanTimestamp: typeof strictRow?.scan_timestamp === 'string' ? strictRow.scan_timestamp : null,
       nextScanIn: getNextScanTime(currentMinute, false) - currentSecond,
       isStale: strictAgeMinutes > 15
@@ -91,7 +95,7 @@ export async function GET() {
     const relaxedStatus: CacheStatus = {
       available: !relaxedData.error && !!relaxedData.data,
       ageMinutes: relaxedAgeMinutes,
-      opportunityCount: Array.isArray(relaxedRow?.opportunities) ? relaxedRow.opportunities.length : 0,
+      opportunityCount: relaxedOpps.length || 0,
       scanTimestamp: typeof relaxedRow?.scan_timestamp === 'string' ? relaxedRow.scan_timestamp : null,
       nextScanIn: getNextScanTime(currentMinute, true) - currentSecond,
       isStale: relaxedAgeMinutes > 15
