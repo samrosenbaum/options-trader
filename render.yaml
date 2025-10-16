@@ -16,7 +16,7 @@ services:
         value: ./venv/bin/python3
     # Health check disabled to avoid timeout issues during scans
     # healthCheckPath: /
-    autoDeploy: false  # Manual deploy only to save build minutes
+    autoDeploy: true  # Keep auto-deploy for web service so updates can be pushed
 
   # Background scanner (strict mode) - runs every 10 minutes at :00, :10, :20, :30, :40, :50
   # FAST SCAN: Shows opportunities quickly, users can enhance on-demand
