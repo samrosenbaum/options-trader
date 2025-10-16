@@ -502,38 +502,15 @@ class SmartOptionsScanner:
             liquid_options = liquid_options.nlargest(150, 'volume').copy()
             print(f"⚡ Limited to top 150 highest-volume options for speed", file=sys.stderr)
 
-        # Log rejected options for retrospective analysis
-        rejected_mask = ~working_data.index.isin(liquid_options.index)
-        rejected_options = working_data[rejected_mask]
-        for idx, row in rejected_options.iterrows():
-            # Extract symbol from row data for use in try/except blocks
-            row_symbol = row.get('symbol', 'UNKNOWN')
-            try:
-                # Determine specific rejection reason
-                reasons = []
-                if row.get("volume", 0) <= 10:
-                    reasons.append(f"volume={row.get('volume', 0):.0f}≤10")
-                if row.get("openInterest", 0) <= 25:
-                    reasons.append(f"OI={row.get('openInterest', 0):.0f}≤25")
-                if row.get("lastPrice", 0) <= 0.05:
-                    reasons.append(f"price=${row.get('lastPrice', 0):.2f}≤0.05")
-                if row.get("bid", 0) <= 0:
-                    reasons.append("bid≤0")
-                if row.get("ask", 0) <= 0:
-                    reasons.append("ask≤0")
-
-                rejection_reason = " & ".join(reasons) if reasons else "unknown"
-
-                self.rejection_tracker.log_rejection(
-                    symbol=row_symbol,
-                    option_data=row.to_dict(),
-                    rejection_reason=rejection_reason,
-                    filter_stage="liquidity_strict"
-                )
-            except Exception as e:
-                # Don't fail scanning if logging fails
-                print(f"⚠️  Failed to log rejection for {row_symbol}: {e}", file=sys.stderr)
-                pass
+        # Log rejected options for retrospective analysis (DISABLED for speed - was causing 120s timeouts)
+        # The rejection tracking loop was iterating through thousands of options and hanging the scanner
+        # Keeping code for reference but commenting out to fix timeout issues
+        # rejected_mask = ~working_data.index.isin(liquid_options.index)
+        # rejected_options = working_data[rejected_mask]
+        # for idx, row in rejected_options.iterrows():
+        #     # ... rejection tracking code ...
+        #     pass
+        print(f"📊 Skipping rejection tracking for speed ({len(working_data) - len(liquid_options)} rejected options)", file=sys.stderr)
 
         snapshot_live = self._snapshot_is_live()
 
@@ -2153,7 +2130,9 @@ class SmartOptionsScanner:
 
         print("🔍 Starting smart options scan...", file=sys.stderr)
         symbols = self._next_symbol_batch()
+        print(f"📍 About to fetch options data for {len(symbols)} symbols: {symbols[:5]}...", file=sys.stderr)
         options_data = self.get_current_options_data(symbols, force_refresh=force_refresh)
+        print(f"📍 Options data fetched successfully: {len(options_data) if options_data is not None else 0} rows", file=sys.stderr)
 
         allow_relaxed = (
             self._resolve_relaxed_default()
