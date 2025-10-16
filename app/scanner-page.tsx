@@ -752,10 +752,21 @@ const renderOpportunityCard = (
                   </svg>
                 </div>
                 <div className="flex-1">
-                  <h5 className="font-semibold text-amber-900 dark:text-amber-200 mb-1">Position Not Recommended</h5>
-                  <p className="text-sm text-amber-800 dark:text-amber-300 leading-relaxed">
-                    While this opportunity appears attractive, Kelly criterion analysis shows negative expected edge. The risk-adjusted mathematics suggest passing on this trade to preserve capital.
-                  </p>
+                  {positionSizing.expectedEdge !== undefined && positionSizing.expectedEdge < 0 ? (
+                    <>
+                      <h5 className="font-semibold text-amber-900 dark:text-amber-200 mb-1">Position Not Recommended</h5>
+                      <p className="text-sm text-amber-800 dark:text-amber-300 leading-relaxed">
+                        Kelly criterion analysis shows negative expected edge ({(positionSizing.expectedEdge * 100).toFixed(1)}%). The probability-adjusted mathematics suggest passing on this trade to preserve capital.
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <h5 className="font-semibold text-amber-900 dark:text-amber-200 mb-1">Very Small Position Size</h5>
+                      <p className="text-sm text-amber-800 dark:text-amber-300 leading-relaxed">
+                        Risk controls (volatility dampening, drawdown limits) have reduced this position to &lt;1% allocation despite positive edge. Consider carefully whether the setup justifies the tight sizing.
+                      </p>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
