@@ -662,6 +662,7 @@ const fetchCachedScanResults = async (filterMode: FilterMode = "strict") => {
 }
 
 const executeEnhancedScanner = async ({
+  constraints,
   debugContext,
   filterMode,
 }: {
@@ -669,14 +670,15 @@ const executeEnhancedScanner = async ({
   debugContext?: Record<string, unknown>
   filterMode?: FilterMode
 }) => {
+  const forcedPolicy = determineScannerExecutionPolicy()
   const resolvedMode: FilterMode = filterMode === "strict" ? "strict" : "relaxed"
 
-  // Try to fetch cached results first for instant response
+  // Try cache first for instant response
   console.log(`⚡ Checking cache for ${resolvedMode} mode results...`)
   const cachedResults = await fetchCachedScanResults(resolvedMode)
 
-  if (cachedResults) {
-    // Cache hit! Serve instantly
+  if (cachedResults && !cachedResults.metadata.cacheStale) {
+    // Cache hit and fresh! Serve instantly
     console.log(`🚀 Serving cached results (${cachedResults.metadata.cacheAgeMinutes?.toFixed(1)} min old)`)
 
     return NextResponse.json({
@@ -686,19 +688,172 @@ const executeEnhancedScanner = async ({
     })
   }
 
-  // ALWAYS serve from cache - never run live scans (they timeout)
-  // The cron jobs refresh the cache every 10 minutes
-  console.log(`⚠️  No cache available for ${resolvedMode} mode - cron job hasn't run yet`)
-  return buildFallbackResponse(
-    'cache_miss',
-    `No ${resolvedMode} mode scan available yet. Cron jobs run every 10 minutes to populate the cache.`,
-    {
+  // Cache miss or stale - run live scan
+  console.log(`📊 Running live scan (${cachedResults ? 'cache stale' : 'no cache'})...`)
+
+  if (forcedPolicy?.forceFallback) {
+    console.warn(
+      `Enhanced scanner disabled (${forcedPolicy.reason}). Serving fallback dataset instead.`,
+    )
+
+    return buildFallbackResponse(forcedPolicy.reason, forcedPolicy.details, {
       filterMode: resolvedMode,
-      cacheWaitTime: 'up to 10 minutes',
-      suggestion: 'Please wait a few minutes and try again. Background scanner runs every 10 minutes.',
+      executionPolicy: forcedPolicy,
       ...(debugContext ?? {}),
+      ...(constraints
+        ? {
+            userConstraints: {
+              ...(constraints.portfolioSize !== undefined
+                ? { portfolioSize: constraints.portfolioSize }
+                : {}),
+              ...(constraints.dailyContractBudget !== undefined
+                ? { dailyContractBudget: constraints.dailyContractBudget }
+                : {}),
+            },
+          }
+        : {}),
+    })
+  }
+
+  const { spawn } = await import("child_process")
+  const pythonPath = await resolvePythonExecutable()
+
+  const constraintDebug = constraints
+    ? {
+        ...(constraints.portfolioSize !== undefined
+          ? { portfolioSize: constraints.portfolioSize }
+          : {}),
+        ...(constraints.dailyContractBudget !== undefined
+          ? { dailyContractBudget: constraints.dailyContractBudget }
+          : {}),
+      }
+    : undefined
+
+  return await new Promise<NextResponse>((resolve) => {
+    const env: NodeJS.ProcessEnv = { ...process.env, PYTHONPATH: process.cwd() }
+
+    // CRITICAL: Disable backtesting for 2-3 minute scans instead of 14+ minutes
+    env.DISABLE_BACKTESTING = "1"
+
+    env.SCANNER_FILTER_MODE = resolvedMode
+    env.SCANNER_ALLOW_RELAXED = resolvedMode === "relaxed" ? "1" : "0"
+
+    if (
+      typeof constraints?.portfolioSize === "number" &&
+      Number.isFinite(constraints.portfolioSize) &&
+      constraints.portfolioSize > 0
+    ) {
+      env.USER_PORTFOLIO_SIZE = String(constraints.portfolioSize)
     }
-  )
+
+    if (
+      typeof constraints?.dailyContractBudget === "number" &&
+      Number.isFinite(constraints.dailyContractBudget) &&
+      constraints.dailyContractBudget > 0
+    ) {
+      env.USER_DAILY_CONTRACT_BUDGET = String(constraints.dailyContractBudget)
+    }
+
+    const python = spawn(pythonPath, ["-m", "src.scanner.enhanced_service"], {
+      env,
+    })
+
+    let stdoutBuffer = ""
+    let stderrBuffer = ""
+    let settled = false
+
+    const settle = (response: NextResponse) => {
+      if (!settled) {
+        settled = true
+        clearTimeout(timeoutId)
+        resolve(response)
+      }
+    }
+
+    const baseDebug = {
+      filterMode: resolvedMode,
+      ...(debugContext ?? {}),
+      ...(constraintDebug ? { userConstraints: constraintDebug } : {}),
+    }
+
+    const fallbackAndSettle = (
+      reason: string,
+      details?: string,
+      debug?: Record<string, unknown>,
+    ) => {
+      const mergedDebug = Object.keys(baseDebug).length
+        ? { ...baseDebug, ...(debug ?? {}) }
+        : debug
+      const response = buildFallbackResponse(reason, details, mergedDebug)
+      settle(response)
+    }
+
+    const timeoutId = setTimeout(() => {
+      console.warn(
+        `Enhanced scanner exceeded ${FALLBACK_TIMEOUT_MS / 1000} seconds. Terminating and serving fallback.`,
+      )
+      try {
+        python.kill("SIGKILL")
+      } catch (killError) {
+        console.error("Failed to terminate enhanced scanner after timeout:", killError)
+      }
+      fallbackAndSettle("timeout", `Enhanced scanner exceeded ${FALLBACK_TIMEOUT_MS / 1000} seconds`, {
+        stdoutTail: buildLogTail(stdoutBuffer),
+        stderrTail: buildLogTail(stderrBuffer),
+      })
+    }, FALLBACK_TIMEOUT_MS)
+
+    python.stdout.on("data", (data) => {
+      stdoutBuffer += data.toString()
+    })
+
+    python.stderr.on("data", (data) => {
+      stderrBuffer += data.toString()
+    })
+
+    python.on("error", (error) => {
+      console.error("Failed to start enhanced scanner process:", error)
+      fallbackAndSettle("spawn_error", error instanceof Error ? error.message : String(error))
+    })
+
+    python.on("close", (code) => {
+      if (code !== 0) {
+        console.error("Enhanced scanner error:", stderrBuffer)
+        const exitMessage = stderrBuffer || `Enhanced scanner exited with code ${code}`
+        fallbackAndSettle("exit_non_zero", exitMessage, {
+          exitCode: code,
+          stdoutTail: buildLogTail(stdoutBuffer),
+          stderrTail: buildLogTail(stderrBuffer),
+        })
+        return
+      }
+
+      try {
+        const parsedOutput = parseScannerJson(stdoutBuffer, stderrBuffer)
+
+        if (!parsedOutput) {
+          console.warn("Enhanced scanner produced no JSON payload")
+          fallbackAndSettle("invalid_output", "No valid JSON in scanner output", {
+            stdoutTail: buildLogTail(stdoutBuffer),
+            stderrTail: buildLogTail(stderrBuffer),
+          })
+          return
+        }
+
+        settle(parsedOutput)
+      } catch (parseError) {
+        console.error("Failed to parse enhanced scanner output:", parseError)
+        fallbackAndSettle(
+          "parse_error",
+          parseError instanceof Error ? parseError.message : String(parseError),
+          {
+            stdoutTail: buildLogTail(stdoutBuffer),
+            stderrTail: buildLogTail(stderrBuffer),
+          }
+        )
+      }
+    })
+  })
 }
 
 const buildFallbackResponse = (
