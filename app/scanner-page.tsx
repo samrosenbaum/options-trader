@@ -2555,8 +2555,8 @@ export default function ScannerPage({ user }: ScannerPageProps) {
               </div>
 
       <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Market Hours Banner - Show when market is closed */}
-        {activeTab === 'options' && !isLoading && <MarketHoursBanner />}
+        {/* Market Hours Banner - Show when market is closed (always visible, even during scans) */}
+        {activeTab === 'options' && <MarketHoursBanner />}
 
         {/* Scan Status Banner - DISABLED (no cron jobs, on-demand scanning only) */}
         {/* {activeTab === 'options' && !isLoading && <ScanStatusBanner mode={scanMode} />} */}
