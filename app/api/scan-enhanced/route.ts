@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server"
 
 import { createClient } from "@/lib/supabase/server"
-
-// Commented out - not used after switching to cache-only mode
-// import { ensureOptionGreeks } from "@/lib/math/greeks"
+import { resolvePythonExecutable } from "@/lib/server/python"
+import { determineScannerExecutionPolicy } from "@/lib/server/scanner-runtime"
 
 /**
  * Enhanced Options Scan API Endpoint
@@ -205,10 +204,56 @@ interface EnhancedScannerResponse {
 export const runtime = "nodejs"
 export const maxDuration = 300 // 5 minutes for enhanced analysis
 
-// Commented out - not used after switching to cache-only mode
-// const FALLBACK_TIMEOUT_MS = 280_000
-// const DEBUG_LOG_TAIL_LENGTH = 2_000
-// const buildLogTail = (value: string | undefined) => { ... }
+const FALLBACK_TIMEOUT_MS = 120_000 // 2 minutes - optimized scanner should complete faster
+const DEBUG_LOG_TAIL_LENGTH = 2_000
+
+const buildLogTail = (value: string | undefined) => {
+  if (!value) return undefined
+  if (value.length <= DEBUG_LOG_TAIL_LENGTH) return value
+  return value.slice(-DEBUG_LOG_TAIL_LENGTH)
+}
+
+const parseScannerJson = (stdout: string, stderr: string): NextResponse | null => {
+  const attemptParse = (raw: string): EnhancedScannerResponse | null => {
+    const trimmed = raw.trim()
+    if (!trimmed) {
+      return null
+    }
+
+    try {
+      return JSON.parse(trimmed) as EnhancedScannerResponse
+    } catch {
+      // Fall through to try extracting the last JSON block
+    }
+
+    const startIndex = trimmed.search(/[{[]/)
+    if (startIndex === -1) {
+      return null
+    }
+
+    const candidate = trimmed.slice(startIndex)
+    const endIndex = Math.max(candidate.lastIndexOf("}"), candidate.lastIndexOf("]"))
+    if (endIndex === -1) {
+      return null
+    }
+
+    try {
+      return JSON.parse(candidate.slice(0, endIndex + 1)) as EnhancedScannerResponse
+    } catch {
+      return null
+    }
+  }
+
+  const parsed = attemptParse(stdout) ?? attemptParse(`${stdout}\n${stderr}`)
+  if (!parsed) return null
+
+  return NextResponse.json({
+    success: true,
+    opportunities: parsed.opportunities || [],
+    metadata: parsed.metadata || {},
+    totalEvaluated: parsed.totalEvaluated || 0,
+  })
+}
 
 const mergeDebugInfo = (
   reason: string,
