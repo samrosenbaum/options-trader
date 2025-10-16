@@ -905,6 +905,32 @@ class SmartOptionsScanner:
                 relaxed_info["applied"] = True
                 relaxed_info["appliedStage"] = "quality"
 
+        # Hybrid filtering: Prefer positive-edge trades, but show some negative-edge if that's all we have
+        positive_edge = []
+        negative_edge = []
+
+        for opp in opportunities:
+            position_sizing = opp.get("positionSizing", {})
+            expected_edge = position_sizing.get("expectedEdge", 0) if position_sizing else 0
+
+            if expected_edge > 0:
+                positive_edge.append(opp)
+            else:
+                negative_edge.append(opp)
+
+        # Prefer positive-edge opportunities
+        if positive_edge:
+            print(f"✅ Found {len(positive_edge)} opportunities with positive expected edge", file=sys.stderr)
+            opportunities = positive_edge
+        elif negative_edge:
+            # No positive edge found - show top 5 anyway with clear warning
+            print(f"⚠️  No positive-edge opportunities found. Showing top 5 for educational purposes.", file=sys.stderr)
+            print(f"💡 These trades have negative expected value based on probability analysis.", file=sys.stderr)
+            opportunities = negative_edge[:5]
+        else:
+            print(f"❌ No opportunities passed filtering", file=sys.stderr)
+            opportunities = []
+
         # Limit to top 20 opportunities to keep JSON manageable
         max_opportunities = 20
         if len(opportunities) > max_opportunities:
