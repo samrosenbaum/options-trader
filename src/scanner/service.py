@@ -497,6 +497,11 @@ class SmartOptionsScanner:
             & (working_data["ask"] > 0)
         ].copy()
 
+        # Limit to top 200 by volume to ensure scan completes within 4-minute timeout
+        if len(liquid_options) > 200:
+            liquid_options = liquid_options.nlargest(200, 'volume').copy()
+            print(f"⚡ Limited to top 200 highest-volume options for speed", file=sys.stderr)
+
         # Log rejected options for retrospective analysis
         rejected_mask = ~working_data.index.isin(liquid_options.index)
         rejected_options = working_data[rejected_mask]
