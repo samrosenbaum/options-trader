@@ -631,13 +631,15 @@ const fetchCachedScanResults = async (filterMode: FilterMode = "strict") => {
 
     const ageMinutes = data.age_minutes || 0
 
-    // Cache is stale if older than 15 minutes
-    if (ageMinutes > 15) {
-      console.warn(`Cached scan is stale (${ageMinutes.toFixed(1)} minutes old), will run live scan`)
+    // Accept cache up to 2 hours old - showing old data is better than no data
+    // Mark as stale in metadata so UI can warn users
+    if (ageMinutes > 120) {
+      console.warn(`Cached scan is too old (${ageMinutes.toFixed(1)} minutes), rejecting`)
       return null
     }
 
-    console.log(`✅ Serving cached scan (${ageMinutes.toFixed(1)} minutes old, ${data.opportunities?.length || 0} opportunities)`)
+    const isStale = ageMinutes > 15
+    console.log(`✅ Serving cached scan (${ageMinutes.toFixed(1)} minutes old, ${data.opportunities?.length || 0} opportunities)${isStale ? ' [STALE]' : ''}`)
 
     return {
       opportunities: data.opportunities || [],
@@ -646,6 +648,7 @@ const fetchCachedScanResults = async (filterMode: FilterMode = "strict") => {
         totalEvaluated: data.total_evaluated || 0,
         symbolsScanned: data.symbols_scanned || [],
         cacheHit: true,
+        cacheStale: isStale,
         cacheAgeMinutes: ageMinutes,
         cacheTimestamp: data.scan_timestamp,
         scanDuration: data.scan_duration_seconds,
