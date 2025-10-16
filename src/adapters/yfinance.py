@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 import random
+import signal
 import time
 from datetime import date, datetime, timezone
 from typing import Any, Callable, List, NamedTuple, Sequence
@@ -12,6 +13,15 @@ import pandas as pd
 import yfinance as yf
 
 from .base import AdapterError, OptionsChain, OptionsDataAdapter
+
+
+class TimeoutError(Exception):
+    """Raised when operation exceeds timeout."""
+    pass
+
+
+def timeout_handler(signum, frame):
+    raise TimeoutError("Operation timed out")
 
 
 class PriceInfo(NamedTuple):
@@ -79,12 +89,24 @@ class YFinanceOptionsDataAdapter(OptionsDataAdapter):
             price_source=price_info.source if price_info else None,
         )
 
-    def _retry(self, operation: Callable[[], Any], context: str):
+    def _retry(self, operation: Callable[[], Any], context: str, timeout_seconds: int = 30):
         last_error: Exception | None = None
         for attempt in range(self._max_retries):
             try:
-                return operation()
+                # Set timeout alarm (Unix only, but Render uses Unix)
+                signal.signal(signal.SIGALRM, timeout_handler)
+                signal.alarm(timeout_seconds)
+
+                try:
+                    result = operation()
+                    signal.alarm(0)  # Cancel alarm on success
+                    return result
+                except TimeoutError as timeout_exc:
+                    signal.alarm(0)  # Cancel alarm
+                    raise AdapterError(f"Timeout after {timeout_seconds}s while trying to {context}") from timeout_exc
+
             except Exception as exc:  # pragma: no cover - yfinance raises generic errors
+                signal.alarm(0)  # Always cancel alarm
                 last_error = exc
                 if attempt == self._max_retries - 1:
                     break
