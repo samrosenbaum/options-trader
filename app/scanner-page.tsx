@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useCallback, useRef, type ReactNode } fro
 import RealTimeProgress from '../components/real-time-progress'
 import { MontyLoading } from '../components/monty-loading'
 import { ScanStatusBanner } from '../components/scan-status-banner'
+import { MarketHoursBanner } from '../components/market-hours-banner'
 import { createClient } from '@/lib/supabase/client'
 import type { Database } from '@/lib/types/database.types'
 import type { PositionSizingRecommendation } from '@/lib/types/opportunity'
@@ -2554,6 +2555,9 @@ export default function ScannerPage({ user }: ScannerPageProps) {
               </div>
 
       <div className="max-w-7xl mx-auto px-6 py-8">
+        {/* Market Hours Banner - Show when market is closed */}
+        {activeTab === 'options' && !isLoading && <MarketHoursBanner />}
+
         {/* Scan Status Banner - DISABLED (no cron jobs, on-demand scanning only) */}
         {/* {activeTab === 'options' && !isLoading && <ScanStatusBanner mode={scanMode} />} */}
 
