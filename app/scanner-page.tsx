@@ -2554,8 +2554,8 @@ export default function ScannerPage({ user }: ScannerPageProps) {
               </div>
 
       <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Scan Status Banner - Shows cache age and countdown to next scan */}
-        {activeTab === 'options' && !isLoading && <ScanStatusBanner mode={scanMode} />}
+        {/* Scan Status Banner - DISABLED (no cron jobs, on-demand scanning only) */}
+        {/* {activeTab === 'options' && !isLoading && <ScanStatusBanner mode={scanMode} />} */}
 
         {/* Loading State - Monty the Money Printer Piggy! */}
         {isLoading && <MontyLoading />}
