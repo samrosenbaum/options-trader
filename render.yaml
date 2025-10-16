@@ -18,46 +18,46 @@ services:
     # healthCheckPath: /
     autoDeploy: true  # Keep auto-deploy for web service so updates can be pushed
 
-  # Background scanner (strict mode) - runs every 10 minutes at :00, :10, :20, :30, :40, :50
-  # FAST SCAN: Shows opportunities quickly, users can enhance on-demand
-  - type: cron
-    name: options-scanner-strict
-    runtime: python
-    plan: starter
-    schedule: "*/10 * * * *"  # Every 10 minutes
-    buildCommand: bash build.sh
-    startCommand: python3 scripts/background_scanner.py --filter-mode strict --max-symbols 15
-    envVars:
-      - key: NODE_VERSION
-        value: 18
-      - key: PYTHON_VERSION
-        value: 3.12
-      - key: NODE_ENV
-        value: production
-      - key: PYTHON_EXECUTABLE
-        value: ./venv/bin/python3
-      - key: DISABLE_BACKTESTING
-        value: "1"
-    autoDeploy: true  # Temporarily enabled to rebuild with new filters
+  # Background scanner (strict mode) - DISABLED (using on-demand scanning instead)
+  # Keeping config for reference but suspended to save build minutes
+  # - type: cron
+  #   name: options-scanner-strict
+  #   runtime: python
+  #   plan: starter
+  #   schedule: "*/10 * * * *"  # Every 10 minutes
+  #   buildCommand: bash build.sh
+  #   startCommand: python3 scripts/background_scanner.py --filter-mode strict --max-symbols 15
+  #   envVars:
+  #     - key: NODE_VERSION
+  #       value: 18
+  #     - key: PYTHON_VERSION
+  #       value: 3.12
+  #     - key: NODE_ENV
+  #       value: production
+  #     - key: PYTHON_EXECUTABLE
+  #       value: ./venv/bin/python3
+  #     - key: DISABLE_BACKTESTING
+  #       value: "1"
+  #   autoDeploy: false
 
-  # Background scanner (relaxed mode) - runs every 10 minutes at :05, :15, :25, :35, :45, :55
-  # FAST SCAN: Shows opportunities quickly, users can enhance on-demand
-  - type: cron
-    name: options-scanner-relaxed
-    runtime: python
-    plan: starter
-    schedule: "5-59/10 * * * *"  # Every 10 minutes, offset by 5 minutes
-    buildCommand: bash build.sh
-    startCommand: python3 scripts/background_scanner.py --filter-mode relaxed --max-symbols 15
-    envVars:
-      - key: NODE_VERSION
-        value: 18
-      - key: PYTHON_VERSION
-        value: 3.12
-      - key: NODE_ENV
-        value: production
-      - key: PYTHON_EXECUTABLE
-        value: ./venv/bin/python3
-      - key: DISABLE_BACKTESTING
-        value: "1"
-    autoDeploy: false  # Manual deploy only to save build minutes
+  # Background scanner (relaxed mode) - DISABLED (using on-demand scanning instead)
+  # Keeping config for reference but suspended to save build minutes
+  # - type: cron
+  #   name: options-scanner-relaxed
+  #   runtime: python
+  #   plan: starter
+  #   schedule: "5-59/10 * * * *"  # Every 10 minutes, offset by 5 minutes
+  #   buildCommand: bash build.sh
+  #   startCommand: python3 scripts/background_scanner.py --filter-mode relaxed --max-symbols 15
+  #   envVars:
+  #     - key: NODE_VERSION
+  #       value: 18
+  #     - key: PYTHON_VERSION
+  #       value: 3.12
+  #     - key: NODE_ENV
+  #       value: production
+  #     - key: PYTHON_EXECUTABLE
+  #       value: ./venv/bin/python3
+  #     - key: DISABLE_BACKTESTING
+  #       value: "1"
+  #   autoDeploy: false
