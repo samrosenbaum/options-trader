@@ -1847,8 +1847,8 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
             </section>
           )}
 
-          {/* Enhancement Button: Backtest - Show when no backtest data available */}
-          {!opportunity.backtestValidation && !enhancedBacktest && (
+          {/* Enhancement Button: Backtest - Always show (users can refresh analysis) */}
+          {!enhancedBacktest && (
             <section className="border-2 border-dashed border-purple-300 dark:border-purple-700 rounded-3xl p-6 bg-purple-50/30 dark:bg-purple-950/10">
               <div className="text-center">
                 <h5 className="text-lg font-semibold text-purple-900 dark:text-purple-100 mb-2">
@@ -1944,8 +1944,8 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
             </section>
           )}
 
-          {/* Enhancement Button: Historical Patterns - Show when no historical data available */}
-          {!opportunity.historicalContext && !enhancedHistorical && (
+          {/* Enhancement Button: Historical Patterns - Always show (users can refresh analysis) */}
+          {!enhancedHistorical && (
             <section className="border-2 border-dashed border-blue-300 dark:border-blue-700 rounded-3xl p-6 bg-blue-50/30 dark:bg-blue-950/10">
               <div className="text-center">
                 <h5 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-2">
