@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import math
 import random
-import signal
+import sys
 import time
+import threading
 from datetime import date, datetime, timezone
-from typing import Any, Callable, List, NamedTuple, Sequence
+from typing import Any, Callable, List, NamedTuple, Sequence, Optional
 
 import pandas as pd
 import yfinance as yf
@@ -20,8 +21,35 @@ class TimeoutError(Exception):
     pass
 
 
-def timeout_handler(signum, frame):
-    raise TimeoutError("Operation timed out")
+def run_with_timeout(func: Callable, timeout_seconds: int) -> Any:
+    """Run a function with a timeout using threading.
+
+    This is more reliable than signal-based timeouts, especially in subprocesses.
+    """
+    result_container: List[Any] = []
+    exception_container: List[Exception] = []
+
+    def wrapper():
+        try:
+            result_container.append(func())
+        except Exception as e:
+            exception_container.append(e)
+
+    thread = threading.Thread(target=wrapper, daemon=True)
+    thread.start()
+    thread.join(timeout=timeout_seconds)
+
+    if thread.is_alive():
+        # Thread is still running - timeout occurred
+        raise TimeoutError(f"Operation timed out after {timeout_seconds} seconds")
+
+    if exception_container:
+        raise exception_container[0]
+
+    if result_container:
+        return result_container[0]
+
+    raise TimeoutError("Operation completed but returned no result")
 
 
 class PriceInfo(NamedTuple):
@@ -93,24 +121,23 @@ class YFinanceOptionsDataAdapter(OptionsDataAdapter):
         last_error: Exception | None = None
         for attempt in range(self._max_retries):
             try:
-                # Set timeout alarm (Unix only, but Render uses Unix)
-                signal.signal(signal.SIGALRM, timeout_handler)
-                signal.alarm(timeout_seconds)
+                # Use threading-based timeout (more reliable than signal.alarm() in subprocesses)
+                result = run_with_timeout(operation, timeout_seconds)
+                return result
 
-                try:
-                    result = operation()
-                    signal.alarm(0)  # Cancel alarm on success
-                    return result
-                except TimeoutError as timeout_exc:
-                    signal.alarm(0)  # Cancel alarm
+            except TimeoutError as timeout_exc:
+                last_error = timeout_exc
+                print(f"⏱️  Timeout after {timeout_seconds}s while trying to {context} (attempt {attempt + 1}/{self._max_retries})", file=sys.stderr)
+                if attempt == self._max_retries - 1:
                     raise AdapterError(f"Timeout after {timeout_seconds}s while trying to {context}") from timeout_exc
+                self._apply_rate_limit_backoff(attempt)
 
             except Exception as exc:  # pragma: no cover - yfinance raises generic errors
-                signal.alarm(0)  # Always cancel alarm
                 last_error = exc
                 if attempt == self._max_retries - 1:
                     break
                 self._apply_rate_limit_backoff(attempt)
+
         if last_error is not None:
             raise AdapterError(f"Failed to {context}: {last_error}") from last_error
         raise AdapterError(f"Failed to {context}: unknown error")
