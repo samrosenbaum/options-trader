@@ -947,6 +947,7 @@ export default function ScannerPage({ user }: ScannerPageProps) {
   const [scanMode, setScanMode] = useState<FilterMode>('strict')
   const [relaxedScanMeta, setRelaxedScanMeta] = useState<RelaxedScanMetadata | null>(null)
   const [expandedCards, setExpandedCards] = useState<Record<string, boolean>>({})
+  const [showNotRecommended, setShowNotRecommended] = useState(false)
   const previousTabRef = useRef<'options' | 'crypto' | null>(null)
   const opportunitiesRef = useRef<Opportunity[]>([])
   const scanModeRef = useRef<FilterMode>('strict')
@@ -1577,6 +1578,27 @@ export default function ScannerPage({ user }: ScannerPageProps) {
 
     return ranked
   }, [opportunities, sortOption])
+
+  // Split opportunities into recommended vs not-recommended
+  const { recommendedOpportunities, notRecommendedOpportunities } = useMemo(() => {
+    const recommended: Opportunity[] = []
+    const notRecommended: Opportunity[] = []
+
+    sortedOpportunities.forEach(opp => {
+      const positionSizing = opp.positionSizing
+      const isNotRecommended =
+        positionSizing &&
+        (positionSizing.recommendedFraction === 0 || positionSizing.riskBudgetTier === 'capital_preservation')
+
+      if (isNotRecommended) {
+        notRecommended.push(opp)
+      } else {
+        recommended.push(opp)
+      }
+    })
+
+    return { recommendedOpportunities: recommended, notRecommendedOpportunities: notRecommended }
+  }, [sortedOpportunities])
 
   const availableSortOptions: Array<{ value: OpportunitySortOption; label: string }> = [
     { value: 'promising', label: 'Most Promising' },
@@ -2768,7 +2790,8 @@ export default function ScannerPage({ user }: ScannerPageProps) {
                   Trading Opportunities
                 </h2>
                 <span className="text-sm text-slate-500 dark:text-slate-400">
-                  {sortedOpportunities.length} opportunities found
+                  {recommendedOpportunities.length} recommended
+                  {notRecommendedOpportunities.length > 0 && ` · ${notRecommendedOpportunities.length} high risk`}
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -2800,44 +2823,120 @@ export default function ScannerPage({ user }: ScannerPageProps) {
               </div>
             </div>
 
-            <div className="space-y-5">
-              {sortedOpportunities.map((opp) => {
-                const cardId = `${opp.symbol}-${opp.strike}-${opp.expiration}-${opp.optionType}`
-                const riskBadgeClass = opp.riskLevel ? getRiskColor(opp.riskLevel) : null
-                const extras = {
-                  isExpanded: expandedCards[cardId] ?? false,
-                  onToggle: () => toggleCard(cardId),
-                  riskBadgeClass,
-                  scoreBadgeClass: getScoreColor(opp.score),
-                  breakevenRequirement: formatBreakevenRequirement(opp),
-                  riskRewardExplanation: getRiskRewardExplanation(opp),
-                  greeksExplanation: getGreeksExplanation(opp),
-                  moveThesis: renderMoveThesis(opp),
-                  onAddToWatchlist: () => addToWatchlist({
-                    id: cardId,
-                    symbol: opp.symbol,
-                    optionType: opp.optionType,
-                    strike: opp.strike,
-                    expiration: opp.expiration,
-                    premium: opp.premium,
-                    score: opp.score,
-                    riskLevel: opp.riskLevel,
-                    daysToExpiration: opp.daysToExpiration,
-                    tradeSummary: opp.tradeSummary,
-                  }),
-                  isOnWatchlist: isOnWatchlist(cardId),
-                }
+            {/* Recommended Opportunities */}
+            {recommendedOpportunities.length > 0 && (
+              <div className="space-y-5">
+                {recommendedOpportunities.map((opp) => {
+                  const cardId = `${opp.symbol}-${opp.strike}-${opp.expiration}-${opp.optionType}`
+                  const riskBadgeClass = opp.riskLevel ? getRiskColor(opp.riskLevel) : null
+                  const extras = {
+                    isExpanded: expandedCards[cardId] ?? false,
+                    onToggle: () => toggleCard(cardId),
+                    riskBadgeClass,
+                    scoreBadgeClass: getScoreColor(opp.score),
+                    breakevenRequirement: formatBreakevenRequirement(opp),
+                    riskRewardExplanation: getRiskRewardExplanation(opp),
+                    greeksExplanation: getGreeksExplanation(opp),
+                    moveThesis: renderMoveThesis(opp),
+                    onAddToWatchlist: () => addToWatchlist({
+                      id: cardId,
+                      symbol: opp.symbol,
+                      optionType: opp.optionType,
+                      strike: opp.strike,
+                      expiration: opp.expiration,
+                      premium: opp.premium,
+                      score: opp.score,
+                      riskLevel: opp.riskLevel,
+                      daysToExpiration: opp.daysToExpiration,
+                      tradeSummary: opp.tradeSummary,
+                    }),
+                    isOnWatchlist: isOnWatchlist(cardId),
+                  }
 
-                return renderOpportunityCard(
-                  opp,
-                  investmentAmount ?? 0,
-                  calculateInvestmentScenario,
-                  formatCurrency,
-                  safeToFixed,
-                  extras,
-                )
-              })}
-            </div>
+                  return renderOpportunityCard(
+                    opp,
+                    investmentAmount ?? 0,
+                    calculateInvestmentScenario,
+                    formatCurrency,
+                    safeToFixed,
+                    extras,
+                  )
+                })}
+              </div>
+            )}
+
+            {/* Not Recommended - Collapsible Section */}
+            {notRecommendedOpportunities.length > 0 && (
+              <div className="border-2 border-dashed border-red-300 dark:border-red-800 rounded-2xl p-6 bg-red-50/30 dark:bg-red-950/10 mt-8">
+                <button
+                  onClick={() => setShowNotRecommended(!showNotRecommended)}
+                  className="flex items-center justify-between w-full text-left"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">⚠️</span>
+                    <div>
+                      <h3 className="text-lg font-bold text-red-900 dark:text-red-100">
+                        High Risk - Not Recommended ({notRecommendedOpportunities.length})
+                      </h3>
+                      <p className="text-sm text-red-700 dark:text-red-300 mt-1">
+                        These opportunities have negative expected edge or extreme risk. Proceed with caution.
+                      </p>
+                    </div>
+                  </div>
+                  <svg
+                    className={`w-6 h-6 text-red-600 dark:text-red-400 transition-transform duration-200 ${
+                      showNotRecommended ? 'rotate-180' : ''
+                    }`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {showNotRecommended && (
+                  <div className="mt-6 space-y-5 opacity-75">
+                    {notRecommendedOpportunities.map((opp) => {
+                      const cardId = `${opp.symbol}-${opp.strike}-${opp.expiration}-${opp.optionType}`
+                      const riskBadgeClass = opp.riskLevel ? getRiskColor(opp.riskLevel) : null
+                      const extras = {
+                        isExpanded: expandedCards[cardId] ?? false,
+                        onToggle: () => toggleCard(cardId),
+                        riskBadgeClass,
+                        scoreBadgeClass: getScoreColor(opp.score),
+                        breakevenRequirement: formatBreakevenRequirement(opp),
+                        riskRewardExplanation: getRiskRewardExplanation(opp),
+                        greeksExplanation: getGreeksExplanation(opp),
+                        moveThesis: renderMoveThesis(opp),
+                        onAddToWatchlist: () => addToWatchlist({
+                          id: cardId,
+                          symbol: opp.symbol,
+                          optionType: opp.optionType,
+                          strike: opp.strike,
+                          expiration: opp.expiration,
+                          premium: opp.premium,
+                          score: opp.score,
+                          riskLevel: opp.riskLevel,
+                          daysToExpiration: opp.daysToExpiration,
+                          tradeSummary: opp.tradeSummary,
+                        }),
+                        isOnWatchlist: isOnWatchlist(cardId),
+                      }
+
+                      return renderOpportunityCard(
+                        opp,
+                        investmentAmount ?? 0,
+                        calculateInvestmentScenario,
+                        formatCurrency,
+                        safeToFixed,
+                        extras,
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
