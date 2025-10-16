@@ -38,7 +38,7 @@ services:
         value: ./venv/bin/python3
       - key: DISABLE_BACKTESTING
         value: "1"
-    autoDeploy: false  # Manual deploy only to save build minutes
+    autoDeploy: true  # Temporarily enabled to rebuild with new filters
 
   # Background scanner (relaxed mode) - runs every 10 minutes at :05, :15, :25, :35, :45, :55
   # FAST SCAN: Shows opportunities quickly, users can enhance on-demand
