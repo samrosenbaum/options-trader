@@ -710,8 +710,14 @@ class SmartOptionsScanner:
                 option["symbol"], option, symbol_options_chain, price_history_cache
             )
 
-            # TEMPORARILY DISABLED directional filter - allow ALL option types through
-            # preferred_option_type = self._preferred_option_type(enhanced_bias, directional_bias)
+            # RELAXED DIRECTIONAL FILTER: Only enforce when signals are strong
+            preferred_option_type = self._preferred_option_type(enhanced_bias, directional_bias)
+
+            if preferred_option_type and option["type"] != preferred_option_type:
+                signal_score = abs(enhanced_bias.get("score", 0)) if enhanced_bias else 0
+                # Only filter if signal is STRONG (score > 30), otherwise allow through
+                if signal_score > 30:
+                    continue
 
             # Calculate historical move context for validation
             try:
