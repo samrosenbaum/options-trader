@@ -86,6 +86,25 @@ interface SwingSignalInsight {
   metadata: SwingSignalMetadata
 }
 
+interface EnhancedBacktestResult {
+  winRate: number
+  avgReturn: number
+  sharpeRatio: number
+  maxDrawdown: number
+  similarTradesFound: number
+  summary: string
+  confidence: 'high' | 'medium' | 'low'
+}
+
+interface EnhancedHistoricalResult {
+  requiredMove: number
+  historicalFrequency: number
+  recentExamples: Array<{ date: string; daysToTarget: number }>
+  direction: 'up' | 'down'
+  summary: string
+  confidence: 'high' | 'medium' | 'low'
+}
+
 type OpportunitySortOption =
   | 'promising'
   | 'riskReward'
@@ -603,19 +622,25 @@ const renderOpportunityCard = (
   calculateInvestmentScenario: (opp: Opportunity, amount: number) => InvestmentScenario,
   formatCurrency: (amount: number) => string,
   safeToFixed: (value: number | null | undefined, decimals?: number) => string | null,
-  extras: {
-    isExpanded: boolean
-    onToggle: () => void
-    riskBadgeClass: string | null
-    scoreBadgeClass: string
-    breakevenRequirement: string | null
-    riskRewardExplanation: string | null
-    greeksExplanation: string[]
-    moveThesis: ReactNode
-    onAddToWatchlist: () => void
-    isOnWatchlist: boolean
-  }
-) => {
+    extras: {
+      isExpanded: boolean
+      onToggle: () => void
+      riskBadgeClass: string | null
+      scoreBadgeClass: string
+      breakevenRequirement: string | null
+      riskRewardExplanation: string | null
+      greeksExplanation: string[]
+      moveThesis: ReactNode
+      onAddToWatchlist: () => void
+      isOnWatchlist: boolean
+      loadingBacktest: boolean
+      enhancedBacktest: EnhancedBacktestResult | null
+      onRunBacktest: () => void
+      loadingHistorical: boolean
+      enhancedHistorical: EnhancedHistoricalResult | null
+      onRunHistorical: () => void
+    }
+  ) => {
   const positionSizing = opp.positionSizing ?? null
   const hasPositionSizing = Boolean(positionSizing)
   const riskBudgetMeta = getRiskBudgetMeta(positionSizing?.riskBudgetTier)
@@ -633,17 +658,23 @@ const renderOpportunityCard = (
   const capitalExamples = positionSizing?.capitalAllocationExamples ?? []
   const sizingRationales = positionSizing?.rationale ?? []
 
-  const {
-    isExpanded,
-    onToggle,
-    riskBadgeClass,
-    scoreBadgeClass,
-    riskRewardExplanation,
-    greeksExplanation,
-    moveThesis,
-    onAddToWatchlist,
-    isOnWatchlist: isAlreadyOnWatchlist,
-  } = extras
+    const {
+      isExpanded,
+      onToggle,
+      riskBadgeClass,
+      scoreBadgeClass,
+      riskRewardExplanation,
+      greeksExplanation,
+      moveThesis,
+      onAddToWatchlist,
+      isOnWatchlist: isAlreadyOnWatchlist,
+      loadingBacktest,
+      enhancedBacktest,
+      onRunBacktest,
+      loadingHistorical,
+      enhancedHistorical,
+      onRunHistorical,
+    } = extras
 
   const normalizedRiskLabel = opp.riskLevel
     ? opp.riskLevel.charAt(0).toUpperCase() + opp.riskLevel.slice(1)
@@ -895,13 +926,168 @@ const renderOpportunityCard = (
         </button>
       </div>
 
-      {isExpanded && (
-        <div className="mt-6 space-y-6">
-          <ProfitLossSlider opportunity={opp} />
+        {isExpanded && (
+          <div className="mt-6 space-y-6">
+            {!enhancedBacktest && (
+              <section className="rounded-2xl border-2 border-dashed border-purple-300 bg-purple-50/40 p-5 text-center dark:border-purple-700 dark:bg-purple-900/10">
+                <h4 className="text-base font-semibold text-purple-900 dark:text-purple-100">🎯 365-Day Backtest Available</h4>
+                <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+                  See how similar trades performed over the past year. Get win rate, average return, and confidence metrics.
+                </p>
+                <button
+                  type="button"
+                  onClick={onRunBacktest}
+                  disabled={loadingBacktest}
+                  className="mt-4 inline-flex items-center justify-center gap-2 rounded-full bg-purple-600 px-5 py-2 text-sm font-semibold text-white shadow-md transition-colors hover:bg-purple-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+                >
+                  {loadingBacktest ? 'Running backtest…' : '🔍 Run 365-Day Backtest'}
+                </button>
+                <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">Takes about 5–10 seconds</p>
+              </section>
+            )}
 
-          {riskRewardExplanation && (
-            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100">
-              <div className="font-semibold uppercase tracking-wide text-[11px] text-amber-700 dark:text-amber-200">
+            {enhancedBacktest && (
+              <section className="rounded-2xl border border-purple-200 bg-gradient-to-br from-purple-50 via-white to-purple-50/60 p-5 dark:border-purple-800 dark:from-purple-950/40 dark:via-slate-900 dark:to-purple-950/20">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <h4 className="text-base font-semibold text-purple-900 dark:text-purple-100">🎯 365-Day Backtest Results</h4>
+                    <p className="mt-2 text-sm text-purple-800 dark:text-purple-200 leading-relaxed">{enhancedBacktest.summary}</p>
+                  </div>
+                  <span
+                    className={`inline-flex items-center justify-center rounded-full px-3 py-1 text-xs font-bold ${
+                      enhancedBacktest.confidence === 'high'
+                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
+                        : enhancedBacktest.confidence === 'medium'
+                          ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
+                          : 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300'
+                    }`}
+                  >
+                    {enhancedBacktest.confidence.toUpperCase()} CONFIDENCE
+                  </span>
+                </div>
+
+                <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  <div className="rounded-xl border border-purple-200 bg-white/80 p-4 text-left shadow-sm dark:border-purple-800 dark:bg-slate-900/60">
+                    <div className="text-xs font-semibold uppercase tracking-wide text-purple-600 dark:text-purple-300">Win Rate</div>
+                    <div className="mt-1 text-2xl font-bold text-slate-900 dark:text-white">{enhancedBacktest.winRate.toFixed(0)}%</div>
+                  </div>
+                  <div className="rounded-xl border border-purple-200 bg-white/80 p-4 text-left shadow-sm dark:border-purple-800 dark:bg-slate-900/60">
+                    <div className="text-xs font-semibold uppercase tracking-wide text-purple-600 dark:text-purple-300">Avg Return</div>
+                    <div className="mt-1 text-2xl font-bold text-slate-900 dark:text-white">
+                      {enhancedBacktest.avgReturn >= 0 ? '+' : ''}{enhancedBacktest.avgReturn.toFixed(1)}%
+                    </div>
+                  </div>
+                  <div className="rounded-xl border border-purple-200 bg-white/80 p-4 text-left shadow-sm dark:border-purple-800 dark:bg-slate-900/60">
+                    <div className="text-xs font-semibold uppercase tracking-wide text-purple-600 dark:text-purple-300">Sharpe Ratio</div>
+                    <div className="mt-1 text-2xl font-bold text-slate-900 dark:text-white">{enhancedBacktest.sharpeRatio.toFixed(2)}</div>
+                  </div>
+                  <div className="rounded-xl border border-purple-200 bg-white/80 p-4 text-left shadow-sm dark:border-purple-800 dark:bg-slate-900/60">
+                    <div className="text-xs font-semibold uppercase tracking-wide text-purple-600 dark:text-purple-300">Sample Size</div>
+                    <div className="mt-1 text-2xl font-bold text-slate-900 dark:text-white">{enhancedBacktest.similarTradesFound}</div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400">similar trades</div>
+                  </div>
+                </div>
+
+                <div className="mt-4 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={onRunBacktest}
+                    disabled={loadingBacktest}
+                    className="inline-flex items-center justify-center gap-2 rounded-full border border-purple-500 px-4 py-2 text-xs font-semibold text-purple-700 transition-colors hover:bg-purple-50 disabled:cursor-not-allowed dark:border-purple-400 dark:text-purple-200 dark:hover:bg-purple-900/30"
+                  >
+                    {loadingBacktest ? 'Refreshing…' : 'Refresh Backtest'}
+                  </button>
+                </div>
+              </section>
+            )}
+
+            {!enhancedHistorical && (
+              <section className="rounded-2xl border-2 border-dashed border-blue-300 bg-blue-50/40 p-5 text-center dark:border-blue-700 dark:bg-blue-950/10">
+                <h4 className="text-base font-semibold text-blue-900 dark:text-blue-100">📊 Historical Price Patterns Available</h4>
+                <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+                  Analyze how often similar price moves have occurred historically and review the most recent examples.
+                </p>
+                <button
+                  type="button"
+                  onClick={onRunHistorical}
+                  disabled={loadingHistorical}
+                  className="mt-4 inline-flex items-center justify-center gap-2 rounded-full bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-md transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+                >
+                  {loadingHistorical ? 'Analyzing history…' : '📈 Analyze Historical Patterns'}
+                </button>
+                <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">Takes about 3–5 seconds</p>
+              </section>
+            )}
+
+            {enhancedHistorical && (
+              <section className="rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 via-white to-blue-50/60 p-5 dark:border-blue-800 dark:from-blue-950/40 dark:via-slate-900 dark:to-blue-950/20">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <h4 className="text-base font-semibold text-blue-900 dark:text-blue-100">📊 Historical Pattern Analysis</h4>
+                    <p className="mt-2 text-sm text-blue-800 dark:text-blue-200 leading-relaxed">{enhancedHistorical.summary}</p>
+                  </div>
+                  <span
+                    className={`inline-flex items-center justify-center rounded-full px-3 py-1 text-xs font-bold ${
+                      enhancedHistorical.confidence === 'high'
+                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
+                        : enhancedHistorical.confidence === 'medium'
+                          ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
+                          : 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300'
+                    }`}
+                  >
+                    {enhancedHistorical.confidence.toUpperCase()} CONFIDENCE
+                  </span>
+                </div>
+
+                <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+                  <div className="rounded-xl border border-blue-200 bg-white/80 p-4 shadow-sm dark:border-blue-800 dark:bg-slate-900/60">
+                    <div className="text-xs font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-300">Required Move</div>
+                    <div className={`mt-1 text-2xl font-bold ${enhancedHistorical.direction === 'up' ? 'text-emerald-600 dark:text-emerald-300' : 'text-red-600 dark:text-red-300'}`}>
+                      {enhancedHistorical.direction === 'up' ? '↗' : '↘'} {enhancedHistorical.requiredMove.toFixed(1)}%
+                    </div>
+                  </div>
+                  <div className="rounded-xl border border-blue-200 bg-white/80 p-4 shadow-sm dark:border-blue-800 dark:bg-slate-900/60">
+                    <div className="text-xs font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-300">Historical Frequency</div>
+                    <div className="mt-1 text-2xl font-bold text-slate-900 dark:text-white">{(enhancedHistorical.historicalFrequency * 100).toFixed(0)}%</div>
+                  </div>
+                  <div className="rounded-xl border border-blue-200 bg-white/80 p-4 shadow-sm dark:border-blue-800 dark:bg-slate-900/60">
+                    <div className="text-xs font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-300">Recent Examples</div>
+                    <div className="mt-1 text-2xl font-bold text-slate-900 dark:text-white">{enhancedHistorical.recentExamples.length}</div>
+                  </div>
+                </div>
+
+                {enhancedHistorical.recentExamples.length > 0 && (
+                  <div className="mt-4 rounded-xl border border-blue-100 bg-white/70 p-4 dark:border-blue-800 dark:bg-slate-900/60">
+                    <div className="text-xs font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-300">Most Recent Occurrences</div>
+                    <ul className="mt-2 space-y-1 text-sm text-slate-700 dark:text-slate-200">
+                      {enhancedHistorical.recentExamples.slice(0, 3).map((example, index) => (
+                        <li key={`${example.date}-${index}`} className="flex items-center justify-between">
+                          <span>{new Date(example.date).toLocaleDateString()}</span>
+                          <span className="text-slate-500 dark:text-slate-400">{example.daysToTarget} days to target</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                <div className="mt-4 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={onRunHistorical}
+                    disabled={loadingHistorical}
+                    className="inline-flex items-center justify-center gap-2 rounded-full border border-blue-500 px-4 py-2 text-xs font-semibold text-blue-700 transition-colors hover:bg-blue-50 disabled:cursor-not-allowed dark:border-blue-400 dark:text-blue-200 dark:hover:bg-blue-900/30"
+                  >
+                    {loadingHistorical ? 'Refreshing…' : 'Refresh Historical Study'}
+                  </button>
+                </div>
+              </section>
+            )}
+
+            <ProfitLossSlider opportunity={opp} />
+
+            {riskRewardExplanation && (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100">
+                <div className="font-semibold uppercase tracking-wide text-[11px] text-amber-700 dark:text-amber-200">
                 Risk/Reward Context
               </div>
               <p className="mt-2 leading-relaxed">{riskRewardExplanation}</p>
@@ -958,6 +1144,10 @@ export default function ScannerPage({ user }: ScannerPageProps) {
   const [scanMode, setScanMode] = useState<FilterMode>('strict')
   const [relaxedScanMeta, setRelaxedScanMeta] = useState<RelaxedScanMetadata | null>(null)
   const [expandedCards, setExpandedCards] = useState<Record<string, boolean>>({})
+  const [enhancedBacktests, setEnhancedBacktests] = useState<Record<string, EnhancedBacktestResult | null>>({})
+  const [loadingBacktests, setLoadingBacktests] = useState<Record<string, boolean>>({})
+  const [enhancedHistoricals, setEnhancedHistoricals] = useState<Record<string, EnhancedHistoricalResult | null>>({})
+  const [loadingHistoricals, setLoadingHistoricals] = useState<Record<string, boolean>>({})
   const [showNotRecommended, setShowNotRecommended] = useState(false)
   const previousTabRef = useRef<'options' | 'crypto' | null>(null)
   const opportunitiesRef = useRef<Opportunity[]>([])
@@ -978,6 +1168,90 @@ export default function ScannerPage({ user }: ScannerPageProps) {
       [cardId]: !prev[cardId],
     }))
   }
+
+  const runBacktestEnhancement = useCallback(async (opp: Opportunity) => {
+    const cardId = `${opp.symbol}-${opp.strike}-${opp.expiration}-${opp.optionType}`
+    setLoadingBacktests(prev => ({
+      ...prev,
+      [cardId]: true,
+    }))
+
+    try {
+      const response = await fetch('/api/enhance/backtest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          symbol: opp.symbol,
+          optionType: opp.optionType,
+          strike: opp.strike,
+          stockPrice: opp.stockPrice,
+          premium: opp.premium,
+          daysToExpiration: opp.daysToExpiration,
+          impliedVolatility: opp.moveAnalysis?.impliedVol ?? null,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`Backtest request failed with status ${response.status}`)
+      }
+
+      const data = await response.json()
+      if (data?.success && data.backtest) {
+        setEnhancedBacktests(prev => ({
+          ...prev,
+          [cardId]: data.backtest as EnhancedBacktestResult,
+        }))
+      }
+    } catch (error) {
+      console.error('Backtest enhancement failed:', error)
+    } finally {
+      setLoadingBacktests(prev => ({
+        ...prev,
+        [cardId]: false,
+      }))
+    }
+  }, [])
+
+  const runHistoricalEnhancement = useCallback(async (opp: Opportunity) => {
+    const cardId = `${opp.symbol}-${opp.strike}-${opp.expiration}-${opp.optionType}`
+    setLoadingHistoricals(prev => ({
+      ...prev,
+      [cardId]: true,
+    }))
+
+    try {
+      const response = await fetch('/api/enhance/historical', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          symbol: opp.symbol,
+          optionType: opp.optionType,
+          strike: opp.strike,
+          stockPrice: opp.stockPrice,
+          daysToExpiration: opp.daysToExpiration,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`Historical request failed with status ${response.status}`)
+      }
+
+      const data = await response.json()
+      if (data?.success && data.historical) {
+        setEnhancedHistoricals(prev => ({
+          ...prev,
+          [cardId]: data.historical as EnhancedHistoricalResult,
+        }))
+      }
+    } catch (error) {
+      console.error('Historical enhancement failed:', error)
+    } finally {
+      setLoadingHistoricals(prev => ({
+        ...prev,
+        [cardId]: false,
+      }))
+    }
+  }, [])
 
   useEffect(() => {
     let isMounted = true
@@ -2840,33 +3114,39 @@ export default function ScannerPage({ user }: ScannerPageProps) {
                 {recommendedOpportunities.map((opp) => {
                   const cardId = `${opp.symbol}-${opp.strike}-${opp.expiration}-${opp.optionType}`
                   const riskBadgeClass = opp.riskLevel ? getRiskColor(opp.riskLevel) : null
-                  const extras = {
-                    isExpanded: expandedCards[cardId] ?? false,
-                    onToggle: () => toggleCard(cardId),
-                    riskBadgeClass,
-                    scoreBadgeClass: getScoreColor(opp.score),
-                    breakevenRequirement: formatBreakevenRequirement(opp),
-                    riskRewardExplanation: getRiskRewardExplanation(opp),
-                    greeksExplanation: getGreeksExplanation(opp),
-                    moveThesis: renderMoveThesis(opp),
-                    onAddToWatchlist: () => addToWatchlist({
-                      id: cardId,
-                      symbol: opp.symbol,
-                      optionType: opp.optionType,
-                      strike: opp.strike,
-                      expiration: opp.expiration,
-                      premium: opp.premium,
-                      score: opp.score,
-                      riskLevel: opp.riskLevel,
-                      daysToExpiration: opp.daysToExpiration,
-                      tradeSummary: opp.tradeSummary,
-                    }),
-                    isOnWatchlist: isOnWatchlist(cardId),
-                  }
+                    const extras = {
+                      isExpanded: expandedCards[cardId] ?? false,
+                      onToggle: () => toggleCard(cardId),
+                      riskBadgeClass,
+                      scoreBadgeClass: getScoreColor(opp.score),
+                      breakevenRequirement: formatBreakevenRequirement(opp),
+                      riskRewardExplanation: getRiskRewardExplanation(opp),
+                      greeksExplanation: getGreeksExplanation(opp),
+                      moveThesis: renderMoveThesis(opp),
+                      onAddToWatchlist: () => addToWatchlist({
+                        id: cardId,
+                        symbol: opp.symbol,
+                        optionType: opp.optionType,
+                        strike: opp.strike,
+                        expiration: opp.expiration,
+                        premium: opp.premium,
+                        score: opp.score,
+                        riskLevel: opp.riskLevel,
+                        daysToExpiration: opp.daysToExpiration,
+                        tradeSummary: opp.tradeSummary,
+                      }),
+                      isOnWatchlist: isOnWatchlist(cardId),
+                      loadingBacktest: loadingBacktests[cardId] ?? false,
+                      enhancedBacktest: enhancedBacktests[cardId] ?? null,
+                      onRunBacktest: () => runBacktestEnhancement(opp),
+                      loadingHistorical: loadingHistoricals[cardId] ?? false,
+                      enhancedHistorical: enhancedHistoricals[cardId] ?? null,
+                      onRunHistorical: () => runHistoricalEnhancement(opp),
+                    }
 
-                  return renderOpportunityCard(
-                    opp,
-                    investmentAmount ?? 0,
+                    return renderOpportunityCard(
+                      opp,
+                      investmentAmount ?? 0,
                     calculateInvestmentScenario,
                     formatCurrency,
                     safeToFixed,
@@ -2933,6 +3213,12 @@ export default function ScannerPage({ user }: ScannerPageProps) {
                           tradeSummary: opp.tradeSummary,
                         }),
                         isOnWatchlist: isOnWatchlist(cardId),
+                        loadingBacktest: loadingBacktests[cardId] ?? false,
+                        enhancedBacktest: enhancedBacktests[cardId] ?? null,
+                        onRunBacktest: () => runBacktestEnhancement(opp),
+                        loadingHistorical: loadingHistoricals[cardId] ?? false,
+                        enhancedHistorical: enhancedHistoricals[cardId] ?? null,
+                        onRunHistorical: () => runHistoricalEnhancement(opp),
                       }
 
                       return renderOpportunityCard(
