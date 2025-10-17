@@ -502,15 +502,46 @@ class SmartOptionsScanner:
             liquid_options = liquid_options.nlargest(150, 'volume').copy()
             print(f"⚡ Limited to top 150 highest-volume options for speed", file=sys.stderr)
 
-        # Log rejected options for retrospective analysis (DISABLED for speed - was causing 120s timeouts)
-        # The rejection tracking loop was iterating through thousands of options and hanging the scanner
-        # Keeping code for reference but commenting out to fix timeout issues
-        # rejected_mask = ~working_data.index.isin(liquid_options.index)
-        # rejected_options = working_data[rejected_mask]
-        # for idx, row in rejected_options.iterrows():
-        #     # ... rejection tracking code ...
-        #     pass
-        print(f"📊 Skipping rejection tracking for speed ({len(working_data) - len(liquid_options)} rejected options)", file=sys.stderr)
+        # Log rejected options for retrospective analysis (BATCHED for speed)
+        rejected_mask = ~working_data.index.isin(liquid_options.index)
+        rejected_options = working_data[rejected_mask]
+
+        if len(rejected_options) > 0 and self.rejection_tracker is not None:
+            # Build batch of rejections (fast - no DB calls yet)
+            rejections_batch = []
+            for idx, row in rejected_options.iterrows():
+                row_symbol = row.get('symbol', 'UNKNOWN')
+                try:
+                    # Determine specific rejection reason
+                    reasons = []
+                    if row.get("volume", 0) <= 10:
+                        reasons.append(f"volume={row.get('volume', 0):.0f}≤10")
+                    if row.get("openInterest", 0) <= 25:
+                        reasons.append(f"OI={row.get('openInterest', 0):.0f}≤25")
+                    if row.get("lastPrice", 0) <= 0.05:
+                        reasons.append(f"price=${row.get('lastPrice', 0):.2f}≤0.05")
+                    if row.get("bid", 0) <= 0:
+                        reasons.append("bid≤0")
+                    if row.get("ask", 0) <= 0:
+                        reasons.append("ask≤0")
+
+                    rejection_reason = " & ".join(reasons) if reasons else "unknown"
+
+                    rejections_batch.append({
+                        "symbol": row_symbol,
+                        "option_data": row.to_dict(),
+                        "rejection_reason": rejection_reason,
+                        "filter_stage": "liquidity_strict"
+                    })
+                except Exception as e:
+                    print(f"⚠️  Failed to prepare rejection for {row_symbol}: {e}", file=sys.stderr)
+                    continue
+
+            # Batch insert all rejections in one DB call (fast!)
+            logged = self.rejection_tracker.log_rejections_batch(rejections_batch)
+            print(f"📊 Logged {logged}/{len(rejected_options)} rejected options to Supabase", file=sys.stderr)
+        else:
+            print(f"📊 {len(rejected_options)} rejected options (tracking disabled)", file=sys.stderr)
 
         snapshot_live = self._snapshot_is_live()
 

@@ -127,6 +127,34 @@ class RejectionTracker:
         except (ValueError, TypeError):
             return default
 
+    def _build_rejection_record(
+        self,
+        symbol: str,
+        option_data: Dict[str, Any],
+        rejection_reason: str,
+        filter_stage: str,
+        scores: Optional[Dict[str, float]] = None
+    ) -> Dict[str, Any]:
+        """Build a rejection record dict (used for both single and batch logging)."""
+        return {
+            "symbol": symbol,
+            "strike": self._safe_float(option_data.get("strike"), 0),
+            "expiration": option_data.get("expiration", ""),
+            "option_type": str(option_data.get("type", option_data.get("optionType", "call"))).lower(),
+            "rejection_reason": rejection_reason,
+            "filter_stage": filter_stage,
+            "rejected_at": datetime.now(timezone.utc).isoformat(),
+            "stock_price": self._safe_float(option_data.get("stock_price", option_data.get("stockPrice")), 0),
+            "option_price": self._safe_float(option_data.get("lastPrice"), 0),
+            "volume": self._safe_int(option_data.get("volume"), 0),
+            "open_interest": self._safe_int(option_data.get("openInterest"), 0),
+            "implied_volatility": self._safe_float(option_data.get("impliedVolatility")) if option_data.get("impliedVolatility") else None,
+            "delta": self._safe_float(option_data.get("delta")) if option_data.get("delta") else None,
+            "probability_score": scores.get("probability_score") if scores else None,
+            "risk_adjusted_score": scores.get("risk_adjusted_score") if scores else None,
+            "quality_score": scores.get("quality_score") if scores else None,
+        }
+
     def log_rejection(
         self,
         symbol: str,
@@ -146,32 +174,57 @@ class RejectionTracker:
             scores: Optional dict with probability_score, risk_adjusted_score, quality_score
         """
         try:
-            # Build rejection record with safe NaN handling
-            record = {
-                "symbol": symbol,
-                "strike": self._safe_float(option_data.get("strike"), 0),
-                "expiration": option_data.get("expiration", ""),
-                "option_type": str(option_data.get("type", option_data.get("optionType", "call"))).lower(),
-                "rejection_reason": rejection_reason,
-                "filter_stage": filter_stage,
-                "rejected_at": datetime.now(timezone.utc).isoformat(),
-                "stock_price": self._safe_float(option_data.get("stock_price", option_data.get("stockPrice")), 0),
-                "option_price": self._safe_float(option_data.get("lastPrice"), 0),
-                "volume": self._safe_int(option_data.get("volume"), 0),
-                "open_interest": self._safe_int(option_data.get("openInterest"), 0),
-                "implied_volatility": self._safe_float(option_data.get("impliedVolatility")) if option_data.get("impliedVolatility") else None,
-                "delta": self._safe_float(option_data.get("delta")) if option_data.get("delta") else None,
-                "probability_score": scores.get("probability_score") if scores else None,
-                "risk_adjusted_score": scores.get("risk_adjusted_score") if scores else None,
-                "quality_score": scores.get("quality_score") if scores else None,
-            }
-
+            record = self._build_rejection_record(symbol, option_data, rejection_reason, filter_stage, scores)
             # Insert into Supabase
             self.supabase.table(self.table_name).insert(record).execute()
 
         except Exception as e:
             # Don't fail scanning if logging fails
             print(f"⚠️  Failed to log rejection to Supabase: {e}")
+
+    def log_rejections_batch(self, rejections: List[Dict[str, Any]]) -> int:
+        """
+        Log multiple rejected options in a single batch operation (much faster).
+
+        Args:
+            rejections: List of dicts, each with:
+                - symbol: str
+                - option_data: Dict
+                - rejection_reason: str
+                - filter_stage: str
+                - scores: Optional[Dict]
+
+        Returns:
+            Number of rejections successfully logged
+        """
+        if not rejections:
+            return 0
+
+        try:
+            records = []
+            for rej in rejections:
+                try:
+                    record = self._build_rejection_record(
+                        rej["symbol"],
+                        rej["option_data"],
+                        rej["rejection_reason"],
+                        rej["filter_stage"],
+                        rej.get("scores")
+                    )
+                    records.append(record)
+                except Exception as e:
+                    print(f"⚠️  Failed to build rejection record for {rej.get('symbol', 'UNKNOWN')}: {e}")
+                    continue
+
+            if records:
+                # Batch insert (much faster than individual inserts)
+                self.supabase.table(self.table_name).insert(records).execute()
+                return len(records)
+            return 0
+
+        except Exception as e:
+            print(f"⚠️  Failed to batch log rejections to Supabase: {e}")
+            return 0
 
     def update_next_day_performance(self, days_ago: int = 1) -> int:
         """
