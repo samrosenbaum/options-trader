@@ -690,15 +690,14 @@ class SmartOptionsScanner:
             probability_percent = self.estimate_probability_percent(probability_score)
             expected_roi = metrics["expectedMoveRoiPercent"]  # 1 SD move (realistic)
 
-            # Define quality thresholds - prioritize probable winners (RELAXED for realistic markets)
-            high_probability = probability_percent >= 20  # Lowered from 30 (options make money daily!)
-            reasonable_return = expected_roi >= 10  # Lowered from 15 (more realistic)
+            # Define quality thresholds - VERY RELAXED to let retail improvements do the filtering
+            high_probability = probability_percent >= 10  # Much more permissive
+            reasonable_return = expected_roi >= 5  # Much more permissive
 
             # Quality criteria: High score + reasonable probability + decent expected returns
-            # Removed the "high_asymmetry" path that surfaced lottery tickets
             quality_setup = (
                 expected_roi > 0
-                and score >= 50  # Lowered from 60 to surface more opportunities
+                and score >= 40  # Lowered to let more through
                 and high_probability
                 and reasonable_return
             )
@@ -706,9 +705,9 @@ class SmartOptionsScanner:
             # Relaxed criteria used as a safety net when nothing meets the strict filter
             relaxed_setup = (
                 not quality_setup
-                and expected_roi >= 5  # Lowered from 8
-                and probability_percent >= 10  # Lowered from 15
-                and score >= 45  # Lowered from 55
+                and expected_roi >= 3  # Very permissive
+                and probability_percent >= 5  # Very permissive
+                and score >= 35  # Very permissive
             )
 
             if not quality_setup and not relaxed_setup:
