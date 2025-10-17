@@ -2368,7 +2368,7 @@ class SmartOptionsScanner:
         if max_contract_cost is not None:
             opportunities = [
                 opp for opp in opportunities
-                if opp.get("premium", 0) * 100 <= max_contract_cost
+                if opp.get("premium", 0) <= max_contract_cost
             ]
             filtered_count = pre_budget_count - len(opportunities)
             if filtered_count > 0:
