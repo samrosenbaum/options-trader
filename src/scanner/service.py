@@ -705,9 +705,21 @@ class SmartOptionsScanner:
             if not quality_setup:
                 continue
 
-            # MONEYNESS FILTER: Block deep ITM options (capital inefficient)
+            # STRIKE SANITY CHECK: Reject invalid strikes from bad data (e.g., $4 call on $19 stock)
             stock_price = float(option["stockPrice"])
             strike = float(option["strike"])
+
+            # Reject strikes absurdly far from stock price (Yahoo Finance bad data)
+            if option["type"] == "call":
+                # Call strikes should be 20% to 300% of stock price
+                if strike < stock_price * 0.20 or strike > stock_price * 3.0:
+                    continue
+            else:  # put
+                # Put strikes should be 20% to 300% of stock price
+                if strike < stock_price * 0.20 or strike > stock_price * 3.0:
+                    continue
+
+            # MONEYNESS FILTER: Block deep ITM options (capital inefficient)
             if option["type"] == "call":
                 moneyness = (stock_price - strike) / stock_price  # Positive if ITM
                 if moneyness > 0.15:  # More than 15% ITM = too deep
