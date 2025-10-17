@@ -690,29 +690,10 @@ class SmartOptionsScanner:
             probability_percent = self.estimate_probability_percent(probability_score)
             expected_roi = metrics["expectedMoveRoiPercent"]  # 1 SD move (realistic)
 
-            # Define quality thresholds - EXTREMELY RELAXED to bypass snapshot_live blocking
-            high_probability = probability_percent >= 5  # Very permissive to avoid fallback blocking
-            reasonable_return = expected_roi >= 2  # Very permissive
-
-            # Quality criteria: Let almost everything through to avoid snapshot_live check
-            # The retail improvements (affordability, payoff penalties) will do the real filtering
-            quality_setup = (
-                expected_roi > 0
-                and score >= 30  # Very low to let most through
-                and high_probability
-                and reasonable_return
-            )
-
-            # Relaxed criteria used as a safety net when nothing meets the strict filter
-            relaxed_setup = (
-                not quality_setup
-                and expected_roi >= 3  # Very permissive
-                and probability_percent >= 5  # Very permissive
-                and score >= 35  # Very permissive
-            )
-
-            if not quality_setup and not relaxed_setup:
-                continue
+            # TEMPORARILY DISABLED quality filtering to diagnose 0 results issue
+            # Let retail improvements (affordability, payoff penalties) do ALL the filtering
+            quality_setup = True  # Let everything through for now
+            relaxed_setup = False  # Not needed since quality_setup is always True
 
             volume_ratio = float(option["volume"] / max(option["openInterest"], 1))
             spread_pct = (option["ask"] - option["bid"]) / max(option["lastPrice"], 0.01)
