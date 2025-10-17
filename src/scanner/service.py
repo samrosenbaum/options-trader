@@ -2191,6 +2191,18 @@ class SmartOptionsScanner:
             options_data,
             allow_relaxed_fallback=allow_relaxed,
         )
+
+        # Apply budget filtering if user specified a daily contract budget
+        pre_budget_count = len(opportunities)
+        if self.user_daily_contract_budget is not None and self.user_daily_contract_budget > 0:
+            opportunities = [
+                opp for opp in opportunities
+                if opp.get("premium", 0) * 100 <= self.user_daily_contract_budget
+            ]
+            filtered_count = pre_budget_count - len(opportunities)
+            if filtered_count > 0:
+                print(f"💰 Filtered {filtered_count} opportunities over ${self.user_daily_contract_budget:.0f} budget", file=sys.stderr)
+
         print(f"✅ Found {len(opportunities)} high-scoring opportunities", file=sys.stderr)
 
         chains_by_symbol = {
