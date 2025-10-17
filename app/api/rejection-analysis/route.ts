@@ -9,7 +9,7 @@ interface AnalysisParams {
   minProfitPercent?: number
 }
 
-export async function POST(request: Request) {
+export async function POST(request: Request): Promise<NextResponse> {
   try {
     const body: AnalysisParams = await request.json()
     const daysBack = body.daysBack || 7
