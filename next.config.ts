@@ -2,8 +2,6 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
-  // Force dynamic rendering
-  output: 'standalone',
 
   // Force new build ID on every deploy to bust CDN cache
   generateBuildId: async () => {
