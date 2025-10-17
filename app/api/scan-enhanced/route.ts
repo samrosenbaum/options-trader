@@ -801,6 +801,7 @@ const executeEnhancedScanner = async ({
 
     const python = spawn(pythonPath, ["-m", "src.scanner.enhanced_service"], {
       env,
+      cwd: process.cwd(), // Explicitly set working directory to project root
     })
 
     let stdoutBuffer = ""
