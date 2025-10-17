@@ -724,6 +724,20 @@ const renderOpportunityCard = (
                 Score {opp.score.toFixed(0)}
               </span>
             )}
+            {'enhancedScore' in opp && typeof (opp as Record<string, unknown>).enhancedScore === 'number' && (
+              <span className="px-3 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-blue-500 to-purple-500 text-white border border-blue-600 dark:border-purple-600 shadow-sm" title={`Enhanced Score: ${((opp as Record<string, unknown>).enhancedScore as number).toFixed(1)}/100
+Technical: ${((opp as Record<string, unknown>).technicalScore as number | undefined)?.toFixed(1) || 'N/A'}
+Probability: ${((opp as Record<string, unknown>).probabilityScore as number | undefined)?.toFixed(1) || 'N/A'}
+Risk/Reward: ${((opp as Record<string, unknown>).riskRewardScore as number | undefined)?.toFixed(1) || 'N/A'}
+Liquidity: ${((opp as Record<string, unknown>).liquidityScore as number | undefined)?.toFixed(1) || 'N/A'}`}>
+                ⭐ Enhanced {((opp as Record<string, unknown>).enhancedScore as number).toFixed(0)}
+              </span>
+            )}
+            {'strategyType' in opp && (
+              <span className={`px-3 py-1 rounded-lg text-xs font-bold border ${(opp as Record<string, unknown>).strategyType === 'directional' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 border-purple-200 dark:border-purple-800' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200 dark:border-blue-800'}`}>
+                {String((opp as Record<string, unknown>).strategyType).toUpperCase()}
+              </span>
+            )}
             {positionSizing && (positionSizing.recommendedFraction === 0 || (positionSizing.recommendedFraction && positionSizing.recommendedFraction < 0.01)) && (
               <span className="px-3 py-1 rounded-lg text-xs font-bold border-2 border-amber-400 bg-amber-100 text-amber-800 dark:border-amber-600 dark:bg-amber-900/40 dark:text-amber-300">
                 ⚠️ HIGH RISK
@@ -1164,6 +1178,7 @@ export default function ScannerPage({ user }: ScannerPageProps) {
   const [loadingHistoricals, setLoadingHistoricals] = useState<Record<string, boolean>>({})
   const [showNotRecommended, setShowNotRecommended] = useState(false)
   const [chatOpportunity, setChatOpportunity] = useState<Opportunity | null>(null)
+  const [isEnhancedLoading, setIsEnhancedLoading] = useState(false)
   const previousTabRef = useRef<'options' | 'crypto' | null>(null)
   const opportunitiesRef = useRef<Opportunity[]>([])
   const scanModeRef = useRef<FilterMode>('strict')
@@ -1741,6 +1756,43 @@ export default function ScannerPage({ user }: ScannerPageProps) {
       setIsLoading(false)
     }
   }, [attemptFallbackFetch, handleScanPayload, investmentAmount, userPortfolioConstraints])
+
+  const fetchEnhancedOpportunities = useCallback(async () => {
+    try {
+      setIsEnhancedLoading(true)
+
+      const response = await fetch('/api/scan-enhanced-pro', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          strategy: 'auto',
+          budget: investmentAmount,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (data.success && data.opportunities) {
+        setOpportunities(data.opportunities)
+        setLastSuccessfulUpdate(new Date())
+        setIsStaleData(false)
+        setScanMetadata({
+          timestamp: new Date().toISOString(),
+          totalSymbols: data.metadata?.baseOpportunities || 0,
+          totalEvaluated: data.metadata?.baseOpportunities || 0,
+          filteredCount: data.opportunities.length,
+          mode: 'strict',
+        })
+        console.log(`✅ Enhanced scan: ${data.opportunities.length} opportunities (${data.metadata?.filterEfficiency} pass rate)`)
+      } else {
+        console.error('Enhanced scan failed:', data.error)
+      }
+    } catch (error) {
+      console.error('Error in enhanced scan:', error)
+    } finally {
+      setIsEnhancedLoading(false)
+    }
+  }, [investmentAmount])
 
   const fetchCryptoAlerts = useCallback(async () => {
     try {
@@ -2694,7 +2746,7 @@ export default function ScannerPage({ user }: ScannerPageProps) {
                 onClick={() =>
                   activeTab === 'options' ? fetchOpportunities() : fetchCryptoAlerts()
                 }
-                disabled={activeTab === 'options' ? isLoading : cryptoLoading}
+                disabled={activeTab === 'options' ? (isLoading || isEnhancedLoading) : cryptoLoading}
                 className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-bold shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40 transition-all duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {(activeTab === 'options' ? isLoading : cryptoLoading) ? (
@@ -2711,6 +2763,30 @@ export default function ScannerPage({ user }: ScannerPageProps) {
                   </>
                 )}
               </button>
+
+              {activeTab === 'options' && (
+                <button
+                  onClick={fetchEnhancedOpportunities}
+                  disabled={isLoading || isEnhancedLoading}
+                  className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg font-bold shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 transition-all duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Enhanced scan with institutional-grade filters"
+                >
+                  {isEnhancedLoading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Enhanced Scan...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Enhanced Scan
+                      <span className="px-1.5 py-0.5 text-[10px] font-bold bg-white/20 rounded">PRO</span>
+                    </>
+                  )}
+                </button>
+              )}
               </div>
             </div>
 
