@@ -488,10 +488,10 @@ class SmartOptionsScanner:
             if col in working_data.columns:
                 working_data[col] = pd.to_numeric(working_data[col], errors="coerce")
 
-        # SENSIBLE liquidity filters - tradeable options only
+        # RETAIL LIQUIDITY filters - tradeable options for retail traders
         liquid_options = working_data[
-            (working_data["volume"] > 10)  # Minimum for actual tradability
-            & (working_data["openInterest"] > 25)  # Some liquidity required
+            (working_data["volume"] > 100)  # Retail minimum - need decent volume for fills
+            & (working_data["openInterest"] > 100)  # Retail minimum - need liquidity
             & (working_data["lastPrice"] > 0.05)  # Avoid penny options with terrible spreads
             & (working_data["bid"] > 0)
             & (working_data["ask"] > 0)
@@ -546,10 +546,10 @@ class SmartOptionsScanner:
         snapshot_live = self._snapshot_is_live()
 
         if liquid_options.empty:
-            # Fallback filters - lower bar but still tradeable
+            # Fallback filters - lower bar but still decent for retail
             relaxed_filters = [
-                working_data.get("volume") > 5 if "volume" in working_data else None,  # Bare minimum tradability
-                working_data.get("openInterest") > 10 if "openInterest" in working_data else None,  # Some OI required
+                working_data.get("volume") > 50 if "volume" in working_data else None,  # Minimum retail tradability
+                working_data.get("openInterest") > 50 if "openInterest" in working_data else None,  # Minimum retail liquidity
                 working_data.get("lastPrice") > 0.03 if "lastPrice" in working_data else None,  # Avoid terrible spreads
                 working_data.get("bid") > 0 if "bid" in working_data else None,
                 working_data.get("ask") > 0 if "ask" in working_data else None,
