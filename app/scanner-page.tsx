@@ -2797,7 +2797,7 @@ export default function ScannerPage({ user }: ScannerPageProps) {
           <div className="space-y-8">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
-                <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
+                <h2 className="text-2xl font-semibold text-emerald-500 dark:text-emerald-400">
                   Trading Opportunities
                 </h2>
                 <span className="text-sm text-slate-500 dark:text-slate-400">
