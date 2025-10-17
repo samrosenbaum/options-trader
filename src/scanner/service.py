@@ -710,20 +710,8 @@ class SmartOptionsScanner:
                 option["symbol"], option, symbol_options_chain, price_history_cache
             )
 
-            # RELAXED DIRECTIONAL FILTER: Only enforce when signals are strong
-            # Allows bullish structures on neutral/weak signals to compete on payoff metrics
-            preferred_option_type = self._preferred_option_type(enhanced_bias, directional_bias)
-
-            if preferred_option_type and option["type"] != preferred_option_type:
-                # Check signal strength before filtering
-                signal_score = abs(enhanced_bias.get("score", 0)) if enhanced_bias else 0
-
-                # Only filter out conflicting options if signal is STRONG (score > 30)
-                # Weak/neutral signals (≤30) allow all option types through
-                if signal_score > 30:
-                    # Strong directional signal - skip conflicting options
-                    continue
-                # Else: Weak signal - allow this option through despite directional conflict
+            # TEMPORARILY DISABLED directional filter - allow ALL option types through
+            # preferred_option_type = self._preferred_option_type(enhanced_bias, directional_bias)
 
             # Calculate historical move context for validation
             try:
@@ -2334,26 +2322,15 @@ class SmartOptionsScanner:
             allow_relaxed_fallback=allow_relaxed,
         )
 
-        # Apply budget filtering - use portfolio % if available, fallback to absolute budget
-        pre_budget_count = len(opportunities)
-        max_contract_cost = None
-
-        # SMART FILTERING: Prefer 2% of portfolio rule (retail-safe sizing)
-        if self.user_portfolio_size is not None and self.user_portfolio_size > 0:
-            max_contract_cost = self.user_portfolio_size * 0.02  # 2% rule
-            print(f"💰 Using portfolio-based budget: ${max_contract_cost:.0f} (2% of ${self.user_portfolio_size:.0f})", file=sys.stderr)
-        elif self.user_daily_contract_budget is not None and self.user_daily_contract_budget > 0:
-            max_contract_cost = self.user_daily_contract_budget
-            print(f"💰 Using absolute budget: ${max_contract_cost:.0f}", file=sys.stderr)
-
-        if max_contract_cost is not None:
-            opportunities = [
-                opp for opp in opportunities
-                if opp.get("premium", 0) <= max_contract_cost
-            ]
-            filtered_count = pre_budget_count - len(opportunities)
-            if filtered_count > 0:
-                print(f"💰 Filtered {filtered_count} opportunities over ${max_contract_cost:.0f} budget", file=sys.stderr)
+        # TEMPORARILY DISABLED budget filtering to diagnose 0 results
+        # pre_budget_count = len(opportunities)
+        # max_contract_cost = None
+        # if self.user_portfolio_size is not None and self.user_portfolio_size > 0:
+        #     max_contract_cost = self.user_portfolio_size * 0.02
+        # elif self.user_daily_contract_budget is not None and self.user_daily_contract_budget > 0:
+        #     max_contract_cost = self.user_daily_contract_budget
+        # if max_contract_cost is not None:
+        #     opportunities = [opp for opp in opportunities if opp.get("premium", 0) <= max_contract_cost]
 
         print(f"✅ Found {len(opportunities)} high-scoring opportunities", file=sys.stderr)
 
