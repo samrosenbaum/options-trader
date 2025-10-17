@@ -729,10 +729,20 @@ class SmartOptionsScanner:
                 option["symbol"], option, symbol_options_chain, price_history_cache
             )
 
+            # RELAXED DIRECTIONAL FILTER: Only enforce when signals are strong
+            # Allows bullish structures on neutral/weak signals to compete on payoff metrics
             preferred_option_type = self._preferred_option_type(enhanced_bias, directional_bias)
+
             if preferred_option_type and option["type"] != preferred_option_type:
-                # Skip opportunities that conflict with the directional view
-                continue
+                # Check signal strength before filtering
+                signal_score = abs(enhanced_bias.get("score", 0)) if enhanced_bias else 0
+
+                # Only filter out conflicting options if signal is STRONG (score > 30)
+                # Weak/neutral signals (≤30) allow all option types through
+                if signal_score > 30:
+                    # Strong directional signal - skip conflicting options
+                    continue
+                # Else: Weak signal - allow this option through despite directional conflict
 
             # Calculate historical move context for validation
             try:
@@ -799,6 +809,19 @@ class SmartOptionsScanner:
 
             risk_reward_ratio = metrics["bestRoiPercent"] / 100 if metrics["bestRoiPercent"] > 0 else None
 
+            # Classify into quality lane for retail-focused filtering
+            contract_cost = float(option["lastPrice"]) * 100
+            cost_basis = metrics.get("costBasis", contract_cost)
+            expected_net_profit = metrics.get("expectedMoveNetProfit", 0.0)
+            payoff_ratio = expected_net_profit / cost_basis if cost_basis > 0 else 0.0
+
+            quality_lane = self.classify_opportunity_lane(
+                probability_percent=probability_percent,
+                expected_roi_percent=metrics.get("expectedMoveRoiPercent", 0.0),
+                payoff_ratio=payoff_ratio,
+                contract_cost=contract_cost,
+            )
+
             opportunity = {
                 "symbol": option["symbol"],
                 "optionType": option["type"],
@@ -806,6 +829,7 @@ class SmartOptionsScanner:
                 "expiration": option["expiration"],
                 "premium": round(float(option["lastPrice"]) * 100, 2),  # Per contract (100 shares)
                 "tradeSummary": trade_summary,
+                "qualityLane": quality_lane,  # NEW: Two-lane classification system
                 "bid": round(float(option["bid"]) * 100, 2),  # Per contract
                 "ask": round(float(option["ask"]) * 100, 2),  # Per contract
                 "volume": int(option["volume"]),
@@ -1006,6 +1030,39 @@ class SmartOptionsScanner:
         # No strong directional bias - allow all options through
         return None
 
+    def classify_opportunity_lane(
+        self,
+        probability_percent: float,
+        expected_roi_percent: float,
+        payoff_ratio: float,
+        contract_cost: float,
+    ) -> str:
+        """Classify opportunity into quality lanes for retail traders.
+
+        Two-lane system:
+        1. "probable-winner" - Main feed for high-probability trades (25%+)
+        2. "high-upside-retail" - Asymmetric plays (10-25% prob) with exceptional payoff
+
+        This prevents lottery tickets from crowding out solid trades while still
+        surfacing cheap, high-multiple opportunities for speculative allocation.
+        """
+
+        # Main lane: Probable winners (25%+ probability)
+        if probability_percent >= 25:
+            return "probable-winner"
+
+        # High-upside retail lane: Lower probability BUT exceptional payoff characteristics
+        # Requirements: 10-25% probability AND (exceptional ROI OR exceptional payoff ratio) AND affordable
+        if 10 <= probability_percent < 25:
+            # Must be affordable (under $500 per contract) for retail speculative plays
+            if contract_cost < 500:
+                # Exceptional expected ROI (100%+ on 1 SD move) OR exceptional payoff ratio (2:1+)
+                if expected_roi_percent >= 100 or payoff_ratio >= 2.0:
+                    return "high-upside-retail"
+
+        # Below threshold: Don't classify (these will likely be filtered out anyway)
+        return "speculative"
+
     def calculate_opportunity_score(self, option: pd.Series, metrics: Mapping[str, float], probability_score: float) -> float:
         """Calculate opportunity score prioritizing probability of profit over extreme upside.
 
@@ -1046,14 +1103,37 @@ class SmartOptionsScanner:
         # This is the core change - we want high-probability trades
         score += probability_score * 0.35  # probability_score is 0-100, so this gives 0-35 points
 
-        # Bonus for tight breakeven (max 10 points) - new addition
+        # NORMALIZED BREAKEVEN BONUS: Reward tight breakeven + good payoff (max 10 points)
+        # Prevents deep ITM from getting free boost without attractive ROI
         breakeven_move = abs(metrics["breakevenMovePercent"])
+        cost_basis = metrics.get("costBasis", option["lastPrice"] * 100)
+        expected_net_profit = metrics.get("expectedMoveNetProfit", 0.0)
+
+        # Calculate payoff ratio for normalization
+        payoff_ratio = expected_net_profit / cost_basis if cost_basis > 0 else 0.0
+
+        # Base breakeven score (0-1 range)
         if breakeven_move < 2:
-            score += 10  # Very close to ITM
+            breakeven_factor = 1.0  # Very tight
         elif breakeven_move < 4:
-            score += 7
+            breakeven_factor = 0.7
         elif breakeven_move < 6:
-            score += 4
+            breakeven_factor = 0.4
+        else:
+            breakeven_factor = 0.0  # Too far OTM
+
+        # Payoff multiplier (0-1 range) - only give full bonus if payoff is attractive
+        if payoff_ratio >= 0.5:  # 50%+ expected return
+            payoff_multiplier = 1.0
+        elif payoff_ratio >= 0.3:  # 30-50%
+            payoff_multiplier = 0.7
+        elif payoff_ratio >= 0.2:  # 20-30%
+            payoff_multiplier = 0.5
+        else:  # Under 20%
+            payoff_multiplier = 0.3  # Minimal bonus for low-payoff tight breakevens
+
+        # Combined score: tight breakeven is great, but only if payoff is decent
+        score += 10 * breakeven_factor * payoff_multiplier
 
         # IV quality check (max 5 points)
         iv = option["impliedVolatility"]
@@ -1062,6 +1142,41 @@ class SmartOptionsScanner:
                 score += 5
             elif iv > 0.8:
                 score -= 3  # Penalize extremely high IV (usually means low prob of profit)
+
+        # COST SENSITIVITY: Favor affordable options for retail traders (max 9 points)
+        # This helps cheap asymmetric plays outrank expensive deep ITM options
+        premium = option["lastPrice"]
+        contract_cost = premium * 100
+
+        # Award points based on affordability (lower premium = higher score)
+        if contract_cost < 200:  # Under $200 per contract
+            score += 9  # Very affordable - great for retail
+        elif contract_cost < 500:  # $200-$500
+            score += 7  # Affordable
+        elif contract_cost < 1000:  # $500-$1000
+            score += 5  # Moderate
+        elif contract_cost < 2000:  # $1000-$2000
+            score += 3  # Getting expensive
+        elif contract_cost < 5000:  # $2000-$5000
+            score += 1  # Expensive
+        # Over $5000: no bonus (institutional-sized position)
+
+        # PAYOFF RATIO PENALTY: Penalize capital-inefficient trades (max -8 points)
+        # Prevents high-probability but low-payoff trades from crowding out asymmetric setups
+        cost_basis = metrics.get("costBasis", contract_cost)
+        expected_net_profit = metrics.get("expectedMoveNetProfit", 0.0)
+
+        if cost_basis > 0:
+            payoff_ratio = expected_net_profit / cost_basis
+
+            # Penalize trades where you risk a lot to make a little
+            if payoff_ratio < 0.1:  # Less than 10% return on 1 SD move
+                score -= 8  # Severely capital inefficient
+            elif payoff_ratio < 0.2:  # Less than 20%
+                score -= 5  # Very inefficient
+            elif payoff_ratio < 0.3:  # Less than 30%
+                score -= 3  # Somewhat inefficient
+            # 30%+ payoff ratio: no penalty (reasonable capital efficiency)
 
         return float(max(0.0, min(100.0, score)))
 
@@ -1998,16 +2113,31 @@ class SmartOptionsScanner:
 
         expected_edge = win_probability * payoff_ratio - loss_probability
         if expected_edge <= 0.0:
+            # MICRO-ALLOCATION FOR MARGINAL EDGES: Instead of zero sizing, allow tiny allocations
+            # when the edge is slightly negative but qualitative score is strong
+            micro_fraction = 0.0
+
+            # If edge is only slightly negative AND score is strong, use micro allocation
+            if -0.1 <= expected_edge < 0.0 and score >= 60:
+                # Scale micro-allocation based on how close to zero and score strength
+                # Range: 0.001 to 0.003 (0.1% to 0.3% of portfolio)
+                edge_factor = (expected_edge + 0.1) / 0.1  # 0 to 1 as edge goes from -0.1 to 0
+                score_factor = (score - 60) / 40  # 0 to 1 as score goes from 60 to 100
+                micro_fraction = 0.001 + (0.002 * edge_factor * score_factor)
+                micro_fraction = max(0.001, min(0.003, micro_fraction))
+
             return {
-                "recommendedFraction": 0.0,
-                "conservativeFraction": 0.0,
-                "aggressiveFraction": 0.0,
+                "recommendedFraction": micro_fraction,
+                "conservativeFraction": micro_fraction * 0.5,
+                "aggressiveFraction": micro_fraction * 1.5,
                 "kellyFraction": round(kelly_fraction, 4),
                 "expectedLogGrowth": 0.0,
                 "expectedEdge": round(expected_edge, 4),
-                "riskBudgetTier": "capital_preservation",
+                "riskBudgetTier": "micro_speculative" if micro_fraction > 0 else "capital_preservation",
                 "rationale": [
-                    "Expected edge turns negative after accounting for win odds and payoff – size should be zero to preserve capital."
+                    "Expected edge turns negative after accounting for win odds and payoff."
+                    if micro_fraction == 0
+                    else "Marginal negative edge, but strong qualitative score warrants micro-allocation for asymmetric upside."
                 ],
                 "inputs": {
                     "winProbability": round(win_probability, 4),
@@ -2223,16 +2353,26 @@ class SmartOptionsScanner:
             allow_relaxed_fallback=allow_relaxed,
         )
 
-        # Apply budget filtering if user specified a daily contract budget
+        # Apply budget filtering - use portfolio % if available, fallback to absolute budget
         pre_budget_count = len(opportunities)
-        if self.user_daily_contract_budget is not None and self.user_daily_contract_budget > 0:
+        max_contract_cost = None
+
+        # SMART FILTERING: Prefer 2% of portfolio rule (retail-safe sizing)
+        if self.user_portfolio_size is not None and self.user_portfolio_size > 0:
+            max_contract_cost = self.user_portfolio_size * 0.02  # 2% rule
+            print(f"💰 Using portfolio-based budget: ${max_contract_cost:.0f} (2% of ${self.user_portfolio_size:.0f})", file=sys.stderr)
+        elif self.user_daily_contract_budget is not None and self.user_daily_contract_budget > 0:
+            max_contract_cost = self.user_daily_contract_budget
+            print(f"💰 Using absolute budget: ${max_contract_cost:.0f}", file=sys.stderr)
+
+        if max_contract_cost is not None:
             opportunities = [
                 opp for opp in opportunities
-                if opp.get("premium", 0) * 100 <= self.user_daily_contract_budget
+                if opp.get("premium", 0) * 100 <= max_contract_cost
             ]
             filtered_count = pre_budget_count - len(opportunities)
             if filtered_count > 0:
-                print(f"💰 Filtered {filtered_count} opportunities over ${self.user_daily_contract_budget:.0f} budget", file=sys.stderr)
+                print(f"💰 Filtered {filtered_count} opportunities over ${max_contract_cost:.0f} budget", file=sys.stderr)
 
         print(f"✅ Found {len(opportunities)} high-scoring opportunities", file=sys.stderr)
 
