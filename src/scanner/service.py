@@ -690,10 +690,32 @@ class SmartOptionsScanner:
             probability_percent = self.estimate_probability_percent(probability_score)
             expected_roi = metrics["expectedMoveRoiPercent"]  # 1 SD move (realistic)
 
-            # TEMPORARILY DISABLED quality filtering to diagnose 0 results issue
-            # Let retail improvements (affordability, payoff penalties) do ALL the filtering
-            quality_setup = True  # Let everything through for now
-            relaxed_setup = False  # Not needed since quality_setup is always True
+            # Quality thresholds - reasonable levels to filter junk
+            # Minimum score 45 (retail improvements give 9 pts for affordability, so this allows cheap good setups)
+            # Minimum 5% probability and 3% expected ROI to avoid lottery tickets
+            quality_setup = (
+                score >= 45  # Reasonable minimum with affordability bonuses
+                and probability_percent >= 5  # Some chance of profit
+                and expected_roi >= 3  # Some expected return
+            )
+
+            # No relaxed setup - either passes quality or doesn't show
+            relaxed_setup = False
+
+            if not quality_setup:
+                continue
+
+            # MONEYNESS FILTER: Block deep ITM options (capital inefficient)
+            stock_price = float(option["stockPrice"])
+            strike = float(option["strike"])
+            if option["type"] == "call":
+                moneyness = (stock_price - strike) / stock_price  # Positive if ITM
+                if moneyness > 0.15:  # More than 15% ITM = too deep
+                    continue
+            else:  # put
+                moneyness = (strike - stock_price) / stock_price  # Positive if ITM
+                if moneyness > 0.15:  # More than 15% ITM = too deep
+                    continue
 
             volume_ratio = float(option["volume"] / max(option["openInterest"], 1))
             spread_pct = (option["ask"] - option["bid"]) / max(option["lastPrice"], 0.01)
@@ -710,13 +732,17 @@ class SmartOptionsScanner:
                 option["symbol"], option, symbol_options_chain, price_history_cache
             )
 
-            # RELAXED DIRECTIONAL FILTER: Only enforce when signals are strong
+            # DIRECTIONAL FILTER: Enforce when there's a clear directional bias
             preferred_option_type = self._preferred_option_type(enhanced_bias, directional_bias)
 
             if preferred_option_type and option["type"] != preferred_option_type:
+                # Get signal strength
                 signal_score = abs(enhanced_bias.get("score", 0)) if enhanced_bias else 0
-                # Only filter if signal is STRONG (score > 30), otherwise allow through
-                if signal_score > 30:
+                confidence = enhanced_bias.get("confidence", 0) if enhanced_bias else 0
+
+                # Filter if signal is moderate or strong (score > 20 OR confidence > 40%)
+                # This prevents conflicting calls/puts on same symbol
+                if signal_score > 20 or confidence > 40:
                     continue
 
             # Calculate historical move context for validation
