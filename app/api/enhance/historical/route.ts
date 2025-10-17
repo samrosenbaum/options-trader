@@ -36,6 +36,38 @@ interface HistoricalResult {
   confidence: "high" | "medium" | "low"
 }
 
+const extractJsonPayload = (rawOutput: string) => {
+  const trimmed = rawOutput.trim()
+
+  if (!trimmed) {
+    throw new Error("No output received from historical analysis script")
+  }
+
+  try {
+    return JSON.parse(trimmed) as HistoricalResult
+  } catch {
+    // fall through and try to recover from noisy stdout
+  }
+
+  const lines = trimmed
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
+
+  for (let i = lines.length - 1; i >= 0; i -= 1) {
+    const line = lines[i]
+    if ((line.startsWith("{") && line.endsWith("}")) || (line.startsWith("[") && line.endsWith("]"))) {
+      try {
+        return JSON.parse(line) as HistoricalResult
+      } catch {
+        // continue trying earlier lines
+      }
+    }
+  }
+
+  throw new Error("Failed to parse JSON payload from historical analysis script output")
+}
+
 export async function POST(request: Request) {
   try {
     const body: HistoricalRequest = await request.json()
@@ -142,11 +174,13 @@ print(json.dumps(output))
         }
 
         try {
-          const parsed = JSON.parse(stdout.trim())
+          const parsed = extractJsonPayload(stdout)
           resolve(parsed)
         } catch (parseError) {
           console.error("Failed to parse historical analysis output:", stdout, parseError)
-          reject(new Error("Failed to parse historical analysis output"))
+          reject(new Error(
+            parseError instanceof Error ? parseError.message : "Failed to parse historical analysis output",
+          ))
         }
       })
     })

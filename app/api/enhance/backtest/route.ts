@@ -18,7 +18,7 @@ interface BacktestRequest {
   stockPrice: number
   premium: number  // Premium per contract (not per share)
   daysToExpiration: number
-  impliedVolatility: number
+  impliedVolatility?: number | null
 }
 
 interface BacktestResult {
@@ -35,6 +35,38 @@ interface BacktestResult {
   }>
   summary: string
   confidence: "high" | "medium" | "low"
+}
+
+const extractJsonPayload = (rawOutput: string) => {
+  const trimmed = rawOutput.trim()
+
+  if (!trimmed) {
+    throw new Error("No output received from backtest script")
+  }
+
+  try {
+    return JSON.parse(trimmed) as BacktestResult
+  } catch {
+    // fall through and try to recover from noisy stdout
+  }
+
+  const lines = trimmed
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
+
+  for (let i = lines.length - 1; i >= 0; i -= 1) {
+    const line = lines[i]
+    if ((line.startsWith("{") && line.endsWith("}")) || (line.startsWith("[") && line.endsWith("]"))) {
+      try {
+        return JSON.parse(line) as BacktestResult
+      } catch {
+        // continue trying earlier lines
+      }
+    }
+  }
+
+  throw new Error("Failed to parse JSON payload from backtest script output")
 }
 
 export async function POST(request: Request) {
@@ -69,6 +101,9 @@ data = json.loads('''${JSON.stringify(body)}''')
 
 # Run backtest with 365 days
 validator = StrategyValidator(lookback_days=365)
+implied_vol = data.get('impliedVolatility')
+if not implied_vol:
+    implied_vol = 0.5
 result = validator.validate_strategy(
     symbol=data['symbol'],
     option_type=data['optionType'],
@@ -76,7 +111,7 @@ result = validator.validate_strategy(
     stock_price=data['stockPrice'],
     premium=data['premium'] / 100,  # Convert to per-share
     days_to_expiration=data.get('daysToExpiration', 30),
-    implied_volatility=data.get('impliedVolatility', 0.5)
+    implied_volatility=implied_vol
 )
 
 if result and result.similar_trades_found >= 5:
@@ -131,11 +166,13 @@ else:
         }
 
         try {
-          const parsed = JSON.parse(stdout.trim())
+          const parsed = extractJsonPayload(stdout)
           resolve(parsed)
         } catch (parseError) {
           console.error("Failed to parse backtest output:", stdout, parseError)
-          reject(new Error("Failed to parse backtest output"))
+          reject(new Error(
+            parseError instanceof Error ? parseError.message : "Failed to parse backtest output",
+          ))
         }
       })
     })
