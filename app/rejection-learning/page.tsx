@@ -22,15 +22,21 @@ interface RejectedOption {
   was_profitable: boolean | null
 }
 
+interface RejectionStats {
+  count: number
+  profitable_count: number
+  profitable_rate: number
+}
+
 interface AnalysisResult {
   total_rejections: number
   analyzed_count: number
   profitable_count: number
   profitable_rate: number
   avg_change_percent: number
-  missed_opportunities: any[]
-  rejection_reason_stats: Record<string, any>
-  filter_stage_stats: Record<string, any>
+  missed_opportunities: unknown[]
+  rejection_reason_stats: Record<string, RejectionStats>
+  filter_stage_stats: Record<string, RejectionStats>
 }
 
 export default function RejectionLearningPage() {
@@ -152,7 +158,7 @@ export default function RejectionLearningPage() {
               <CardContent>
                 <div className="text-sm font-semibold truncate">
                   {Object.entries(analysis.rejection_reason_stats || {})
-                    .sort(([, a]: any, [, b]: any) => b.profitable_rate - a.profitable_rate)[0]?.[0] || "N/A"}
+                    .sort(([, a], [, b]) => b.profitable_rate - a.profitable_rate)[0]?.[0] || "N/A"}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">Highest profitable rate</p>
               </CardContent>
