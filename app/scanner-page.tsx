@@ -5,6 +5,7 @@ import RealTimeProgress from '../components/real-time-progress'
 import { MontyLoading } from '../components/monty-loading'
 import { ScanStatusBanner } from '../components/scan-status-banner'
 import { MarketHoursBanner } from '../components/market-hours-banner'
+import { TradeChat } from '@/components/trade-chat'
 import { createClient } from '@/lib/supabase/client'
 import type { Database } from '@/lib/types/database.types'
 import type { PositionSizingRecommendation } from '@/lib/types/opportunity'
@@ -633,6 +634,7 @@ const renderOpportunityCard = (
       moveThesis: ReactNode
       onAddToWatchlist: () => void
       isOnWatchlist: boolean
+      onOpenChat: () => void
       loadingBacktest: boolean
       enhancedBacktest: EnhancedBacktestResult | null
       onRunBacktest: () => void
@@ -668,6 +670,7 @@ const renderOpportunityCard = (
       moveThesis,
       onAddToWatchlist,
       isOnWatchlist: isAlreadyOnWatchlist,
+      onOpenChat,
       loadingBacktest,
       enhancedBacktest,
       onRunBacktest,
@@ -919,6 +922,17 @@ const renderOpportunityCard = (
 
         <button
           type="button"
+          onClick={onOpenChat}
+          className="inline-flex items-center gap-2 rounded-full border-2 border-blue-600 bg-blue-600 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white shadow-sm transition-colors hover:bg-blue-700 dark:border-blue-500 dark:bg-blue-500 dark:hover:bg-blue-600"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+          </svg>
+          Ask AI
+        </button>
+
+        <button
+          type="button"
           onClick={onToggle}
           className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-700 shadow-sm transition-colors hover:bg-slate-50 hover:text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
         >
@@ -1149,6 +1163,7 @@ export default function ScannerPage({ user }: ScannerPageProps) {
   const [enhancedHistoricals, setEnhancedHistoricals] = useState<Record<string, EnhancedHistoricalResult | null>>({})
   const [loadingHistoricals, setLoadingHistoricals] = useState<Record<string, boolean>>({})
   const [showNotRecommended, setShowNotRecommended] = useState(false)
+  const [chatOpportunity, setChatOpportunity] = useState<Opportunity | null>(null)
   const previousTabRef = useRef<'options' | 'crypto' | null>(null)
   const opportunitiesRef = useRef<Opportunity[]>([])
   const scanModeRef = useRef<FilterMode>('strict')
@@ -3136,6 +3151,7 @@ export default function ScannerPage({ user }: ScannerPageProps) {
                         tradeSummary: opp.tradeSummary,
                       }),
                       isOnWatchlist: isOnWatchlist(cardId),
+                      onOpenChat: () => setChatOpportunity(opp),
                       loadingBacktest: loadingBacktests[cardId] ?? false,
                       enhancedBacktest: enhancedBacktests[cardId] ?? null,
                       onRunBacktest: () => runBacktestEnhancement(opp),
@@ -3213,6 +3229,7 @@ export default function ScannerPage({ user }: ScannerPageProps) {
                           tradeSummary: opp.tradeSummary,
                         }),
                         isOnWatchlist: isOnWatchlist(cardId),
+                        onOpenChat: () => setChatOpportunity(opp),
                         loadingBacktest: loadingBacktests[cardId] ?? false,
                         enhancedBacktest: enhancedBacktests[cardId] ?? null,
                         onRunBacktest: () => runBacktestEnhancement(opp),
@@ -3385,6 +3402,15 @@ export default function ScannerPage({ user }: ScannerPageProps) {
           </div>
         )}
       </div>
+
+      {/* AI Trade Chat Modal */}
+      {chatOpportunity && (
+        <TradeChat
+          opportunity={chatOpportunity}
+          isOpen={chatOpportunity !== null}
+          onClose={() => setChatOpportunity(null)}
+        />
+      )}
     </div>
   )
 }
