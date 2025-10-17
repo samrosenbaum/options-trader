@@ -1,10 +1,41 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import type { Opportunity } from '@/lib/types/opportunity'
 
 interface TradeChatProps {
-  opportunity: Opportunity
+  opportunity: {
+    symbol: string
+    optionType: string
+    strike: number
+    premium: number
+    stockPrice: number
+    expiration: string
+    score: number
+    probabilityOfProfit: number | null
+    potentialReturn: number
+    maxReturn: number
+    riskLevel: string
+    directionalBias?: {
+      direction: string
+      confidence?: number
+      score?: number
+    } | null
+    positionSizing?: {
+      recommendedFraction: number
+      expectedEdge?: number
+      kellyFraction: number
+      riskBudgetTier: string
+      rationale: string[]
+    } | null
+    greeks?: {
+      delta: number
+      gamma: number
+      theta: number
+      vega: number
+    }
+    tradeSummary?: string
+    daysToExpiration: number
+  }
   isOpen: boolean
   onClose: () => void
 }
@@ -58,7 +89,7 @@ export function TradeChat({ opportunity, isOpen, onClose }: TradeChatProps) {
             expiration: opportunity.expiration,
             score: opportunity.score,
             probabilityOfProfit: opportunity.probabilityOfProfit,
-            expectedMoveReturn: opportunity.expectedMoveReturn,
+            potentialReturn: opportunity.potentialReturn,
             maxReturn: opportunity.maxReturn,
             riskLevel: opportunity.riskLevel,
             directionalBias: opportunity.directionalBias,
@@ -107,7 +138,7 @@ export function TradeChat({ opportunity, isOpen, onClose }: TradeChatProps) {
                     return newMessages
                   })
                 }
-              } catch (e) {
+              } catch {
                 // Ignore JSON parse errors
               }
             }
@@ -181,13 +212,13 @@ export function TradeChat({ opportunity, isOpen, onClose }: TradeChatProps) {
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
           {messages.length === 0 && (
             <div className="text-center text-slate-500 dark:text-slate-400">
-              <p className="mb-2">👋 Hi! I'm here to help you analyze this trade.</p>
+              <p className="mb-2">👋 Hi! I&apos;m here to help you analyze this trade.</p>
               <p className="text-sm">Ask me anything:</p>
               <ul className="mt-4 space-y-2 text-sm text-left max-w-md mx-auto">
-                <li>• "Why is the expected edge negative?"</li>
-                <li>• "What needs to happen for this to profit?"</li>
-                <li>• "Should I take this trade?"</li>
-                <li>• "What are the biggest risks?"</li>
+                <li>• &ldquo;Why is the expected edge negative?&rdquo;</li>
+                <li>• &ldquo;What needs to happen for this to profit?&rdquo;</li>
+                <li>• &ldquo;Should I take this trade?&rdquo;</li>
+                <li>• &ldquo;What are the biggest risks?&rdquo;</li>
               </ul>
             </div>
           )}

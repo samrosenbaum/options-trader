@@ -19,22 +19,22 @@ interface ChatRequest {
     stockPrice: number
     expiration: string
     score: number
-    probabilityOfProfit: number
-    expectedMoveReturn: number
+    probabilityOfProfit: number | null
+    potentialReturn: number
     maxReturn: number
     riskLevel: string
     directionalBias?: {
       direction: string
-      confidence: number
-      score: number
-    }
+      confidence?: number
+      score?: number
+    } | null
     positionSizing?: {
       recommendedFraction: number
-      expectedEdge: number
+      expectedEdge?: number
       kellyFraction: number
       riskBudgetTier: string
       rationale: string[]
-    }
+    } | null
     greeks?: {
       delta: number
       gamma: number
@@ -42,7 +42,7 @@ interface ChatRequest {
       vega: number
     }
     tradeSummary?: string
-    daysToExpiration?: number
+    daysToExpiration: number
   }
 }
 
@@ -78,18 +78,17 @@ You are a helpful options trading advisor analyzing this specific trade opportun
 
 **Scoring & Probability:**
 - Scanner Score: ${opportunity.score}/100
-- Probability of Profit: ${opportunity.probabilityOfProfit}%
-- Expected Move Return: ${opportunity.expectedMoveReturn}%
+- Probability of Profit: ${opportunity.probabilityOfProfit ?? "N/A"}%
+- Potential Return: ${opportunity.potentialReturn}%
 - Max Potential Return: ${opportunity.maxReturn}%
 - Risk Level: ${opportunity.riskLevel}
 
 ${opportunity.directionalBias ? `**Directional Analysis:**
-- Direction: ${opportunity.directionalBias.direction} (${opportunity.directionalBias.confidence}% confidence)
-- Signal Score: ${opportunity.directionalBias.score}` : ""}
+- Direction: ${opportunity.directionalBias.direction}${opportunity.directionalBias.confidence ? ` (${opportunity.directionalBias.confidence}% confidence)` : ''}${opportunity.directionalBias.score ? `\n- Signal Score: ${opportunity.directionalBias.score}` : ''}` : ""}
 
 ${opportunity.positionSizing ? `**Position Sizing (Kelly Criterion):**
 - Recommended Allocation: ${(opportunity.positionSizing.recommendedFraction * 100).toFixed(2)}%
-- Expected Edge: ${(opportunity.positionSizing.expectedEdge * 100).toFixed(2)}%
+${opportunity.positionSizing.expectedEdge ? `- Expected Edge: ${(opportunity.positionSizing.expectedEdge * 100).toFixed(2)}%` : ''}
 - Kelly Fraction: ${(opportunity.positionSizing.kellyFraction * 100).toFixed(2)}%
 - Risk Tier: ${opportunity.positionSizing.riskBudgetTier}
 - Rationale: ${opportunity.positionSizing.rationale.join(" ")}` : ""}
