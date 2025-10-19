@@ -3,7 +3,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef, type ReactNode } from 'react'
 import RealTimeProgress from '../components/real-time-progress'
 import { MontyLoading } from '../components/monty-loading'
-import { ScanStatusBanner } from '../components/scan-status-banner'
 import { MarketHoursBanner } from '../components/market-hours-banner'
 import { TradeChat } from '@/components/trade-chat'
 import { createClient } from '@/lib/supabase/client'
@@ -208,6 +207,49 @@ const extractStringArray = (record: Record<string, unknown> | null | undefined, 
     .filter((item): item is string => Boolean(item))
 }
 
+const normalizeSymbolList = (symbols: string[]) => {
+  const seen = new Set<string>()
+  const normalized: string[] = []
+
+  symbols.forEach((symbol) => {
+    const cleaned = symbol.trim().toUpperCase()
+    if (!cleaned || seen.has(cleaned)) {
+      return
+    }
+    seen.add(cleaned)
+    normalized.push(cleaned)
+  })
+
+  return normalized
+}
+
+const renderSymbolChips = (symbols: string[], limit = 12): ReactNode => {
+  if (!symbols.length) {
+    return <p className="text-sm text-slate-500 dark:text-slate-400">No symbols available.</p>
+  }
+
+  const displaySymbols = symbols.slice(0, limit)
+  const remainder = Math.max(symbols.length - displaySymbols.length, 0)
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      {displaySymbols.map(symbol => (
+        <span
+          key={symbol}
+          className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+        >
+          {symbol}
+        </span>
+      ))}
+      {remainder > 0 && (
+        <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-700 dark:text-slate-200">
+          +{remainder} more
+        </span>
+      )}
+    </div>
+  )
+}
+
 const getRiskBudgetMeta = (tier?: PositionSizingRecommendation['riskBudgetTier'] | string | null) => {
   switch (tier) {
     case 'aggressive':
@@ -338,6 +380,14 @@ interface RelaxedScanMetadata {
   selectedCount?: number
 }
 
+interface RotationStateMetadata {
+  mode?: string
+  position?: number
+  order?: string[]
+  seed?: number
+  [key: string]: unknown
+}
+
 interface ScanMetadata {
   fallback?: boolean
   fallbackReason?: string
@@ -351,6 +401,7 @@ interface ScanMetadata {
   debugInfo?: Record<string, unknown>
   filterMode?: FilterMode
   relaxedScan?: RelaxedScanMetadata | null
+  rotationState?: RotationStateMetadata | Record<string, unknown> | null
   [key: string]: unknown
 }
 
@@ -1571,6 +1622,77 @@ export default function ScannerPage({ user }: ScannerPageProps) {
     const parsed = new Date(cacheTimestampRaw)
     return Number.isNaN(parsed.getTime()) ? null : parsed
   })()
+
+  const symbolUniverseStatus = useMemo(() => {
+    const scanned = normalizeSymbolList(extractStringArray(scanMetadata ?? null, 'symbols'))
+    const requested = normalizeSymbolList(extractStringArray(scanMetadata ?? null, 'requestedSymbols'))
+    const scannedSet = new Set<string>(scanned)
+    const outstanding = requested.filter(symbol => !scannedSet.has(symbol))
+
+    let rotationInfo: {
+      modeLabel: string | null
+      total: number | null
+      upcoming: string[]
+      remainingCount: number | null
+    } | null = null
+
+    const rotationRaw = scanMetadata?.rotationState
+    if (rotationRaw && typeof rotationRaw === 'object') {
+      const record = rotationRaw as Record<string, unknown>
+      const orderRaw = Array.isArray(record['order']) ? (record['order'] as unknown[]) : []
+      const normalizedOrder = normalizeSymbolList(
+        orderRaw
+          .map(item => (typeof item === 'string' ? item : null))
+          .filter((item): item is string => Boolean(item)),
+      )
+
+      if (normalizedOrder.length > 0) {
+        const rawPosition =
+          typeof record['position'] === 'number' && Number.isFinite(record['position'] as number)
+            ? (record['position'] as number)
+            : 0
+        const sanitizedPosition = ((Math.floor(rawPosition) % normalizedOrder.length) + normalizedOrder.length) % normalizedOrder.length
+        const lookahead = Math.min(normalizedOrder.length, 12)
+        const upcoming: string[] = []
+        for (let index = 0; index < lookahead; index += 1) {
+          const pointer = (sanitizedPosition + index) % normalizedOrder.length
+          upcoming.push(normalizedOrder[pointer])
+        }
+
+        const modeRaw = typeof record['mode'] === 'string' ? (record['mode'] as string).toLowerCase() : null
+        const modeLabel = (() => {
+          if (!modeRaw) {
+            return null
+          }
+          if (modeRaw === 'random') {
+            return 'Random rotation'
+          }
+          if (modeRaw === 'round_robin') {
+            return 'Round robin'
+          }
+          return modeRaw.charAt(0).toUpperCase() + modeRaw.slice(1)
+        })()
+
+        const remainingCount = normalizedOrder.length > 0
+          ? Math.max(normalizedOrder.length - requested.length, 0)
+          : null
+
+        rotationInfo = {
+          modeLabel,
+          total: normalizedOrder.length,
+          upcoming,
+          remainingCount,
+        }
+      }
+    }
+
+    return {
+      scanned,
+      requested,
+      outstanding,
+      rotation: rotationInfo,
+    }
+  }, [scanMetadata])
 
   const isRelaxedMode = scanMode === 'relaxed'
   const relaxedSuggestionAvailable =
@@ -3115,6 +3237,102 @@ export default function ScannerPage({ user }: ScannerPageProps) {
             </div>
           </div>
         )}
+
+        {activeTab === 'options' &&
+          !isLoading &&
+          (symbolUniverseStatus.scanned.length > 0 ||
+            symbolUniverseStatus.requested.length > 0 ||
+            (symbolUniverseStatus.rotation?.upcoming.length ?? 0) > 0) && (
+            <div className="mb-8 rounded-2xl border border-slate-200 bg-white px-6 py-6 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
+              <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Scan universe visibility</h3>
+                  <p className="text-sm text-slate-600 dark:text-slate-300">
+                    Review which symbols were covered this run and see what&apos;s queued for the next scan.
+                  </p>
+                </div>
+                {symbolUniverseStatus.rotation?.modeLabel && (
+                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    Rotation mode: {symbolUniverseStatus.rotation.modeLabel}
+                    {typeof symbolUniverseStatus.rotation.total === 'number' && symbolUniverseStatus.rotation.total > 0 && (
+                      <span>
+                        {' '}
+                        • {symbolUniverseStatus.rotation.total.toLocaleString()} symbols
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-5 grid gap-6 lg:grid-cols-2">
+                <div className="space-y-4">
+                  {symbolUniverseStatus.scanned.length > 0 && (
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        Scanned this run ({symbolUniverseStatus.scanned.length})
+                      </p>
+                      <div className="mt-2">{renderSymbolChips(symbolUniverseStatus.scanned, 18)}</div>
+                    </div>
+                  )}
+
+                  {symbolUniverseStatus.requested.length > 0 && (
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        Requested batch ({symbolUniverseStatus.requested.length})
+                      </p>
+                      <div className="mt-2">{renderSymbolChips(symbolUniverseStatus.requested, 18)}</div>
+                    </div>
+                  )}
+
+                  {symbolUniverseStatus.outstanding.length > 0 && (
+                    <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 dark:border-amber-500/40 dark:bg-amber-500/10">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-200">
+                        Outstanding in this batch ({symbolUniverseStatus.outstanding.length})
+                      </p>
+                      <div className="mt-2">{renderSymbolChips(symbolUniverseStatus.outstanding, 12)}</div>
+                      <p className="mt-2 text-xs text-amber-700/80 dark:text-amber-100/70">
+                        Requested symbols that didn&apos;t return results in this pass.
+                      </p>
+                    </div>
+                  )}
+
+                  {symbolUniverseStatus.scanned.length === 0 &&
+                    symbolUniverseStatus.requested.length === 0 && (
+                      <p className="text-sm text-slate-500 dark:text-slate-400">
+                        No symbol metadata was reported for this scan.
+                      </p>
+                    )}
+                </div>
+
+                <div className="space-y-4">
+                  {symbolUniverseStatus.rotation?.upcoming.length ? (
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        Next in rotation ({symbolUniverseStatus.rotation.upcoming.length}
+                        {typeof symbolUniverseStatus.rotation.total === 'number'
+                          ? ` of ${symbolUniverseStatus.rotation.total.toLocaleString()}`
+                          : ''}
+                        )
+                      </p>
+                      <div className="mt-2">{renderSymbolChips(symbolUniverseStatus.rotation.upcoming, 15)}</div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                      Rotation queue details will appear once the scanner reports its universe state.
+                    </p>
+                  )}
+
+                  {typeof symbolUniverseStatus.rotation?.remainingCount === 'number' && (
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      {symbolUniverseStatus.rotation.remainingCount > 0
+                        ? `${symbolUniverseStatus.rotation.remainingCount.toLocaleString()} symbols remain in the rotation after this batch.`
+                        : 'The rotation is ready to start over on the next scan.'}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
         {isRelaxedMode && !isLoading && !fallbackActive && (
           <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-6 py-4 text-left text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100">
