@@ -1313,7 +1313,8 @@ export default function ScannerPage({ user }: ScannerPageProps) {
           optionType: opp.optionType,
           strike: opp.strike,
           stockPrice: opp.stockPrice,
-          daysToExpiration: opp.daysToExpiration,
+          premium: opp.premium,
+          expiration: opp.expiration,
         }),
       })
 
