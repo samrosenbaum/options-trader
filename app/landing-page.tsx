@@ -30,7 +30,7 @@ export default function LandingPage() {
           <div className="flex flex-col justify-center">
             <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-emerald-500/40 bg-white/5 px-4 py-1 text-sm text-emerald-200">
               <span className="h-2 w-2 rounded-full bg-emerald-400"></span>
-              They must run
+              They trust us
             </div>
             <h1 className="text-4xl font-semibold leading-tight text-white sm:text-5xl lg:text-6xl">
               Your Personal
