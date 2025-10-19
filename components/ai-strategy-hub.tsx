@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import useSWR from "swr";
 import {
   Brain,
@@ -10,9 +11,12 @@ import {
   Sparkles,
   TrendingUp,
   Waves,
+  Settings as SettingsIcon,
+  AlertCircle,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -39,6 +43,14 @@ import type {
 
 interface AIStrategyHubProps {
   userEmail?: string;
+}
+
+interface UserSettings {
+  user_name?: string;
+  broker?: string;
+  trading_strategy?: string;
+  portfolio_size?: number;
+  daily_contract_budget?: number;
 }
 
 const fetcher = async (url: string) => {
@@ -88,8 +100,12 @@ function toneToStatus(tone: MarketRegimeTone): BuildRequirement["status"] {
 }
 
 export function AIStrategyHub({ userEmail }: AIStrategyHubProps) {
+  const router = useRouter();
   const [selectedRisk, setSelectedRisk] = useState<RiskProfileKey>("balanced");
   const [broker, setBroker] = useState<BrokerId>("robinhood");
+  const [userSettings, setUserSettings] = useState<UserSettings | null>(null);
+  const [settingsLoading, setSettingsLoading] = useState(true);
+  
   const { data, error, isLoading, mutate } = useSWR<AIStrategyHubData>(
     "/api/ai-strategy-hub",
     fetcher,
@@ -97,6 +113,35 @@ export function AIStrategyHub({ userEmail }: AIStrategyHubProps) {
       refreshInterval: 60_000,
     },
   );
+
+  // Fetch user settings on mount
+  useEffect(() => {
+    const fetchUserSettings = async () => {
+      try {
+        const response = await fetch("/api/user-settings");
+        const data = await response.json();
+        setUserSettings(data.settings);
+        
+        // Pre-fill selections from settings if available
+        if (data.settings?.broker) {
+          setBroker(data.settings.broker as BrokerId);
+        }
+        if (data.settings?.trading_strategy) {
+          setSelectedRisk(data.settings.trading_strategy as RiskProfileKey);
+        }
+      } catch (error) {
+        console.error("Failed to fetch user settings:", error);
+      } finally {
+        setSettingsLoading(false);
+      }
+    };
+    
+    fetchUserSettings();
+  }, []);
+
+  // Check if user has completed required settings
+  const hasCompletedSettings = userSettings?.user_name && userSettings?.broker && userSettings?.trading_strategy;
+  const shouldShowPrompt = !settingsLoading && !hasCompletedSettings;
 
   const riskProfiles = useMemo(
     () => data?.riskProfiles ?? [],
@@ -193,6 +238,32 @@ export function AIStrategyHub({ userEmail }: AIStrategyHubProps) {
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-10 space-y-10">
+      {/* Settings Prompt Banner */}
+      {shouldShowPrompt && (
+        <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+          <CardHeader>
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="h-6 w-6 text-blue-600 mt-1 flex-shrink-0" />
+                <div>
+                  <CardTitle className="text-blue-900">Complete Your Profile</CardTitle>
+                  <CardDescription className="text-blue-700 mt-1">
+                    To get personalized trading strategies curated by Monty, please complete your profile settings.
+                  </CardDescription>
+                </div>
+              </div>
+              <Button
+                onClick={() => router.push("/settings")}
+                className="bg-blue-600 hover:bg-blue-700 text-white flex-shrink-0"
+              >
+                <SettingsIcon className="h-4 w-4 mr-2" />
+                Go to Settings
+              </Button>
+            </div>
+          </CardHeader>
+        </Card>
+      )}
+
       <header className="space-y-6">
         <Badge className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-sm">
           <Sparkles className="h-3.5 w-3.5" /> Today&apos;s Plays
@@ -293,7 +364,6 @@ export function AIStrategyHub({ userEmail }: AIStrategyHubProps) {
           <p className="text-sm text-slate-600 mt-1">
             Targeted trade structures mapped to your current risk mode.
           </p>
-          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -364,7 +434,6 @@ export function AIStrategyHub({ userEmail }: AIStrategyHubProps) {
             Let AI interpret volatility, flow, and macro vibes so you know
             which playbooks to lean into.
           </p>
-          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
