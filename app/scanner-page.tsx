@@ -775,10 +775,10 @@ Liquidity: ${((opp as Record<string, unknown>).liquidityScore as number | undefi
         </div>
 
         <div className="text-right space-y-1 ml-4">
-          <div className="text-3xl font-bold text-slate-900 dark:text-white">
+          <div className="text-3xl font-bold text-white">
             ${opp.premium.toFixed(2)}
           </div>
-          <div className="text-sm text-slate-500 dark:text-slate-400">Premium</div>
+          <div className="text-sm text-emerald-100/70">Premium</div>
         </div>
       </div>
 
