@@ -100,10 +100,14 @@ from src.backtesting.strategy_validator import StrategyValidator
 data = json.loads('''${JSON.stringify(body)}''')
 
 # Run backtest with 365 days
+print(f"Starting backtest for {data['symbol']}", file=sys.stderr)
 validator = StrategyValidator(lookback_days=365)
 implied_vol = data.get('impliedVolatility')
 if not implied_vol:
     implied_vol = 0.5
+    print(f"No IV provided, using default 0.5", file=sys.stderr)
+
+print(f"Validating: {data['optionType']} strike=${data['strike']} stock=${data['stockPrice']} premium=${data['premium']}", file=sys.stderr)
 result = validator.validate_strategy(
     symbol=data['symbol'],
     option_type=data['optionType'],
@@ -114,17 +118,22 @@ result = validator.validate_strategy(
     implied_volatility=implied_vol
 )
 
+if result:
+    print(f"Backtest complete: found {result.similar_trades_found} similar trades", file=sys.stderr)
+else:
+    print(f"Backtest returned None - likely no historical price data available", file=sys.stderr)
+
 if result and result.similar_trades_found >= 5:
     output = {
         'symbol': data['symbol'],
         'winRate': result.win_rate * 100,
-        'avgReturn': result.avg_return * 100,
-        'maxDrawdown': result.max_drawdown * 100,
-        'sharpeRatio': result.sharpe_ratio,
+        'avgReturn': result.avg_return_pct * 100,
+        'maxDrawdown': result.max_drawdown_pct * 100,
+        'sharpeRatio': result.sharpe_ratio if result.sharpe_ratio else 0,
         'similarTradesFound': result.similar_trades_found,
-        'historicalReturns': result.historical_returns[:20] if hasattr(result, 'historical_returns') else [],
+        'historicalReturns': result.recent_examples[:20] if hasattr(result, 'recent_examples') else [],
         'summary': f"{result.win_rate*100:.1f}% win rate over {result.similar_trades_found} similar trades in past 365 days",
-        'confidence': 'high' if result.similar_trades_found >= 50 else 'medium' if result.similar_trades_found >= 20 else 'low'
+        'confidence': result.sample_size_quality
     }
     print(json.dumps(output))
 else:
@@ -155,21 +164,39 @@ else:
       })
 
       python.stderr.on("data", (data) => {
-        stderr += data.toString()
+        const chunk = data.toString()
+        stderr += chunk
+        // Log Python errors in real-time
+        console.error("[Backtest Python stderr]:", chunk)
       })
 
       python.on("close", (code) => {
         if (code !== 0) {
           console.error("Backtest error:", stderr)
+          console.error("Backtest request body:", JSON.stringify(body))
           reject(new Error(`Backtest failed: ${stderr}`))
           return
         }
 
         try {
           const parsed = extractJsonPayload(stdout)
+
+          // Log if we got 0 similar trades for debugging
+          if (parsed.similarTradesFound === 0) {
+            console.warn("[Backtest] Found 0 similar trades for:", {
+              symbol: body.symbol,
+              optionType: body.optionType,
+              strike: body.strike,
+              stockPrice: body.stockPrice,
+              premium: body.premium,
+              daysToExpiration: body.daysToExpiration
+            })
+            console.log("[Backtest] Python stdout:", stdout)
+          }
+
           resolve(parsed)
         } catch (parseError) {
-          console.error("Failed to parse backtest output:", stdout, parseError)
+          console.error("Failed to parse backtest output:", stdout)
           reject(new Error(
             parseError instanceof Error ? parseError.message : "Failed to parse backtest output",
           ))
