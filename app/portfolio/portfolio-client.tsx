@@ -172,21 +172,29 @@ export default function PortfolioClient({
   }
 
   const handleRefreshPrices = async () => {
+    console.log('[Portfolio] Starting price refresh...')
     setIsRefreshing(true)
     setRefreshMessage(null)
 
     try {
+      console.log('[Portfolio] Calling /api/portfolio/update-prices')
       const response = await fetch('/api/portfolio/update-prices', {
         method: 'POST',
       })
 
+      console.log('[Portfolio] Response status:', response.status)
+
       if (!response.ok) {
-        throw new Error('Failed to update prices')
+        const errorText = await response.text()
+        console.error('[Portfolio] API error:', errorText)
+        throw new Error(`Failed to update prices: ${response.status}`)
       }
 
       const result = await response.json()
+      console.log('[Portfolio] Update result:', result)
 
       // Refresh positions from database
+      console.log('[Portfolio] Fetching updated positions from Supabase')
       const { data: updatedPositions, error } = await supabase
         .from('positions')
         .select('*')
@@ -194,23 +202,29 @@ export default function PortfolioClient({
         .order('entry_date', { ascending: false })
 
       if (error) {
+        console.error('[Portfolio] Supabase error:', error)
         throw new Error('Failed to fetch updated positions')
       }
 
+      console.log('[Portfolio] Got', updatedPositions?.length, 'positions from database')
       setPositions(updatedPositions || [])
-      setRefreshMessage(
-        `✓ Updated ${result.updated} of ${result.total} positions`
-      )
 
-      // Clear message after 3 seconds
-      setTimeout(() => setRefreshMessage(null), 3000)
+      const message = `✓ Updated ${result.updated || 0} of ${result.total || 0} positions`
+      console.log('[Portfolio]', message)
+      setRefreshMessage(message)
+
+      // Clear message after 5 seconds
+      setTimeout(() => setRefreshMessage(null), 5000)
     } catch (error) {
-      console.error('Error refreshing prices:', error)
-      setRefreshMessage(
-        `✗ Error: ${error instanceof Error ? error.message : 'Failed to update prices'}`
-      )
+      console.error('[Portfolio] Error refreshing prices:', error)
+      const errorMsg = `✗ Error: ${error instanceof Error ? error.message : 'Failed to update prices'}`
+      setRefreshMessage(errorMsg)
+
+      // Keep error message visible longer
+      setTimeout(() => setRefreshMessage(null), 10000)
     } finally {
       setIsRefreshing(false)
+      console.log('[Portfolio] Refresh complete')
     }
   }
 

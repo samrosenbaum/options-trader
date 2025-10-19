@@ -109,6 +109,9 @@ days_to_exp = (exp_date - datetime.now()).days
 # Determine direction
 direction = "up" if data['optionType'].lower() == "call" else "down"
 
+print(f"Starting historical analysis for {data['symbol']}", file=sys.stderr)
+print(f"Need {breakeven_move_pct:.1f}% {direction} move in {days_to_exp} days", file=sys.stderr)
+
 # Analyze historical moves
 analyzer = HistoricalMoveAnalyzer(db_path="data/historical_moves.db", lookback_days=365)
 context = analyzer.get_move_context(
@@ -118,6 +121,11 @@ context = analyzer.get_move_context(
     direction=direction,
     current_price=data['stockPrice']
 )
+
+if context:
+    print(f"Historical analysis found: available={context.get('available')}, sample_size={context.get('sample_size', 0)}", file=sys.stderr)
+else:
+    print(f"Historical analysis returned None for {data['symbol']}", file=sys.stderr)
 
 if context and context.get('available'):
     frequency = context.get('frequency', 0)
