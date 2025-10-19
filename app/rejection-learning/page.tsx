@@ -116,7 +116,7 @@ export default function RejectionLearningPage() {
 
         {analysis && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <Card>
+            <Card className="modern-card">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Total Rejected</CardTitle>
               </CardHeader>
@@ -126,7 +126,7 @@ export default function RejectionLearningPage() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="modern-card">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Became Profitable</CardTitle>
               </CardHeader>
@@ -138,7 +138,7 @@ export default function RejectionLearningPage() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="modern-card">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Avg Change</CardTitle>
               </CardHeader>
@@ -151,7 +151,7 @@ export default function RejectionLearningPage() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="modern-card">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Top Miss Reason</CardTitle>
               </CardHeader>
@@ -166,7 +166,7 @@ export default function RejectionLearningPage() {
           </div>
         )}
 
-        <Card>
+        <Card className="modern-card">
           <CardHeader>
             <CardTitle>Rejected Options</CardTitle>
             <CardDescription>

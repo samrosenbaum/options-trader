@@ -94,6 +94,81 @@ body {
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
+/* 2025 Modern Card Styles */
+@keyframes card-shimmer {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+@keyframes float-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modern-card {
+  @apply relative overflow-hidden rounded-xl border border-slate-200/60 bg-white/90 backdrop-blur-xl transition-all duration-300;
+  @apply hover:shadow-2xl hover:shadow-emerald-500/10 hover:-translate-y-1;
+  @apply dark:border-slate-700/50 dark:bg-slate-900/80;
+  animation: float-in 0.5s ease-out;
+
+  /* Grain texture for depth */
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(0, 0, 0, 0.03) 1px, transparent 0);
+  background-size: 20px 20px;
+}
+
+.modern-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
+  transition: left 0.5s;
+}
+
+.modern-card:hover::before {
+  left: 100%;
+}
+
+.glass-card {
+  @apply relative rounded-2xl border border-white/20 bg-white/10 backdrop-blur-2xl;
+  @apply shadow-xl shadow-black/5 transition-all duration-300;
+  @apply hover:bg-white/15 hover:shadow-2xl hover:shadow-emerald-500/20 hover:scale-[1.02];
+  @apply dark:border-white/10 dark:bg-slate-900/40;
+}
+
+.metallic-accent {
+  @apply bg-gradient-to-r from-slate-200 via-slate-300 to-slate-200 bg-clip-text text-transparent;
+  @apply dark:from-slate-400 dark:via-slate-200 dark:to-slate-400;
+  background-size: 200% auto;
+  animation: card-shimmer 3s linear infinite;
+}
+
+.premium-badge {
+  @apply relative inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium;
+  @apply border border-emerald-200/50 bg-gradient-to-r from-emerald-50 to-emerald-100/50;
+  @apply text-emerald-700 shadow-sm transition-all duration-300;
+  @apply hover:shadow-md hover:shadow-emerald-500/20 hover:scale-105;
+  @apply dark:border-emerald-500/30 dark:from-emerald-950/50 dark:to-emerald-900/30 dark:text-emerald-300;
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 6px;

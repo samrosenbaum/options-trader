@@ -686,12 +686,12 @@ const renderOpportunityCard = (
   return (
     <div
       key={`${opp.symbol}-${opp.strike}-${opp.expiration}-${opp.optionType}`}
-      className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 hover:shadow-lg transition-all"
+      className="modern-card p-6"
     >
       <div className="flex items-start justify-between gap-4 mb-4">
         <div className="space-y-3 flex-1">
           <div className="flex items-center gap-3 flex-wrap">
-            <div className="text-3xl font-bold text-slate-900 dark:text-white">{opp.symbol}</div>
+            <div className="text-3xl font-bold metallic-accent">{opp.symbol}</div>
             <div className="px-3 py-1 bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 rounded-lg text-sm font-bold">
               {opp.optionType.toUpperCase()}
             </div>

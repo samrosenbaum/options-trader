@@ -59,8 +59,7 @@ function getBrokerNote(notes: BrokerNoteMap, broker: BrokerId) {
   return notes[broker] ?? notes.default;
 }
 
-const cardSurfaceClasses =
-  "border-slate-200/80 bg-white/95 text-slate-800 shadow-lg shadow-slate-900/5 backdrop-blur supports-[backdrop-filter]:bg-white/70 dark:border-slate-700/60 dark:bg-slate-900/80 dark:text-slate-100";
+const cardSurfaceClasses = "modern-card";
 
 function getStatusBadgeStyles(status: BuildRequirement["status"]) {
   switch (status) {
@@ -195,10 +194,7 @@ export function AIStrategyHub({ userEmail }: AIStrategyHubProps) {
   return (
     <div className="max-w-7xl mx-auto px-6 py-10 space-y-10">
       <header className="space-y-4">
-        <Badge
-          variant="secondary"
-          className="text-emerald-600 bg-emerald-100 border-emerald-200"
-        >
+        <Badge className="premium-badge">
           <Sparkles className="h-3.5 w-3.5" /> Today&apos;s Plays
         </Badge>
         <div className="flex flex-col gap-3">
