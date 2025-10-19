@@ -16,7 +16,45 @@ from src.math.greeks import GreeksCalculator
 CONTRACT_MULTIPLIER = 100
 
 
-def fetch_option_data(symbol: str, strike: float, expiration: str, option_type: str) -> Optional[Dict[str, Any]]:
+def parse_expiration_date(expiration: Any) -> date:
+    """Parse various expiration formats stored in the database."""
+    if isinstance(expiration, date) and not isinstance(expiration, datetime):
+        return expiration
+
+    if isinstance(expiration, datetime):
+        return expiration.date()
+
+    if not isinstance(expiration, str):
+        raise ValueError(f"Unsupported expiration type: {type(expiration)!r}")
+
+    text = expiration.strip()
+    if not text:
+        raise ValueError("Empty expiration string")
+
+    normalized = text.replace('Z', '+00:00')
+
+    try:
+        return datetime.fromisoformat(normalized).date()
+    except ValueError:
+        pass
+
+    for candidate in (text.split('T')[0], text.split(' ')[0]):
+        if candidate != text:
+            try:
+                return datetime.strptime(candidate, '%Y-%m-%d').date()
+            except ValueError:
+                continue
+
+    for fmt in ('%Y-%m-%d', '%m/%d/%Y', '%m/%d/%y'):
+        try:
+            return datetime.strptime(text, fmt).date()
+        except ValueError:
+            continue
+
+    raise ValueError(f"Could not parse expiration date: {expiration}")
+
+
+def fetch_option_data(symbol: str, strike: float, expiration: Any, option_type: str) -> Optional[Dict[str, Any]]:
     """
     Fetch current price and data for a specific option contract.
 
@@ -41,7 +79,7 @@ def fetch_option_data(symbol: str, strike: float, expiration: str, option_type: 
         stock_price = float(stock_info['Close'].iloc[-1])
 
         # Convert expiration date to yfinance format (YYYY-MM-DD)
-        exp_date = datetime.strptime(expiration, '%Y-%m-%d').date()
+        exp_date = parse_expiration_date(expiration)
 
         # Get options chain for expiration date
         try:
@@ -173,7 +211,7 @@ def calculate_exit_signal(position: Dict[str, Any], current_data: Dict[str, Any]
     theta = current_data.get('theta', 0)
 
     # Calculate days to expiration
-    expiration_date = datetime.strptime(position['expiration'], '%Y-%m-%d').date()
+    expiration_date = parse_expiration_date(position['expiration'])
     dte = (expiration_date - date.today()).days
 
     # 1. Profit Target (50% gain)
