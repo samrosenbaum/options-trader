@@ -18,6 +18,7 @@ interface RejectedOption {
   rejection_reason: string
   filter_stage: string
   rejected_at: string
+  stock_price?: number
   option_price: number
   volume: number
   open_interest: number
@@ -32,15 +33,33 @@ interface RejectionStats {
   profitable_rate: number
 }
 
+interface RejectionReasonStats extends RejectionStats {
+  avg_change: number
+}
+
+interface MissedOpportunity {
+  option: RejectedOption & {
+    stock_price: number
+    probability_score: number | null
+    risk_adjusted_score: number | null
+    quality_score: number | null
+  }
+  profit_percent: number
+  what_we_missed: string
+  pattern_tags: string[]
+}
+
 interface AnalysisResult {
   total_rejections: number
   analyzed_count: number
   profitable_count: number
   profitable_rate: number
   avg_change_percent: number
-  missed_opportunities: unknown[]
-  rejection_reason_stats: Record<string, RejectionStats>
+  missed_opportunities: MissedOpportunity[]
+  rejection_reason_stats: Record<string, RejectionReasonStats>
   filter_stage_stats: Record<string, RejectionStats>
+  recommendations: string[]
+  raw: unknown
 }
 
 export default function RejectionLearningPage() {
@@ -223,6 +242,88 @@ export default function RejectionLearningPage() {
               </CardContent>
             </Card>
           </div>
+        )}
+
+        {analysis && analysis.recommendations.length > 0 && (
+          <Card className="modern-card mb-6">
+            <CardHeader>
+              <CardTitle>Filter Tuning Ideas</CardTitle>
+              <CardDescription>Suggestions based on recent rejection outcomes</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ul className="list-disc list-inside space-y-2 text-sm text-muted-foreground">
+                {analysis.recommendations.map((recommendation, idx) => (
+                  <li key={idx} className="text-foreground">{recommendation}</li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        )}
+
+        {analysis && analysis.missed_opportunities.length > 0 && (
+          <Card className="modern-card mb-6">
+            <CardHeader>
+              <CardTitle>Recent Missed Opportunities</CardTitle>
+              <CardDescription>Top profitable rejections from the analysis window</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left p-3 text-sm font-medium text-muted-foreground">Symbol</th>
+                      <th className="text-left p-3 text-sm font-medium text-muted-foreground">Details</th>
+                      <th className="text-left p-3 text-sm font-medium text-muted-foreground">Profit</th>
+                      <th className="text-left p-3 text-sm font-medium text-muted-foreground">Tags</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {analysis.missed_opportunities.slice(0, 5).map((miss, idx) => {
+                      const profitPercent = typeof miss.profit_percent === "number"
+                        ? miss.profit_percent
+                        : miss.option.price_change_percent ?? 0
+                      const strikeDisplay = typeof miss.option.strike === "number"
+                        ? miss.option.strike.toFixed(2)
+                        : String(miss.option.strike)
+                      const expirationDisplay = miss.option.expiration
+                        ? new Date(miss.option.expiration).toLocaleDateString()
+                        : "N/A"
+                      return (
+                        <tr
+                          key={`${miss.option.symbol}-${miss.option.strike}-${idx}`}
+                          className="border-b hover:bg-muted/50"
+                        >
+                          <td className="p-3 font-semibold font-mono">{miss.option.symbol}</td>
+                          <td className="p-3 text-sm">
+                            <div className="font-medium text-foreground">
+                              {miss.option.option_type.toUpperCase()} ${strikeDisplay} exp {expirationDisplay}
+                            </div>
+                            <div className="text-muted-foreground text-xs mt-1">
+                              Rejected for: {miss.option.rejection_reason}
+                            </div>
+                            <div className="text-muted-foreground text-xs">
+                              {miss.what_we_missed || "—"}
+                            </div>
+                          </td>
+                          <td className="p-3">
+                            <div className="flex items-center gap-1">
+                              <TrendingUp className="h-4 w-4 text-bull" />
+                              <span className="font-mono text-sm text-bull">
+                                +{profitPercent.toFixed(1)}%
+                              </span>
+                            </div>
+                          </td>
+                          <td className="p-3 text-xs text-muted-foreground">
+                            {miss.pattern_tags.length > 0 ? miss.pattern_tags.join(", ") : "—"}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
         )}
 
         <Card className="modern-card">
