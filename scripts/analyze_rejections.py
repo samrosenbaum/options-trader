@@ -51,8 +51,12 @@ def analyze_rejections(days_back: int = 7, min_profit_percent: float = 10.0):
 
     # Step 1: Update next-day prices for recent rejections
     print("🔄 Fetching latest option prices...", file=sys.stderr)
-    updated = tracker.update_next_day_performance(days_ago=1)
-    print(f"✅ Updated {updated} rejection records", file=sys.stderr)
+    total_updated = 0
+    # Refresh recent history so the analysis window has price updates
+    for days_ago in range(1, min(days_back, 14) + 1):
+        updated = tracker.update_next_day_performance(days_ago=days_ago)
+        total_updated += updated
+    print(f"✅ Updated {total_updated} rejection records", file=sys.stderr)
 
     # Step 2: Analyze missed opportunities
     print("🔍 Analyzing missed opportunities...", file=sys.stderr)
