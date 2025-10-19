@@ -957,6 +957,8 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
           optionType: opportunity.optionType,
           strike: opportunity.strike,
           stockPrice: opportunity.stockPrice,
+          premium: opportunity.premium,
+          expiration: opportunity.expiration,
           daysToExpiration: opportunity.daysToExpiration
         })
       })

@@ -7,6 +7,7 @@ probability data that complements the theoretical IV-based calculations.
 from __future__ import annotations
 
 import sqlite3
+import sys
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -151,12 +152,15 @@ class HistoricalMoveAnalyzer:
                 if df.empty:
                     return None
 
-                # Check if cache is fresh (within last 24 hours for most recent date)
+                # Check cache age to provide observability but allow reuse when offline
                 most_recent = pd.to_datetime(df["date"].max())
-                # Strip timezone info for consistent comparison
                 most_recent = most_recent.replace(tzinfo=None) if most_recent.tzinfo else most_recent
-                if datetime.now() - most_recent > timedelta(days=1):
-                    return None  # Stale cache
+                age = datetime.now() - most_recent
+                if age > timedelta(days=1):
+                    print(
+                        f"Warning: Using cached historical data for {symbol} that is {age.days} days old",
+                        file=sys.stderr,
+                    )
 
                 df.set_index("date", inplace=True)
 

@@ -127,7 +127,7 @@ if context:
 else:
     print(f"Historical analysis returned None for {data['symbol']}", file=sys.stderr)
 
-if context and context.get('available'):
+if context and isinstance(context, dict) and context.get('available'):
     frequency = context.get('frequency', 0)
     examples = context.get('recent_examples', [])[:5]
 
@@ -143,15 +143,24 @@ if context and context.get('available'):
         'confidence': 'high' if context.get('sample_size', 0) >= 50 else 'medium' if context.get('sample_size', 0) >= 20 else 'low'
     }
 else:
+    fallback_message = 'Insufficient historical data available'
+    if context and isinstance(context, dict):
+        fallback_message = context.get('message', fallback_message)
+        frequency = context.get('frequency', 0)
+        examples = context.get('recent_examples', [])[:5]
+    else:
+        frequency = 0
+        examples = []
+
     output = {
         'symbol': data['symbol'],
         'available': False,
         'requiredMove': breakeven_move_pct,
         'daysToExpiration': days_to_exp,
         'direction': direction,
-        'historicalFrequency': 0,
-        'recentExamples': [],
-        'summary': context.get('message', 'Insufficient historical data available'),
+        'historicalFrequency': frequency * 100,
+        'recentExamples': examples,
+        'summary': fallback_message,
         'confidence': 'low'
     }
 
