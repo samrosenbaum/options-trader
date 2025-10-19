@@ -157,6 +157,7 @@ body {
 .metallic-accent {
   @apply bg-gradient-to-r from-slate-700 via-slate-900 to-slate-700 bg-clip-text text-transparent;
   @apply dark:from-slate-300 dark:via-white dark:to-slate-300;
+  @apply font-display;
   background-size: 200% auto;
   animation: card-shimmer 3s linear infinite;
   font-weight: 800;

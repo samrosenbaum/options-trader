@@ -32,7 +32,7 @@ export default function LandingPage() {
               <span className="h-2 w-2 rounded-full bg-emerald-400"></span>
               They trust us
             </div>
-            <h1 className="text-4xl font-semibold leading-tight text-white sm:text-5xl lg:text-6xl">
+            <h1 className="text-4xl font-display font-bold leading-tight text-white sm:text-5xl lg:text-6xl">
               Your Personal
               <br />
               Options Quant
