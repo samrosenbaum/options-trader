@@ -1,6 +1,10 @@
 'use client'
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
+import { useRouter } from 'next/navigation'
+import type { User } from '@supabase/supabase-js'
+import { createClient } from '@/lib/supabase/client'
+import Navigation from '@/components/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -40,14 +44,52 @@ interface AnalysisResult {
 }
 
 export default function RejectionLearningPage() {
+  const [user, setUser] = useState<User | null>(null)
+  const [loading, setLoading] = useState(true)
   const [rejections, setRejections] = useState<RejectedOption[]>([])
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const router = useRouter()
+  const supabase = useMemo(() => createClient(), [])
 
   useEffect(() => {
-    fetchRejections()
-  }, [])
+    let isActive = true
+
+    const fetchUser = async () => {
+      try {
+        const {
+          data: { user },
+          error,
+        } = await supabase.auth.getUser()
+
+        if (!isActive) return
+
+        if (error || !user) {
+          router.replace('/auth/login')
+          return
+        }
+
+        setUser(user)
+        fetchRejections()
+      } catch (error) {
+        if (isActive) {
+          console.error('Failed to fetch user for Anti-Portfolio', error)
+          router.replace('/auth/login')
+        }
+      } finally {
+        if (isActive) {
+          setLoading(false)
+        }
+      }
+    }
+
+    fetchUser()
+
+    return () => {
+      isActive = false
+    }
+  }, [router, supabase])
 
   const fetchRejections = async () => {
     try {
@@ -80,9 +122,26 @@ export default function RejectionLearningPage() {
     }
   }
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="h-8 w-8 mx-auto rounded-full border-2 border-emerald-500 border-t-transparent animate-spin" />
+          <p className="mt-4 text-sm text-muted-foreground">Loading Anti-Portfolio...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return null
+  }
+
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="max-w-7xl mx-auto">
+    <>
+      <Navigation userEmail={user.email} />
+      <div className="min-h-screen bg-background p-6">
+        <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
@@ -240,5 +299,6 @@ export default function RejectionLearningPage() {
         </Card>
       </div>
     </div>
+    </>
   )
 }

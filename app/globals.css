@@ -116,14 +116,14 @@ body {
 }
 
 .modern-card {
-  @apply relative overflow-hidden rounded-xl border border-slate-200/60 bg-white/90 backdrop-blur-xl transition-all duration-300;
+  @apply relative overflow-hidden rounded-xl border border-slate-300 bg-white backdrop-blur-xl transition-all duration-300;
   @apply hover:shadow-2xl hover:shadow-emerald-500/10 hover:-translate-y-1;
   @apply dark:border-slate-700/50 dark:bg-slate-900/80;
   animation: float-in 0.5s ease-out;
 
-  /* Grain texture for depth */
+  /* Grain texture for depth - lighter in light mode */
   background-image:
-    radial-gradient(circle at 1px 1px, rgba(0, 0, 0, 0.03) 1px, transparent 0);
+    radial-gradient(circle at 1px 1px, rgba(0, 0, 0, 0.015) 1px, transparent 0);
   background-size: 20px 20px;
 }
 

@@ -307,11 +307,11 @@ export function AIStrategyHub({ userEmail }: AIStrategyHubProps) {
                     {formatConfidence(strategy.confidence)}
                   </Badge>
                 </div>
-                <CardDescription className="text-sm text-slate-600 dark:text-slate-200/80">
+                <CardDescription className="text-sm text-slate-700 dark:text-slate-200/80">
                   {strategy.scenario}
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4 text-sm text-slate-600 dark:text-slate-200/90">
+              <CardContent className="space-y-4 text-sm text-slate-800 dark:text-slate-200/90">
                 <div className="flex flex-wrap gap-3 text-xs text-muted-foreground dark:text-slate-300/90">
                   <span>Capital: {strategy.capitalRange}</span>
                   <span>Timeframe: {strategy.timeframe}</span>
@@ -378,12 +378,12 @@ export function AIStrategyHub({ userEmail }: AIStrategyHubProps) {
                   {regime.name}
                 </Badge>
               </CardHeader>
-              <CardContent className="space-y-3 text-slate-600 dark:text-slate-200/90">
+              <CardContent className="space-y-3 text-slate-800 dark:text-slate-200/90">
                 <div>
                   <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
                     Signals
                   </h3>
-                  <ul className="list-disc list-inside text-sm text-slate-600 dark:text-slate-200 space-y-1">
+                  <ul className="list-disc list-inside text-sm text-slate-800 dark:text-slate-200 space-y-1">
                     {regime.indicators.map((indicator) => (
                       <li key={indicator}>{indicator}</li>
                     ))}
@@ -393,13 +393,13 @@ export function AIStrategyHub({ userEmail }: AIStrategyHubProps) {
                   <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
                     Plays
                   </h3>
-                  <ul className="list-disc list-inside text-sm text-slate-600 dark:text-slate-200 space-y-1">
+                  <ul className="list-disc list-inside text-sm text-slate-800 dark:text-slate-200 space-y-1">
                     {regime.recommendedPlays.map((play) => (
                       <li key={play}>{play}</li>
                     ))}
                   </ul>
                 </div>
-                <p className="text-sm text-slate-600 dark:text-slate-200/80">
+                <p className="text-sm text-slate-800 dark:text-slate-200/80">
                   {regime.aiBrief}
                 </p>
               </CardContent>
@@ -432,19 +432,19 @@ export function AIStrategyHub({ userEmail }: AIStrategyHubProps) {
                   </CardTitle>
                   <Badge variant="outline">{entry.eventDate}</Badge>
                 </div>
-                <CardDescription className="text-sm text-slate-600 dark:text-slate-200/80">
+                <CardDescription className="text-sm text-slate-800 dark:text-slate-200/80">
                   {entry.aiTakeaway}
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3 text-sm text-slate-600 dark:text-slate-200/90">
-                <p className="text-sm text-slate-600 dark:text-slate-200/80">
+              <CardContent className="space-y-3 text-sm text-slate-800 dark:text-slate-200/90">
+                <p className="text-sm text-slate-800 dark:text-slate-200/80">
                   {entry.historicalStats}
                 </p>
                 <div>
                   <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
                     Suggested plays
                   </h3>
-                  <ul className="list-disc list-inside text-sm text-slate-600 dark:text-slate-200 space-y-1">
+                  <ul className="list-disc list-inside text-sm text-slate-800 dark:text-slate-200 space-y-1">
                     {entry.suggestedPlays.map((play) => (
                       <li key={play}>{play}</li>
                     ))}
@@ -454,7 +454,7 @@ export function AIStrategyHub({ userEmail }: AIStrategyHubProps) {
                   <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
                     Prep checklist
                   </h3>
-                  <ul className="list-disc list-inside text-sm text-slate-600 dark:text-slate-200 space-y-1">
+                  <ul className="list-disc list-inside text-sm text-slate-800 dark:text-slate-200 space-y-1">
                     {entry.prepChecklist.map((item) => (
                       <li key={item}>{item}</li>
                     ))}
@@ -488,7 +488,7 @@ export function AIStrategyHub({ userEmail }: AIStrategyHubProps) {
                   {guardrail.trigger}
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3 text-sm text-slate-600 dark:text-slate-200/90">
+              <CardContent className="space-y-3 text-sm text-slate-800 dark:text-slate-200/90">
                 <div>
                   <h3 className="font-semibold text-slate-900 dark:text-white">
                     Guardrail
@@ -537,11 +537,11 @@ export function AIStrategyHub({ userEmail }: AIStrategyHubProps) {
                   </CardTitle>
                   <Badge variant="secondary">Hot signal</Badge>
                 </div>
-                <CardDescription className="text-sm text-slate-600 dark:text-slate-200/80">
+                <CardDescription className="text-sm text-slate-800 dark:text-slate-200/80">
                   {signal.headline}
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3 text-sm text-slate-600 dark:text-slate-200/90">
+              <CardContent className="space-y-3 text-sm text-slate-800 dark:text-slate-200/90">
                 <div>
                   <h3 className="font-semibold text-slate-900 dark:text-white">
                     Context
@@ -587,11 +587,11 @@ export function AIStrategyHub({ userEmail }: AIStrategyHubProps) {
                 <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">
                   {moment.topic}
                 </CardTitle>
-                <CardDescription className="text-sm text-slate-600 dark:text-slate-200/80">
+                <CardDescription className="text-sm text-slate-800 dark:text-slate-200/80">
                   {moment.prompt}
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3 text-sm text-slate-600 dark:text-slate-200/90">
+              <CardContent className="space-y-3 text-sm text-slate-800 dark:text-slate-200/90">
                 <div>
                   <h3 className="font-semibold text-slate-900 dark:text-white">
                     AI answer
@@ -636,11 +636,11 @@ export function AIStrategyHub({ userEmail }: AIStrategyHubProps) {
                     {formatStatusLabel(requirement.status)}
                   </Badge>
                 </div>
-                <CardDescription className="text-sm text-slate-600 dark:text-slate-200/80">
+                <CardDescription className="text-sm text-slate-800 dark:text-slate-200/80">
                   {requirement.summary}
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3 text-sm text-slate-600 dark:text-slate-200/90">
+              <CardContent className="space-y-3 text-sm text-slate-800 dark:text-slate-200/90">
                 <div>
                   <h3 className="font-semibold text-slate-900 dark:text-white">
                     Owner
@@ -688,11 +688,11 @@ export function AIStrategyHub({ userEmail }: AIStrategyHubProps) {
                 <CardTitle className="text-lg font-semibold text-slate-900 dark:text-white">
                   {phase.title}
                 </CardTitle>
-                <CardDescription className="text-sm text-slate-600 dark:text-slate-200/80">
+                <CardDescription className="text-sm text-slate-800 dark:text-slate-200/80">
                   {phase.focus}
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3 text-sm text-slate-600 dark:text-slate-200/90">
+              <CardContent className="space-y-3 text-sm text-slate-800 dark:text-slate-200/90">
                 <p className="text-xs uppercase tracking-wide text-muted-foreground dark:text-slate-300/80">
                   ETA: {phase.eta}
                 </p>
