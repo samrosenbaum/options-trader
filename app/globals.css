@@ -155,10 +155,12 @@ body {
 }
 
 .metallic-accent {
-  @apply bg-gradient-to-r from-slate-200 via-slate-300 to-slate-200 bg-clip-text text-transparent;
-  @apply dark:from-slate-400 dark:via-slate-200 dark:to-slate-400;
+  @apply bg-gradient-to-r from-slate-700 via-slate-900 to-slate-700 bg-clip-text text-transparent;
+  @apply dark:from-slate-300 dark:via-white dark:to-slate-300;
   background-size: 200% auto;
   animation: card-shimmer 3s linear infinite;
+  font-weight: 800;
+  letter-spacing: -0.02em;
 }
 
 .premium-badge {
