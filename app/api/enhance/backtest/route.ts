@@ -107,7 +107,7 @@ if not implied_vol:
     implied_vol = 0.5
     print(f"No IV provided, using default 0.5", file=sys.stderr)
 
-print(f"Validating: {data['optionType']} strike=${data['strike']} stock=${data['stockPrice']} premium=${data['premium']}", file=sys.stderr)
+print("Validating: %s strike=$%s stock=$%s premium=$%s" % (data['optionType'], data['strike'], data['stockPrice'], data['premium']), file=sys.stderr)
 result = validator.validate_strategy(
     symbol=data['symbol'],
     option_type=data['optionType'],

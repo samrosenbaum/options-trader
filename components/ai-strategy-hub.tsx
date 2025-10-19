@@ -151,7 +151,7 @@ export function AIStrategyHub({ userEmail }: AIStrategyHubProps) {
       <div className="max-w-7xl mx-auto px-6 py-10 space-y-6">
         <div className="flex items-center gap-3 text-slate-500 dark:text-slate-400">
           <div className="h-3.5 w-3.5 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin" />
-          <p className="text-sm">Booting the AI Strategy Hub…</p>
+          <p className="text-sm">Loading Today&apos;s Plays…</p>
         </div>
         <div className="grid gap-4 md:grid-cols-2">
           {Array.from({ length: 4 }).map((_, index) => (
@@ -176,7 +176,7 @@ export function AIStrategyHub({ userEmail }: AIStrategyHubProps) {
             </CardTitle>
             <CardDescription>
               {error?.message ??
-                "We could not load the AI Strategy Hub data just yet."}
+                "We could not load Today&apos;s Plays just yet."}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -199,7 +199,7 @@ export function AIStrategyHub({ userEmail }: AIStrategyHubProps) {
           variant="secondary"
           className="text-emerald-600 bg-emerald-100 border-emerald-200"
         >
-          <Sparkles className="h-3.5 w-3.5" /> AI Strategy Hub
+          <Sparkles className="h-3.5 w-3.5" /> Today&apos;s Plays
         </Badge>
         <div className="flex flex-col gap-3">
           <h1 className="text-3xl font-bold text-slate-900 dark:text-white">

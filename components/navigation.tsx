@@ -5,7 +5,6 @@ import { usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { BarChart3, Eye, Briefcase, Newspaper, Sparkles } from 'lucide-react'
 import { useState, useEffect } from 'react'
 
 const FUN_GREETINGS = [
@@ -40,11 +39,12 @@ export default function Navigation({ userEmail }: { userEmail?: string }) {
   }
 
   const navItems = [
-    { href: '/', label: 'Scanner', icon: BarChart3 },
-    { href: '/market-info', label: 'Market Info', icon: Newspaper },
-    { href: '/ai-strategy-hub', label: 'AI Strategy Hub', icon: Sparkles },
-    { href: '/watchlist', label: 'Watchlist', icon: Eye },
-    { href: '/portfolio', label: 'Portfolio', icon: Briefcase },
+    { href: '/', label: 'Scanner' },
+    { href: '/market-info', label: 'Market Info' },
+    { href: '/ai-strategy-hub', label: "Today's Plays" },
+    { href: '/rejection-learning', label: 'Anti-Portfolio' },
+    { href: '/watchlist', label: 'Watchlist' },
+    { href: '/portfolio', label: 'Portfolio' },
   ]
 
   return (
@@ -74,18 +74,16 @@ export default function Navigation({ userEmail }: { userEmail?: string }) {
           <div className="flex items-center gap-1">
             {navItems.map((item) => {
               const isActive = pathname === item.href
-              const IconComponent = item.icon
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+                  className={`px-4 py-2 text-sm font-medium transition-colors ${
                     isActive
-                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                      : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+                      ? 'text-emerald-600 dark:text-emerald-400'
+                      : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
                   }`}
                 >
-                  <IconComponent className="w-4 h-4" />
                   {item.label}
                 </Link>
               )
