@@ -19,6 +19,7 @@ from .signal import (
     ScanResponse,
     ScanTarget,
     Signal,
+    CustomScanRequest,
 )
 
 __all__ = [
@@ -39,6 +40,7 @@ __all__ = [
     "VolumePreference",
     "SupabasePreferenceStore",
     "PreferencePersistenceError",
+    "CustomScanRequest",
     "serialize_scan_request",
     "serialize_scan_response",
     "serialize_signal",

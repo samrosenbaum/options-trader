@@ -10,6 +10,8 @@ import { createClient } from '@/lib/supabase/client'
 import type { Database } from '@/lib/types/database.types'
 import type { PositionSizingRecommendation } from '@/lib/types/opportunity'
 import { useWatchlist } from '@/components/watchlist-context'
+import { ScannerModeToggle, ScannerModeDescription, type ScannerMode } from '@/components/scanner-mode-toggle'
+import { CustomScannerFilters, type CustomFilterCriteria } from '@/components/custom-scanner-filters'
 
 interface MoveAnalysisFactor {
   label: string
@@ -247,6 +249,11 @@ interface Opportunity {
   strike: number
   expiration: string
   premium: number
+  bid: number
+  ask: number
+  volume: number
+  openInterest: number
+  impliedVolatility: number
   tradeSummary?: string
   stockPrice: number
   score: number
@@ -1191,6 +1198,54 @@ export default function ScannerPage({ user }: ScannerPageProps) {
   })
   const [settingsLoaded, setSettingsLoaded] = useState(false)
   const [prefilledInvestment, setPrefilledInvestment] = useState(false)
+  const [scannerMode, setScannerMode] = useState<ScannerMode>('smart')
+  const [customCriteria, setCustomCriteria] = useState<CustomFilterCriteria>({})
+
+  // Custom scanner filtering logic
+  const filteredOpportunities = useMemo(() => {
+    if (scannerMode === 'smart') {
+      return opportunities
+    }
+
+    // Apply custom filters
+    return opportunities.filter((opp) => {
+      // Volume filters
+      if (customCriteria.minVolume && opp.volume < customCriteria.minVolume) return false
+      if (customCriteria.minOpenInterest && opp.openInterest < customCriteria.minOpenInterest) return false
+
+      // Spread filter
+      if (customCriteria.maxSpreadPercent && opp.premium > 0) {
+        const spread = (opp.ask - opp.bid) / (opp.premium / 100)
+        if (spread > customCriteria.maxSpreadPercent) return false
+      }
+
+      // Delta filters
+      if (customCriteria.minDelta && Math.abs(opp.greeks.delta) < customCriteria.minDelta) return false
+      if (customCriteria.maxDelta && Math.abs(opp.greeks.delta) > customCriteria.maxDelta) return false
+
+      // IV filters
+      if (customCriteria.minIV && opp.impliedVolatility < customCriteria.minIV) return false
+      if (customCriteria.maxIV && opp.impliedVolatility > customCriteria.maxIV) return false
+
+      // DTE filters
+      if (customCriteria.minDTE && opp.daysToExpiration < customCriteria.minDTE) return false
+      if (customCriteria.maxDTE && opp.daysToExpiration > customCriteria.maxDTE) return false
+
+      // Option type filter
+      if (customCriteria.optionType && opp.optionType !== customCriteria.optionType) return false
+
+      // Strike filters
+      if (customCriteria.minStrike && opp.strike < customCriteria.minStrike) return false
+      if (customCriteria.maxStrike && opp.strike > customCriteria.maxStrike) return false
+
+      // Premium filters (premium is in dollars, not cents)
+      const premiumInDollars = opp.premium / 100
+      if (customCriteria.minPremium && premiumInDollars < customCriteria.minPremium) return false
+      if (customCriteria.maxPremium && premiumInDollars > customCriteria.maxPremium) return false
+
+      return true
+    })
+  }, [opportunities, customCriteria, scannerMode])
 
   const toggleCard = (cardId: string) => {
     setExpandedCards(prev => ({
@@ -1854,12 +1909,12 @@ export default function ScannerPage({ user }: ScannerPageProps) {
   }, [opportunities])
 
   const sortedOpportunities = useMemo(() => {
-    if (opportunities.length === 0) {
-      return opportunities
+    if (filteredOpportunities.length === 0) {
+      return filteredOpportunities
     }
 
-    console.log(`Sorting ${opportunities.length} opportunities by: ${sortOption}`)
-    const ranked = [...opportunities]
+    console.log(`Sorting ${filteredOpportunities.length} opportunities by: ${sortOption}`)
+    const ranked = [...filteredOpportunities]
     const toNumber = (value: number | null | undefined, fallback: number) =>
       typeof value === 'number' && Number.isFinite(value) ? value : fallback
 
@@ -1929,7 +1984,7 @@ export default function ScannerPage({ user }: ScannerPageProps) {
     }
 
     return ranked
-  }, [opportunities, sortOption])
+  }, [filteredOpportunities, sortOption])
 
   // Split opportunities into recommended vs not-recommended
   const { recommendedOpportunities, notRecommendedOpportunities } = useMemo(() => {
@@ -2729,6 +2784,10 @@ export default function ScannerPage({ user }: ScannerPageProps) {
                 </button>
               </div>
 
+              {activeTab === 'options' && (
+                <ScannerModeToggle mode={scannerMode} onChange={setScannerMode} />
+              )}
+
               <div className="flex items-center gap-2 bg-zinc-900 px-4 py-2.5 rounded-lg border border-zinc-800">
                 <span className="text-sm font-semibold text-emerald-500">$</span>
                 <input
@@ -2956,6 +3015,21 @@ export default function ScannerPage({ user }: ScannerPageProps) {
         {/* Market Hours Banner - Show when market is closed (always visible, even during scans) */}
         {activeTab === 'options' && <MarketHoursBanner />}
 
+        {/* Scanner Mode Description */}
+        {activeTab === 'options' && <ScannerModeDescription mode={scannerMode} />}
+
+        {/* Custom Scanner Filters */}
+        {activeTab === 'options' && scannerMode === 'custom' && !isLoading && (
+          <div className="my-6">
+            <CustomScannerFilters
+              criteria={customCriteria}
+              onChange={setCustomCriteria}
+              matchCount={filteredOpportunities.length}
+              totalCount={opportunities.length}
+            />
+          </div>
+        )}
+
         {/* Scan Status Banner - DISABLED (no cron jobs, on-demand scanning only) */}
         {/* {activeTab === 'options' && !isLoading && <ScanStatusBanner mode={scanMode} />} */}
 
@@ -3005,28 +3079,28 @@ export default function ScannerPage({ user }: ScannerPageProps) {
             <div className="bg-zinc-900 rounded-xl p-5 border border-zinc-800 hover:border-emerald-500/30 transition-colors">
               <div className="space-y-1">
                 <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide">Found</p>
-                <p className="text-2xl font-bold text-emerald-400">{opportunities.length}</p>
+                <p className="text-2xl font-bold text-emerald-400">{filteredOpportunities.length}</p>
               </div>
             </div>
 
             <div className="bg-zinc-900 rounded-xl p-5 border border-zinc-800 hover:border-red-500/30 transition-colors">
               <div className="space-y-1">
                 <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide">High Score</p>
-                <p className="text-2xl font-bold text-red-400">{opportunities.filter(o => o.score >= 90).length}</p>
+                <p className="text-2xl font-bold text-red-400">{filteredOpportunities.filter(o => o.score >= 90).length}</p>
               </div>
             </div>
 
             <div className="bg-zinc-900 rounded-xl p-5 border border-zinc-800 hover:border-orange-500/30 transition-colors">
               <div className="space-y-1">
                 <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide">Volume</p>
-                <p className="text-2xl font-bold text-orange-400">{opportunities.filter(o => o.volumeRatio > 2).length}</p>
+                <p className="text-2xl font-bold text-orange-400">{filteredOpportunities.filter(o => o.volumeRatio > 2).length}</p>
               </div>
             </div>
 
             <div className="bg-zinc-900 rounded-xl p-5 border border-zinc-800 hover:border-blue-500/30 transition-colors">
               <div className="space-y-1">
                 <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide">Catalysts</p>
-                <p className="text-2xl font-bold text-blue-400">{opportunities.filter(o => o.catalysts && o.catalysts.length > 0).length}</p>
+                <p className="text-2xl font-bold text-blue-400">{filteredOpportunities.filter(o => o.catalysts && o.catalysts.length > 0).length}</p>
               </div>
             </div>
           </div>
@@ -3087,7 +3161,7 @@ export default function ScannerPage({ user }: ScannerPageProps) {
         )}
 
         {/* Empty State */}
-        {!isLoading && opportunities.length === 0 && (
+        {!isLoading && filteredOpportunities.length === 0 && (
           <div className="text-center py-16">
             <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-3xl flex items-center justify-center mx-auto mb-6">
               <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

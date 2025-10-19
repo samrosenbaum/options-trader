@@ -15,9 +15,11 @@ from src.models import (
     ScanResponse,
     ScanTarget,
     Signal,
+    CustomScanRequest,
     serialize_scan_response,
 )
 from src.scoring.engine import CompositeScoringEngine
+from src.scanner.custom_scanner import CustomScanner, CustomFilterCriteria
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -89,6 +91,66 @@ async def scan(payload: ScanRequest) -> Dict[str, Any]:
     for target in payload.targets:
         try:
             signals.append(_score_target(target, engine, context))
+        except Exception as exc:  # pragma: no cover - defensive guard
+            logger.exception("Failed to score contract", extra={"symbol": target.contract.symbol})
+            errors.append(ScanError(symbol=target.contract.symbol, reason=str(exc)))
+
+    if not signals:
+        raise HTTPException(status_code=422, detail=[error.model_dump() for error in errors])
+
+    response = ScanResponse(signals=signals, errors=errors)
+    return serialize_scan_response(response)
+
+
+@app.post("/scan/custom", response_model=ScanResponse)
+async def scan_custom(payload: CustomScanRequest) -> Dict[str, Any]:
+    """
+    Custom scanner - filter options based on user-defined criteria
+
+    This endpoint allows users to set their own filter parameters (volume, greeks, IV, etc.)
+    and get options that match their criteria. Unlike the smart scanner which uses
+    sophisticated scoring algorithms, this returns simple match-based results.
+    """
+
+    if not payload.targets:
+        raise HTTPException(status_code=400, detail="Request must include at least one target")
+
+    # Build filter criteria from request
+    criteria = CustomFilterCriteria(
+        min_volume=payload.min_volume,
+        min_open_interest=payload.min_open_interest,
+        max_spread_percent=payload.max_spread_percent,
+        min_delta=payload.min_delta,
+        max_delta=payload.max_delta,
+        min_gamma=payload.min_gamma,
+        max_gamma=payload.max_gamma,
+        min_theta=payload.min_theta,
+        max_theta=payload.max_theta,
+        min_vega=payload.min_vega,
+        max_vega=payload.max_vega,
+        min_iv=payload.min_iv,
+        max_iv=payload.max_iv,
+        min_dte=payload.min_dte,
+        max_dte=payload.max_dte,
+        option_type=payload.option_type,
+        min_strike=payload.min_strike,
+        max_strike=payload.max_strike,
+        min_price=payload.min_price,
+        max_price=payload.max_price,
+    )
+
+    scanner = CustomScanner(criteria)
+    signals: list[Signal] = []
+    errors: list[ScanError] = []
+    context = {symbol: ctx.model_dump() for symbol, ctx in payload.market_context.items()}
+
+    for target in payload.targets:
+        try:
+            result = scanner.score_option(target.contract, target.greeks)
+            metadata = dict(target.metadata)
+            if ctx := context.get(target.contract.symbol):
+                metadata.setdefault("market_context", ctx)
+            signals.append(Signal.from_scoring_result(result, metadata=metadata))
         except Exception as exc:  # pragma: no cover - defensive guard
             logger.exception("Failed to score contract", extra={"symbol": target.contract.symbol})
             errors.append(ScanError(symbol=target.contract.symbol, reason=str(exc)))

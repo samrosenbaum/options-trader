@@ -72,3 +72,39 @@ class ScanResponse(BaseModel):
     errors: List[ScanError] = Field(default_factory=list)
 
 
+class CustomScanRequest(BaseModel):
+    """Request model for custom user-defined scanner"""
+    targets: List[ScanTarget]
+    market_context: Dict[str, MarketContext] = Field(default_factory=dict)
+
+    # Filter criteria
+    min_volume: Optional[int] = None
+    min_open_interest: Optional[int] = None
+    max_spread_percent: Optional[float] = None
+
+    # Greeks ranges
+    min_delta: Optional[float] = None
+    max_delta: Optional[float] = None
+    min_gamma: Optional[float] = None
+    max_gamma: Optional[float] = None
+    min_theta: Optional[float] = None
+    max_theta: Optional[float] = None
+    min_vega: Optional[float] = None
+    max_vega: Optional[float] = None
+
+    # IV & Time
+    min_iv: Optional[float] = None
+    max_iv: Optional[float] = None
+    min_dte: Optional[int] = None
+    max_dte: Optional[int] = None
+
+    # Option type
+    option_type: Optional[str] = None  # "call", "put", or None
+
+    # Strike & Price
+    min_strike: Optional[float] = None
+    max_strike: Optional[float] = None
+    min_price: Optional[float] = None
+    max_price: Optional[float] = None
+
+
