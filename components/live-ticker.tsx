@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { Card } from './ui/card'
 
 interface ApiQuote {
   symbol: string
@@ -150,40 +149,40 @@ export default function LiveTicker() {
 
   if (isLoading) {
     return (
-      <Card className="p-4 mb-6">
+      <div className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl mb-6">
         <div className="flex items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
-          <span className="ml-2 text-slate-600 dark:text-slate-400">Loading live quotes…</span>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500" />
+          <span className="ml-2 text-emerald-100/70">Loading live quotes…</span>
         </div>
-      </Card>
+      </div>
     )
   }
 
   if (!tickerData.length) {
     return (
-      <Card className="p-4 mb-6">
-        <div className="text-sm text-slate-600 dark:text-slate-400">
+      <div className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl mb-6">
+        <div className="text-sm text-emerald-100/70">
           {error ? `Unable to load live quotes: ${error}` : 'No live quotes available.'}
         </div>
-      </Card>
+      </div>
     )
   }
 
   return (
-    <Card className="p-4 mb-6 bg-gradient-to-r from-slate-50 to-emerald-50 dark:from-slate-900 dark:to-emerald-900 border-emerald-200 dark:border-emerald-800">
+    <div className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_30px_120px_-60px_rgba(16,185,129,0.45)] backdrop-blur-xl mb-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+        <h3 className="text-lg font-semibold text-white flex items-center gap-2">
           <span className="animate-pulse">📈</span>
           Live Market Ticker
         </h3>
-        <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+        <div className="flex items-center gap-2 text-sm text-emerald-100/70">
           <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
           <span>Live</span>
         </div>
       </div>
 
       {error && (
-        <div className="mb-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
+        <div className="mb-4 rounded-xl border border-amber-400/40 bg-amber-500/10 p-3 text-sm text-amber-200 backdrop-blur-sm">
           Data refresh issue: {error}
         </div>
       )}
@@ -197,25 +196,25 @@ export default function LiveTicker() {
             return (
               <div
                 key={item.sourceSymbol}
-                className="flex items-center space-x-3 p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 min-w-[200px] hover:shadow-md transition-shadow"
+                className="flex items-center space-x-3 p-3 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20 min-w-[200px] hover:bg-white/15 hover:shadow-emerald-500/20 hover:shadow-lg transition-all"
               >
                 <div className="flex flex-col">
                   <div className="flex items-center gap-2">
-                    <span className={`text-lg ${item.type === 'crypto' ? 'text-orange-500' : 'text-blue-500'}`}>
+                    <span className={`text-lg ${item.type === 'crypto' ? 'text-orange-400' : 'text-sky-400'}`}>
                       {item.type === 'crypto' ? '₿' : '📊'}
                     </span>
                     <div>
-                      <div className="font-semibold text-slate-900 dark:text-white">{item.symbol}</div>
-                      <div className="text-xs text-slate-500 dark:text-slate-400 truncate">{item.name}</div>
+                      <div className="font-semibold text-white">{item.symbol}</div>
+                      <div className="text-xs text-emerald-100/60 truncate">{item.name}</div>
                     </div>
                   </div>
                 </div>
 
                 <div className="flex flex-col items-end">
-                  <div className="font-bold text-slate-900 dark:text-white">${item.price.toLocaleString()}</div>
+                  <div className="font-bold text-white">${item.price.toLocaleString()}</div>
                   <div
                     className={`text-sm font-medium ${
-                      item.change >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                      item.change >= 0 ? 'text-green-400' : 'text-red-400'
                     }`}
                   >
                     {item.change >= 0 ? '+' : ''}
@@ -223,10 +222,10 @@ export default function LiveTicker() {
                     {item.changePercent.toFixed(2)}%)
                   </div>
                   {volumeLabel && (
-                    <div className="text-xs text-slate-500 dark:text-slate-400">Vol: {volumeLabel}</div>
+                    <div className="text-xs text-emerald-100/60">Vol: {volumeLabel}</div>
                   )}
                   {marketCapLabel && (
-                    <div className="text-xs text-slate-500 dark:text-slate-400">MC: {marketCapLabel}</div>
+                    <div className="text-xs text-emerald-100/60">MC: {marketCapLabel}</div>
                   )}
                 </div>
               </div>
@@ -239,17 +238,17 @@ export default function LiveTicker() {
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 bg-green-500 rounded-full" />
-            <span className="text-slate-600 dark:text-slate-400">Market Open</span>
+            <span className="text-emerald-100/70">Market Open</span>
           </div>
-          <div className="text-slate-600 dark:text-slate-400">
+          <div className="text-emerald-100/70">
             Last updated: {lastUpdated ? lastUpdated.toLocaleTimeString() : '—'}
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-xs text-slate-500 dark:text-slate-400">📊 Stocks</span>
-          <span className="text-xs text-slate-500 dark:text-slate-400">₿ Crypto</span>
+          <span className="text-xs text-emerald-100/60">📊 Stocks</span>
+          <span className="text-xs text-emerald-100/60">₿ Crypto</span>
         </div>
       </div>
-    </Card>
+    </div>
   )
 }
