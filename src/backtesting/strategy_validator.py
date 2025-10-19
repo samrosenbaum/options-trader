@@ -6,10 +6,13 @@ and analyzing their outcomes.
 
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Dict, List, Optional, Any
 import yfinance as yf
 import pandas as pd
 import numpy as np
+
+from src.scanner.historical_moves import HistoricalMoveAnalyzer
 
 
 @dataclass
@@ -77,11 +80,49 @@ class StrategyValidator:
         """Initialize validator with lookback period."""
         self.lookback_days = lookback_days
         self._price_cache: Dict[str, pd.DataFrame] = {}
+        self._historical_analyzer: Optional[HistoricalMoveAnalyzer] = None
+
+        try:
+            self._historical_analyzer = HistoricalMoveAnalyzer(
+                db_path="data/historical_moves.db",
+                lookback_days=lookback_days,
+            )
+        except Exception as exc:
+            print(f"Warning: Could not initialize HistoricalMoveAnalyzer: {exc}")
 
     def _get_historical_prices(self, symbol: str) -> Optional[pd.DataFrame]:
         """Fetch historical price data for a symbol."""
         if symbol in self._price_cache:
             return self._price_cache[symbol]
+
+        # Try to reuse cached price history from the historical move analyzer first
+        if self._historical_analyzer is not None:
+            try:
+                cached = self._historical_analyzer.get_price_history(symbol)
+                if cached is not None and not cached.empty:
+                    self._price_cache[symbol] = cached
+                    return cached
+            except Exception as exc:
+                print(f"Warning: Historical analyzer failed for {symbol}: {exc}")
+
+        # Fall back to bundled sample histories for common symbols when offline
+        sample_path = Path("data/sharp_move_samples") / f"{symbol.upper()}_history.csv"
+        if sample_path.exists():
+            try:
+                df = pd.read_csv(sample_path)
+                if "Date" in df.columns:
+                    df["Date"] = pd.to_datetime(df["Date"])
+                    df.set_index("Date", inplace=True)
+
+                # Ensure column casing matches yfinance output for downstream consumers
+                rename_map = {col: col.capitalize() for col in df.columns}
+                df.rename(columns=rename_map, inplace=True)
+                df.sort_index(inplace=True)
+
+                self._price_cache[symbol] = df
+                return df
+            except Exception as exc:
+                print(f"Warning: Could not load sample history for {symbol}: {exc}")
 
         try:
             ticker = yf.Ticker(symbol)
