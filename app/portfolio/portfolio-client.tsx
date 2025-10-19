@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { Database } from '@/lib/types/database.types'
 import AddPositionModal from './add-position-modal'
@@ -29,6 +29,7 @@ export default function PortfolioClient({
   const [settingsError, setSettingsError] = useState<string | null>(null)
   const [isSavingSettings, setIsSavingSettings] = useState(false)
   const [settingsFeedback, setSettingsFeedback] = useState<'idle' | 'success' | 'error'>('idle')
+  const [hasAutoRefreshed, setHasAutoRefreshed] = useState(false)
 
   useEffect(() => {
     let isMounted = true
@@ -158,8 +159,9 @@ export default function PortfolioClient({
   }
 
   const handlePositionAdded = (newPosition: Position) => {
-    setPositions([newPosition, ...positions])
+    setPositions((prev) => [newPosition, ...prev])
     setShowAddModal(false)
+    setHasAutoRefreshed(false)
   }
 
   const handlePositionClosed = (closedPosition: Position) => {
@@ -171,8 +173,9 @@ export default function PortfolioClient({
     setPositionToClose(null)
   }
 
-  const handleRefreshPrices = async () => {
+  const handleRefreshPrices = useCallback(async () => {
     console.log('[Portfolio] Starting price refresh...')
+    setHasAutoRefreshed(true)
     setIsRefreshing(true)
     setRefreshMessage(null)
 
@@ -226,7 +229,7 @@ export default function PortfolioClient({
       setIsRefreshing(false)
       console.log('[Portfolio] Refresh complete')
     }
-  }
+  }, [supabase, user.id])
 
   const openPositions = positions.filter((p) => p.status === 'open')
   const closedPositions = positions.filter((p) => p.status === 'closed')
@@ -242,6 +245,39 @@ export default function PortfolioClient({
   )
 
   const totalPL = totalUnrealizedPL + totalRealizedPL
+
+  useEffect(() => {
+    if (hasAutoRefreshed || isRefreshing) {
+      return
+    }
+
+    const needsRefresh = positions.some((position) => {
+      if (position.status !== 'open') {
+        return false
+      }
+
+      const missingPrice =
+        position.current_price === null || position.current_price === undefined
+      const missingSignal = !position.last_signal_check
+
+      if (missingPrice || missingSignal) {
+        return true
+      }
+
+      const lastCheck = new Date(position.last_signal_check as string)
+      if (Number.isNaN(lastCheck.getTime())) {
+        return true
+      }
+
+      const minutesSince = (Date.now() - lastCheck.getTime()) / 60000
+      return minutesSince >= 15
+    })
+
+    if (needsRefresh) {
+      setHasAutoRefreshed(true)
+      void handleRefreshPrices()
+    }
+  }, [positions, hasAutoRefreshed, handleRefreshPrices, isRefreshing])
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
