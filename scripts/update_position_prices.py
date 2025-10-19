@@ -13,6 +13,9 @@ import pandas as pd
 from src.math.greeks import GreeksCalculator
 
 
+CONTRACT_MULTIPLIER = 100
+
+
 def fetch_option_data(symbol: str, strike: float, expiration: str, option_type: str) -> Optional[Dict[str, Any]]:
     """
     Fetch current price and data for a specific option contract.
@@ -60,9 +63,29 @@ def fetch_option_data(symbol: str, strike: float, expiration: str, option_type: 
         # Get contract data
         row = contract.iloc[0]
 
-        last_price = float(row['lastPrice'])
-        bid = float(row['bid']) if 'bid' in row and pd.notna(row['bid']) else last_price * 0.95
-        ask = float(row['ask']) if 'ask' in row and pd.notna(row['ask']) else last_price * 1.05
+        last_price = float(row['lastPrice']) if pd.notna(row['lastPrice']) else float('nan')
+        mark_price = float(row['mark']) if 'mark' in row and pd.notna(row['mark']) else float('nan')
+        bid = float(row['bid']) if 'bid' in row and pd.notna(row['bid']) else float('nan')
+        ask = float(row['ask']) if 'ask' in row and pd.notna(row['ask']) else float('nan')
+
+        if not pd.notna(last_price) or last_price <= 0:
+            if pd.notna(mark_price) and mark_price > 0:
+                last_price = mark_price
+            elif pd.notna(bid) and pd.notna(ask) and bid > 0 and ask > 0:
+                last_price = (bid + ask) / 2
+            elif pd.notna(bid) and bid > 0:
+                last_price = bid
+            elif pd.notna(ask) and ask > 0:
+                last_price = ask
+            else:
+                print(
+                    f"Warning: No usable price for {symbol} ${strike} {option_type} {exp_date}",
+                    file=sys.stderr,
+                )
+                return None
+
+        bid = bid if pd.notna(bid) and bid > 0 else last_price * 0.95
+        ask = ask if pd.notna(ask) and ask > 0 else last_price * 1.05
         volume = int(row['volume']) if 'volume' in row and pd.notna(row['volume']) else 0
         open_interest = int(row['openInterest']) if 'openInterest' in row and pd.notna(row['openInterest']) else 0
         implied_volatility = float(row['impliedVolatility']) if 'impliedVolatility' in row and pd.notna(row['impliedVolatility']) else 0.5
@@ -112,8 +135,15 @@ def calculate_pl(entry_price: float, current_price: float, contracts: int) -> Di
     Returns:
         Dictionary with unrealized P&L amount and percentage
     """
-    cost_basis = entry_price * contracts
-    current_value = current_price * contracts
+    contract_value = max(contracts, 0) * CONTRACT_MULTIPLIER
+    if contract_value == 0:
+        return {
+            'unrealized_pl': 0.0,
+            'unrealized_pl_percent': 0.0,
+        }
+
+    cost_basis = entry_price * contract_value
+    current_value = current_price * contract_value
     pl_amount = current_value - cost_basis
     pl_percent = (pl_amount / cost_basis) * 100 if cost_basis > 0 else 0
 

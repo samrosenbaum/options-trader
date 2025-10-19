@@ -101,7 +101,14 @@ export async function POST() {
 
     for (const position of updatedPositions) {
       // Only update if we got new data
-      if (position.current_price && position.unrealized_pl !== undefined) {
+      const hasCurrentPrice =
+        position.current_price !== null &&
+        position.current_price !== undefined
+      const hasUnrealizedPL =
+        position.unrealized_pl !== null &&
+        position.unrealized_pl !== undefined
+
+      if (hasCurrentPrice && hasUnrealizedPL) {
         const { error: updateError } = await supabase
           .from('positions')
           .update({
