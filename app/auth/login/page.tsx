@@ -11,6 +11,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [mode, setMode] = useState<'login' | 'signup'>('login')
+  const [acceptedLiability, setAcceptedLiability] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
@@ -19,6 +20,12 @@ export default function LoginPage() {
     setLoading(true)
     setError(null)
 
+    if (mode === 'signup' && !acceptedLiability) {
+      setError('You must acknowledge the trading risk disclosure to create an account.')
+      setLoading(false)
+      return
+    }
+
     try {
       if (mode === 'signup') {
         const { error } = await supabase.auth.signUp({
@@ -26,6 +33,9 @@ export default function LoginPage() {
           password,
           options: {
             emailRedirectTo: `${window.location.origin}/auth/callback`,
+            data: {
+              accepted_liability_waiver_at: new Date().toISOString(),
+            },
           },
         })
         if (error) throw error
@@ -93,6 +103,28 @@ export default function LoginPage() {
               />
             </div>
 
+            {mode === 'signup' && (
+              <div className="space-y-2 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
+                <label className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    checked={acceptedLiability}
+                    onChange={(event) => setAcceptedLiability(event.target.checked)}
+                    className="mt-1 h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 dark:border-slate-600 dark:bg-slate-900"
+                  />
+                  <span>
+                    I acknowledge that trading options involves substantial risk, that I may lose all or more than my
+                    initial investment, and I waive the right to hold Options Trader or its operators liable for losses
+                    arising from my trading decisions.
+                  </span>
+                </label>
+                <p className="text-xs text-amber-700 dark:text-amber-300">
+                  Nothing provided by this platform is investment, financial, legal, or tax advice. You are solely
+                  responsible for evaluating trades and their suitability in light of your objectives and risk tolerance.
+                </p>
+              </div>
+            )}
+
             {error && (
               <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
                 <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
@@ -110,7 +142,11 @@ export default function LoginPage() {
 
           <div className="mt-6 text-center">
             <button
-              onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
+              onClick={() => {
+                setMode(mode === 'login' ? 'signup' : 'login')
+                setError(null)
+                setAcceptedLiability(false)
+              }}
               className="text-sm text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 font-medium"
             >
               {mode === 'login'
