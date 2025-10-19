@@ -373,6 +373,31 @@ class RejectionTracker:
 
             reason_analysis.sort(key=lambda x: x[2], reverse=True)
 
+            # Analyze filter stages
+            stage_stats = {}
+            for row in all_rejections:
+                stage = row.get("filter_stage") or "unknown"
+                if stage not in stage_stats:
+                    stage_stats[stage] = {
+                        "count": 0,
+                        "profitable_count": 0,
+                        "total_change": 0.0,
+                    }
+                stage_stats[stage]["count"] += 1
+                if row.get("was_profitable"):
+                    stage_stats[stage]["profitable_count"] += 1
+                stage_stats[stage]["total_change"] += row.get("price_change_percent", 0) or 0
+
+            filter_stage_analysis = {
+                stage: {
+                    "count": stats["count"],
+                    "profitable_count": stats["profitable_count"],
+                    "profitable_rate": stats["profitable_count"] / stats["count"] if stats["count"] > 0 else 0,
+                    "avg_change": stats["total_change"] / stats["count"] if stats["count"] > 0 else 0,
+                }
+                for stage, stats in stage_stats.items()
+            }
+
             # Build missed opportunities list
             missed_opps = []
             for row in profitable_rejections:
@@ -416,8 +441,11 @@ class RejectionTracker:
 
             return {
                 "total_rejections": total,
+                "analyzed_count": total,
+                "profitable_count": profitable_count,
                 "profitable_rejection_rate": profitable_rate,
                 "avg_price_change": avg_change,
+                "avg_change_percent": avg_change,
                 "missed_opportunities": missed_opps,
                 "rejection_reason_analysis": [
                     {
@@ -428,6 +456,7 @@ class RejectionTracker:
                     }
                     for r in reason_analysis
                 ],
+                "filter_stage_analysis": filter_stage_analysis,
                 "recommendations": self._generate_recommendations(reason_analysis)
             }
 

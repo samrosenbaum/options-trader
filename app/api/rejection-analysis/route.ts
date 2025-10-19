@@ -1,3 +1,4 @@
+import Anthropic from "@anthropic-ai/sdk"
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 
@@ -29,25 +30,49 @@ interface RawAnalysis {
   [key: string]: unknown
 }
 
+interface MissedOpportunityOption {
+  symbol: string
+  strike: number
+  expiration?: string
+  option_type: string
+  rejection_reason: string
+  filter_stage: string
+  price_change_percent?: number | null
+  probability_score?: number | null
+  risk_adjusted_score?: number | null
+  quality_score?: number | null
+}
+
+interface MissedOpportunityRecord {
+  option: MissedOpportunityOption
+  profit_percent?: number | null
+  what_we_missed?: string
+  pattern_tags?: string[]
+}
+
+interface StageStats {
+  count: number
+  profitable_count: number
+  profitable_rate: number
+  avg_change?: number
+}
+
 interface NormalizedAnalysis {
   total_rejections: number
   analyzed_count: number
   profitable_count: number
   profitable_rate: number
   avg_change_percent: number
-  missed_opportunities: unknown[]
+  missed_opportunities: MissedOpportunityRecord[]
   rejection_reason_stats: Record<string, {
     count: number
     profitable_count: number
     profitable_rate: number
     avg_change: number
   }>
-  filter_stage_stats: Record<string, {
-    count: number
-    profitable_count: number
-    profitable_rate: number
-  }>
+  filter_stage_stats: Record<string, StageStats>
   recommendations: string[]
+  ai_summary: string | null
   raw: RawAnalysis
 }
 
@@ -94,7 +119,7 @@ function normalizeAnalysis(raw: RawAnalysis | null | undefined): NormalizedAnaly
   if (raw && typeof raw.filter_stage_analysis === "object" && raw.filter_stage_analysis !== null) {
     for (const [stage, value] of Object.entries(raw.filter_stage_analysis)) {
       if (value && typeof value === "object") {
-        const stageData = value as { count?: number; profitable_rate?: number; profitable_count?: number }
+        const stageData = value as { count?: number; profitable_rate?: number; profitable_count?: number; avg_change?: number }
         const count = typeof stageData.count === "number" ? stageData.count : 0
         const rate = typeof stageData.profitable_rate === "number" ? stageData.profitable_rate : 0
         filterStageStats[stage] = {
@@ -103,6 +128,7 @@ function normalizeAnalysis(raw: RawAnalysis | null | undefined): NormalizedAnaly
             ? stageData.profitable_count
             : Math.round(count * rate),
           profitable_rate: rate,
+          avg_change: typeof stageData.avg_change === "number" ? stageData.avg_change : undefined,
         }
       }
     }
@@ -114,12 +140,144 @@ function normalizeAnalysis(raw: RawAnalysis | null | undefined): NormalizedAnaly
     profitable_count: profitableCount,
     profitable_rate: profitableRate,
     avg_change_percent: avgChangePercent,
-    missed_opportunities: Array.isArray(raw?.missed_opportunities) ? raw!.missed_opportunities : [],
+    missed_opportunities: Array.isArray(raw?.missed_opportunities) ? raw!.missed_opportunities as MissedOpportunityRecord[] : [],
     rejection_reason_stats: rejectionReasonStats,
     filter_stage_stats: filterStageStats,
     recommendations: Array.isArray(raw?.recommendations) ? raw!.recommendations : [],
+    ai_summary: null,
     raw: raw || {},
   }
+}
+
+function extractMissedOpportunities(records: MissedOpportunityRecord[] | undefined | null): MissedOpportunityRecord[] {
+  if (!Array.isArray(records)) {
+    return []
+  }
+
+  return records.filter((record): record is MissedOpportunityRecord => {
+    if (!record || typeof record !== "object") {
+      return false
+    }
+    const option = (record as MissedOpportunityRecord).option
+    return !!option && typeof option.symbol === "string" && typeof option.option_type === "string"
+  })
+}
+
+function formatFallbackSummary(analysis: NormalizedAnalysis, winners: MissedOpportunityRecord[]): string {
+  const total = analysis.total_rejections
+  const profitableCount = analysis.profitable_count
+  const winRate = total > 0 ? (profitableCount / total) * 100 : 0
+  const avgWinner = winners.reduce((sum, winner) => {
+    const value = typeof winner.profit_percent === "number"
+      ? winner.profit_percent
+      : typeof winner.option.price_change_percent === "number"
+        ? winner.option.price_change_percent
+        : 0
+    return sum + value
+  }, 0) / (winners.length || 1)
+
+  const topReasons = Object.entries(analysis.rejection_reason_stats)
+    .sort(([, a], [, b]) => b.profitable_rate - a.profitable_rate)
+    .slice(0, 2)
+    .map(([reason, stats]) => `${reason} (${(stats.profitable_rate * 100).toFixed(0)}% hit rate)`)
+
+  const highlights = winners
+    .slice(0, 3)
+    .map((winner) => {
+      const change = typeof winner.profit_percent === "number"
+        ? winner.profit_percent
+        : typeof winner.option.price_change_percent === "number"
+          ? winner.option.price_change_percent
+          : 0
+      const formattedChange = change > 0 ? `+${change.toFixed(1)}%` : `${change.toFixed(1)}%`
+      return `${winner.option.symbol} ${winner.option.option_type.toUpperCase()} ${formattedChange}`
+    })
+
+  const reasonLine = topReasons.length > 0
+    ? `Most frequent reversal reasons: ${topReasons.join("; ")}.`
+    : ""
+
+  const highlightLine = highlights.length > 0
+    ? `Standouts: ${highlights.join(", ")}.`
+    : ""
+
+  return [
+    `${profitableCount} of ${total} filtered contracts (${winRate.toFixed(1)}%) would have made money.`,
+    `Average gain among winners: ${avgWinner.toFixed(1)}%.`,
+    reasonLine,
+    highlightLine,
+  ].filter(Boolean).join(" ")
+}
+
+async function generateAISummary(analysis: NormalizedAnalysis): Promise<string | null> {
+  const winners = extractMissedOpportunities(analysis.missed_opportunities)
+
+  if (winners.length === 0) {
+    return "No rejected contracts crossed the profitability threshold in this window — the filters kept the losers out."
+  }
+
+  const payload = {
+    totalRejections: analysis.total_rejections,
+    profitableRejections: analysis.profitable_count,
+    overallHitRate: analysis.profitable_rate,
+    averageChange: analysis.avg_change_percent,
+    topReasons: Object.entries(analysis.rejection_reason_stats)
+      .sort(([, a], [, b]) => b.profitable_rate - a.profitable_rate)
+      .slice(0, 5)
+      .map(([reason, stats]) => ({
+        reason,
+        hitRate: stats.profitable_rate,
+        avgChange: stats.avg_change,
+        sampleSize: stats.count,
+      })),
+    winners: winners.slice(0, 5).map((winner) => ({
+      symbol: winner.option.symbol,
+      type: winner.option.option_type,
+      strike: winner.option.strike,
+      expiration: winner.option.expiration,
+      rejectionReason: winner.option.rejection_reason,
+      filterStage: winner.option.filter_stage,
+      profitPercent: typeof winner.profit_percent === "number"
+        ? winner.profit_percent
+        : winner.option.price_change_percent,
+      notes: winner.what_we_missed,
+      tags: winner.pattern_tags,
+    })),
+  }
+
+  const apiKey = process.env.ANTHROPIC_API_KEY
+  if (!apiKey) {
+    return formatFallbackSummary(analysis, winners)
+  }
+
+  try {
+    const anthropic = new Anthropic({ apiKey })
+    const response = await anthropic.messages.create({
+      model: "claude-3-5-sonnet-20241022",
+      max_tokens: 300,
+      temperature: 0.2,
+      system: "You are an elite quant analyst specializing in post-trade reviews. Summarize findings crisply, highlighting what the risk filters missed and what adjustments might help.",
+      messages: [
+        {
+          role: "user",
+          content: `Provide a concise narrative (2-3 sentences) about the rejected options that later became profitable. Base it on this JSON data: ${JSON.stringify(payload)}`,
+        },
+      ],
+    })
+
+    const text = response.content
+      .map((block) => block.type === "text" ? block.text : "")
+      .join("")
+      .trim()
+
+    if (text) {
+      return text
+    }
+  } catch (error) {
+    console.error("Failed to generate AI summary:", error)
+  }
+
+  return formatFallbackSummary(analysis, winners)
 }
 
 export async function POST(request: Request): Promise<NextResponse> {
@@ -171,13 +329,25 @@ export async function POST(request: Request): Promise<NextResponse> {
           const rawAnalysis: RawAnalysis = jsonMatch ? JSON.parse(jsonMatch[0]) : {}
           const analysis = normalizeAnalysis(rawAnalysis)
 
-          resolve(
-            NextResponse.json({
-              success: true,
-              timestamp: new Date().toISOString(),
-              analysis,
-            })
-          )
+          ;(async () => {
+            try {
+              analysis.ai_summary = await generateAISummary(analysis)
+            } catch (summaryError) {
+              console.error("Unexpected AI summary failure:", summaryError)
+              const winners = extractMissedOpportunities(analysis.missed_opportunities)
+              analysis.ai_summary = winners.length
+                ? formatFallbackSummary(analysis, winners)
+                : "No rejected contracts crossed the profitability threshold in this window — the filters kept the losers out."
+            }
+
+            resolve(
+              NextResponse.json({
+                success: true,
+                timestamp: new Date().toISOString(),
+                analysis,
+              })
+            )
+          })()
         } catch (error) {
           console.error("Error parsing analysis output:", error)
           resolve(

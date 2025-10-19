@@ -31,6 +31,7 @@ interface RejectionStats {
   count: number
   profitable_count: number
   profitable_rate: number
+  avg_change?: number
 }
 
 interface RejectionReasonStats extends RejectionStats {
@@ -59,6 +60,7 @@ interface AnalysisResult {
   rejection_reason_stats: Record<string, RejectionReasonStats>
   filter_stage_stats: Record<string, RejectionStats>
   recommendations: string[]
+  ai_summary?: string | null
   raw: unknown
 }
 
@@ -191,6 +193,20 @@ export default function RejectionLearningPage() {
             </Button>
           </div>
         </div>
+
+        {analysis && analysis.ai_summary && (
+          <Card className="modern-card mb-6">
+            <CardHeader>
+              <CardTitle>AI Debrief</CardTitle>
+              <CardDescription>Key takeaways from profitable rejections</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm leading-6 whitespace-pre-line text-foreground">
+                {analysis.ai_summary}
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
         {analysis && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
