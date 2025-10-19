@@ -2818,7 +2818,7 @@ export default function ScannerPage({ user }: ScannerPageProps) {
                   activeTab === 'options' ? fetchOpportunities() : fetchCryptoAlerts()
                 }
                 disabled={activeTab === 'options' ? (isLoading || isEnhancedLoading) : cryptoLoading}
-                className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-600 px-6 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-emerald-500/30 transition-all duration-200 hover:shadow-emerald-500/50 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
+                className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-600 px-8 py-4 text-base font-bold text-slate-950 shadow-lg shadow-emerald-500/40 transition-all duration-200 hover:shadow-emerald-500/60 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
               >
                 <span className="pointer-events-none absolute inset-0 -translate-x-full bg-white/25 transition-transform duration-500 group-hover:translate-x-0" />
                 <span className="relative flex items-center gap-2">
@@ -2828,12 +2828,7 @@ export default function ScannerPage({ user }: ScannerPageProps) {
                       <span>Scanning…</span>
                     </>
                   ) : (
-                    <>
-                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                      </svg>
-                      <span>Scan</span>
-                    </>
+                    <span>Scan</span>
                   )}
                 </span>
               </button>
@@ -2854,9 +2849,6 @@ export default function ScannerPage({ user }: ScannerPageProps) {
                       </>
                     ) : (
                     <>
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
                       Enhanced Scan
                       <span className="px-1.5 py-0.5 text-[10px] font-bold bg-white/20 rounded">PRO</span>
                     </>

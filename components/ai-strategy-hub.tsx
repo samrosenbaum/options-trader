@@ -204,10 +204,9 @@ export function AIStrategyHub({ userEmail }: AIStrategyHubProps) {
               "your broker"}
           </h1>
           <p className="text-lg text-slate-700 max-w-3xl leading-relaxed">
-            {userEmail ? `Welcome back, ${userEmail}. ` : ""}Pick the vibe that
-            matches your account and let the AI Coach curate setups, guardrails,
-            and build plans so you can trade like a WallStreetBets legend
-            without blowing up.
+            Pick the vibe that matches your account and let the AI Coach curate 
+            setups, guardrails, and build plans so you can trade like a 
+            WallStreetBets legend without blowing up.
           </p>
           <p className="text-xs text-slate-500">
             Data synced {new Date(data.generatedAt).toLocaleTimeString()} •
@@ -228,9 +227,9 @@ export function AIStrategyHub({ userEmail }: AIStrategyHubProps) {
               <SelectTrigger className="w-full h-14 bg-white border-2 border-slate-200 hover:border-emerald-400 transition-colors">
                 <SelectValue placeholder="Choose risk" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white border-slate-200 min-w-[400px]">
                 {riskProfiles.map((profile) => (
-                  <SelectItem key={profile.id} value={profile.id}>
+                  <SelectItem key={profile.id} value={profile.id} className="focus:bg-slate-100 text-slate-900">
                     <div className="flex flex-col text-left py-1">
                       <span className="font-semibold text-slate-900">{profile.label}</span>
                       <span className="text-xs text-slate-600">
@@ -254,9 +253,9 @@ export function AIStrategyHub({ userEmail }: AIStrategyHubProps) {
               <SelectTrigger className="w-full h-14 bg-white border-2 border-slate-200 hover:border-emerald-400 transition-colors">
                 <SelectValue placeholder="Select broker" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white border-slate-200 min-w-[300px]">
                 {brokerOptions.map((option) => (
-                  <SelectItem key={option.id} value={option.id}>
+                  <SelectItem key={option.id} value={option.id} className="focus:bg-slate-100 text-slate-900">
                     <span className="font-semibold text-slate-900">{option.label}</span>
                   </SelectItem>
                 ))}
@@ -287,15 +286,13 @@ export function AIStrategyHub({ userEmail }: AIStrategyHubProps) {
       </header>
 
       <section className="space-y-6">
-        <div className="flex items-center gap-3">
-          <TrendingUp className="h-6 w-6 text-emerald-600" />
-          <div>
-            <h2 className="text-2xl font-bold text-slate-900">
-              Strategy Playbook
-            </h2>
-            <p className="text-sm text-slate-600 mt-1">
-              Targeted trade structures mapped to your current risk mode.
-            </p>
+        <div>
+          <h2 className="text-2xl font-bold text-slate-900">
+            Strategy Playbook
+          </h2>
+          <p className="text-sm text-slate-600 mt-1">
+            Targeted trade structures mapped to your current risk mode.
+          </p>
           </div>
         </div>
 
@@ -359,16 +356,14 @@ export function AIStrategyHub({ userEmail }: AIStrategyHubProps) {
       </section>
 
       <section className="space-y-6">
-        <div className="flex items-center gap-3">
-          <Waves className="h-6 w-6 text-sky-600" />
-          <div>
-            <h2 className="text-2xl font-bold text-slate-900">
-              Market Regime Radar
-            </h2>
-            <p className="text-sm text-slate-600 mt-1">
-              Let AI interpret volatility, flow, and macro vibes so you know
-              which playbooks to lean into.
-            </p>
+        <div>
+          <h2 className="text-2xl font-bold text-slate-900">
+            Market Regime Radar
+          </h2>
+          <p className="text-sm text-slate-600 mt-1">
+            Let AI interpret volatility, flow, and macro vibes so you know
+            which playbooks to lean into.
+          </p>
           </div>
         </div>
 
@@ -413,17 +408,14 @@ export function AIStrategyHub({ userEmail }: AIStrategyHubProps) {
       </section>
 
       <section className="space-y-6">
-        <div className="flex items-center gap-3">
-          <CalendarDays className="h-6 w-6 text-purple-600" />
-          <div>
-            <h2 className="text-2xl font-bold text-slate-900">
-              Earnings &amp; Event Companion
-            </h2>
-            <p className="text-sm text-slate-600 mt-1">
-              Blend historical stats, sentiment, and AI debriefs to plan your
-              next event-driven win.
-            </p>
-          </div>
+        <div>
+          <h2 className="text-2xl font-bold text-slate-900">
+            Earnings &amp; Event Companion
+          </h2>
+          <p className="text-sm text-slate-600 mt-1">
+            Blend historical stats, sentiment, and AI debriefs to plan your
+            next event-driven win.
+          </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -471,17 +463,14 @@ export function AIStrategyHub({ userEmail }: AIStrategyHubProps) {
       </section>
 
       <section className="space-y-6">
-        <div className="flex items-center gap-3">
-          <ShieldCheck className="h-6 w-6 text-rose-600" />
-          <div>
-            <h2 className="text-2xl font-bold text-slate-900">
-              Risk Diary Guardrails
-            </h2>
-            <p className="text-sm text-slate-600 mt-1">
-              Guardrails keep your YOLO impulses in check without killing the
-              vibe. AI nudges are timed to your trading sessions.
-            </p>
-          </div>
+        <div>
+          <h2 className="text-2xl font-bold text-slate-900">
+            Risk Diary Guardrails
+          </h2>
+          <p className="text-sm text-slate-600 mt-1">
+            Guardrails keep your YOLO impulses in check without killing the
+            vibe. AI nudges are timed to your trading sessions.
+          </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -518,17 +507,14 @@ export function AIStrategyHub({ userEmail }: AIStrategyHubProps) {
       </section>
 
       <section className="space-y-6">
-        <div className="flex items-center gap-3">
-          <Sparkles className="h-6 w-6 text-amber-600" />
-          <div>
-            <h2 className="text-2xl font-bold text-slate-900">
-              Flow &amp; Sentiment Synthesizer
-            </h2>
-            <p className="text-sm text-slate-600 mt-1">
-              No more doom-scrolling. AI triages the loudest signals and tells
-              you why they matter.
-            </p>
-          </div>
+        <div>
+          <h2 className="text-2xl font-bold text-slate-900">
+            Flow &amp; Sentiment Synthesizer
+          </h2>
+          <p className="text-sm text-slate-600 mt-1">
+            No more doom-scrolling. AI triages the loudest signals and tells
+            you why they matter.
+          </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -571,17 +557,14 @@ export function AIStrategyHub({ userEmail }: AIStrategyHubProps) {
       </section>
 
       <section className="space-y-6">
-        <div className="flex items-center gap-3">
-          <GraduationCap className="h-6 w-6 text-indigo-600" />
-          <div>
-            <h2 className="text-2xl font-bold text-slate-900">
-              Education-in-the-Loop
-            </h2>
-            <p className="text-sm text-slate-600 mt-1">
-              Bite-sized lessons triggered by what you&rsquo;re trading so you
-              actually keep learning.
-            </p>
-          </div>
+        <div>
+          <h2 className="text-2xl font-bold text-slate-900">
+            Education-in-the-Loop
+          </h2>
+          <p className="text-sm text-slate-600 mt-1">
+            Bite-sized lessons triggered by what you&rsquo;re trading so you
+            actually keep learning.
+          </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -615,17 +598,14 @@ export function AIStrategyHub({ userEmail }: AIStrategyHubProps) {
       </section>
 
       <section className="space-y-6">
-        <div className="flex items-center gap-3">
-          <Waves className="h-6 w-6 text-cyan-600" />
-          <div>
-            <h2 className="text-2xl font-bold text-slate-900">
-              What we still need to build
-            </h2>
-            <p className="text-sm text-slate-600 mt-1">
-              These are the high-leverage engineering + AI deliverables required
-              to take the hub from concept to production.
-            </p>
-          </div>
+        <div>
+          <h2 className="text-2xl font-bold text-slate-900">
+            What we still need to build
+          </h2>
+          <p className="text-sm text-slate-600 mt-1">
+            These are the high-leverage engineering + AI deliverables required
+            to take the hub from concept to production.
+          </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -672,17 +652,14 @@ export function AIStrategyHub({ userEmail }: AIStrategyHubProps) {
       </section>
 
       <section className="space-y-6">
-        <div className="flex items-center gap-3">
-          <Brain className="h-6 w-6 text-emerald-600" />
-          <div>
-            <h2 className="text-2xl font-bold text-slate-900">
-              Implementation roadmap
-            </h2>
-            <p className="text-sm text-slate-600 mt-1">
-              Phased rollout keeps us shipping value while derisking data +
-              automation dependencies.
-            </p>
-          </div>
+        <div>
+          <h2 className="text-2xl font-bold text-slate-900">
+            Implementation roadmap
+          </h2>
+          <p className="text-sm text-slate-600 mt-1">
+            Phased rollout keeps us shipping value while derisking data +
+            automation dependencies.
+          </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
