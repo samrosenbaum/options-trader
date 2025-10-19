@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { BarChart3, Eye, Briefcase, Newspaper } from 'lucide-react'
+import { BarChart3, Eye, Briefcase, Newspaper, Sparkles } from 'lucide-react'
 import { useState, useEffect } from 'react'
 
 const FUN_GREETINGS = [
@@ -42,6 +42,7 @@ export default function Navigation({ userEmail }: { userEmail?: string }) {
   const navItems = [
     { href: '/', label: 'Scanner', icon: BarChart3 },
     { href: '/market-info', label: 'Market Info', icon: Newspaper },
+    { href: '/ai-strategy-hub', label: 'AI Strategy Hub', icon: Sparkles },
     { href: '/watchlist', label: 'Watchlist', icon: Eye },
     { href: '/portfolio', label: 'Portfolio', icon: Briefcase },
   ]
