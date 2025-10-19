@@ -98,6 +98,7 @@ def test_get_fresh_options_data_uses_stale_cache_on_failure(monkeypatch: pytest.
         symbols=None,
         *,
         allow_stale: bool = False,
+        cache_key: str | None = None,
     ):
         load_calls.append(allow_stale)
         if allow_stale:
@@ -107,7 +108,7 @@ def test_get_fresh_options_data_uses_stale_cache_on_failure(monkeypatch: pytest.
     def fake_fetch(self, **_kwargs):
         return None
 
-    def fake_save(self, data, filename: str = "options_cache.json"):
+    def fake_save(self, data, filename: str = "options_cache.json", *, cache_key: str | None = None):
         raise AssertionError("Should not attempt to save when using stale cache")
 
     monkeypatch.setattr(BulkOptionsFetcher, "load_from_cache", fake_load)

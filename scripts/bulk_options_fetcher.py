@@ -11,6 +11,7 @@ import requests
 import json
 import time
 import concurrent.futures
+import hashlib
 from datetime import datetime, timezone
 
 from src.adapters.base import AdapterError
@@ -368,9 +369,17 @@ class BulkOptionsFetcher:
         now = pd.Timestamp.now(tz=timezone.utc)
         return bool((expirations >= now - pd.Timedelta(minutes=1)).any())
 
-    def save_to_cache(self, data, filename="options_cache.json"):
+    def _cache_filename(self, cache_key: str | None, filename: str = "options_cache.json") -> str:
+        if cache_key is None:
+            return filename
+        digest = hashlib.sha256(cache_key.encode("utf-8")).hexdigest()[:16]
+        base, ext = os.path.splitext(filename)
+        return f"{base}_{digest}{ext or '.json'}"
+
+    def save_to_cache(self, data, filename="options_cache.json", *, cache_key: str | None = None):
         """Save options data to cache file"""
         try:
+            target_filename = self._cache_filename(cache_key, filename)
             # Convert DataFrame to JSON-serializable format
             data_dict = data.to_dict('records')
 
@@ -390,14 +399,14 @@ class BulkOptionsFetcher:
                 'options': data_dict
             }
 
-            with open(filename, 'w') as f:
+            with open(target_filename, 'w') as f:
                 json.dump(cache_data, f, indent=2, default=json_serializer)
 
-            print(f"💾 Cached {len(data_dict)} options to {filename}")
+            print(f"💾 Cached {len(data_dict)} options to {target_filename}")
 
         except Exception as e:
             print(f"Error saving cache: {e}")
-    
+
     def load_from_cache(
         self,
         filename="options_cache.json",
@@ -405,10 +414,12 @@ class BulkOptionsFetcher:
         symbols: list[str] | None = None,
         *,
         allow_stale: bool = False,
+        cache_key: str | None = None,
     ):
         """Load options data from cache if it's recent enough"""
         try:
-            with open(filename, 'r') as f:
+            target_filename = self._cache_filename(cache_key, filename)
+            with open(target_filename, 'r') as f:
                 cache_data = json.load(f)
 
             cache_time = datetime.fromisoformat(cache_data['timestamp'])
@@ -423,6 +434,8 @@ class BulkOptionsFetcher:
             cache_frame.attrs["cache_age_minutes"] = max(raw_age_minutes, 0.0)
             cache_frame.attrs["cache_used"] = True
             cache_frame.attrs["cache_has_future_contracts"] = has_future_contracts
+            if cache_key:
+                cache_frame.attrs["cache_key"] = cache_key
 
             cached_symbols = [str(sym).upper() for sym in cache_data.get('symbols', [])]
             symbol_mismatch = False
@@ -474,12 +487,14 @@ class BulkOptionsFetcher:
         except Exception as e:
             print(f"Error loading cache: {e}")
             return None
-    
+
     def get_fresh_options_data(
         self,
         use_cache=True,
         max_symbols: int | None = None,
         symbols: list[str] | None = None,
+        *,
+        cache_key: str | None = None,
     ):
         """Get fresh options data, using cache if available"""
         normalized_symbols: list[str] | None = None
@@ -496,7 +511,7 @@ class BulkOptionsFetcher:
                 normalized_symbols.append(normal)
 
         if use_cache:
-            cached_data = self.load_from_cache(symbols=normalized_symbols)
+            cached_data = self.load_from_cache(symbols=normalized_symbols, cache_key=cache_key)
             if cached_data is not None:
                 return cached_data
 
@@ -529,6 +544,8 @@ class BulkOptionsFetcher:
             fresh_data.attrs["cache_stale"] = not has_future_contracts
             fresh_data.attrs["cache_used"] = False
             fresh_data.attrs["cache_has_future_contracts"] = has_future_contracts
+            if cache_key:
+                fresh_data.attrs["cache_key"] = cache_key
 
             if timeout_error is not None:
                 fresh_data.attrs["runtime_budget_exceeded"] = True
@@ -541,7 +558,7 @@ class BulkOptionsFetcher:
                 fresh_data.attrs["runtime_budget_exceeded"] = False
 
             if timeout_error is None and has_future_contracts:
-                self.save_to_cache(fresh_data)
+                self.save_to_cache(fresh_data, cache_key=cache_key)
             elif timeout_error is None:
                 print("⚠️  Live fetch returned only expired contracts; skipping cache save")
             else:

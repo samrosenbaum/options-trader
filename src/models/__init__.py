@@ -1,4 +1,11 @@
 from .option import OptionContract, OptionGreeks, OptionScore, ScoreBreakdown, ScoringResult
+from .preferences import (
+    DteWindow,
+    PreferencePersistenceError,
+    ScannerPreference,
+    SupabasePreferenceStore,
+    VolumePreference,
+)
 from .serialization import (
     serialize_scan_request,
     serialize_scan_response,
@@ -27,6 +34,11 @@ __all__ = [
     "ScanResponse",
     "ScanTarget",
     "Signal",
+    "DteWindow",
+    "ScannerPreference",
+    "VolumePreference",
+    "SupabasePreferenceStore",
+    "PreferencePersistenceError",
     "serialize_scan_request",
     "serialize_scan_response",
     "serialize_signal",

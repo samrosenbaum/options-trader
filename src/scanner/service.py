@@ -9,7 +9,7 @@ import sys
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from math import ceil, isfinite, log, log1p
-from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Set, Tuple
+from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, Sequence, Set, Tuple
 
 import pandas as pd
 import yfinance as yf
@@ -18,6 +18,11 @@ from scripts.bulk_options_fetcher import BulkOptionsFetcher
 from src.analysis import SwingSignal, SwingSignalAnalyzer
 from src.analysis.rejection_tracker import RejectionTracker
 from src.config import AppSettings, get_settings
+from src.models.preferences import (
+    PreferencePersistenceError,
+    ScannerPreference,
+    SupabasePreferenceStore,
+)
 from src.scanner.historical_moves import HistoricalMoveAnalyzer
 from src.scanner.iv_rank_history import IVRankHistory
 from src.scanner.universe import build_scan_universe
@@ -72,6 +77,9 @@ UniverseBuilder = Callable[[AppSettings, int, Optional[Mapping[str, Any]]], Tupl
 class SmartOptionsScanner:
     """Core implementation extracted from the legacy smart scanner script."""
 
+    _HOUSE_PREFERENCE = ScannerPreference.institutional_default()
+    _HOUSE_SIGNATURE = _HOUSE_PREFERENCE.signature()
+
     def __init__(self, max_symbols: int | None = None, *, batch_builder: UniverseBuilder | None = None):
         settings = get_settings()
         self.settings = settings
@@ -108,6 +116,10 @@ class SmartOptionsScanner:
         self.user_portfolio_size = _parse_positive_float(os.getenv("USER_PORTFOLIO_SIZE"))
         self.user_daily_contract_budget = _parse_positive_float(os.getenv("USER_DAILY_CONTRACT_BUDGET"))
 
+        # Preference framework
+        self._preference_store: SupabasePreferenceStore | None = None
+        self._set_preferences(self._HOUSE_PREFERENCE.copy(), profile="house", notices=[])
+
         # Initialize directional signal framework
         self.signal_aggregator = SignalAggregator([
             OptionsSkewAnalyzer(weight=0.30),  # 30% weight
@@ -119,6 +131,187 @@ class SmartOptionsScanner:
 
         # Initialize rejection tracker for filter optimization
         self.rejection_tracker = RejectionTracker()
+
+    def _derive_cache_key(self) -> str:
+        if self.preference_signature == self._HOUSE_SIGNATURE:
+            return "house"
+        return f"pref-{self.preference_signature[:12]}"
+
+    def _build_filter_config(self) -> Dict[str, Any]:
+        volume = self.preferences.volume
+        relaxed_volume = max(1, int(volume.min_contracts * 0.5))
+        relaxed_open_interest = max(1, int(volume.min_open_interest * 0.5))
+        relaxed_ratio = max(0.0, volume.min_volume_to_oi * 0.5)
+        return {
+            "strict_volume_min": volume.min_contracts,
+            "strict_volume_max": volume.max_contracts,
+            "strict_open_interest_min": volume.min_open_interest,
+            "strict_volume_ratio_min": volume.min_volume_to_oi,
+            "relaxed_volume_min": relaxed_volume,
+            "relaxed_open_interest_min": relaxed_open_interest,
+            "relaxed_volume_ratio_min": relaxed_ratio,
+            "delta_min": self.preferences.delta.minimum,
+            "delta_max": self.preferences.delta.maximum,
+            "vega_min": self.preferences.vega.minimum,
+            "vega_max": self.preferences.vega.maximum,
+            "iv_rank_min": self.preferences.iv_rank.minimum,
+            "iv_rank_max": self.preferences.iv_rank.maximum,
+            "dte_min": self.preferences.dte.minimum,
+            "dte_max": self.preferences.dte.maximum,
+        }
+
+    def _set_preferences(
+        self,
+        preference: ScannerPreference,
+        profile: Optional[str] = None,
+        notices: Optional[Iterable[str]] = None,
+        *,
+        source: Optional[str] = None,
+    ) -> None:
+        self.preferences = preference.copy()
+        self.preference_signature = self.preferences.signature()
+        is_house = self.preference_signature == self._HOUSE_SIGNATURE
+        default_profile = "house" if is_house else f"custom-{self.preference_signature[:8]}"
+        self.preference_profile = profile or default_profile
+        self.preference_source = source or ("house" if is_house else "user")
+        self.preference_notices = list(notices or [])
+        self.filter_config = self._build_filter_config()
+        self.cache_key = self._derive_cache_key()
+
+    def _snapshot_preferences(self) -> Dict[str, Any]:
+        return {
+            "preference": self.preferences.copy(),
+            "profile": self.preference_profile,
+            "source": self.preference_source,
+            "notices": list(self.preference_notices),
+        }
+
+    def _restore_preferences(self, snapshot: Mapping[str, Any]) -> None:
+        preference = snapshot.get("preference")
+        if isinstance(preference, ScannerPreference):
+            self._set_preferences(
+                preference,
+                profile=snapshot.get("profile"),
+                notices=snapshot.get("notices"),
+                source=snapshot.get("source"),
+            )
+
+    def _persist_preferences(
+        self,
+        profile: str,
+        preference: ScannerPreference,
+        overrides: Mapping[str, Any] | None,
+        notices: Iterable[str],
+        *,
+        user_id: Optional[str] = None,
+        label: Optional[str] = None,
+        source: Optional[str] = None,
+    ) -> None:
+        try:
+            if self._preference_store is None:
+                self._preference_store = SupabasePreferenceStore()
+            metadata = {
+                "overrides": dict(overrides or {}),
+                "notices": list(notices),
+                "signature": preference.signature(),
+            }
+            self._preference_store.save(
+                preference,
+                profile=profile,
+                user_id=user_id,
+                label=label,
+                source=source or self.preference_source,
+                metadata=metadata,
+            )
+        except PreferencePersistenceError as exc:
+            print(f"⚠️  Failed to persist scanner preferences: {exc}", file=sys.stderr)
+        except Exception as exc:  # pragma: no cover - defensive logging
+            print(f"⚠️  Unexpected error while persisting preferences: {exc}", file=sys.stderr)
+
+    def apply_criteria(
+        self,
+        overrides: Mapping[str, Any] | None,
+        *,
+        profile: Optional[str] = None,
+        user_id: Optional[str] = None,
+        persist: bool = False,
+        label: Optional[str] = None,
+        source: Optional[str] = None,
+    ) -> None:
+        base_pref = self._HOUSE_PREFERENCE.copy()
+        notices: List[str] = []
+        if overrides:
+            base_pref, merged_notices = base_pref.merge_overrides(overrides)
+            notices = list(merged_notices)
+
+        is_house = base_pref.signature() == self._HOUSE_SIGNATURE
+        resolved_profile = profile or ("house" if is_house else f"custom-{base_pref.signature()[:8]}")
+        resolved_source = source or ("house" if is_house else "user")
+        self._set_preferences(base_pref, profile=resolved_profile, notices=notices, source=resolved_source)
+
+        if persist:
+            self._persist_preferences(
+                resolved_profile,
+                base_pref,
+                overrides or {},
+                notices,
+                user_id=user_id,
+                label=label,
+                source=resolved_source,
+            )
+
+    def _passes_preference_bands(
+        self,
+        option: pd.Series,
+        dte: int,
+        greeks: Mapping[str, float],
+        iv_rank: float,
+    ) -> bool:
+        cfg = self.filter_config
+
+        min_dte = cfg.get("dte_min")
+        if isinstance(min_dte, (int, float)) and dte < int(min_dte):
+            return False
+        max_dte = cfg.get("dte_max")
+        if isinstance(max_dte, (int, float)) and dte > int(max_dte):
+            return False
+
+        delta = abs(float(greeks.get("delta", 0.0)))
+        min_delta = cfg.get("delta_min")
+        if isinstance(min_delta, (int, float)) and delta < float(min_delta):
+            return False
+        max_delta = cfg.get("delta_max")
+        if isinstance(max_delta, (int, float)) and delta > float(max_delta):
+            return False
+
+        vega = abs(float(greeks.get("vega", 0.0)))
+        min_vega = cfg.get("vega_min")
+        if isinstance(min_vega, (int, float)) and vega < float(min_vega):
+            return False
+        max_vega = cfg.get("vega_max")
+        if isinstance(max_vega, (int, float)) and vega > float(max_vega):
+            return False
+
+        min_iv_rank = cfg.get("iv_rank_min")
+        if isinstance(min_iv_rank, (int, float)) and iv_rank < float(min_iv_rank):
+            return False
+        max_iv_rank = cfg.get("iv_rank_max")
+        if isinstance(max_iv_rank, (int, float)) and iv_rank > float(max_iv_rank):
+            return False
+
+        min_volume_ratio = cfg.get("strict_volume_ratio_min")
+        if (
+            isinstance(min_volume_ratio, (int, float))
+            and min_volume_ratio > 0
+            and "volume" in option
+            and "openInterest" in option
+        ):
+            oi = max(float(option["openInterest"]), 1.0)
+            ratio = float(option["volume"]) / oi
+            if ratio < float(min_volume_ratio):
+                return False
+
+        return True
 
     @property
     def batch_size(self) -> int:
@@ -240,6 +433,7 @@ class SmartOptionsScanner:
             use_cache=not refresh_needed,
             max_symbols=self.symbol_limit,
             symbols=normalized_symbols,
+            cache_key=self.cache_key,
         )
 
         # When we explicitly bypass the cache and fail to fetch fresh data,
@@ -249,6 +443,7 @@ class SmartOptionsScanner:
                 use_cache=True,
                 max_symbols=self.symbol_limit,
                 symbols=normalized_symbols,
+                cache_key=self.cache_key,
             )
 
         self._capture_data_freshness(data, normalized_symbols)
@@ -278,6 +473,10 @@ class SmartOptionsScanner:
         stale = attrs.get("cache_stale")
         if isinstance(stale, bool):
             freshness["cacheStale"] = stale
+
+        cache_key = attrs.get("cache_key")
+        if isinstance(cache_key, str):
+            freshness["cacheKey"] = cache_key
 
         cache_hit = attrs.get("cache_used")
         if isinstance(cache_hit, bool):
@@ -327,6 +526,10 @@ class SmartOptionsScanner:
         cache_hit = self.data_freshness.get("cacheHit")
         if isinstance(cache_hit, bool):
             metadata["cacheHit"] = cache_hit
+
+        cache_key = self.data_freshness.get("cacheKey")
+        if isinstance(cache_key, str):
+            metadata["cacheKey"] = cache_key
 
         has_future = self.data_freshness.get("hasFutureContracts")
         if isinstance(has_future, bool):
@@ -488,14 +691,39 @@ class SmartOptionsScanner:
             if col in working_data.columns:
                 working_data[col] = pd.to_numeric(working_data[col], errors="coerce")
 
-        # RETAIL LIQUIDITY filters - tradeable options for retail traders
-        liquid_options = working_data[
-            (working_data["volume"] > 100)  # Retail minimum - need decent volume for fills
-            & (working_data["openInterest"] > 100)  # Retail minimum - need liquidity
-            & (working_data["lastPrice"] > 0.05)  # Avoid penny options with terrible spreads
-            & (working_data["bid"] > 0)
-            & (working_data["ask"] > 0)
-        ].copy()
+        cfg = self.filter_config
+        mask = pd.Series(True, index=working_data.index)
+
+        volume_min = cfg.get("strict_volume_min")
+        if "volume" in working_data and isinstance(volume_min, (int, float)):
+            mask &= working_data["volume"] >= float(volume_min)
+            volume_max = cfg.get("strict_volume_max")
+            if isinstance(volume_max, (int, float)):
+                mask &= working_data["volume"] <= float(volume_max)
+
+        oi_min = cfg.get("strict_open_interest_min")
+        if "openInterest" in working_data and isinstance(oi_min, (int, float)):
+            mask &= working_data["openInterest"] >= float(oi_min)
+
+        ratio_min = cfg.get("strict_volume_ratio_min")
+        if (
+            isinstance(ratio_min, (int, float))
+            and ratio_min > 0
+            and "volume" in working_data
+            and "openInterest" in working_data
+        ):
+            denominator = working_data["openInterest"].replace(0, 1)
+            ratio_series = working_data["volume"] / denominator
+            mask &= ratio_series >= float(ratio_min)
+
+        if "lastPrice" in working_data:
+            mask &= working_data["lastPrice"] > 0.05
+        if "bid" in working_data:
+            mask &= working_data["bid"] > 0
+        if "ask" in working_data:
+            mask &= working_data["ask"] > 0
+
+        liquid_options = working_data[mask].copy()
 
         # Limit to top 150 by volume to ensure scan completes within 4-minute timeout
         if len(liquid_options) > 150:
@@ -547,13 +775,25 @@ class SmartOptionsScanner:
 
         if liquid_options.empty:
             # Fallback filters - lower bar but still decent for retail
-            relaxed_filters = [
-                working_data.get("volume") > 50 if "volume" in working_data else None,  # Minimum retail tradability
-                working_data.get("openInterest") > 50 if "openInterest" in working_data else None,  # Minimum retail liquidity
-                working_data.get("lastPrice") > 0.03 if "lastPrice" in working_data else None,  # Avoid terrible spreads
-                working_data.get("bid") > 0 if "bid" in working_data else None,
-                working_data.get("ask") > 0 if "ask" in working_data else None,
-            ]
+            relaxed_filters = []
+            relaxed_volume_min = cfg.get("relaxed_volume_min")
+            if "volume" in working_data and isinstance(relaxed_volume_min, (int, float)):
+                relaxed_filters.append(working_data["volume"] >= float(relaxed_volume_min))
+            relaxed_oi_min = cfg.get("relaxed_open_interest_min")
+            if "openInterest" in working_data and isinstance(relaxed_oi_min, (int, float)):
+                relaxed_filters.append(working_data["openInterest"] >= float(relaxed_oi_min))
+            relaxed_ratio_min = cfg.get("relaxed_volume_ratio_min")
+            if (
+                isinstance(relaxed_ratio_min, (int, float))
+                and relaxed_ratio_min > 0
+                and "volume" in working_data
+                and "openInterest" in working_data
+            ):
+                denominator = working_data["openInterest"].replace(0, 1)
+                relaxed_filters.append((working_data["volume"] / denominator) >= float(relaxed_ratio_min))
+            relaxed_filters.append(working_data.get("lastPrice") > 0.03 if "lastPrice" in working_data else None)
+            relaxed_filters.append(working_data.get("bid") > 0 if "bid" in working_data else None)
+            relaxed_filters.append(working_data.get("ask") > 0 if "ask" in working_data else None)
 
             mask = None
             for condition in relaxed_filters:
@@ -689,6 +929,13 @@ class SmartOptionsScanner:
             # Focus on probability of profit rather than extreme upside
             probability_percent = self.estimate_probability_percent(probability_score)
             expected_roi = metrics["expectedMoveRoiPercent"]  # 1 SD move (realistic)
+
+            dte = int(metrics.get("dteUsedForCalculation", self.calculate_days_to_expiration(option["expiration"])))
+            greeks = self.calculate_greeks_approximation(option)
+            iv_rank_value = float(self.calculate_iv_rank(option))
+
+            if not self._passes_preference_bands(option, dte, greeks, iv_rank_value):
+                continue
 
             # Quality thresholds - reasonable levels to filter junk
             # Minimum score 45 (retail improvements give 9 pts for affordability, so this allows cheap good setups)
@@ -872,7 +1119,7 @@ class SmartOptionsScanner:
                 "breakeven": round(metrics["breakevenPrice"], 2),
                 "breakevenPrice": round(metrics["breakevenPrice"], 2),
                 "breakevenMovePercent": round(metrics["breakevenMovePercent"], 1),
-                "ivRank": round(self.calculate_iv_rank(option), 1),
+                "ivRank": round(iv_rank_value, 1),
                 "volumeRatio": round(volume_ratio, 2),
                 "probabilityOfProfit": round(probability_percent, 1),
                 "profitProbabilityExplanation": self.build_probability_explanation(
@@ -885,8 +1132,8 @@ class SmartOptionsScanner:
                 "shortTermRiskRewardRatio": (
                     metrics["tenMoveRoiPercent"] / 100 if metrics["tenMoveRoiPercent"] > 0 else None
                 ),
-                "greeks": self.calculate_greeks_approximation(option),
-                "daysToExpiration": self.calculate_days_to_expiration(option["expiration"]),
+                "greeks": greeks,
+                "daysToExpiration": dte,
                 "returnsAnalysis": returns_analysis,
                 "directionalBias": directional_bias,
                 "enhancedDirectionalBias": enhanced_bias,  # New proprietary signal framework
@@ -2328,8 +2575,32 @@ class SmartOptionsScanner:
         *,
         force_refresh: bool = False,
         allow_relaxed_fallback: bool | None = None,
+        criteria: Mapping[str, Any] | None = None,
+        criteria_profile: Optional[str] = None,
+        persist_preferences: bool = False,
+        criteria_user_id: Optional[str] = None,
+        criteria_label: Optional[str] = None,
+        criteria_source: Optional[str] = None,
     ) -> ScanResult:
         """Execute the scan and package results for consumers."""
+
+        preference_snapshot: Optional[Dict[str, Any]] = None
+        should_apply = (
+            criteria is not None
+            or criteria_profile is not None
+            or persist_preferences
+            or criteria_source is not None
+        )
+        if should_apply:
+            preference_snapshot = self._snapshot_preferences()
+            self.apply_criteria(
+                criteria or {},
+                profile=criteria_profile,
+                user_id=criteria_user_id,
+                persist=persist_preferences,
+                label=criteria_label,
+                source=criteria_source,
+            )
 
         print("🔍 Starting smart options scan...", file=sys.stderr)
         symbols = self._next_symbol_batch()
@@ -2359,7 +2630,17 @@ class SmartOptionsScanner:
             }
             self._apply_freshness_metadata(metadata)
             metadata["filterMode"] = filter_mode
-            return ScanResult([], metadata)
+            metadata["preferenceProfile"] = self.preference_profile
+            metadata["preferenceSignature"] = self.preference_signature
+            metadata["preferenceSource"] = self.preference_source
+            if self.preference_notices:
+                metadata["preferenceNotices"] = list(self.preference_notices)
+            metadata["preferences"] = self.preferences.to_payload()
+            metadata["cacheKey"] = self.cache_key
+            result = ScanResult([], metadata)
+            if preference_snapshot is not None:
+                self._restore_preferences(preference_snapshot)
+            return result
 
         opportunities = self.analyze_opportunities(
             options_data,
@@ -2398,6 +2679,13 @@ class SmartOptionsScanner:
         }
         self._apply_freshness_metadata(metadata)
         metadata["filterMode"] = filter_mode
+        metadata["preferenceProfile"] = self.preference_profile
+        metadata["preferenceSignature"] = self.preference_signature
+        metadata["preferenceSource"] = self.preference_source
+        if self.preference_notices:
+            metadata["preferenceNotices"] = list(self.preference_notices)
+        metadata["preferences"] = self.preferences.to_payload()
+        metadata["cacheKey"] = self.cache_key
         if self.relaxed_scan_info is not None:
             try:
                 metadata["relaxedScan"] = json.loads(json.dumps(self.relaxed_scan_info))
@@ -2405,7 +2693,10 @@ class SmartOptionsScanner:
                 metadata["relaxedScan"] = json.loads(
                     json.dumps({"error": "serialization_failed"})
                 )
-        return ScanResult(opportunities, metadata)
+        result = ScanResult(opportunities, metadata)
+        if preference_snapshot is not None:
+            self._restore_preferences(preference_snapshot)
+        return result
 
 
 def _parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
@@ -2448,11 +2739,23 @@ def run_scan(
     force_refresh: bool = False,
     batch_builder: UniverseBuilder | None = None,
     allow_relaxed_fallback: bool | None = None,
+    criteria: Mapping[str, Any] | None = None,
+    criteria_profile: Optional[str] = None,
+    persist_preferences: bool = False,
+    criteria_user_id: Optional[str] = None,
+    criteria_label: Optional[str] = None,
+    criteria_source: Optional[str] = None,
 ) -> ScanResult:
     scanner = SmartOptionsScanner(max_symbols=max_symbols, batch_builder=batch_builder)
     return scanner.scan_for_opportunities(
         force_refresh=force_refresh,
         allow_relaxed_fallback=allow_relaxed_fallback,
+        criteria=criteria,
+        criteria_profile=criteria_profile,
+        persist_preferences=persist_preferences,
+        criteria_user_id=criteria_user_id,
+        criteria_label=criteria_label,
+        criteria_source=criteria_source,
     )
 
 
@@ -2462,6 +2765,12 @@ def run_deep_scan(
     *,
     batch_builder: UniverseBuilder | None = None,
     allow_relaxed_fallback: bool | None = None,
+    criteria: Mapping[str, Any] | None = None,
+    criteria_profile: Optional[str] = None,
+    persist_preferences: bool = False,
+    criteria_user_id: Optional[str] = None,
+    criteria_label: Optional[str] = None,
+    criteria_source: Optional[str] = None,
 ) -> ScanResult:
     if batch_count <= 1:
         return run_scan(
@@ -2469,6 +2778,12 @@ def run_deep_scan(
             force_refresh=True,
             batch_builder=batch_builder,
             allow_relaxed_fallback=allow_relaxed_fallback,
+            criteria=criteria,
+            criteria_profile=criteria_profile,
+            persist_preferences=persist_preferences,
+            criteria_user_id=criteria_user_id,
+            criteria_label=criteria_label,
+            criteria_source=criteria_source,
         )
 
     settings = get_settings()
@@ -2481,6 +2796,12 @@ def run_deep_scan(
             force_refresh=True,
             batch_builder=batch_builder,
             allow_relaxed_fallback=allow_relaxed_fallback,
+            criteria=criteria,
+            criteria_profile=criteria_profile,
+            persist_preferences=persist_preferences,
+            criteria_user_id=criteria_user_id,
+            criteria_label=criteria_label,
+            criteria_source=criteria_source,
         )
         aggregated_opportunities.extend(result.opportunities)
         batch_metadata.append(
