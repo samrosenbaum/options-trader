@@ -10,12 +10,31 @@ import argparse
 import json
 import os
 import sys
+from dataclasses import asdict, is_dataclass
 from datetime import datetime, timedelta, timezone
 
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from src.analysis.rejection_tracker import RejectionTracker
+
+
+def _to_serializable(value):
+    """Recursively convert dataclasses and datetimes to JSON-friendly types."""
+
+    if is_dataclass(value):
+        return _to_serializable(asdict(value))
+
+    if isinstance(value, dict):
+        return {key: _to_serializable(val) for key, val in value.items()}
+
+    if isinstance(value, list):
+        return [_to_serializable(item) for item in value]
+
+    if isinstance(value, datetime):
+        return value.isoformat()
+
+    return value
 
 
 def analyze_rejections(days_back: int = 7, min_profit_percent: float = 10.0):
@@ -43,7 +62,7 @@ def analyze_rejections(days_back: int = 7, min_profit_percent: float = 10.0):
     )
 
     # Output as JSON for API consumption
-    print(json.dumps(analysis, indent=2))
+    print(json.dumps(_to_serializable(analysis), indent=2))
 
 
 def main():
