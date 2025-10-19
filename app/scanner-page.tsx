@@ -2751,34 +2751,42 @@ export default function ScannerPage({ user }: ScannerPageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-[#0D0D0D]">
-      {/* Scanner Controls - Robinhood-inspired dark design */}
-      <div className="border-b border-zinc-800 bg-black shadow-sm">
+    <div className="relative min-h-screen overflow-hidden bg-[#05070E] text-slate-100">
+      <div className="pointer-events-none absolute inset-0 -z-10">
+        <div className="absolute -top-32 left-1/2 h-[28rem] w-[28rem] -translate-x-1/2 rounded-full bg-emerald-500/20 blur-3xl" />
+        <div className="absolute bottom-[-18rem] left-[-10rem] h-[32rem] w-[32rem] rounded-full bg-sky-500/10 blur-3xl" />
+        <div className="absolute top-1/3 -right-40 h-[26rem] w-[26rem] rounded-full bg-purple-500/10 blur-3xl" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(16,185,129,0.12),_transparent_60%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(15,23,42,0.75),transparent_60%)]" />
+      </div>
+
+      {/* Scanner Controls - redesigned glass header */}
+      <div className="border-b border-white/10 bg-white/5 shadow-[0_30px_120px_-60px_rgba(16,185,129,0.55)] backdrop-blur-2xl">
         <div className="max-w-7xl mx-auto px-6 py-6">
           <div className="flex items-center justify-between flex-wrap gap-6">
-            <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex items-center gap-3 flex-wrap">
               {/* Tab Navigation */}
-              <div className="flex items-center bg-zinc-900 rounded-lg p-1 border border-zinc-800">
+              <div className="flex items-center gap-1 rounded-full border border-white/10 bg-white/10 p-1 backdrop-blur-sm">
                 <button
                   onClick={() => setActiveTab('options')}
-                  className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                  className={`flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold uppercase tracking-widest transition-all duration-200 ${
                     activeTab === 'options'
-                      ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30'
-                      : 'text-zinc-400 hover:text-white'
+                      ? 'bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-600 text-slate-950 shadow-lg shadow-emerald-500/40'
+                      : 'text-emerald-100/70 hover:text-emerald-100'
                   }`}
                 >
                   Options
                 </button>
                 <button
                   onClick={() => setActiveTab('crypto')}
-                  className={`px-4 py-2 rounded-lg font-semibold transition-all flex items-center gap-2 ${
+                  className={`flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold uppercase tracking-widest transition-all duration-200 ${
                     activeTab === 'crypto'
-                      ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30'
-                      : 'text-zinc-400 hover:text-white'
+                      ? 'bg-gradient-to-r from-sky-400 via-blue-500 to-indigo-600 text-slate-950 shadow-lg shadow-sky-500/40'
+                      : 'text-emerald-100/70 hover:text-emerald-100'
                   }`}
                 >
                   Crypto
-                  <span className="px-1.5 py-0.5 text-[10px] font-bold bg-amber-500 text-amber-950 rounded uppercase tracking-wide">
+                  <span className="rounded-full bg-amber-400/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.4em] text-amber-200">
                     Beta
                   </span>
                 </button>
@@ -2788,17 +2796,20 @@ export default function ScannerPage({ user }: ScannerPageProps) {
                 <ScannerModeToggle mode={scannerMode} onChange={setScannerMode} />
               )}
 
-              <div className="flex items-center gap-2 bg-zinc-900 px-4 py-2.5 rounded-lg border border-zinc-800">
-                <span className="text-sm font-semibold text-emerald-500">$</span>
+              <div className="flex items-center gap-3 rounded-full border border-white/10 bg-slate-950/40 px-5 py-2 shadow-inner shadow-emerald-500/10">
+                <span className="text-sm font-semibold text-emerald-300">$</span>
                 <input
                   type="number"
                   value={investmentAmountInput}
                   onChange={(e) => setInvestmentAmountInput(e.target.value)}
-                  className="w-28 text-base font-bold bg-transparent text-white focus:outline-none placeholder-zinc-500"
+                  className="w-28 bg-transparent text-lg font-semibold text-white placeholder:text-emerald-200/50 focus:outline-none"
                   min="100"
                   max="100000"
                   step="100"
                 />
+                <span className="text-[11px] font-semibold uppercase tracking-[0.35em] text-emerald-200/70">
+                  per trade
+                </span>
               </div>
 
               <button
@@ -2806,36 +2817,41 @@ export default function ScannerPage({ user }: ScannerPageProps) {
                   activeTab === 'options' ? fetchOpportunities() : fetchCryptoAlerts()
                 }
                 disabled={activeTab === 'options' ? (isLoading || isEnhancedLoading) : cryptoLoading}
-                className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-bold shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40 transition-all duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-600 px-6 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-emerald-500/30 transition-all duration-200 hover:shadow-emerald-500/50 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
               >
-                {(activeTab === 'options' ? isLoading : cryptoLoading) ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white dark:border-slate-900 border-t-transparent rounded-full animate-spin"></div>
-                    Scanning...
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                    Scan
-                  </>
-                )}
+                <span className="pointer-events-none absolute inset-0 -translate-x-full bg-white/25 transition-transform duration-500 group-hover:translate-x-0" />
+                <span className="relative flex items-center gap-2">
+                  {(activeTab === 'options' ? isLoading : cryptoLoading) ? (
+                    <>
+                      <div className="h-4 w-4 rounded-full border-2 border-slate-950 border-t-transparent animate-spin" />
+                      <span>Scanning…</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                      <span>Scan</span>
+                    </>
+                  )}
+                </span>
               </button>
 
               {activeTab === 'options' && (
                 <button
                   onClick={fetchEnhancedOpportunities}
                   disabled={isLoading || isEnhancedLoading}
-                  className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg font-bold shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 transition-all duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-gradient-to-r from-sky-500 via-blue-600 to-purple-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-500/30 transition-all duration-200 hover:shadow-purple-500/40 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
                   title="Enhanced scan with institutional-grade filters"
                 >
-                  {isEnhancedLoading ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      Enhanced Scan...
-                    </>
-                  ) : (
+                  <span className="pointer-events-none absolute inset-0 -translate-x-full bg-white/20 transition-transform duration-500 group-hover:translate-x-0" />
+                  <span className="relative flex items-center gap-2">
+                    {isEnhancedLoading ? (
+                      <>
+                        <div className="h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                        <span>Enhanced Scan…</span>
+                      </>
+                    ) : (
                     <>
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -2844,10 +2860,11 @@ export default function ScannerPage({ user }: ScannerPageProps) {
                       <span className="px-1.5 py-0.5 text-[10px] font-bold bg-white/20 rounded">PRO</span>
                     </>
                   )}
-                </button>
-              )}
-              </div>
+                </span>
+              </button>
+            )}
             </div>
+          </div>
 
           <div className="mt-4 flex items-center gap-4 flex-wrap text-sm">
             <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg font-semibold border ${

@@ -7,7 +7,7 @@ function Tooltip({ text }: { text: string }) {
   return (
     <div className="group relative inline-block ml-1">
       <svg
-        className="w-4 h-4 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 cursor-help inline-block"
+        className="w-4 h-4 text-emerald-200/80 hover:text-emerald-100 cursor-help inline-block"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
@@ -19,8 +19,8 @@ function Tooltip({ text }: { text: string }) {
           d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
         />
       </svg>
-      <div className="invisible group-hover:visible absolute left-0 top-6 z-50 w-64 p-3 bg-slate-900 dark:bg-slate-800 text-white text-xs rounded-lg shadow-xl border border-slate-700">
-        <div className="absolute -top-1 left-4 w-2 h-2 bg-slate-900 dark:bg-slate-800 border-l border-t border-slate-700 transform rotate-45"></div>
+      <div className="invisible group-hover:visible absolute left-0 top-6 z-50 w-64 p-3 bg-slate-900/95 backdrop-blur-xl text-white text-xs rounded-xl shadow-2xl shadow-emerald-500/20 border border-emerald-500/30">
+        <div className="absolute -top-1 left-4 w-2 h-2 bg-slate-900 border-l border-t border-emerald-500/30 transform rotate-45"></div>
         {text}
       </div>
     </div>
@@ -96,17 +96,17 @@ export function CustomScannerFilters({
   ).length
 
   return (
-    <div className="space-y-4 p-6 bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg">
+    <div className="space-y-4 p-6 border border-white/10 bg-white/5 backdrop-blur-xl rounded-2xl shadow-lg shadow-emerald-500/10">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h3 className="text-lg font-semibold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          <h3 className="text-lg font-semibold text-white">
             Custom Filters
           </h3>
-          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+          <p className="text-sm text-emerald-100/70 mt-1">
             {activeFilterCount > 0 ? (
               <>
                 {matchCount !== undefined && totalCount !== undefined ? (
-                  <span className="font-medium text-blue-600 dark:text-blue-400">
+                  <span className="font-medium text-emerald-300">
                     {matchCount} of {totalCount} options match
                   </span>
                 ) : (
@@ -121,7 +121,7 @@ export function CustomScannerFilters({
         {activeFilterCount > 0 && (
           <button
             onClick={clearFilters}
-            className="px-4 py-2 text-sm font-medium text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+            className="px-4 py-2 text-sm font-medium text-rose-200 hover:text-rose-100 hover:bg-rose-500/10 rounded-lg transition-colors border border-rose-400/30"
           >
             Clear All
           </button>
@@ -130,10 +130,10 @@ export function CustomScannerFilters({
 
       {/* Workflow Callout */}
       {totalCount === 0 ? (
-        <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+        <div className="mb-4 p-4 bg-sky-500/10 border border-sky-400/40 backdrop-blur-sm rounded-xl">
           <div className="flex items-start gap-3">
             <svg
-              className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"
+              className="w-5 h-5 text-sky-300 flex-shrink-0 mt-0.5"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -146,20 +146,20 @@ export function CustomScannerFilters({
               />
             </svg>
             <div>
-              <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+              <p className="text-sm font-semibold text-white">
                 How Custom Filters Work
               </p>
-              <p className="text-sm text-blue-800 dark:text-blue-200 mt-1">
+              <p className="text-sm text-sky-100/80 mt-1">
                 Click the <strong>"Scan"</strong> button above to load options data first. Then use these filters to instantly narrow down the results to match your criteria.
               </p>
             </div>
           </div>
         </div>
       ) : (
-        <div className="mb-4 p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg">
+        <div className="mb-4 p-3 bg-emerald-500/10 border border-emerald-400/40 backdrop-blur-sm rounded-xl">
           <div className="flex items-center gap-2">
             <svg
-              className="w-4 h-4 text-emerald-600 dark:text-emerald-400"
+              className="w-4 h-4 text-emerald-300"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -171,7 +171,7 @@ export function CustomScannerFilters({
                 d="M5 13l4 4L19 7"
               />
             </svg>
-            <p className="text-xs text-emerald-800 dark:text-emerald-200">
+            <p className="text-xs text-emerald-100">
               Filtering {totalCount} scanned options in real-time
             </p>
           </div>
@@ -179,18 +179,18 @@ export function CustomScannerFilters({
       )}
 
       {/* Volume & Liquidity Section */}
-      <div className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden bg-white dark:bg-slate-800/50">
+      <div className="border border-white/10 rounded-xl overflow-hidden bg-white/10 backdrop-blur-sm">
         <button
           onClick={() => toggleSection('volume')}
-          className="w-full px-4 py-3 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+          className="w-full px-4 py-3 flex items-center justify-between hover:bg-white/5 transition-colors"
         >
-          <span className="font-medium text-slate-900 dark:text-white">Volume & Liquidity</span>
-          <span className="text-slate-400">{expandedSections.volume ? '−' : '+'}</span>
+          <span className="font-medium text-white">Volume & Liquidity</span>
+          <span className="text-emerald-200/70">{expandedSections.volume ? '−' : '+'}</span>
         </button>
         {expandedSections.volume && (
-          <div className="p-4 space-y-4 bg-slate-50/50 dark:bg-slate-900/20 border-t border-slate-200 dark:border-slate-700">
+          <div className="p-4 space-y-4 bg-white/5 border-t border-white/10">
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              <label className="block text-sm font-medium text-emerald-100/90 mb-2">
                 Min Volume: {criteria.minVolume?.toLocaleString() || 'Any'}
                 <Tooltip text="Number of option contracts traded today. Higher volume = easier to buy/sell quickly. Institutional traders typically look for 500+ volume." />
               </label>
@@ -201,11 +201,11 @@ export function CustomScannerFilters({
                 step="100"
                 value={criteria.minVolume || 0}
                 onChange={(e) => updateCriteria({ minVolume: Number(e.target.value) || undefined })}
-                className="w-full accent-blue-600"
+                className="w-full accent-emerald-400"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              <label className="block text-sm font-medium text-emerald-100/90 mb-2">
                 Min Open Interest: {criteria.minOpenInterest?.toLocaleString() || 'Any'}
                 <Tooltip text="Total number of outstanding option contracts. Shows how popular this strike is. High OI (10,000+) = institutional interest. Low OI = illiquid, harder to exit." />
               </label>
@@ -216,11 +216,11 @@ export function CustomScannerFilters({
                 step="500"
                 value={criteria.minOpenInterest || 0}
                 onChange={(e) => updateCriteria({ minOpenInterest: Number(e.target.value) || undefined })}
-                className="w-full accent-blue-600"
+                className="w-full accent-emerald-400"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              <label className="block text-sm font-medium text-emerald-100/90 mb-2">
                 Max Spread: {criteria.maxSpreadPercent ? `${(criteria.maxSpreadPercent * 100).toFixed(1)}%` : 'Any'}
                 <Tooltip text="Difference between bid and ask price. Tight spreads (<5%) = liquid markets, easy to trade. Wide spreads (>10%) = pay more to enter/exit trades." />
               </label>
@@ -231,7 +231,7 @@ export function CustomScannerFilters({
                 step="0.01"
                 value={criteria.maxSpreadPercent || 0.20}
                 onChange={(e) => updateCriteria({ maxSpreadPercent: Number(e.target.value) || undefined })}
-                className="w-full accent-blue-600"
+                className="w-full accent-emerald-400"
               />
             </div>
           </div>
@@ -239,19 +239,19 @@ export function CustomScannerFilters({
       </div>
 
       {/* Greeks Section */}
-      <div className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden bg-white dark:bg-slate-800/50">
+      <div className="border border-white/10 rounded-xl overflow-hidden bg-white/10 backdrop-blur-sm">
         <button
           onClick={() => toggleSection('greeks')}
-          className="w-full px-4 py-3 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+          className="w-full px-4 py-3 flex items-center justify-between hover:bg-white/5 transition-colors"
         >
-          <span className="font-medium text-slate-900 dark:text-white">Greeks</span>
-          <span className="text-slate-400">{expandedSections.greeks ? '−' : '+'}</span>
+          <span className="font-medium text-white">Greeks</span>
+          <span className="text-emerald-200/70">{expandedSections.greeks ? '−' : '+'}</span>
         </button>
         {expandedSections.greeks && (
-          <div className="p-4 space-y-4 bg-slate-50/50 dark:bg-slate-900/20 border-t border-slate-200 dark:border-slate-700">
+          <div className="p-4 space-y-4 bg-white/5 border-t border-white/10">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                <label className="block text-sm font-medium text-emerald-100/90 mb-2">
                   Min Delta: {criteria.minDelta?.toFixed(2) || 'Any'}
                   <Tooltip text="How much the option price moves when stock moves $1. Delta 0.5 = option moves $0.50 per $1 stock move. High delta (0.7-0.9) = acts like stock. Low delta (0.2-0.4) = cheaper but slower to profit." />
                 </label>
@@ -266,7 +266,7 @@ export function CustomScannerFilters({
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                <label className="block text-sm font-medium text-emerald-100/90 mb-2">
                   Max Delta: {criteria.maxDelta?.toFixed(2) || 'Any'}
                   <Tooltip text="Set maximum delta to filter out options that are too far in-the-money. Lower max delta = more speculative plays." />
                 </label>
@@ -281,7 +281,7 @@ export function CustomScannerFilters({
                 />
               </div>
             </div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 mt-2 bg-slate-100 dark:bg-slate-800/50 p-2 rounded">
+            <div className="text-xs text-slate-500 dark:text-emerald-200/70 mt-2 bg-slate-100 dark:bg-slate-800/50 p-2 rounded">
               💡 <strong>Quick Guide:</strong> Delta 0.5 = 50% chance of expiring in-the-money. Higher delta = safer but more expensive. Lower delta = lottery ticket.
             </div>
           </div>
@@ -289,19 +289,19 @@ export function CustomScannerFilters({
       </div>
 
       {/* IV & Time Section */}
-      <div className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden bg-white dark:bg-slate-800/50">
+      <div className="border border-white/10 rounded-xl overflow-hidden bg-white/10 backdrop-blur-sm">
         <button
           onClick={() => toggleSection('ivTime')}
-          className="w-full px-4 py-3 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+          className="w-full px-4 py-3 flex items-center justify-between hover:bg-white/5 transition-colors"
         >
-          <span className="font-medium text-slate-900 dark:text-white">IV & Expiration</span>
-          <span className="text-slate-400">{expandedSections.ivTime ? '−' : '+'}</span>
+          <span className="font-medium text-white">IV & Expiration</span>
+          <span className="text-emerald-200/70">{expandedSections.ivTime ? '−' : '+'}</span>
         </button>
         {expandedSections.ivTime && (
-          <div className="p-4 space-y-4 bg-slate-50/50 dark:bg-slate-900/20 border-t border-slate-200 dark:border-slate-700">
+          <div className="p-4 space-y-4 bg-white/5 border-t border-white/10">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                <label className="block text-sm font-medium text-emerald-100/90 mb-2">
                   Min IV: {criteria.minIV ? `${(criteria.minIV * 100).toFixed(0)}%` : 'Any'}
                   <Tooltip text="Implied Volatility - Market's expectation of future price movement. High IV (60%+) = expensive options, big moves expected. Low IV (20-40%) = cheap options, calm expected. Sell high IV, buy low IV." />
                 </label>
@@ -316,7 +316,7 @@ export function CustomScannerFilters({
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                <label className="block text-sm font-medium text-emerald-100/90 mb-2">
                   Max IV: {criteria.maxIV ? `${(criteria.maxIV * 100).toFixed(0)}%` : 'Any'}
                   <Tooltip text="Filter out options with too high IV. Very high IV (100%+) often means earnings coming up or major news - risky!" />
                 </label>
@@ -333,7 +333,7 @@ export function CustomScannerFilters({
             </div>
             <div className="grid grid-cols-2 gap-4 mt-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                <label className="block text-sm font-medium text-emerald-100/90 mb-2">
                   Min DTE: {criteria.minDTE || 'Any'}
                   <Tooltip text="Days To Expiration - How long until the option expires. 0-7 days = weekly plays, high risk/reward. 30-60 days = sweet spot for most strategies. 90+ days = LEAPS, lower theta decay." />
                 </label>
@@ -348,7 +348,7 @@ export function CustomScannerFilters({
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                <label className="block text-sm font-medium text-emerald-100/90 mb-2">
                   Max DTE: {criteria.maxDTE || 'Any'}
                   <Tooltip text="Set maximum days to expiration. Shorter DTE = faster gains/losses. Longer DTE = more time to be right, but ties up capital longer." />
                 </label>
@@ -363,7 +363,7 @@ export function CustomScannerFilters({
                 />
               </div>
             </div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 mt-2 bg-slate-100 dark:bg-slate-800/50 p-2 rounded">
+            <div className="text-xs text-slate-500 dark:text-emerald-200/70 mt-2 bg-slate-100 dark:bg-slate-800/50 p-2 rounded">
               💡 <strong>Pro Tip:</strong> High IV = good for selling options. Low IV = good for buying options. DTE 30-45 days is the "Goldilocks zone" for most traders.
             </div>
           </div>
@@ -371,18 +371,18 @@ export function CustomScannerFilters({
       </div>
 
       {/* Other Filters Section */}
-      <div className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden bg-white dark:bg-slate-800/50">
+      <div className="border border-white/10 rounded-xl overflow-hidden bg-white/10 backdrop-blur-sm">
         <button
           onClick={() => toggleSection('other')}
-          className="w-full px-4 py-3 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+          className="w-full px-4 py-3 flex items-center justify-between hover:bg-white/5 transition-colors"
         >
-          <span className="font-medium text-slate-900 dark:text-white">Type & Price</span>
-          <span className="text-slate-400">{expandedSections.other ? '−' : '+'}</span>
+          <span className="font-medium text-white">Type & Price</span>
+          <span className="text-emerald-200/70">{expandedSections.other ? '−' : '+'}</span>
         </button>
         {expandedSections.other && (
-          <div className="p-4 space-y-4 bg-slate-50/50 dark:bg-slate-900/20 border-t border-slate-200 dark:border-slate-700">
+          <div className="p-4 space-y-4 bg-white/5 border-t border-white/10">
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              <label className="block text-sm font-medium text-emerald-100/90 mb-2">
                 Option Type
                 <Tooltip text="Calls profit when stock goes UP. Puts profit when stock goes DOWN. 'Both' shows all options." />
               </label>
@@ -394,7 +394,7 @@ export function CustomScannerFilters({
                     className={`flex-1 px-4 py-2 rounded-lg font-medium transition-all ${
                       (criteria.optionType === type) || (type === 'both' && !criteria.optionType)
                         ? 'bg-blue-600 text-white shadow-md'
-                        : 'bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600'
+                        : 'bg-white dark:bg-slate-700 text-emerald-100/90 hover:bg-slate-100 dark:hover:bg-slate-600'
                     }`}
                   >
                     {type.charAt(0).toUpperCase() + type.slice(1)}
@@ -404,7 +404,7 @@ export function CustomScannerFilters({
             </div>
             <div className="grid grid-cols-2 gap-4 mt-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                <label className="block text-sm font-medium text-emerald-100/90 mb-2">
                   Min Premium: ${criteria.minPremium?.toFixed(2) || 'Any'}
                   <Tooltip text="Cost per share to buy the option (multiply by 100 for total cost). Low premium ($0.50-$2) = affordable but riskier. High premium ($5+) = expensive but safer/more likely to profit." />
                 </label>
@@ -419,7 +419,7 @@ export function CustomScannerFilters({
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                <label className="block text-sm font-medium text-emerald-100/90 mb-2">
                   Max Premium: ${criteria.maxPremium?.toFixed(2) || 'Any'}
                   <Tooltip text="Filter out expensive options. Good for limiting risk - you can't lose more than the premium you paid!" />
                 </label>
@@ -434,7 +434,7 @@ export function CustomScannerFilters({
                 />
               </div>
             </div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 mt-2 bg-slate-100 dark:bg-slate-800/50 p-2 rounded">
+            <div className="text-xs text-slate-500 dark:text-emerald-200/70 mt-2 bg-slate-100 dark:bg-slate-800/50 p-2 rounded">
               💡 <strong>Remember:</strong> Premium shown is per share. Total cost = Premium × 100. Example: $2.50 premium = $250 total risk per contract.
             </div>
           </div>

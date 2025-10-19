@@ -115,16 +115,16 @@ body {
   }
 }
 
+
 .modern-card {
-  @apply relative overflow-hidden rounded-xl border border-slate-300 bg-white backdrop-blur-xl transition-all duration-300;
-  @apply hover:shadow-2xl hover:shadow-emerald-500/10 hover:-translate-y-1;
-  @apply dark:border-slate-700/50 dark:bg-slate-900/80;
+  @apply relative overflow-hidden rounded-3xl border border-white/10 bg-white/10 text-slate-100 shadow-[0_30px_120px_-60px_rgba(16,185,129,0.45)] backdrop-blur-2xl transition-all duration-500;
+  @apply hover:-translate-y-1 hover:shadow-emerald-500/30;
   animation: float-in 0.5s ease-out;
 
-  /* Grain texture for depth - lighter in light mode */
   background-image:
-    radial-gradient(circle at 1px 1px, rgba(0, 0, 0, 0.015) 1px, transparent 0);
-  background-size: 20px 20px;
+    radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.04) 1px, transparent 0),
+    linear-gradient(140deg, rgba(15, 23, 42, 0.85), rgba(15, 118, 110, 0.2));
+  background-size: 24px 24px, auto;
 }
 
 .modern-card::before {
