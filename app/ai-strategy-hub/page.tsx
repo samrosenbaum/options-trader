@@ -53,10 +53,10 @@ export default function AIStrategyHubPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
         <div className="text-center space-y-3">
           <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-slate-600 dark:text-slate-400 text-sm">Warming up the AI playbook…</p>
+          <p className="text-slate-600 text-sm">Warming up the AI playbook…</p>
         </div>
       </div>
     )
@@ -67,7 +67,7 @@ export default function AIStrategyHubPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#0D0D0D]">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       <Navigation userEmail={user.email ?? undefined} />
       <main className="py-8">
         <AIStrategyHub userEmail={user.email ?? undefined} />
