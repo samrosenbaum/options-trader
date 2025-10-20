@@ -1725,9 +1725,6 @@ export default function HomePage() {
         <RealTimeProgress
           isScanning={isLoading || cryptoLoading}
           scanType={activeTab}
-          onScanComplete={(results) => {
-            console.log('Scan completed with results:', results)
-          }}
         />
 
         {/* Stats Cards - Robinhood-inspired dark design */}

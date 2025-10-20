@@ -1841,6 +1841,46 @@ export default function ScannerPage({ user }: ScannerPageProps) {
     }
   }, [scanMetadata])
 
+  const estimatedUniverseSize = useMemo(() => {
+    const relaxedSelected = scanMetadata?.relaxedScan?.selectedCount
+    if (typeof relaxedSelected === 'number' && Number.isFinite(relaxedSelected) && relaxedSelected > 0) {
+      return relaxedSelected
+    }
+
+    const rotationRaw = scanMetadata?.rotationState
+    if (rotationRaw && typeof rotationRaw === 'object') {
+      const record = rotationRaw as Record<string, unknown>
+
+      const orderRaw = Array.isArray(record['order']) ? record['order'] : null
+      if (orderRaw) {
+        const normalizedOrder = normalizeSymbolList(
+          orderRaw
+            .map(item => (typeof item === 'string' ? item : null))
+            .filter((item): item is string => Boolean(item)),
+        )
+        if (normalizedOrder.length > 0) {
+          return normalizedOrder.length
+        }
+      }
+
+      const candidateCountRaw = record['candidateCount']
+      if (typeof candidateCountRaw === 'number' && Number.isFinite(candidateCountRaw) && candidateCountRaw > 0) {
+        return candidateCountRaw
+      }
+
+      const universeSizeRaw = record['universeSize']
+      if (typeof universeSizeRaw === 'number' && Number.isFinite(universeSizeRaw) && universeSizeRaw > 0) {
+        return universeSizeRaw
+      }
+    }
+
+    if (typeof totalEvaluated === 'number' && Number.isFinite(totalEvaluated) && totalEvaluated > 0) {
+      return totalEvaluated
+    }
+
+    return null
+  }, [scanMetadata, totalEvaluated])
+
   const isRelaxedMode = scanMode === 'relaxed'
   const relaxedSuggestionAvailable =
     scanMode === 'strict' &&
@@ -3351,9 +3391,14 @@ export default function ScannerPage({ user }: ScannerPageProps) {
         <RealTimeProgress
           isScanning={isLoading || cryptoLoading}
           scanType={activeTab}
-          onScanComplete={(results) => {
-            console.log('Scan completed with results:', results)
-          }}
+          filterMode={activeTab === 'options' ? scanMode : undefined}
+          estimatedUniverse={activeTab === 'options' ? estimatedUniverseSize : null}
+          lastTotalEvaluated={
+            activeTab === 'options' && Number.isFinite(totalEvaluated) && totalEvaluated > 0
+              ? totalEvaluated
+              : null
+          }
+          lastCompletedAt={lastSuccessfulUpdate}
         />
 
         {/* Stats Cards - Robinhood-inspired dark design (hidden while loading) */}
