@@ -3630,6 +3630,14 @@ export default function ScannerPage({ user }: ScannerPageProps) {
                 ? `Scanned ${totalEvaluated.toLocaleString()} options but found 0 strong opportunities meeting our criteria.`
                 : "The scanner is currently running but hasn't found any high-scoring opportunities yet."}
             </p>
+            <div className="mx-auto mb-6 max-w-2xl rounded-2xl border border-slate-200/60 bg-white/70 px-6 py-4 text-left shadow-sm dark:border-slate-700/60 dark:bg-slate-800/40">
+              <p className="text-sm italic leading-relaxed text-slate-700 dark:text-slate-200">
+                "Trading is about discipline. Not trading is just as important as trading—you can't rush."
+              </p>
+              <p className="mt-2 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                Stay patient, and when you're ready to find moves, try widening the filters or running another scan for fresh setups.
+              </p>
+            </div>
             {relaxedSuggestionAvailable && (
               <div className="mx-auto mb-6 max-w-xl rounded-2xl border border-amber-200 bg-amber-50 px-6 py-4 text-left text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100">
                 <p className="text-xs font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-200">
