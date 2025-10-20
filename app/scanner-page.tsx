@@ -3195,8 +3195,7 @@ export default function ScannerPage({ user }: ScannerPageProps) {
                       : 'border border-slate-700 bg-slate-800/50 text-slate-300 hover:bg-slate-700/50'
                   }`}
                 >
-                  <span className="text-lg">{hotScanMode ? '🔥' : '📊'}</span>
-                  <span>{hotScanMode ? 'Top Movers ON' : 'Scan Top Movers'}</span>
+                  {hotScanMode ? 'Top Movers ON' : 'Scan Top Movers'}
                 </button>
               )}
 
