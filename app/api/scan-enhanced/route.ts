@@ -621,7 +621,7 @@ const mergeConstraints = (
 }
 
 const extractSymbolsFromSearchParams = (params: URLSearchParams): string[] | undefined => {
-  const symbolsParam = params.get("symbols") || params.get("symbol")
+  const symbolsParam = params.get("symbols") || params.get("symbol") || params.get("targetSymbol")
   if (!symbolsParam) {
     return undefined
   }
@@ -637,7 +637,7 @@ const extractSymbolsFromBody = (body: unknown): string[] | undefined => {
     return undefined
   }
   const obj = body as Record<string, unknown>
-  const symbolsValue = obj.symbols || obj.symbol
+  const symbolsValue = obj.symbols || obj.symbol || obj.targetSymbol
 
   if (Array.isArray(symbolsValue)) {
     const symbols = symbolsValue
@@ -855,6 +855,7 @@ const executeEnhancedScanner = async ({
 
     // Add symbols filter if provided
     if (symbols && symbols.length > 0) {
+      console.log(`🎯 Running symbol-specific scan for: ${symbols.join(", ")}`)
       args.push("--symbols", symbols.join(","))
     }
 
