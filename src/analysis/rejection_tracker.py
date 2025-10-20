@@ -81,27 +81,70 @@ class MissedOpportunity:
 class RejectionTracker:
     """Tracks rejected options and analyzes their performance using Supabase."""
 
-    def __init__(self):
-        """Initialize rejection tracker with Supabase connection."""
+    def __init__(self) -> None:
+        """Initialize rejection tracker with Supabase connection.
+
+        The scanner runs in multiple environments where Supabase credentials or
+        the SDK may be unavailable (local development, CI, preview deploys).
+        The previous implementation raised immediately when credentials were
+        missing which caused the Python scanner to exit with status 1.  The
+        Next.js API treated the non-zero exit as a failure and returned the
+        fallback dataset with zero opportunities.  We now degrade gracefully by
+        making the Supabase integration optional so scanning can continue.
+        """
+
+        self.supabase = None
+        self.table_name = "rejected_options"
+        self.enabled = False
+        self._warned_disabled = False
+
         try:
-            from supabase import create_client, Client
+            from supabase import create_client, Client  # type: ignore
 
             url = os.environ.get("NEXT_PUBLIC_SUPABASE_URL")
             key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY") or os.environ.get("NEXT_PUBLIC_SUPABASE_ANON_KEY")
 
             if not url or not key:
-                raise ValueError(
-                    "Missing Supabase credentials. Set NEXT_PUBLIC_SUPABASE_URL and "
-                    "SUPABASE_SERVICE_ROLE_KEY (or NEXT_PUBLIC_SUPABASE_ANON_KEY) environment variables."
-                )
+                raise ValueError("Missing Supabase credentials")
 
-            self.supabase: Client = create_client(url, key)
-            self.table_name = "rejected_options"
+            self.supabase = create_client(url, key)
+            self.enabled = True
+            self._warned_disabled = True  # No need to emit disabled warning
 
-        except ImportError:
-            raise ImportError(
-                "supabase package not installed. Run: pip install supabase"
+        except ImportError as exc:
+            print(
+                "⚠️  Supabase SDK not installed; rejection tracking disabled.",
+                file=sys.stderr,
             )
+            print(f"   Install via 'pip install supabase': {exc}", file=sys.stderr)
+        except ValueError:
+            print(
+                "ℹ️  Supabase credentials not configured. Skipping rejection tracking.",
+                file=sys.stderr,
+            )
+        except Exception as exc:  # pragma: no cover - defensive
+            print(
+                f"⚠️  Failed to initialize Supabase rejection tracker: {exc}",
+                file=sys.stderr,
+            )
+
+    @property
+    def is_enabled(self) -> bool:
+        """Return ``True`` when Supabase logging is active."""
+
+        return bool(self.enabled and self.supabase is not None)
+
+    def _emit_disabled_notice(self) -> None:
+        """Log a single notice when operating without Supabase."""
+
+        if self._warned_disabled:
+            return
+
+        print(
+            "ℹ️  Rejection tracker disabled – skipping Supabase logging.",
+            file=sys.stderr,
+        )
+        self._warned_disabled = True
 
     @staticmethod
     def _safe_int(value, default=0):
@@ -174,6 +217,10 @@ class RejectionTracker:
             filter_stage: Which filter rejected it (e.g., "liquidity", "quality", "scoring")
             scores: Optional dict with probability_score, risk_adjusted_score, quality_score
         """
+        if not self.is_enabled:
+            self._emit_disabled_notice()
+            return
+
         try:
             record = self._build_rejection_record(symbol, option_data, rejection_reason, filter_stage, scores)
             # Insert into Supabase
@@ -199,6 +246,10 @@ class RejectionTracker:
             Number of rejections successfully logged
         """
         if not rejections:
+            return 0
+
+        if not self.is_enabled:
+            self._emit_disabled_notice()
             return 0
 
         try:
@@ -237,6 +288,10 @@ class RejectionTracker:
         Returns:
             Number of records updated
         """
+        if not self.is_enabled:
+            self._emit_disabled_notice()
+            return 0
+
         try:
             target_date = datetime.now(timezone.utc) - timedelta(days=days_ago)
             target_date_start = target_date.replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
@@ -315,6 +370,16 @@ class RejectionTracker:
         Returns:
             Dictionary with analysis results
         """
+        if not self.is_enabled:
+            self._emit_disabled_notice()
+            return {
+                "enabled": False,
+                "message": "Rejection tracking disabled",
+                "rejections_analyzed": 0,
+                "profitable_rejections": [],
+                "statistics": {},
+            }
+
         try:
             start_date = datetime.now(timezone.utc) - timedelta(days=days_back)
 
