@@ -638,7 +638,7 @@ function ProfitLossSlider({
       <div className={`${getBgColor()} rounded-lg p-4 space-y-3`}>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <div className="text-xs text-slate-600 dark:text-slate-400 mb-1">Stock Price Move</div>
+            <div className="text-xs text-slate-700 dark:text-slate-200 mb-1">Stock Price Move</div>
             <div className="text-lg font-bold text-slate-900 dark:text-white">
               {stockPricePercent >= 0 ? '+' : ''}{stockPricePercent.toFixed(1)}%
             </div>
@@ -648,7 +648,7 @@ function ProfitLossSlider({
           </div>
 
           <div>
-            <div className="text-xs text-slate-600 dark:text-slate-400 mb-1">Profit/Loss</div>
+            <div className="text-xs text-slate-700 dark:text-slate-200 mb-1">Profit/Loss</div>
             <div className={`text-lg font-bold ${getColor()}`}>
               {profitLoss >= 0 ? '+' : ''}${profitLoss.toFixed(2)}
             </div>
@@ -660,13 +660,13 @@ function ProfitLossSlider({
 
         <div className="pt-2 border-t border-slate-300 dark:border-slate-600">
           <div className="flex justify-between text-xs">
-            <span className="text-slate-600 dark:text-slate-400">Option Value</span>
+            <span className="text-slate-700 dark:text-slate-200">Option Value</span>
             <span className="font-semibold text-slate-900 dark:text-white">
               ${optionValue.toFixed(2)}/share (${currentValue.toFixed(2)} total)
             </span>
           </div>
           <div className="flex justify-between text-xs mt-1">
-            <span className="text-slate-600 dark:text-slate-400">Cost Basis</span>
+            <span className="text-slate-700 dark:text-slate-200">Cost Basis</span>
             <span className="font-semibold text-slate-900 dark:text-white">
               ${costBasis.toFixed(2)}
             </span>
