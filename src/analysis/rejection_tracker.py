@@ -27,6 +27,7 @@ Usage:
 import json
 import math
 import os
+import sys
 from dataclasses import dataclass, asdict
 from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional, Any
@@ -180,7 +181,7 @@ class RejectionTracker:
 
         except Exception as e:
             # Don't fail scanning if logging fails
-            print(f"⚠️  Failed to log rejection to Supabase: {e}")
+            print(f"⚠️  Failed to log rejection to Supabase: {e}", file=sys.stderr)
 
     def log_rejections_batch(self, rejections: List[Dict[str, Any]]) -> int:
         """
@@ -213,7 +214,7 @@ class RejectionTracker:
                     )
                     records.append(record)
                 except Exception as e:
-                    print(f"⚠️  Failed to build rejection record for {rej.get('symbol', 'UNKNOWN')}: {e}")
+                    print(f"⚠️  Failed to build rejection record for {rej.get('symbol', 'UNKNOWN')}: {e}", file=sys.stderr)
                     continue
 
             if records:
@@ -223,7 +224,7 @@ class RejectionTracker:
             return 0
 
         except Exception as e:
-            print(f"⚠️  Failed to batch log rejections to Supabase: {e}")
+            print(f"⚠️  Failed to batch log rejections to Supabase: {e}", file=sys.stderr)
             return 0
 
     def update_next_day_performance(self, days_ago: int = 1) -> int:
@@ -290,13 +291,13 @@ class RejectionTracker:
 
                 except Exception as e:
                     # Skip if option data unavailable (expired, delisted, etc.)
-                    print(f"Could not fetch next-day price for {symbol} {strike} {option_type}: {e}")
+                    print(f"Could not fetch next-day price for {symbol} {strike} {option_type}: {e}", file=sys.stderr)
                     continue
 
             return updated
 
         except Exception as e:
-            print(f"Error updating next-day performance: {e}")
+            print(f"Error updating next-day performance: {e}", file=sys.stderr)
             return 0
 
     def analyze_missed_opportunities(
@@ -461,7 +462,7 @@ class RejectionTracker:
             }
 
         except Exception as e:
-            print(f"Error analyzing missed opportunities: {e}")
+            print(f"Error analyzing missed opportunities: {e}", file=sys.stderr)
             return {
                 "total_rejections": 0,
                 "profitable_rejection_rate": 0,

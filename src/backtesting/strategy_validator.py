@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, List, Optional, Any
+import sys
 import yfinance as yf
 import pandas as pd
 import numpy as np
@@ -88,7 +89,7 @@ class StrategyValidator:
                 lookback_days=lookback_days,
             )
         except Exception as exc:
-            print(f"Warning: Could not initialize HistoricalMoveAnalyzer: {exc}")
+            print(f"Warning: Could not initialize HistoricalMoveAnalyzer: {exc}", file=sys.stderr)
 
     def _get_historical_prices(self, symbol: str) -> Optional[pd.DataFrame]:
         """Fetch historical price data for a symbol."""
@@ -103,7 +104,7 @@ class StrategyValidator:
                     self._price_cache[symbol] = cached
                     return cached
             except Exception as exc:
-                print(f"Warning: Historical analyzer failed for {symbol}: {exc}")
+                print(f"Warning: Historical analyzer failed for {symbol}: {exc}", file=sys.stderr)
 
         # Fall back to bundled sample histories for common symbols when offline
         sample_path = Path("data/sharp_move_samples") / f"{symbol.upper()}_history.csv"
@@ -122,7 +123,7 @@ class StrategyValidator:
                 self._price_cache[symbol] = df
                 return df
             except Exception as exc:
-                print(f"Warning: Could not load sample history for {symbol}: {exc}")
+                print(f"Warning: Could not load sample history for {symbol}: {exc}", file=sys.stderr)
 
         try:
             ticker = yf.Ticker(symbol)
@@ -135,7 +136,7 @@ class StrategyValidator:
             return df
 
         except Exception as e:
-            print(f"Error fetching prices for {symbol}: {e}")
+            print(f"Error fetching prices for {symbol}: {e}", file=sys.stderr)
             return None
 
     def validate_strategy(

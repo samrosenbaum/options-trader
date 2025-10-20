@@ -150,7 +150,7 @@ export function CustomScannerFilters({
                 How Custom Filters Work
               </p>
               <p className="text-sm text-sky-100/80 mt-1">
-                Click the <strong>"Scan"</strong> button above to load options data first. Then use these filters to instantly narrow down the results to match your criteria.
+                Click the <strong>&quot;Scan&quot;</strong> button above to load options data first. Then use these filters to instantly narrow down the results to match your criteria.
               </p>
             </div>
           </div>
@@ -364,7 +364,7 @@ export function CustomScannerFilters({
               </div>
             </div>
             <div className="text-xs text-slate-500 dark:text-emerald-200/70 mt-2 bg-slate-100 dark:bg-slate-800/50 p-2 rounded">
-              💡 <strong>Pro Tip:</strong> High IV = good for selling options. Low IV = good for buying options. DTE 30-45 days is the "Goldilocks zone" for most traders.
+              💡 <strong>Pro Tip:</strong> High IV = good for selling options. Low IV = good for buying options. DTE 30-45 days is the &quot;Goldilocks zone&quot; for most traders.
             </div>
           </div>
         )}

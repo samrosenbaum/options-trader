@@ -65,7 +65,7 @@ export default function Navigation({ userEmail }: { userEmail?: string }) {
                 Money Printer
               </div>
               <div className="text-xs text-slate-600 dark:text-slate-400">
-                Find explosive trading opportunities
+                Your personal trading desk
               </div>
             </div>
           </div>

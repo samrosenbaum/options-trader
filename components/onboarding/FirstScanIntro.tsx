@@ -85,11 +85,11 @@ export default function FirstScanIntro({
             id="first-scan-intro-heading"
             className="mt-4 text-2xl sm:text-3xl font-display font-bold text-white"
           >
-            Here's how to use what you just found
+            Here&apos;s how to use what you just found
           </h2>
 
           <p className="mt-2 text-sm sm:text-base text-emerald-100/80">
-            Your scanner just did the heavy lifting. Here's what to do next:
+            Your scanner just did the heavy lifting. Here&apos;s what to do next:
           </p>
 
           <div className="mt-6 space-y-3">
@@ -119,7 +119,7 @@ export default function FirstScanIntro({
               onClick={onComplete}
               className="w-full rounded-full bg-gradient-to-r from-emerald-400 via-emerald-300 to-emerald-500 px-6 py-3 text-sm sm:text-base font-semibold text-emerald-950 shadow-[0_10px_40px_rgba(16,185,129,0.45)] transition hover:shadow-[0_12px_45px_rgba(16,185,129,0.55)] focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 relative z-50 pointer-events-auto"
             >
-              Got it, let's explore
+              Got it, let&apos;s explore
             </button>
             {onSkip && (
               <button
@@ -127,7 +127,7 @@ export default function FirstScanIntro({
                 onClick={onSkip}
                 className="w-full text-xs sm:text-sm font-medium text-emerald-200/70 hover:text-emerald-100 py-2 relative z-50 pointer-events-auto"
               >
-                I'll figure it out myself
+                I&apos;ll figure it out myself
               </button>
             )}
           </div>

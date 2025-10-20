@@ -1241,7 +1241,6 @@ export default function ScannerPage({ user }: ScannerPageProps) {
   const [chatOpportunity, setChatOpportunity] = useState<Opportunity | null>(null)
   const [hasCompletedFirstScan, setHasCompletedFirstScan] = useState<boolean | null>(null)
   const [isFirstScanIntroOpen, setIsFirstScanIntroOpen] = useState(false)
-  const [needsWelcomeSetup, setNeedsWelcomeSetup] = useState<boolean>(false)
   const [isWelcomeSetupOpen, setIsWelcomeSetupOpen] = useState(false)
   const [targetSymbolInput, setTargetSymbolInput] = useState('')
   const previousTabRef = useRef<'options' | 'crypto' | null>(null)
@@ -1317,7 +1316,7 @@ export default function ScannerPage({ user }: ScannerPageProps) {
     setIsFirstScanIntroOpen(false)
     setHasCompletedFirstScan(true) // Update state immediately to prevent re-showing
     void markFirstScanComplete()
-  }, [markFirstScanComplete])
+  }, [markFirstScanComplete, isFirstScanIntroOpen])
 
   const handleWelcomeComplete = useCallback(async (data: {
     userName: string
@@ -1325,7 +1324,6 @@ export default function ScannerPage({ user }: ScannerPageProps) {
     dailyBudget: number
   }) => {
     setIsWelcomeSetupOpen(false)
-    setNeedsWelcomeSetup(false)
 
     // Update local state immediately
     setUserPortfolioConstraints({
@@ -1556,7 +1554,6 @@ export default function ScannerPage({ user }: ScannerPageProps) {
 
           // Check if user needs welcome setup (no user_name means new user)
           const needsSetup = !data.user_name || data.user_name.trim() === ''
-          setNeedsWelcomeSetup(needsSetup)
           if (needsSetup) {
             setIsWelcomeSetupOpen(true)
           }
@@ -1580,7 +1577,6 @@ export default function ScannerPage({ user }: ScannerPageProps) {
             dailyContractBudget: null,
           })
           // No user settings - new user needs setup
-          setNeedsWelcomeSetup(true)
           setIsWelcomeSetupOpen(true)
           // No user settings - check localStorage
           const localFirstScan = getLocalFirstScan()

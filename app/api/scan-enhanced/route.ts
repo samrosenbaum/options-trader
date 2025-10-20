@@ -371,22 +371,6 @@ const resolveFilterMode = (
   return extractFilterModeFromBody(body)
 }
 
-const normalizePercent = (value: unknown): number | null => {
-  if (typeof value !== "number" || Number.isNaN(value)) {
-    return null
-  }
-
-  if (!Number.isFinite(value)) {
-    return null
-  }
-
-  if (Math.abs(value) > 1.5) {
-    return value
-  }
-
-  return value * 100
-}
-
 // Commented out - not used after switching to cache-only mode
 /* const sanitizeReturns = (returns: EnhancedScannerOpportunity["returnsAnalysis"]): EnhancedScannerOpportunity["returnsAnalysis"] => {
   if (!Array.isArray(returns)) {

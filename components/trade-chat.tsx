@@ -181,11 +181,11 @@ export function TradeChat({ opportunity, isOpen, onClose }: TradeChatProps) {
         <div className="flex items-center justify-between border-b-2 border-slate-900 p-6 dark:border-white">
           <div>
             <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-              💬 Ask AI about {opportunity.symbol}
+              💬 Desk Notes: {opportunity.symbol}
             </h2>
             <p className="text-sm text-slate-600 dark:text-slate-400">
               {opportunity.optionType.toUpperCase()} ${opportunity.strike} • Exp{' '}
-              {opportunity.expiration}
+              {opportunity.expiration} • Chat with Monty about this position
             </p>
           </div>
           <button

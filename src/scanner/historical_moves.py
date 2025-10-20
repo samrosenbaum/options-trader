@@ -170,7 +170,7 @@ class HistoricalMoveAnalyzer:
                 return df
 
         except Exception as e:
-            print(f"Warning: Error reading cache for {symbol}: {e}")
+            print(f"Warning: Error reading cache for {symbol}: {e}", file=sys.stderr)
             return None
 
     def _cache_data(self, symbol: str, df: pd.DataFrame) -> None:
@@ -205,7 +205,7 @@ class HistoricalMoveAnalyzer:
                 conn.commit()
 
         except Exception as e:
-            print(f"Warning: Error caching data for {symbol}: {e}")
+            print(f"Warning: Error caching data for {symbol}: {e}", file=sys.stderr)
 
     def get_price_history(self, symbol: str) -> Optional[pd.DataFrame]:
         """Fetch historical price data for a symbol.
@@ -243,7 +243,7 @@ class HistoricalMoveAnalyzer:
             return df
 
         except Exception as e:
-            print(f"Warning: Could not fetch price history for {symbol}: {e}")
+            print(f"Warning: Could not fetch price history for {symbol}: {e}", file=sys.stderr)
             return None
 
     def analyze_move_probability(

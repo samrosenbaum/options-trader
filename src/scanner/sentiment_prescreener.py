@@ -310,7 +310,7 @@ class SentimentPreScreener:
             print("📦 Using cached pre-screen results", file=sys.stderr)
             return self.cache.get('hot_symbols', [])[:max_results]
 
-        print("\n🚀 Running sentiment pre-screen...")
+        print("\n🚀 Running sentiment pre-screen...", file=sys.stderr)
         print("="*80, file=sys.stderr)
 
         symbol_scores: Dict[str, int] = {}

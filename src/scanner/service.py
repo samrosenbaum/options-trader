@@ -1018,7 +1018,7 @@ class SmartOptionsScanner:
                 )
             except Exception as e:
                 # If historical analysis fails, continue without it
-                print(f"Warning: Historical analysis failed for {option['symbol']}: {e}")
+                print(f"Warning: Historical analysis failed for {option['symbol']}: {e}", file=sys.stderr)
                 historical_context = {
                     "available": False,
                     "message": f"Historical data unavailable: {str(e)}"
@@ -1821,7 +1821,7 @@ class SmartOptionsScanner:
                         closes = price_history["close"].values
                         price_change = ((closes[-1] - closes[-2]) / closes[-2]) * 100
                 except Exception as e:
-                    print(f"Warning: Could not fetch price history for {symbol}: {e}")
+                    print(f"Warning: Could not fetch price history for {symbol}: {e}", file=sys.stderr)
 
             # Prepare data for signal aggregator
             signal_data = {
@@ -1851,7 +1851,7 @@ class SmartOptionsScanner:
             }
 
         except Exception as e:
-            print(f"Error calculating enhanced directional bias for {symbol}: {e}")
+            print(f"Error calculating enhanced directional bias for {symbol}: {e}", file=sys.stderr)
             return None
 
     def calculate_directional_bias(self, option: pd.Series, swing_signal: Optional[Dict[str, Any]]) -> Dict[str, Any]:

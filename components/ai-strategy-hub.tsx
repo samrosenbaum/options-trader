@@ -5,12 +5,8 @@ import { useRouter } from "next/navigation";
 import useSWR from "swr";
 import {
   Brain,
-  CalendarDays,
-  GraduationCap,
   ShieldCheck,
   Sparkles,
-  TrendingUp,
-  Waves,
   Settings as SettingsIcon,
   AlertCircle,
 } from "lucide-react";
@@ -99,7 +95,7 @@ function toneToStatus(tone: MarketRegimeTone): BuildRequirement["status"] {
   return "in-progress";
 }
 
-export function AIStrategyHub({ userEmail }: AIStrategyHubProps) {
+export function AIStrategyHub() {
   const router = useRouter();
   const [selectedRisk, setSelectedRisk] = useState<RiskProfileKey>("balanced");
   const [broker, setBroker] = useState<BrokerId>("robinhood");
