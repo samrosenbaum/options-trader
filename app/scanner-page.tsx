@@ -3111,6 +3111,31 @@ export default function ScannerPage({ user }: ScannerPageProps) {
               )}
 
               {activeTab === 'options' && (
+                <div className="flex items-center gap-1 rounded-full border border-white/10 bg-white/10 p-1 backdrop-blur-sm">
+                  <button
+                    onClick={() => setScanMode('strict')}
+                    className={`rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-widest transition-all duration-200 ${
+                      scanMode === 'strict'
+                        ? 'bg-gradient-to-r from-blue-500 via-blue-600 to-purple-600 text-white shadow-lg shadow-blue-500/40'
+                        : 'text-emerald-100/70 hover:text-emerald-100'
+                    }`}
+                  >
+                    Strict
+                  </button>
+                  <button
+                    onClick={() => setScanMode('relaxed')}
+                    className={`rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-widest transition-all duration-200 ${
+                      scanMode === 'relaxed'
+                        ? 'bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-600 text-slate-950 shadow-lg shadow-emerald-500/40'
+                        : 'text-emerald-100/70 hover:text-emerald-100'
+                    }`}
+                  >
+                    Relaxed
+                  </button>
+                </div>
+              )}
+
+              {activeTab === 'options' && (
                 <div className="flex items-center gap-3 rounded-full border border-white/10 bg-slate-950/40 px-5 py-2 shadow-inner shadow-emerald-500/10">
                   <svg className="h-5 w-5 text-emerald-300" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
                     <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>

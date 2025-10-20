@@ -677,6 +677,24 @@ interface CachedScanResponse {
  * Fetch cached scan results from Supabase
  * Returns cached results if available and fresh (< 15 minutes old)
  */
+const isMarketOpen = () => {
+  const now = new Date()
+  const etTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }))
+  const day = etTime.getDay() // 0 = Sunday, 6 = Saturday
+  const hour = etTime.getHours()
+  const minute = etTime.getMinutes()
+
+  // Market is closed on weekends
+  if (day === 0 || day === 6) return false
+
+  // Market hours: 9:30 AM - 4:00 PM ET
+  const marketOpen = 9.5 // 9:30 AM
+  const marketClose = 16 // 4:00 PM
+  const currentTime = hour + minute / 60
+
+  return currentTime >= marketOpen && currentTime < marketClose
+}
+
 const fetchCachedScanResults = async (filterMode: FilterMode = "strict") => {
   try {
     const supabase = await createClient()
@@ -696,16 +714,21 @@ const fetchCachedScanResults = async (filterMode: FilterMode = "strict") => {
     }
 
     const ageMinutes = data.age_minutes || 0
+    const marketOpen = isMarketOpen()
 
-    // Accept cache up to 2 hours old - showing old data is better than no data
-    // Mark as stale in metadata so UI can warn users
-    if (ageMinutes > 120) {
+    // Accept cache rules:
+    // - Market open: up to 5 minutes for fast-moving options
+    // - Market closed: accept cache from last market session (up to 7 days for weekends/holidays)
+    const maxAgeMinutes = marketOpen ? 5 : 10080 // 5 minutes during market, 7 days when closed
+
+    if (ageMinutes > maxAgeMinutes) {
       console.warn(`Cached scan is too old (${ageMinutes.toFixed(1)} minutes), rejecting`)
       return null
     }
 
     const isStale = ageMinutes > 15
-    console.log(`✅ Serving cached scan (${ageMinutes.toFixed(1)} minutes old, ${data.opportunities?.length || 0} opportunities)${isStale ? ' [STALE]' : ''}`)
+    const marketClosedNotice = !marketOpen ? ' [MARKET CLOSED - SHOWING LAST SESSION]' : ''
+    console.log(`✅ Serving cached scan (${ageMinutes.toFixed(1)} minutes old, ${data.opportunities?.length || 0} opportunities)${isStale ? ' [STALE]' : ''}${marketClosedNotice}`)
 
     return {
       opportunities: data.opportunities || [],
@@ -718,7 +741,8 @@ const fetchCachedScanResults = async (filterMode: FilterMode = "strict") => {
         cacheAgeMinutes: ageMinutes,
         cacheTimestamp: data.scan_timestamp,
         scanDuration: data.scan_duration_seconds,
-        source: 'cached_background_scan',
+        source: marketOpen ? 'cached_background_scan' : 'cached_last_market_session',
+        marketClosed: !marketOpen,
       },
     }
   } catch (error) {

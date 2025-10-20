@@ -267,8 +267,17 @@ class SmartOptionsScanner:
         greeks: Mapping[str, float],
         iv_rank: float,
     ) -> bool:
+        # Check if market is open - relax preference bands when closed (stale greeks/IV data)
+        import pytz
+        et_tz = pytz.timezone('America/New_York')
+        now_et = datetime.now(et_tz)
+        is_weekend = now_et.weekday() >= 5
+        hour_decimal = now_et.hour + now_et.minute / 60
+        is_market_hours = not is_weekend and 9.5 <= hour_decimal < 16.0
+
         cfg = self.filter_config
 
+        # DTE filters always apply (expiration dates don't change after hours)
         min_dte = cfg.get("dte_min")
         if isinstance(min_dte, (int, float)) and dte < int(min_dte):
             return False
@@ -276,6 +285,11 @@ class SmartOptionsScanner:
         if isinstance(max_dte, (int, float)) and dte > int(max_dte):
             return False
 
+        # Skip greeks/IV checks when market closed (data is stale)
+        if not is_market_hours:
+            return True
+
+        # During market hours: apply strict preference bands
         delta = abs(float(greeks.get("delta", 0.0)))
         min_delta = cfg.get("delta_min")
         if isinstance(min_delta, (int, float)) and delta < float(min_delta):
@@ -691,23 +705,37 @@ class SmartOptionsScanner:
             if col in working_data.columns:
                 working_data[col] = pd.to_numeric(working_data[col], errors="coerce")
 
+        # Fill NaN values with 0 after market close (yfinance returns NaN volume after hours)
+        working_data = working_data.fillna({"volume": 0, "openInterest": 0, "bid": 0, "ask": 0})
+
+        # Check if market is open (9:30 AM - 4:00 PM ET, Mon-Fri)
+        from datetime import datetime
+        import pytz
+        et_tz = pytz.timezone('America/New_York')
+        now_et = datetime.now(et_tz)
+        is_weekend = now_et.weekday() >= 5  # 5=Saturday, 6=Sunday
+        hour_decimal = now_et.hour + now_et.minute / 60
+        is_market_hours = not is_weekend and 9.5 <= hour_decimal < 16.0
+
         cfg = self.filter_config
         mask = pd.Series(True, index=working_data.index)
 
+        # Skip volume/OI filters when market is closed (data is stale/unavailable)
         volume_min = cfg.get("strict_volume_min")
-        if "volume" in working_data and isinstance(volume_min, (int, float)):
+        if is_market_hours and "volume" in working_data and isinstance(volume_min, (int, float)):
             mask &= working_data["volume"] >= float(volume_min)
             volume_max = cfg.get("strict_volume_max")
             if isinstance(volume_max, (int, float)):
                 mask &= working_data["volume"] <= float(volume_max)
 
         oi_min = cfg.get("strict_open_interest_min")
-        if "openInterest" in working_data and isinstance(oi_min, (int, float)):
+        if is_market_hours and "openInterest" in working_data and isinstance(oi_min, (int, float)):
             mask &= working_data["openInterest"] >= float(oi_min)
 
         ratio_min = cfg.get("strict_volume_ratio_min")
         if (
-            isinstance(ratio_min, (int, float))
+            is_market_hours
+            and isinstance(ratio_min, (int, float))
             and ratio_min > 0
             and "volume" in working_data
             and "openInterest" in working_data
@@ -718,9 +746,10 @@ class SmartOptionsScanner:
 
         if "lastPrice" in working_data:
             mask &= working_data["lastPrice"] > 0.05
-        if "bid" in working_data:
+        # Skip bid/ask filters when market is closed (data is stale/unavailable)
+        if is_market_hours and "bid" in working_data:
             mask &= working_data["bid"] > 0
-        if "ask" in working_data:
+        if is_market_hours and "ask" in working_data:
             mask &= working_data["ask"] > 0
 
         liquid_options = working_data[mask].copy()
@@ -938,13 +967,28 @@ class SmartOptionsScanner:
                 continue
 
             # Quality thresholds - reasonable levels to filter junk
-            # Minimum score 45 (retail improvements give 9 pts for affordability, so this allows cheap good setups)
-            # Minimum 5% probability and 3% expected ROI to avoid lottery tickets
-            quality_setup = (
-                score >= 45  # Reasonable minimum with affordability bonuses
-                and probability_percent >= 5  # Some chance of profit
-                and expected_roi >= 3  # Some expected return
-            )
+            # When market is closed, use more lenient thresholds since data is stale
+            import pytz
+            et_tz = pytz.timezone('America/New_York')
+            now_et = datetime.now(et_tz)
+            is_weekend = now_et.weekday() >= 5
+            hour_decimal = now_et.hour + now_et.minute / 60
+            is_market_hours = not is_weekend and 9.5 <= hour_decimal < 16.0
+
+            if is_market_hours:
+                # Strict thresholds during market hours (live data)
+                quality_setup = (
+                    score >= 45  # Reasonable minimum with affordability bonuses
+                    and probability_percent >= 5  # Some chance of profit
+                    and expected_roi >= 3  # Some expected return
+                )
+            else:
+                # Lenient thresholds when market closed (stale data, scores may be artificially low)
+                quality_setup = (
+                    score >= 25  # Lower threshold for stale data
+                    and probability_percent >= 1  # Very low bar
+                    and expected_roi >= 1  # Very low bar
+                )
 
             # No relaxed setup - either passes quality or doesn't show
             relaxed_setup = False
