@@ -44,6 +44,7 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
         max_symbols: Optional[int] = None,
         max_results: int = 20,
         max_per_symbol: int = 5,
+        hot_scan_mode: bool = False,
         **kwargs
     ):
         """
@@ -53,11 +54,13 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
             max_symbols: Maximum symbols to scan
             max_results: Maximum total opportunities to return
             max_per_symbol: Maximum opportunities per symbol (for diversity)
+            hot_scan_mode: If True, scan only stocks with big moves (3%+) and high volume (800k+)
         """
         super().__init__(max_symbols, **kwargs)
 
         self.max_results = max_results
         self.max_per_symbol = max_per_symbol
+        self.hot_scan_mode = hot_scan_mode
 
         # Initialize enhanced components
         self.enhanced_scanner = EnhancedOptionsScanner(
@@ -98,17 +101,48 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
         self.use_sentiment_prescreening = os.getenv('USE_SENTIMENT_PRESCREENING', '0') == '1'
 
         print("🚀 Enhanced scanner initialized with institutional-grade components + backtesting", file=sys.stderr)
-        if self.use_sentiment_prescreening:
+        if self.hot_scan_mode:
+            print("🔥 SCAN TOP MOVERS MODE - targeting stocks with 3%+ moves and 800k+ volume", file=sys.stderr)
+        elif self.use_sentiment_prescreening:
             print("📊 Sentiment pre-screening ENABLED - will prioritize hot symbols", file=sys.stderr)
         else:
             print("⚡ Using fast mode: pre-screening disabled for speed", file=sys.stderr)
 
     def _next_symbol_batch(self) -> List[str]:
         """
-        Override symbol batch selection to use sentiment pre-screening.
+        Override symbol batch selection to use hot scan or sentiment pre-screening.
 
         Returns symbols with high market activity instead of round-robin.
         """
+        # Hot Scan mode takes priority
+        if self.hot_scan_mode:
+            try:
+                # Get stocks with big moves AND high volume
+                movers = self.sentiment_prescreener.get_hot_movers(
+                    universe=self.fetcher.priority_symbols,
+                    limit=min(30, self.symbol_limit or 30),
+                    min_volume=800,  # 800k+ volume (in thousands)
+                    min_move_pct=3.0  # 3%+ daily move
+                )
+
+                # Extract just the symbols
+                hot_symbols = [m['symbol'] for m in movers]
+
+                if hot_symbols:
+                    print(f"🔥 Found {len(hot_symbols)} top movers:", file=sys.stderr)
+                    for m in movers[:5]:  # Show top 5
+                        print(f"   {m['symbol']}: {m['move_pct']:+.1f}% move, {m['avg_volume_k']:.0f}k volume", file=sys.stderr)
+                    self.current_batch_symbols = hot_symbols
+                    return hot_symbols
+                else:
+                    print("⚠️  No qualifying top movers found, using standard selection", file=sys.stderr)
+                    return super()._next_symbol_batch()
+
+            except Exception as e:
+                print(f"⚠️  Top movers scan failed ({e}), using standard selection", file=sys.stderr)
+                return super()._next_symbol_batch()
+
+        # Sentiment pre-screening mode
         if not self.use_sentiment_prescreening:
             # Fall back to parent's round-robin behavior
             return super()._next_symbol_batch()
@@ -909,6 +943,7 @@ def run_enhanced_scan(
     batch_builder = None,
     allow_relaxed_fallback: bool | None = None,
     symbols: Optional[List[str]] = None,
+    hot_scan_mode: bool = False,
 ) -> ScanResult:
     """Run enhanced scan with institutional-grade components.
 
@@ -920,6 +955,7 @@ def run_enhanced_scan(
         batch_builder: Custom universe builder function
         allow_relaxed_fallback: Whether to allow relaxed fallback filters
         symbols: Optional list of specific symbols to scan (e.g., ['TSLA', 'AAPL'])
+        hot_scan_mode: If True, scan only stocks with big moves (3%+) and high volume (800k+)
     """
 
     if symbols:
@@ -934,7 +970,8 @@ def run_enhanced_scan(
         max_symbols=max_symbols,
         max_results=max_results,
         max_per_symbol=max_per_symbol,
-        batch_builder=batch_builder
+        batch_builder=batch_builder,
+        hot_scan_mode=hot_scan_mode,
     )
     result = scanner.scan_for_opportunities(
         force_refresh=force_refresh,
@@ -999,6 +1036,11 @@ def cli(argv: Optional[Sequence[str]] = None) -> None:
         type=str,
         help="Comma-separated list of specific symbols to scan (e.g., 'TSLA,AAPL,NVDA')"
     )
+    parser.add_argument(
+        "--hot-scan",
+        action="store_true",
+        help="Scan Top Movers: Find stocks with 3%+ moves and 800k+ volume"
+    )
 
     args = parser.parse_args(argv)
 
@@ -1017,7 +1059,8 @@ def cli(argv: Optional[Sequence[str]] = None) -> None:
         max_per_symbol=args.max_per_symbol,
         force_refresh=args.force_refresh,
         allow_relaxed_fallback=allow_relaxed,
-        symbols=target_symbols
+        symbols=target_symbols,
+        hot_scan_mode=args.hot_scan,
     )
     
     print(result.to_json(indent=args.json_indent))

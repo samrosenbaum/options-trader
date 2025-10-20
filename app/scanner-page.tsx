@@ -1243,6 +1243,7 @@ export default function ScannerPage({ user }: ScannerPageProps) {
   const [isFirstScanIntroOpen, setIsFirstScanIntroOpen] = useState(false)
   const [isWelcomeSetupOpen, setIsWelcomeSetupOpen] = useState(false)
   const [targetSymbolInput, setTargetSymbolInput] = useState('')
+  const [hotScanMode, setHotScanMode] = useState(false)
   const previousTabRef = useRef<'options' | 'crypto' | null>(null)
   const opportunitiesRef = useRef<Opportunity[]>([])
   const scanModeRef = useRef<FilterMode>('strict')
@@ -2068,6 +2069,7 @@ export default function ScannerPage({ user }: ScannerPageProps) {
         portfolioSize: resolvedPortfolioSize,
         dailyContractBudget: resolvedDailyBudget,
         ...(targetSymbols.length > 0 ? { symbols: targetSymbols } : {}),
+        ...(hotScanMode ? { hotScan: true } : {}),
       }
 
       const response = await fetchWithTimeout(
@@ -2135,7 +2137,7 @@ export default function ScannerPage({ user }: ScannerPageProps) {
         }, 500)
       }
     }
-  }, [attemptFallbackFetch, handleScanPayload, hasCompletedFirstScan, investmentAmount, targetSymbolInput, userPortfolioConstraints])
+  }, [attemptFallbackFetch, handleScanPayload, hasCompletedFirstScan, hotScanMode, investmentAmount, targetSymbolInput, userPortfolioConstraints])
 
   const fetchCryptoAlerts = useCallback(async () => {
     try {
@@ -3183,6 +3185,20 @@ export default function ScannerPage({ user }: ScannerPageProps) {
                   per trade
                 </span>
               </div>
+
+              {activeTab === 'options' && (
+                <button
+                  onClick={() => setHotScanMode(!hotScanMode)}
+                  className={`inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition-all duration-200 ${
+                    hotScanMode
+                      ? 'bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-slate-950 shadow-lg shadow-orange-500/40'
+                      : 'border border-slate-700 bg-slate-800/50 text-slate-300 hover:bg-slate-700/50'
+                  }`}
+                >
+                  <span className="text-lg">{hotScanMode ? '🔥' : '📊'}</span>
+                  <span>{hotScanMode ? 'Top Movers ON' : 'Scan Top Movers'}</span>
+                </button>
+              )}
 
               <button
                 onClick={() =>

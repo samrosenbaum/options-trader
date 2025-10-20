@@ -756,11 +756,13 @@ const executeEnhancedScanner = async ({
   debugContext,
   filterMode,
   symbols,
+  hotScan,
 }: {
   constraints?: ConstraintPayload
   debugContext?: Record<string, unknown>
   filterMode?: FilterMode
   symbols?: string[]
+  hotScan?: boolean
 }) => {
   const forcedPolicy = determineScannerExecutionPolicy()
   const resolvedMode: FilterMode = filterMode === "strict" ? "strict" : "relaxed"
@@ -857,6 +859,12 @@ const executeEnhancedScanner = async ({
     if (symbols && symbols.length > 0) {
       console.log(`🎯 Running symbol-specific scan for: ${symbols.join(", ")}`)
       args.push("--symbols", symbols.join(","))
+    }
+
+    // Add hot scan mode if requested
+    if (hotScan) {
+      console.log(`🔥 Scanning Top Movers - targeting stocks with 3%+ moves and 800k+ volume`)
+      args.push("--hot-scan")
     }
 
     const python = spawn(pythonPath, args, {
@@ -1032,11 +1040,13 @@ export async function GET(request: Request) {
     }
     const constraints = mergeConstraints(extractConstraintsFromSearchParams(url.searchParams))
     const symbols = extractSymbolsFromSearchParams(url.searchParams)
+    const hotScan = url.searchParams.get("hotScan") === "true" || url.searchParams.get("hot-scan") === "true"
     return executeEnhancedScanner({
       constraints,
       debugContext: { requestedVia: "GET" },
       filterMode: resolvedFilterMode,
       symbols,
+      hotScan,
     })
   } catch (error) {
     console.error("Error executing enhanced scanner:", error)
@@ -1072,6 +1082,13 @@ export async function POST(request: Request) {
     const bodySymbols = extractSymbolsFromBody(body)
     const symbols = bodySymbols || searchSymbols
 
+    // Extract hotScan from search params or body
+    const searchHotScan = url.searchParams.get("hotScan") === "true" || url.searchParams.get("hot-scan") === "true"
+    const bodyHotScan = body && typeof body === "object" && body !== null
+      ? (body as Record<string, unknown>).hotScan === true
+      : false
+    const hotScan = bodyHotScan || searchHotScan
+
     if (fallbackOnly) {
       const reasonFromBody =
         body && typeof body === "object" && body !== null
@@ -1098,6 +1115,7 @@ export async function POST(request: Request) {
       debugContext: { requestedVia: "POST" },
       filterMode: resolvedFilterMode,
       symbols,
+      hotScan,
     })
   } catch (error) {
     console.error("Error executing enhanced scanner via POST:", error)

@@ -45,6 +45,60 @@ class SentimentPreScreener:
         self.cache = {}  # Cache results for current session
         self.cache_timestamp = None
 
+    def get_hot_movers(self, universe: List[str], limit: int = 30, min_volume: int = 800, min_move_pct: float = 3.0) -> List[Dict[str, Any]]:
+        """
+        Get HOT MOVERS - stocks with big price swings AND high volume.
+        Perfect for day traders looking for explosive options opportunities.
+
+        Args:
+            universe: List of symbols to check
+            limit: Maximum number of symbols to return
+            min_volume: Minimum average volume in thousands (default 800 = 800k shares/day)
+            min_move_pct: Minimum absolute % move today (default 3%)
+
+        Returns:
+            List of dicts with symbol, move_pct, volume info, sorted by move magnitude
+        """
+        try:
+            print(f"🔥 Scanning for HOT MOVERS: >{min_move_pct}% moves with {min_volume}k+ volume...", file=sys.stderr)
+
+            hot_movers = []
+
+            for symbol in universe:
+                try:
+                    ticker = yf.Ticker(symbol)
+                    hist = ticker.history(period="5d")  # Get recent data
+
+                    if len(hist) >= 2:
+                        # Calculate today's move
+                        change_pct = ((hist['Close'].iloc[-1] - hist['Close'].iloc[-2]) / hist['Close'].iloc[-2]) * 100
+                        avg_volume = hist['Volume'].mean() / 1000  # Convert to thousands
+
+                        # HOT SCAN criteria: BIG move AND high volume
+                        if abs(change_pct) >= min_move_pct and avg_volume >= min_volume:
+                            hot_movers.append({
+                                'symbol': symbol,
+                                'move_pct': change_pct,
+                                'avg_volume_k': avg_volume,
+                                'current_price': hist['Close'].iloc[-1],
+                                'direction': 'UP' if change_pct > 0 else 'DOWN'
+                            })
+
+                except Exception:
+                    continue
+
+            # Sort by absolute move percentage (biggest movers first)
+            hot_movers.sort(key=lambda x: abs(x['move_pct']), reverse=True)
+
+            result = hot_movers[:limit]
+            print(f"🔥 Found {len(result)} HOT MOVERS (avg move: {sum(abs(x['move_pct']) for x in result) / len(result):.1f}%)", file=sys.stderr)
+
+            return result
+
+        except Exception as e:
+            print(f"⚠️  Error fetching hot movers: {e}", file=sys.stderr)
+            return []
+
     def get_top_gainers(self, limit: int = 20) -> List[str]:
         """
         Get today's top gaining stocks using Yahoo Finance.
