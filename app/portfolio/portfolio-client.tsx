@@ -1,14 +1,149 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  type CSSProperties,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { Database } from '@/lib/types/database.types'
 import AddPositionModal from './add-position-modal'
 import ClosePositionModal from './close-position-modal'
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip as RechartsTooltip,
+  XAxis,
+  YAxis,
+} from 'recharts'
 
 type Position = Database['public']['Tables']['positions']['Row']
 type UserSettings = Database['public']['Tables']['user_settings']['Row']
 type User = { id: string; email?: string }
+
+type PortfolioInsight = {
+  tone: 'warning' | 'positive'
+  title: string
+  description: string
+}
+
+type PositionBiasKey = 'long_call' | 'long_put' | 'short_call' | 'short_put'
+
+const POSITION_MIX_CONFIG: Record<
+  PositionBiasKey,
+  { label: string; color: string; description: string }
+> = {
+  long_call: {
+    label: 'Long Calls',
+    color: '#38bdf8',
+    description: 'Directional upside exposure and growth bets.',
+  },
+  long_put: {
+    label: 'Long Puts',
+    color: '#10b981',
+    description: 'Downside hedges and tail-risk protection.',
+  },
+  short_call: {
+    label: 'Short Calls',
+    color: '#f97316',
+    description: 'Covered calls and theta harvesting on rallies.',
+  },
+  short_put: {
+    label: 'Short Puts',
+    color: '#ef4444',
+    description: 'Premium selling for income with bullish skew.',
+  },
+}
+
+const TARGET_MIX_TEMPLATE: Array<{
+  key: PositionBiasKey
+  percentage: number
+  description: string
+}> = [
+  {
+    key: 'long_call',
+    percentage: 20,
+    description: 'Keeps directional upside participation without over-levering.',
+  },
+  {
+    key: 'long_put',
+    percentage: 30,
+    description: 'Protects drawdowns and balances short premium risk.',
+  },
+  {
+    key: 'short_call',
+    percentage: 25,
+    description: 'Harvests theta while keeping upside obligations manageable.',
+  },
+  {
+    key: 'short_put',
+    percentage: 25,
+    description: 'Generates income with bullish bias and cash-secured footing.',
+  },
+]
+
+const EXPIRATION_BUCKETS = [
+  { key: '0-14d', label: '0-14 Days', maxDays: 14 },
+  { key: '15-45d', label: '15-45 Days', maxDays: 45 },
+  { key: '46d+', label: '46+ Days', maxDays: Number.POSITIVE_INFINITY },
+] as const
+
+type ExpirationBucketKey = (typeof EXPIRATION_BUCKETS)[number]['key']
+
+const EXPIRATION_BUCKET_DESCRIPTIONS: Record<ExpirationBucketKey, string> = {
+  '0-14d': 'Fast-decaying trades that need active management.',
+  '15-45d': 'Core premium window with manageable gamma.',
+  '46d+': 'Long-dated swings and hedges smoothing P&L.',
+}
+
+const CHART_TOOLTIP_STYLE: CSSProperties = {
+  backgroundColor: 'hsl(var(--background))',
+  border: '1px solid hsl(var(--border))',
+  borderRadius: '12px',
+  color: 'hsl(var(--foreground))',
+  boxShadow: '0 20px 25px -5px rgb(15 23 42 / 0.15)',
+  padding: '12px 16px',
+}
+
+const formatPercentage = (value: number) => `${Math.round(value)}%`
+
+const getPositionExposure = (position: Position) => {
+  const priceBasis =
+    (position.current_price ?? position.entry_price ?? 0) > 0
+      ? position.current_price ?? position.entry_price ?? 0
+      : 1
+
+  return Math.abs(position.contracts) * 100 * priceBasis
+}
+
+const getExpirationBucketForPosition = (
+  position: Position,
+): ExpirationBucketKey => {
+  const expirationDate = new Date(position.expiration)
+  const now = new Date()
+  const millisecondsInDay = 1000 * 60 * 60 * 24
+  const daysUntilExpiration = Math.max(
+    0,
+    Math.round((expirationDate.getTime() - now.getTime()) / millisecondsInDay),
+  )
+
+  if (daysUntilExpiration <= EXPIRATION_BUCKETS[0].maxDays) {
+    return '0-14d'
+  }
+
+  if (daysUntilExpiration <= EXPIRATION_BUCKETS[1].maxDays) {
+    return '15-45d'
+  }
+
+  return '46d+'
+}
 
 export default function PortfolioClient({
   initialPositions,
@@ -246,6 +381,182 @@ export default function PortfolioClient({
 
   const totalPL = totalUnrealizedPL + totalRealizedPL
 
+  const currencyFormatter = useMemo(
+    () =>
+      new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        maximumFractionDigits: 0,
+      }),
+    [],
+  )
+
+  const { mixData, totalExposure, totalContracts } = useMemo(() => {
+    const exposures: Record<PositionBiasKey, number> = {
+      long_call: 0,
+      long_put: 0,
+      short_call: 0,
+      short_put: 0,
+    }
+
+    let exposureTotal = 0
+    let contractTotal = 0
+
+    for (const position of openPositions) {
+      const direction = position.contracts < 0 ? 'short' : 'long'
+      const key = `${direction}_${position.option_type}` as PositionBiasKey
+      const exposure = getPositionExposure(position)
+
+      exposures[key] += exposure
+      exposureTotal += exposure
+      contractTotal += Math.abs(position.contracts)
+    }
+
+    const mix = (Object.keys(exposures) as PositionBiasKey[]).map((key) => {
+      const value = exposures[key]
+      return {
+        key,
+        label: POSITION_MIX_CONFIG[key].label,
+        value,
+        percentage: exposureTotal > 0 ? (value / exposureTotal) * 100 : 0,
+      }
+    })
+
+    return {
+      mixData: mix,
+      totalExposure: exposureTotal,
+      totalContracts: contractTotal,
+    }
+  }, [openPositions])
+
+  const mixGap = useMemo(
+    () =>
+      TARGET_MIX_TEMPLATE.map((target) => {
+        const actual =
+          mixData.find((item) => item.key === target.key)?.percentage ?? 0
+
+        return {
+          ...target,
+          actual,
+          delta: actual - target.percentage,
+        }
+      }),
+    [mixData],
+  )
+
+  const expirationProfile = useMemo(() => {
+    const bucketTotals: Record<ExpirationBucketKey, number> = {
+      '0-14d': 0,
+      '15-45d': 0,
+      '46d+': 0,
+    }
+
+    let exposureTotal = 0
+
+    for (const position of openPositions) {
+      const bucket = getExpirationBucketForPosition(position)
+      const exposure = getPositionExposure(position)
+
+      bucketTotals[bucket] += exposure
+      exposureTotal += exposure
+    }
+
+    const data = EXPIRATION_BUCKETS.map((bucket) => {
+      const value = bucketTotals[bucket.key]
+      return {
+        key: bucket.key,
+        label: bucket.label,
+        value,
+        percentage: exposureTotal > 0 ? (value / exposureTotal) * 100 : 0,
+      }
+    })
+
+    return {
+      data,
+      totalExposure: exposureTotal,
+    }
+  }, [openPositions])
+
+  const portfolioInsights = useMemo<PortfolioInsight[]>(() => {
+    if (openPositions.length === 0) {
+      return []
+    }
+
+    const insights: PortfolioInsight[] = []
+
+    const shortCallShare =
+      mixData.find((item) => item.key === 'short_call')?.percentage ?? 0
+    const shortPutShare =
+      mixData.find((item) => item.key === 'short_put')?.percentage ?? 0
+    const longPutShare =
+      mixData.find((item) => item.key === 'long_put')?.percentage ?? 0
+    const longCallShare =
+      mixData.find((item) => item.key === 'long_call')?.percentage ?? 0
+
+    const nearTermShare =
+      expirationProfile.data.find((bucket) => bucket.key === '0-14d')
+        ?.percentage ?? 0
+    const farDatedShare =
+      expirationProfile.data.find((bucket) => bucket.key === '46d+')
+        ?.percentage ?? 0
+
+    if (shortCallShare > 40) {
+      insights.push({
+        tone: 'warning',
+        title: 'Short-call concentration',
+        description:
+          'Over 40% of the book is short calls. Layer in bullish debit spreads or long deltas to prevent unlimited upside risk.',
+      })
+    }
+
+    if (shortPutShare > 40) {
+      insights.push({
+        tone: 'warning',
+        title: 'Heavy short-put exposure',
+        description:
+          'Short puts dominate the mix. Pair them with long puts or put spreads to cap downside if markets slide.',
+      })
+    }
+
+    if (longPutShare < 15) {
+      insights.push({
+        tone: 'warning',
+        title: 'Thin downside hedges',
+        description:
+          'Protective puts are under 15% of exposure. Add long puts or collars so drawdowns do not snowball.',
+      })
+    }
+
+    if (nearTermShare > 55) {
+      insights.push({
+        tone: 'warning',
+        title: 'Near-term gamma risk',
+        description:
+          'More than half of contracts expire within two weeks. Roll part of the book outward to smooth P&L swings.',
+      })
+    }
+
+    if (farDatedShare < 10 && longCallShare + longPutShare > 0) {
+      insights.push({
+        tone: 'warning',
+        title: 'Limited long-dated ballast',
+        description:
+          'Long-dated options are scarce. Establish a few 60-90 day structures to stabilize theta bleed.',
+      })
+    }
+
+    if (insights.length === 0) {
+      insights.push({
+        tone: 'positive',
+        title: 'Balanced construction',
+        description:
+          'Your mix tracks closely to the target template. Keep rotating winners into hedges to maintain the profile.',
+      })
+    }
+
+    return insights
+  }, [expirationProfile, mixData, openPositions.length])
+
   useEffect(() => {
     if (hasAutoRefreshed || isRefreshing) {
       return
@@ -416,6 +727,302 @@ export default function PortfolioClient({
             </div>
           </div>
         </div>
+
+        {openPositions.length > 0 && (
+          <div className="mb-10 space-y-6">
+            <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+                  Portfolio Construction
+                </h2>
+                <p className="text-sm text-slate-600 dark:text-slate-400">
+                  See how premium exposure, hedges, and expirations stack up so you can source ideas that smooth risk.
+                </p>
+              </div>
+              <div className="text-sm text-slate-500 dark:text-slate-400">
+                {currencyFormatter.format(totalExposure)} premium at risk · {totalContracts}{' '}
+                {totalContracts === 1 ? 'contract' : 'contracts'}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 xl:grid-cols-[2fr_2fr_1.2fr] gap-6">
+              <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
+                <div className="flex items-start justify-between mb-6">
+                  <div>
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Current Mix</h3>
+                    <p className="text-sm text-slate-600 dark:text-slate-400">
+                      Premium-weighted view of your live exposure by strategy bias.
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      Exposure
+                    </div>
+                    <div className="text-base font-semibold text-slate-900 dark:text-white">
+                      {currencyFormatter.format(totalExposure)}
+                    </div>
+                  </div>
+                </div>
+
+                {totalExposure <= 0 ? (
+                  <div className="py-12 text-center text-sm text-slate-500 dark:text-slate-400">
+                    Add entry prices to your positions to generate a construction snapshot.
+                  </div>
+                ) : (
+                  <>
+                    <div className="relative h-64">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={mixData}
+                            dataKey="value"
+                            nameKey="label"
+                            innerRadius="60%"
+                            outerRadius="90%"
+                            paddingAngle={3}
+                            stroke="hsl(var(--background))"
+                            strokeWidth={1}
+                            labelLine={false}
+                          >
+                            {mixData.map((item) => (
+                              <Cell
+                                key={item.key}
+                                fill={POSITION_MIX_CONFIG[item.key].color}
+                              />
+                            ))}
+                          </Pie>
+                          <RechartsTooltip
+                            contentStyle={CHART_TOOLTIP_STYLE}
+                            formatter={(value: number, _name, payload) => {
+                              const percentage = payload?.payload?.percentage ?? 0
+                              return [
+                                currencyFormatter.format(value as number),
+                                `${payload?.payload?.label as string} • ${formatPercentage(percentage)}`,
+                              ]
+                            }}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                        <span className="text-3xl font-semibold text-slate-900 dark:text-white">100%</span>
+                        <span className="text-sm text-slate-600 dark:text-slate-400">Allocated</span>
+                      </div>
+                    </div>
+
+                    <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                      {mixData.map((item) => (
+                        <div
+                          key={item.key}
+                          className="rounded-xl border border-slate-200 dark:border-slate-800 p-3"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span
+                                className="h-2.5 w-2.5 rounded-full"
+                                style={{
+                                  backgroundColor: POSITION_MIX_CONFIG[item.key].color,
+                                }}
+                              />
+                              <span className="font-medium text-slate-800 dark:text-slate-200">
+                                {POSITION_MIX_CONFIG[item.key].label}
+                              </span>
+                            </div>
+                            <span className="text-slate-500 dark:text-slate-400">
+                              {formatPercentage(item.percentage)}
+                            </span>
+                          </div>
+                          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                            {POSITION_MIX_CONFIG[item.key].description}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Target Mix &amp; Gaps</h3>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    Benchmark against a balanced book template, then see how far each sleeve is from target.
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  {mixGap.map((item) => {
+                    const deltaMagnitude = Math.abs(Math.round(item.delta))
+                    const statusLabel =
+                      deltaMagnitude < 2
+                        ? 'On target'
+                        : item.delta > 0
+                          ? `+${deltaMagnitude}% over`
+                          : `${deltaMagnitude}% under`
+
+                    return (
+                      <div
+                        key={item.key}
+                        className="rounded-xl border border-slate-200 dark:border-slate-800 p-4"
+                      >
+                        <div className="flex items-center justify-between text-sm">
+                          <div className="flex items-center gap-2">
+                            <span
+                              className="h-2.5 w-2.5 rounded-full"
+                              style={{
+                                backgroundColor: POSITION_MIX_CONFIG[item.key].color,
+                              }}
+                            />
+                            <span className="font-semibold text-slate-900 dark:text-white">
+                              {POSITION_MIX_CONFIG[item.key].label}
+                            </span>
+                          </div>
+                          <span className="text-slate-500 dark:text-slate-400">
+                            Target {item.percentage}%
+                          </span>
+                        </div>
+                        <div className="mt-3 flex items-center gap-3">
+                          <div className="relative h-2 flex-1 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                            <div
+                              className="absolute inset-y-0 rounded-full"
+                              style={{
+                                width: `${Math.min(100, item.actual)}%`,
+                                backgroundColor: POSITION_MIX_CONFIG[item.key].color,
+                                opacity: 0.85,
+                              }}
+                            />
+                            <span
+                              className="absolute inset-y-0 w-[2px] bg-slate-400/50 dark:bg-slate-500/50"
+                              style={{ left: `${item.percentage}%` }}
+                            />
+                          </div>
+                          <span
+                            className={`text-sm font-medium ${
+                              deltaMagnitude < 2
+                                ? 'text-slate-600 dark:text-slate-400'
+                                : item.delta > 0
+                                  ? 'text-emerald-600 dark:text-emerald-400'
+                                  : 'text-amber-600 dark:text-amber-400'
+                            }`}
+                          >
+                            {formatPercentage(item.actual)}
+                          </span>
+                        </div>
+                        <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                          {statusLabel} · {item.description}
+                        </p>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 flex flex-col">
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Balancing cues</h3>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    Quick reads on where to adjust before sourcing the next trade.
+                  </p>
+                </div>
+
+                <div className="mt-6 space-y-4">
+                  {portfolioInsights.map((insight, index) => (
+                    <div
+                      key={`${insight.title}-${index}`}
+                      className={`rounded-xl border p-4 text-sm leading-relaxed ${
+                        insight.tone === 'warning'
+                          ? 'border-amber-200 bg-amber-50/70 text-amber-800 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200'
+                          : 'border-emerald-200 bg-emerald-50/70 text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-200'
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <span className="text-lg">
+                          {insight.tone === 'warning' ? '⚠️' : '🌱'}
+                        </span>
+                        <div>
+                          <div className="font-semibold">{insight.title}</div>
+                          <p className="mt-1 text-xs sm:text-sm">
+                            {insight.description}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between mb-6">
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+                    Expiration Ladder
+                  </h3>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    Distribution of premium across near, medium, and long-dated contracts.
+                  </p>
+                </div>
+                <div className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  {formatPercentage(
+                    expirationProfile.data.reduce((sum, bucket) => sum + bucket.percentage, 0),
+                  )}{' '}
+                  allocated
+                </div>
+              </div>
+
+              {expirationProfile.totalExposure <= 0 ? (
+                <div className="py-12 text-center text-sm text-slate-500 dark:text-slate-400">
+                  We need premium values to build this ladder.
+                </div>
+              ) : (
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={expirationProfile.data} barSize={32}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis
+                        dataKey="label"
+                        stroke="hsl(var(--muted-foreground))"
+                        style={{ fontSize: '12px' }}
+                      />
+                      <YAxis
+                        stroke="hsl(var(--muted-foreground))"
+                        tickFormatter={(value) => `${Math.round(value)}%`}
+                        domain={[0, 100]}
+                        style={{ fontSize: '12px' }}
+                      />
+                      <RechartsTooltip
+                        contentStyle={CHART_TOOLTIP_STYLE}
+                        formatter={(value: number, _name, payload) => [
+                          `${formatPercentage(value as number)}`,
+                          payload?.payload?.label as string,
+                        ]}
+                      />
+                      <Bar dataKey="percentage" radius={[8, 8, 0, 0]} fill="#6366f1" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+
+              <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+                {expirationProfile.data.map((bucket) => (
+                  <div
+                    key={bucket.key}
+                    className="rounded-xl border border-slate-200 dark:border-slate-800 p-4"
+                  >
+                    <div className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      {bucket.label}
+                    </div>
+                    <div className="mt-2 text-lg font-semibold text-slate-900 dark:text-white">
+                      {formatPercentage(bucket.percentage)}
+                    </div>
+                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                      {EXPIRATION_BUCKET_DESCRIPTIONS[bucket.key]}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Action Buttons */}
         <div className="mb-6">
