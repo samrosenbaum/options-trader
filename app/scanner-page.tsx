@@ -3079,9 +3079,15 @@ export default function ScannerPage({ user }: ScannerPageProps) {
                     type="text"
                     value={targetSymbolInput}
                     onChange={(e) => setTargetSymbolInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && targetSymbolInput.trim()) {
+                        e.preventDefault()
+                        void fetchOpportunities()
+                      }
+                    }}
                     className="w-32 bg-transparent text-sm font-semibold text-white placeholder:text-emerald-200/50 focus:outline-none uppercase"
                     placeholder="TSLA, AAPL"
-                    title="Enter ticker symbols (comma-separated) to scan specific stocks"
+                    title="Enter ticker symbols (comma-separated) and press Enter to scan"
                   />
                   {targetSymbolInput && (
                     <button
