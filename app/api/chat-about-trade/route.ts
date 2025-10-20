@@ -71,7 +71,7 @@ You are a helpful options trading advisor analyzing this specific trade opportun
 - Option Type: ${opportunity.optionType.toUpperCase()}
 - Strike: $${opportunity.strike}
 - Current Stock Price: $${opportunity.stockPrice}
-- Premium: $${opportunity.premium} (per contract)
+- Premium: $${opportunity.premium} (total cost for 1 contract of 100 shares = $${(opportunity.premium / 100).toFixed(2)} per share)
 - Expiration: ${opportunity.expiration}
 - Days to Expiration: ${opportunity.daysToExpiration || "N/A"}
 - Trade Summary: ${opportunity.tradeSummary || "N/A"}

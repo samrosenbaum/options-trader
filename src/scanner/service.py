@@ -754,10 +754,11 @@ class SmartOptionsScanner:
 
         liquid_options = working_data[mask].copy()
 
-        # Limit to top 150 by volume to ensure scan completes within 4-minute timeout
-        if len(liquid_options) > 150:
-            liquid_options = liquid_options.nlargest(150, 'volume').copy()
-            print(f"⚡ Limited to top 150 highest-volume options for speed", file=sys.stderr)
+        # Limit by volume based on market hours (more options during market hours for fresh data)
+        limit = 400 if is_market_hours else 150
+        if len(liquid_options) > limit:
+            liquid_options = liquid_options.nlargest(limit, 'volume').copy()
+            print(f"⚡ Limited to top {limit} highest-volume options for speed", file=sys.stderr)
 
         # Log rejected options for retrospective analysis (BATCHED for speed)
         rejected_mask = ~working_data.index.isin(liquid_options.index)

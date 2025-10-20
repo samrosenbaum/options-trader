@@ -1445,7 +1445,7 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
             </div>
           </div>
 
-          <div className="flex items-center gap-5 text-base text-slate-600 dark:text-slate-400 flex-wrap">
+          <div className="flex items-center gap-5 text-base text-slate-700 dark:text-slate-200 flex-wrap">
             <span className="font-semibold">
               {opportunity.optionType.toUpperCase()} ${opportunity.strike}
             </span>

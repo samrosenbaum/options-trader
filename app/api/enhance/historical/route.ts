@@ -100,7 +100,9 @@ from src.scanner.historical_moves import HistoricalMoveAnalyzer
 data = json.loads('''${JSON.stringify(body)}''')
 
 # Calculate required move
-breakeven_move_pct = (data['premium'] / data['stockPrice']) * 100
+# Note: premium is total contract cost (per-share * 100), so divide by 100 first
+per_share_premium = data['premium'] / 100
+breakeven_move_pct = (per_share_premium / data['stockPrice']) * 100
 
 # Calculate days to expiration
 exp_date = datetime.strptime(data['expiration'], '%Y-%m-%d')

@@ -188,10 +188,10 @@ class ScannerPreference:
 
         return cls(
             volume=VolumePreference(
-                min_contracts=100,
+                min_contracts=25,
                 max_contracts=None,
-                min_open_interest=100,
-                min_volume_to_oi=0.5,
+                min_open_interest=50,
+                min_volume_to_oi=0.3,
             ),
             delta=RangeBand(
                 minimum=0.20,

@@ -74,14 +74,13 @@ export function OptionsScanner() {
                       {option.action.toUpperCase()}
                     </Badge>
                   </div>
-                  <div className="mt-1 flex items-center gap-3 text-sm text-muted-foreground">
+                  <div className="mt-1 flex items-center gap-3 text-sm text-slate-700 dark:text-slate-200">
                     <span className="font-mono">Strike: ${option.strike}</span>
                     <span>•</span>
                     <span className="font-mono">Exp: {new Date(option.expiration).toLocaleDateString()}</span>
                     <span>•</span>
                     <span className="font-mono">Premium: ${option.premium}</span>
-                  </div>
-                  {option.marketSentiment && (() => {
+                  </div>                  {option.marketSentiment && (() => {
                     const sentiment = option.marketSentiment
                     const meta = sentimentMeta[sentiment.direction]
                     const Icon = meta.icon
