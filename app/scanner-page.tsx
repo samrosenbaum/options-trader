@@ -642,7 +642,7 @@ function ProfitLossSlider({
             <div className="text-lg font-bold text-slate-900 dark:text-white">
               {stockPricePercent >= 0 ? '+' : ''}{stockPricePercent.toFixed(1)}%
             </div>
-            <div className="text-xs text-slate-500 dark:text-slate-400">
+            <div className="text-xs text-slate-600 dark:text-slate-300">
               ${stockPrice.toFixed(2)} → ${targetStockPrice.toFixed(2)} ({dollarMove >= 0 ? '+' : ''}${dollarMove.toFixed(2)})
             </div>
           </div>
@@ -811,7 +811,7 @@ Liquidity: ${((opp as Record<string, unknown>).liquidityScore as number | undefi
             )}
           </div>
 
-          <div className="flex items-center gap-5 text-sm text-slate-600 dark:text-slate-400 flex-wrap">
+          <div className="flex items-center gap-5 text-sm text-slate-700 dark:text-slate-200 flex-wrap">
             <span>Stock: ${opp.stockPrice.toFixed(2)}</span>
             <span>Premium: ${opp.premium.toFixed(2)}</span>
             <span>Exp: {opp.expiration}</span>

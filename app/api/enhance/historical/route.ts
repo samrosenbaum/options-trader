@@ -125,13 +125,23 @@ context = analyzer.get_move_context(
 )
 
 if context:
-    print(f"Historical analysis found: available={context.get('available')}, sample_size={context.get('sample_size', 0)}", file=sys.stderr)
+    print(f"Historical analysis found: available={context.get('available')}, total_periods={context.get('totalPeriods', 0)}", file=sys.stderr)
 else:
     print(f"Historical analysis returned None for {data['symbol']}", file=sys.stderr)
 
 if context and isinstance(context, dict) and context.get('available'):
-    frequency = context.get('frequency', 0)
-    examples = context.get('recent_examples', [])[:5]
+    # Use touchProbability (probability it hits breakeven at any point)
+    frequency = context.get('touchProbability', context.get('empiricalProbability', 0)) / 100.0
+    examples = context.get('recentTouches', [])[:5]
+
+    # Format examples for frontend
+    formatted_examples = []
+    for ex in examples:
+        formatted_examples.append({
+            'date': ex.get('date', ''),
+            'move': f"{breakeven_move_pct:.1f}%",
+            'achieved': True
+        })
 
     output = {
         'symbol': data['symbol'],
@@ -140,16 +150,16 @@ if context and isinstance(context, dict) and context.get('available'):
         'daysToExpiration': days_to_exp,
         'direction': direction,
         'historicalFrequency': frequency * 100,
-        'recentExamples': examples,
-        'summary': context.get('summary', f'{frequency*100:.1f}% chance of {breakeven_move_pct:.1f}% {direction} move in {days_to_exp} days'),
-        'confidence': 'high' if context.get('sample_size', 0) >= 50 else 'medium' if context.get('sample_size', 0) >= 20 else 'low'
+        'recentExamples': formatted_examples,
+        'summary': context.get('analysis', f'{frequency*100:.1f}% chance of {breakeven_move_pct:.1f}% {direction} move in {days_to_exp} days'),
+        'confidence': 'high' if context.get('totalPeriods', 0) >= 50 else 'medium' if context.get('totalPeriods', 0) >= 20 else 'low'
     }
 else:
     fallback_message = 'Insufficient historical data available'
     if context and isinstance(context, dict):
         fallback_message = context.get('message', fallback_message)
-        frequency = context.get('frequency', 0)
-        examples = context.get('recent_examples', [])[:5]
+        frequency = context.get('touchProbability', context.get('empiricalProbability', 0)) / 100.0
+        examples = context.get('recentTouches', [])[:5]
     else:
         frequency = 0
         examples = []
