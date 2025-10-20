@@ -757,12 +757,14 @@ const executeEnhancedScanner = async ({
   filterMode,
   symbols,
   hotScan,
+  earningsScan,
 }: {
   constraints?: ConstraintPayload
   debugContext?: Record<string, unknown>
   filterMode?: FilterMode
   symbols?: string[]
   hotScan?: boolean
+  earningsScan?: boolean
 }) => {
   const forcedPolicy = determineScannerExecutionPolicy()
   const resolvedMode: FilterMode = filterMode === "strict" ? "strict" : "relaxed"
@@ -865,6 +867,12 @@ const executeEnhancedScanner = async ({
     if (hotScan) {
       console.log(`🔥 Scanning Top Movers - targeting stocks with 3%+ moves and 800k+ volume`)
       args.push("--hot-scan")
+    }
+
+    // Add earnings scan mode if requested
+    if (earningsScan) {
+      console.log(`📅 Scanning Earnings Plays - targeting stocks with earnings in next 7-14 days`)
+      args.push("--earnings-scan")
     }
 
     const python = spawn(pythonPath, args, {
@@ -1041,12 +1049,14 @@ export async function GET(request: Request) {
     const constraints = mergeConstraints(extractConstraintsFromSearchParams(url.searchParams))
     const symbols = extractSymbolsFromSearchParams(url.searchParams)
     const hotScan = url.searchParams.get("hotScan") === "true" || url.searchParams.get("hot-scan") === "true"
+    const earningsScan = url.searchParams.get("earningsScan") === "true" || url.searchParams.get("earnings-scan") === "true"
     return executeEnhancedScanner({
       constraints,
       debugContext: { requestedVia: "GET" },
       filterMode: resolvedFilterMode,
       symbols,
       hotScan,
+      earningsScan,
     })
   } catch (error) {
     console.error("Error executing enhanced scanner:", error)
@@ -1089,6 +1099,13 @@ export async function POST(request: Request) {
       : false
     const hotScan = bodyHotScan || searchHotScan
 
+    // Extract earningsScan from search params or body
+    const searchEarningsScan = url.searchParams.get("earningsScan") === "true" || url.searchParams.get("earnings-scan") === "true"
+    const bodyEarningsScan = body && typeof body === "object" && body !== null
+      ? (body as Record<string, unknown>).earningsScan === true
+      : false
+    const earningsScan = bodyEarningsScan || searchEarningsScan
+
     if (fallbackOnly) {
       const reasonFromBody =
         body && typeof body === "object" && body !== null
@@ -1116,6 +1133,7 @@ export async function POST(request: Request) {
       filterMode: resolvedFilterMode,
       symbols,
       hotScan,
+      earningsScan,
     })
   } catch (error) {
     console.error("Error executing enhanced scanner via POST:", error)

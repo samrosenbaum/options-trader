@@ -45,6 +45,7 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
         max_results: int = 20,
         max_per_symbol: int = 5,
         hot_scan_mode: bool = False,
+        earnings_scan_mode: bool = False,
         **kwargs
     ):
         """
@@ -55,12 +56,14 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
             max_results: Maximum total opportunities to return
             max_per_symbol: Maximum opportunities per symbol (for diversity)
             hot_scan_mode: If True, scan only stocks with big moves (3%+) and high volume (800k+)
+            earnings_scan_mode: If True, scan only stocks with earnings in next 7-14 days
         """
         super().__init__(max_symbols, **kwargs)
 
         self.max_results = max_results
         self.max_per_symbol = max_per_symbol
         self.hot_scan_mode = hot_scan_mode
+        self.earnings_scan_mode = earnings_scan_mode
 
         # Initialize enhanced components with relaxed filters for hot scan mode
         data_quality_filters = {
@@ -105,6 +108,8 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
         print("🚀 Enhanced scanner initialized with institutional-grade components + backtesting", file=sys.stderr)
         if self.hot_scan_mode:
             print("🔥 SCAN TOP MOVERS MODE - targeting stocks with 3%+ moves and 800k+ volume", file=sys.stderr)
+        elif self.earnings_scan_mode:
+            print("📅 EARNINGS SCAN MODE - targeting stocks with earnings in next 7-14 days", file=sys.stderr)
         elif self.use_sentiment_prescreening:
             print("📊 Sentiment pre-screening ENABLED - will prioritize hot symbols", file=sys.stderr)
         else:
@@ -112,11 +117,39 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
 
     def _next_symbol_batch(self) -> List[str]:
         """
-        Override symbol batch selection to use hot scan or sentiment pre-screening.
+        Override symbol batch selection to use hot scan, earnings scan, or sentiment pre-screening.
 
         Returns symbols with high market activity instead of round-robin.
         """
-        # Hot Scan mode takes priority
+        # Earnings Scan mode takes highest priority
+        if self.earnings_scan_mode:
+            try:
+                # Get stocks with earnings in next 7-14 days
+                earnings_plays = self.sentiment_prescreener.get_earnings_plays(
+                    universe=self.fetcher.priority_symbols,
+                    days_ahead=14,  # Look 14 days ahead
+                    limit=min(20, self.symbol_limit or 20),
+                    return_details=True
+                )
+
+                # Extract just the symbols
+                earnings_symbols = [e['symbol'] for e in earnings_plays]
+
+                if earnings_symbols:
+                    print(f"📅 Earnings scan found {len(earnings_symbols)} upcoming earnings:", file=sys.stderr)
+                    for e in earnings_plays[:5]:  # Show top 5
+                        print(f"   {e['symbol']}: Earnings in {e['days_until']} days ({e['earnings_date']})", file=sys.stderr)
+                    self.current_batch_symbols = earnings_symbols
+                    return earnings_symbols
+                else:
+                    print("⚠️  No upcoming earnings found, using standard selection", file=sys.stderr)
+                    return super()._next_symbol_batch()
+
+            except Exception as e:
+                print(f"⚠️  Earnings scan failed ({e}), using standard selection", file=sys.stderr)
+                return super()._next_symbol_batch()
+
+        # Hot Scan mode takes second priority
         if self.hot_scan_mode:
             try:
                 # Get stocks with big moves AND high volume
@@ -194,9 +227,10 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
             print("📊 No legacy opportunities found", file=sys.stderr)
             return []
 
-        # Hot scan mode: Skip institutional filters, use simple volume + Greeks ranking
-        if self.hot_scan_mode:
-            print(f"🔥 HOT SCAN: Ranking {len(legacy_opportunities)} opportunities by volume + Greeks only", file=sys.stderr)
+        # Hot scan mode OR Earnings scan mode: Skip institutional filters, use simple ranking
+        if self.hot_scan_mode or self.earnings_scan_mode:
+            scan_type = "HOT SCAN" if self.hot_scan_mode else "EARNINGS SCAN"
+            print(f"{scan_type}: Ranking {len(legacy_opportunities)} opportunities by volume + Greeks only", file=sys.stderr)
             # Sort by volume first, then by score
             sorted_opps = sorted(
                 legacy_opportunities,
@@ -205,7 +239,7 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
             )
             # Take top results
             filtered_opportunities = sorted_opps[:self.max_results]
-            print(f"✅ Hot scan complete: {len(filtered_opportunities)} opportunities", file=sys.stderr)
+            print(f"✅ {scan_type.lower().capitalize()} complete: {len(filtered_opportunities)} opportunities", file=sys.stderr)
         else:
             # Normal mode: Use institutional-grade analysis
             print(f"🔍 Enhancing {len(legacy_opportunities)} opportunities with institutional-grade analysis...", file=sys.stderr)
@@ -231,11 +265,11 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
                 max_per_symbol=self.max_per_symbol
             )
 
-        if not self.hot_scan_mode:
+        if not (self.hot_scan_mode or self.earnings_scan_mode):
             print(f"📊 After institutional filtering: {len(filtered_opportunities)} opportunities", file=sys.stderr)
 
-        # Re-sort by risk-adjusted score (skip for hot scan, already sorted by volume)
-        if not self.hot_scan_mode:
+        # Re-sort by risk-adjusted score (skip for hot/earnings scan, already sorted by volume)
+        if not (self.hot_scan_mode or self.earnings_scan_mode):
             filtered_opportunities.sort(key=lambda x: x.get('riskAdjustedScore', x.get('score', 0)), reverse=True)
 
         if len(filtered_opportunities) > 0:
@@ -962,6 +996,7 @@ def run_enhanced_scan(
     allow_relaxed_fallback: bool | None = None,
     symbols: Optional[List[str]] = None,
     hot_scan_mode: bool = False,
+    earnings_scan_mode: bool = False,
 ) -> ScanResult:
     """Run enhanced scan with institutional-grade components.
 
@@ -974,6 +1009,7 @@ def run_enhanced_scan(
         allow_relaxed_fallback: Whether to allow relaxed fallback filters
         symbols: Optional list of specific symbols to scan (e.g., ['TSLA', 'AAPL'])
         hot_scan_mode: If True, scan only stocks with big moves (3%+) and high volume (800k+)
+        earnings_scan_mode: If True, scan only stocks with earnings in next 7-14 days
     """
 
     if symbols:
@@ -990,6 +1026,7 @@ def run_enhanced_scan(
         max_per_symbol=max_per_symbol,
         batch_builder=batch_builder,
         hot_scan_mode=hot_scan_mode,
+        earnings_scan_mode=earnings_scan_mode,
     )
     result = scanner.scan_for_opportunities(
         force_refresh=force_refresh,
@@ -1059,6 +1096,11 @@ def cli(argv: Optional[Sequence[str]] = None) -> None:
         action="store_true",
         help="Scan Top Movers: Find stocks with 3%+ moves and 800k+ volume"
     )
+    parser.add_argument(
+        "--earnings-scan",
+        action="store_true",
+        help="Scan Earnings Plays: Find stocks with earnings in next 7-14 days"
+    )
 
     args = parser.parse_args(argv)
 
@@ -1079,6 +1121,7 @@ def cli(argv: Optional[Sequence[str]] = None) -> None:
         allow_relaxed_fallback=allow_relaxed,
         symbols=target_symbols,
         hot_scan_mode=args.hot_scan,
+        earnings_scan_mode=args.earnings_scan,
     )
     
     print(result.to_json(indent=args.json_indent))

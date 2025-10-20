@@ -280,7 +280,7 @@ class SentimentPreScreener:
             print(f"⚠️  Error checking IV rank: {e}", file=sys.stderr)
             return []
 
-    def get_earnings_plays(self, universe: List[str], days_ahead: int = 7, limit: int = 10) -> List[str]:
+    def get_earnings_plays(self, universe: List[str], days_ahead: int = 7, limit: int = 10, return_details: bool = False):
         """
         Find symbols with earnings in the next N days.
 
@@ -288,9 +288,10 @@ class SentimentPreScreener:
             universe: List of symbols to check
             days_ahead: Look ahead this many days
             limit: Maximum number to return
+            return_details: If True, return dict with details instead of just symbols
 
         Returns:
-            List of symbols with upcoming earnings
+            List of symbols with upcoming earnings, OR list of dicts with details if return_details=True
         """
         try:
             print("📅 Finding earnings plays...", file=sys.stderr)
@@ -318,16 +319,30 @@ class SentimentPreScreener:
                         days_until = (earnings_date - today).days
 
                         if 0 <= days_until <= days_ahead:
-                            earnings_plays.append((symbol, days_until))
+                            if return_details:
+                                # Get more info for detailed results
+                                info = ticker.info
+                                earnings_plays.append({
+                                    'symbol': symbol,
+                                    'days_until': days_until,
+                                    'earnings_date': earnings_date.strftime('%Y-%m-%d'),
+                                    'current_price': info.get('currentPrice', info.get('regularMarketPrice', 0)),
+                                })
+                            else:
+                                earnings_plays.append((symbol, days_until))
 
                 except Exception:
                     continue
 
-            earnings_plays.sort(key=lambda x: x[1])  # Sort by soonest first
-            symbols = [s[0] for s in earnings_plays[:limit]]
+            earnings_plays.sort(key=lambda x: x[1] if isinstance(x, tuple) else x['days_until'])  # Sort by soonest first
 
-            print(f"✅ Found {len(symbols)} earnings plays", file=sys.stderr)
-            return symbols
+            if return_details:
+                result = earnings_plays[:limit]
+            else:
+                result = [s[0] for s in earnings_plays[:limit]]
+
+            print(f"✅ Found {len(result)} earnings plays", file=sys.stderr)
+            return result
 
         except Exception as e:
             print(f"⚠️  Error checking earnings: {e}", file=sys.stderr)
