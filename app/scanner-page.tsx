@@ -4,12 +4,13 @@ import { useState, useEffect, useMemo, useCallback, useRef, type ReactNode } fro
 import RealTimeProgress from '../components/real-time-progress'
 import { MontyLoading } from '../components/monty-loading'
 import { MarketHoursBanner } from '../components/market-hours-banner'
+import FirstScanIntro from '../components/onboarding/FirstScanIntro'
+import WelcomeSetup from '../components/onboarding/WelcomeSetup'
 import { TradeChat } from '@/components/trade-chat'
 import { createClient } from '@/lib/supabase/client'
 import type { Database } from '@/lib/types/database.types'
 import type { PositionSizingRecommendation } from '@/lib/types/opportunity'
 import { useWatchlist } from '@/components/watchlist-context'
-import { ScannerModeToggle, ScannerModeDescription, type ScannerMode } from '@/components/scanner-mode-toggle'
 import { CustomScannerFilters, type CustomFilterCriteria } from '@/components/custom-scanner-filters'
 
 interface MoveAnalysisFactor {
@@ -114,6 +115,8 @@ type OpportunitySortOption =
   | 'maxReturn'
   | 'safety'
   | 'expiration'
+
+const FIRST_SCAN_COMPLETED_KEY = 'scanner:firstScanComplete'
 
 const formatFractionAsPercent = (value: number | null | undefined, digits = 1) => {
   if (typeof value !== 'number' || !Number.isFinite(value)) {
@@ -1000,7 +1003,7 @@ Liquidity: ${((opp as Record<string, unknown>).liquidityScore as number | undefi
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
           </svg>
-          Ask AI
+          Ask Monty
         </button>
 
         <button
@@ -1210,7 +1213,7 @@ export default function ScannerPage({ user }: ScannerPageProps) {
   const { addItem: addToWatchlist, isOnWatchlist } = useWatchlist()
   const [opportunities, setOpportunities] = useState<Opportunity[]>([])
   const [totalEvaluated, setTotalEvaluated] = useState(0)
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
   const [lastSuccessfulUpdate, setLastSuccessfulUpdate] = useState<Date | null>(null)
   const [investmentAmountInput, setInvestmentAmountInput] = useState('1000')
   const investmentAmount = useMemo(() => {
@@ -1236,10 +1239,15 @@ export default function ScannerPage({ user }: ScannerPageProps) {
   const [loadingHistoricals, setLoadingHistoricals] = useState<Record<string, boolean>>({})
   const [showNotRecommended, setShowNotRecommended] = useState(false)
   const [chatOpportunity, setChatOpportunity] = useState<Opportunity | null>(null)
-  const [isEnhancedLoading, setIsEnhancedLoading] = useState(false)
+  const [hasCompletedFirstScan, setHasCompletedFirstScan] = useState<boolean | null>(null)
+  const [isFirstScanIntroOpen, setIsFirstScanIntroOpen] = useState(false)
+  const [needsWelcomeSetup, setNeedsWelcomeSetup] = useState<boolean>(false)
+  const [isWelcomeSetupOpen, setIsWelcomeSetupOpen] = useState(false)
+  const [targetSymbolInput, setTargetSymbolInput] = useState('')
   const previousTabRef = useRef<'options' | 'crypto' | null>(null)
   const opportunitiesRef = useRef<Opportunity[]>([])
   const scanModeRef = useRef<FilterMode>('strict')
+  const userSettingsRef = useRef<UserSettingsRow | null>(null)
   const [userPortfolioConstraints, setUserPortfolioConstraints] = useState<{
     portfolioSize: number | null
     dailyContractBudget: number | null
@@ -1249,12 +1257,121 @@ export default function ScannerPage({ user }: ScannerPageProps) {
   })
   const [settingsLoaded, setSettingsLoaded] = useState(false)
   const [prefilledInvestment, setPrefilledInvestment] = useState(false)
-  const [scannerMode, setScannerMode] = useState<ScannerMode>('smart')
+  const [showFilters, setShowFilters] = useState(false)
   const [customCriteria, setCustomCriteria] = useState<CustomFilterCriteria>({})
 
-  // Custom scanner filtering logic
+  // First scan tracking helpers
+  const getLocalFirstScan = useCallback(() => {
+    if (typeof window === 'undefined') {
+      return false
+    }
+
+    try {
+      return window.localStorage.getItem(FIRST_SCAN_COMPLETED_KEY) === 'true'
+    } catch (storageError) {
+      console.warn('Failed to read first scan completion flag from local storage', storageError)
+      return false
+    }
+  }, [])
+
+  const persistLocalFirstScan = useCallback(() => {
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    try {
+      window.localStorage.setItem(FIRST_SCAN_COMPLETED_KEY, 'true')
+    } catch (storageError) {
+      console.warn('Failed to persist first scan completion flag locally', storageError)
+    }
+  }, [])
+
+  const markFirstScanComplete = useCallback(async () => {
+    persistLocalFirstScan()
+    setHasCompletedFirstScan(true)
+
+    if (!user?.id) {
+      return
+    }
+
+    try {
+      const supabase = createClient()
+      await supabase
+        .from('user_settings')
+        .upsert(
+          {
+            user_id: user.id,
+            has_completed_first_scan: true,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'user_id' }
+        )
+        .select()
+        .maybeSingle<UserSettingsRow>()
+    } catch (persistError) {
+      console.error('Failed to persist first scan completion to Supabase', persistError)
+    }
+  }, [persistLocalFirstScan, user?.id])
+
+  const dismissFirstScanIntro = useCallback(() => {
+    setIsFirstScanIntroOpen(false)
+    setHasCompletedFirstScan(true) // Update state immediately to prevent re-showing
+    void markFirstScanComplete()
+  }, [markFirstScanComplete])
+
+  const handleWelcomeComplete = useCallback(async (data: {
+    userName: string
+    portfolioSize: number
+    dailyBudget: number
+  }) => {
+    setIsWelcomeSetupOpen(false)
+    setNeedsWelcomeSetup(false)
+
+    // Update local state immediately
+    setUserPortfolioConstraints({
+      portfolioSize: data.portfolioSize,
+      dailyContractBudget: data.dailyBudget,
+    })
+
+    // Update ref to prevent modal from showing again
+    userSettingsRef.current = {
+      ...userSettingsRef.current,
+      user_name: data.userName,
+      portfolio_size: data.portfolioSize,
+      daily_contract_budget: data.dailyBudget,
+    } as UserSettingsRow
+
+    // Save to Supabase
+    if (user?.id) {
+      try {
+        const response = await fetch('/api/user-settings', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            user_name: data.userName,
+            portfolio_size: data.portfolioSize,
+            daily_contract_budget: data.dailyBudget,
+          }),
+        })
+
+        if (!response.ok) {
+          console.error('Failed to save welcome setup data')
+        } else {
+          console.log('Welcome setup saved successfully')
+        }
+      } catch (error) {
+        console.error('Error saving welcome setup data:', error)
+      }
+    }
+  }, [user?.id])
+
+  // Custom filtering logic
   const filteredOpportunities = useMemo(() => {
-    if (scannerMode === 'smart') {
+    // If no filters are set, return all opportunities
+    const hasAnyFilter = Object.values(customCriteria).some(v => v !== undefined && v !== null)
+    if (!hasAnyFilter) {
       return opportunities
     }
 
@@ -1296,7 +1413,7 @@ export default function ScannerPage({ user }: ScannerPageProps) {
 
       return true
     })
-  }, [opportunities, customCriteria, scannerMode])
+  }, [opportunities, customCriteria])
 
   const toggleCard = (cardId: string) => {
     setExpandedCards(prev => ({
@@ -1396,6 +1513,9 @@ export default function ScannerPage({ user }: ScannerPageProps) {
     const loadSettings = async () => {
       if (!user?.id) {
         if (isMounted) {
+          // No user - check localStorage for first scan flag
+          const localFirstScan = getLocalFirstScan()
+          setHasCompletedFirstScan(localFirstScan)
           setSettingsLoaded(true)
         }
         return
@@ -1405,7 +1525,7 @@ export default function ScannerPage({ user }: ScannerPageProps) {
         const supabase = createClient()
         const { data, error } = await supabase
           .from('user_settings')
-          .select('portfolio_size, daily_contract_budget')
+          .select('portfolio_size, daily_contract_budget, has_completed_first_scan, user_name')
           .eq('user_id', user.id)
           .maybeSingle<UserSettingsRow>()
 
@@ -1418,6 +1538,7 @@ export default function ScannerPage({ user }: ScannerPageProps) {
         }
 
         if (data) {
+          userSettingsRef.current = data
           const portfolioSize =
             data.portfolio_size !== null && data.portfolio_size !== undefined
               ? Number(data.portfolio_size)
@@ -1432,15 +1553,45 @@ export default function ScannerPage({ user }: ScannerPageProps) {
             dailyContractBudget:
               dailyBudget !== null && Number.isFinite(dailyBudget) ? dailyBudget : null,
           })
+
+          // Check if user needs welcome setup (no user_name means new user)
+          const needsSetup = !data.user_name || data.user_name.trim() === ''
+          setNeedsWelcomeSetup(needsSetup)
+          if (needsSetup) {
+            setIsWelcomeSetupOpen(true)
+          }
+
+          // Check first scan flag from database, fallback to localStorage
+          const remoteFirstScan = data.has_completed_first_scan
+          if (remoteFirstScan === null || remoteFirstScan === undefined) {
+            const localFirstScan = getLocalFirstScan()
+            setHasCompletedFirstScan(localFirstScan)
+          } else {
+            const completed = remoteFirstScan === true
+            setHasCompletedFirstScan(completed)
+            if (completed) {
+              persistLocalFirstScan()
+            }
+          }
         } else {
+          userSettingsRef.current = null
           setUserPortfolioConstraints({
             portfolioSize: null,
             dailyContractBudget: null,
           })
+          // No user settings - new user needs setup
+          setNeedsWelcomeSetup(true)
+          setIsWelcomeSetupOpen(true)
+          // No user settings - check localStorage
+          const localFirstScan = getLocalFirstScan()
+          setHasCompletedFirstScan(localFirstScan)
         }
       } catch (settingsError) {
         if (isMounted) {
           console.error('Error fetching user settings for scanner', settingsError)
+          // On error, fallback to localStorage
+          const localFirstScan = getLocalFirstScan()
+          setHasCompletedFirstScan(localFirstScan)
         }
       } finally {
         if (isMounted) {
@@ -1454,7 +1605,7 @@ export default function ScannerPage({ user }: ScannerPageProps) {
     return () => {
       isMounted = false
     }
-  }, [user?.id])
+  }, [getLocalFirstScan, persistLocalFirstScan, user?.id])
 
   useEffect(() => {
     if (!settingsLoaded || prefilledInvestment) {
@@ -1871,9 +2022,16 @@ export default function ScannerPage({ user }: ScannerPageProps) {
         ? userPortfolioConstraints.dailyContractBudget
         : null
 
+      // Parse target symbols if provided
+      const targetSymbols = targetSymbolInput
+        .split(',')
+        .map((s) => s.trim().toUpperCase())
+        .filter((s) => s.length > 0)
+
       const payload = {
         portfolioSize: resolvedPortfolioSize,
         dailyContractBudget: resolvedDailyBudget,
+        ...(targetSymbols.length > 0 ? { symbols: targetSymbols } : {}),
       }
 
       const response = await fetchWithTimeout(
@@ -1932,45 +2090,16 @@ export default function ScannerPage({ user }: ScannerPageProps) {
       }
     } finally {
       setIsLoading(false)
-    }
-  }, [attemptFallbackFetch, handleScanPayload, investmentAmount, userPortfolioConstraints])
 
-  const fetchEnhancedOpportunities = useCallback(async () => {
-    try {
-      setIsEnhancedLoading(true)
-
-      const response = await fetch('/api/scan-enhanced-pro', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          strategy: 'auto',
-          budget: investmentAmount,
-        }),
-      })
-
-      const data = await response.json()
-
-      if (data.success && data.opportunities) {
-        setOpportunities(data.opportunities)
-        setLastSuccessfulUpdate(new Date())
-        setIsStaleData(false)
-        setScanMetadata({
-          timestamp: new Date().toISOString(),
-          totalSymbols: data.metadata?.baseOpportunities || 0,
-          totalEvaluated: data.metadata?.baseOpportunities || 0,
-          filteredCount: data.opportunities.length,
-          mode: 'strict',
-        })
-        console.log(`✅ Enhanced scan: ${data.opportunities.length} opportunities (${data.metadata?.filterEfficiency} pass rate)`)
-      } else {
-        console.error('Enhanced scan failed:', data.error)
+      // Show first scan intro AFTER successful scan with results (only once)
+      if (hasCompletedFirstScan === false && opportunitiesRef.current.length > 0 && !isFirstScanIntroOpen) {
+        // Use a small delay to let the UI update with results first
+        setTimeout(() => {
+          setIsFirstScanIntroOpen(true)
+        }, 500)
       }
-    } catch (error) {
-      console.error('Error in enhanced scan:', error)
-    } finally {
-      setIsEnhancedLoading(false)
     }
-  }, [investmentAmount])
+  }, [attemptFallbackFetch, handleScanPayload, hasCompletedFirstScan, investmentAmount, targetSymbolInput, userPortfolioConstraints])
 
   const fetchCryptoAlerts = useCallback(async () => {
     try {
@@ -2007,14 +2136,18 @@ export default function ScannerPage({ user }: ScannerPageProps) {
     return currentTime >= marketOpen && currentTime < marketClose
   }
 
-  useEffect(() => {
-    if (!settingsLoaded) {
-      return
-    }
-
-    fetchOpportunities()
-    // Auto-refresh disabled - user must manually refresh to avoid API overuse
-  }, [fetchOpportunities, settingsLoaded])
+  // DISABLED: Auto-scan on page load removed to prevent:
+  // 1. Wasting API calls on every page load
+  // 2. Circular loop with FirstScanIntro modal
+  // 3. Users must manually click "Scan" button to run a scan
+  // useEffect(() => {
+  //   if (!settingsLoaded) {
+  //     return
+  //   }
+  //
+  //   fetchOpportunities()
+  //   // Auto-refresh disabled - user must manually refresh to avoid API overuse
+  // }, [fetchOpportunities, settingsLoaded])
 
   useEffect(() => {
     opportunitiesRef.current = opportunities
@@ -2916,7 +3049,56 @@ export default function ScannerPage({ user }: ScannerPageProps) {
               </div>
 
               {activeTab === 'options' && (
-                <ScannerModeToggle mode={scannerMode} onChange={setScannerMode} />
+                <button
+                  onClick={() => setShowFilters(!showFilters)}
+                  className={`flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold uppercase tracking-widest transition-all duration-200 border ${
+                    showFilters
+                      ? 'bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-600 text-slate-950 shadow-lg shadow-emerald-500/40 border-emerald-400'
+                      : 'border-white/10 bg-white/5 text-emerald-100/70 hover:text-emerald-100 hover:bg-white/10'
+                  }`}
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
+                    />
+                  </svg>
+                  <span>Filters</span>
+                </button>
+              )}
+
+              {activeTab === 'options' && (
+                <div className="flex items-center gap-3 rounded-full border border-white/10 bg-slate-950/40 px-5 py-2 shadow-inner shadow-emerald-500/10">
+                  <svg className="h-5 w-5 text-emerald-300" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+                    <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                  </svg>
+                  <input
+                    type="text"
+                    value={targetSymbolInput}
+                    onChange={(e) => setTargetSymbolInput(e.target.value)}
+                    className="w-32 bg-transparent text-sm font-semibold text-white placeholder:text-emerald-200/50 focus:outline-none uppercase"
+                    placeholder="TSLA, AAPL"
+                    title="Enter ticker symbols (comma-separated) to scan specific stocks"
+                  />
+                  {targetSymbolInput && (
+                    <button
+                      onClick={() => setTargetSymbolInput('')}
+                      className="text-emerald-200/50 hover:text-emerald-200 transition-colors"
+                      title="Clear symbols"
+                    >
+                      <svg className="h-4 w-4" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+                        <path d="M6 18L18 6M6 6l12 12"></path>
+                      </svg>
+                    </button>
+                  )}
+                </div>
               )}
 
               <div className="flex items-center gap-3 rounded-full border border-white/10 bg-slate-950/40 px-5 py-2 shadow-inner shadow-emerald-500/10">
@@ -2939,7 +3121,7 @@ export default function ScannerPage({ user }: ScannerPageProps) {
                 onClick={() =>
                   activeTab === 'options' ? fetchOpportunities() : fetchCryptoAlerts()
                 }
-                disabled={activeTab === 'options' ? (isLoading || isEnhancedLoading) : cryptoLoading}
+                disabled={activeTab === 'options' ? isLoading : cryptoLoading}
                 className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-600 px-8 py-4 text-base font-bold text-slate-950 shadow-lg shadow-emerald-500/40 transition-all duration-200 hover:shadow-emerald-500/60 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
               >
                 <span className="pointer-events-none absolute inset-0 -translate-x-full bg-white/25 transition-transform duration-500 group-hover:translate-x-0" />
@@ -2955,29 +3137,6 @@ export default function ScannerPage({ user }: ScannerPageProps) {
                 </span>
               </button>
 
-              {activeTab === 'options' && (
-                <button
-                  onClick={fetchEnhancedOpportunities}
-                  disabled={isLoading || isEnhancedLoading}
-                  className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-gradient-to-r from-sky-500 via-blue-600 to-purple-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-500/30 transition-all duration-200 hover:shadow-purple-500/40 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
-                  title="Enhanced scan with institutional-grade filters"
-                >
-                  <span className="pointer-events-none absolute inset-0 -translate-x-full bg-white/20 transition-transform duration-500 group-hover:translate-x-0" />
-                  <span className="relative flex items-center gap-2">
-                    {isEnhancedLoading ? (
-                      <>
-                        <div className="h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
-                        <span>Enhanced Scan…</span>
-                      </>
-                    ) : (
-                    <>
-                      Enhanced Scan
-                      <span className="px-1.5 py-0.5 text-[10px] font-bold bg-white/20 rounded">PRO</span>
-                    </>
-                  )}
-                </span>
-              </button>
-            )}
             </div>
           </div>
 
@@ -3147,11 +3306,8 @@ export default function ScannerPage({ user }: ScannerPageProps) {
         {/* Market Hours Banner - Show when market is closed (always visible, even during scans) */}
         {activeTab === 'options' && <MarketHoursBanner />}
 
-        {/* Scanner Mode Description */}
-        {activeTab === 'options' && <ScannerModeDescription mode={scannerMode} />}
-
-        {/* Custom Scanner Filters */}
-        {activeTab === 'options' && scannerMode === 'custom' && !isLoading && (
+        {/* Custom Filters Panel */}
+        {activeTab === 'options' && showFilters && !isLoading && (
           <div className="my-6">
             <CustomScannerFilters
               criteria={customCriteria}
@@ -3180,7 +3336,7 @@ export default function ScannerPage({ user }: ScannerPageProps) {
                   Advanced Analysis in Progress
                 </h3>
                 <p className="mt-1 text-sm text-blue-800 dark:text-blue-200">
-                  Our enhanced scanner analyzes historical patterns, backtesting data, and institutional-grade probabilities.
+                  Monty is analyzing thousands of options contracts with institutional-grade probabilities and risk models.
                   This comprehensive analysis typically takes <span className="font-semibold">1-2 minutes</span>.
                   Don&apos;t worry - we&apos;re working hard to find you the best opportunities!
                 </p>
@@ -3780,6 +3936,20 @@ export default function ScannerPage({ user }: ScannerPageProps) {
           </div>
         )}
       </div>
+
+      {/* Welcome Setup Modal - only show after settings loaded */}
+      <WelcomeSetup
+        open={isWelcomeSetupOpen && settingsLoaded}
+        onComplete={handleWelcomeComplete}
+      />
+
+      {/* First Scan Intro Modal */}
+      <FirstScanIntro
+        open={isFirstScanIntroOpen}
+        onComplete={dismissFirstScanIntro}
+        onSkip={dismissFirstScanIntro}
+        opportunityCount={opportunities.length}
+      />
 
       {/* AI Trade Chat Modal */}
       {chatOpportunity && (

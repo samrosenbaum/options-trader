@@ -636,6 +636,43 @@ const mergeConstraints = (
   return Object.keys(merged).length > 0 ? merged : undefined
 }
 
+const extractSymbolsFromSearchParams = (params: URLSearchParams): string[] | undefined => {
+  const symbolsParam = params.get("symbols") || params.get("symbol")
+  if (!symbolsParam) {
+    return undefined
+  }
+  const symbols = symbolsParam
+    .split(",")
+    .map((s) => s.trim().toUpperCase())
+    .filter((s) => s.length > 0)
+  return symbols.length > 0 ? symbols : undefined
+}
+
+const extractSymbolsFromBody = (body: unknown): string[] | undefined => {
+  if (!body || typeof body !== "object") {
+    return undefined
+  }
+  const obj = body as Record<string, unknown>
+  const symbolsValue = obj.symbols || obj.symbol
+
+  if (Array.isArray(symbolsValue)) {
+    const symbols = symbolsValue
+      .map((s) => String(s).trim().toUpperCase())
+      .filter((s) => s.length > 0)
+    return symbols.length > 0 ? symbols : undefined
+  }
+
+  if (typeof symbolsValue === "string") {
+    const symbols = symbolsValue
+      .split(",")
+      .map((s) => s.trim().toUpperCase())
+      .filter((s) => s.length > 0)
+    return symbols.length > 0 ? symbols : undefined
+  }
+
+  return undefined
+}
+
 /**
  * Type definition for cached scan results from Supabase RPC
  */
@@ -710,31 +747,38 @@ const executeEnhancedScanner = async ({
   constraints,
   debugContext,
   filterMode,
+  symbols,
 }: {
   constraints?: ConstraintPayload
   debugContext?: Record<string, unknown>
   filterMode?: FilterMode
+  symbols?: string[]
 }) => {
   const forcedPolicy = determineScannerExecutionPolicy()
   const resolvedMode: FilterMode = filterMode === "strict" ? "strict" : "relaxed"
 
-  // Try cache first for instant response
-  console.log(`⚡ Checking cache for ${resolvedMode} mode results...`)
-  const cachedResults = await fetchCachedScanResults(resolvedMode)
+  // Skip cache for symbol-specific scans
+  if (!symbols || symbols.length === 0) {
+    // Try cache first for instant response
+    console.log(`⚡ Checking cache for ${resolvedMode} mode results...`)
+    const cachedResults = await fetchCachedScanResults(resolvedMode)
 
-  if (cachedResults && !cachedResults.metadata.cacheStale) {
-    // Cache hit and fresh! Serve instantly
-    console.log(`🚀 Serving cached results (${cachedResults.metadata.cacheAgeMinutes?.toFixed(1)} min old)`)
+    if (cachedResults && !cachedResults.metadata.cacheStale) {
+      // Cache hit and fresh! Serve instantly
+      console.log(`🚀 Serving cached results (${cachedResults.metadata.cacheAgeMinutes?.toFixed(1)} min old)`)
 
-    return NextResponse.json({
-      success: true,
-      opportunities: cachedResults.opportunities,
-      metadata: cachedResults.metadata,
-    })
+      return NextResponse.json({
+        success: true,
+        opportunities: cachedResults.opportunities,
+        metadata: cachedResults.metadata,
+      })
+    }
+
+    // Cache miss or stale - run live scan
+    console.log(`📊 Running live scan (${cachedResults ? 'cache stale' : 'no cache'})...`)
+  } else {
+    console.log(`🎯 Running symbol-specific scan for: ${symbols.join(', ')}`)
   }
-
-  // Cache miss or stale - run live scan
-  console.log(`📊 Running live scan (${cachedResults ? 'cache stale' : 'no cache'})...`)
 
   if (forcedPolicy?.forceFallback) {
     console.warn(
@@ -799,7 +843,14 @@ const executeEnhancedScanner = async ({
       env.USER_DAILY_CONTRACT_BUDGET = String(constraints.dailyContractBudget)
     }
 
-    const python = spawn(pythonPath, ["-m", "src.scanner.enhanced_service"], {
+    const args = ["-m", "src.scanner.enhanced_service"]
+
+    // Add symbols filter if provided
+    if (symbols && symbols.length > 0) {
+      args.push("--symbols", symbols.join(","))
+    }
+
+    const python = spawn(pythonPath, args, {
       env,
       cwd: process.cwd(), // Explicitly set working directory to project root
     })
@@ -971,10 +1022,12 @@ export async function GET(request: Request) {
       )
     }
     const constraints = mergeConstraints(extractConstraintsFromSearchParams(url.searchParams))
+    const symbols = extractSymbolsFromSearchParams(url.searchParams)
     return executeEnhancedScanner({
       constraints,
       debugContext: { requestedVia: "GET" },
       filterMode: resolvedFilterMode,
+      symbols,
     })
   } catch (error) {
     console.error("Error executing enhanced scanner:", error)
@@ -1006,6 +1059,10 @@ export async function POST(request: Request) {
     const bodyConstraints = extractConstraintsFromBody(body)
     const constraints = mergeConstraints(searchConstraints, bodyConstraints)
 
+    const searchSymbols = extractSymbolsFromSearchParams(url.searchParams)
+    const bodySymbols = extractSymbolsFromBody(body)
+    const symbols = bodySymbols || searchSymbols
+
     if (fallbackOnly) {
       const reasonFromBody =
         body && typeof body === "object" && body !== null
@@ -1031,6 +1088,7 @@ export async function POST(request: Request) {
       constraints,
       debugContext: { requestedVia: "POST" },
       filterMode: resolvedFilterMode,
+      symbols,
     })
   } catch (error) {
     console.error("Error executing enhanced scanner via POST:", error)

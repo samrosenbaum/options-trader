@@ -890,6 +890,16 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
         }
 
 
+def _create_symbol_specific_builder(symbols: List[str]):
+    """Create a universe builder that returns only the specified symbols."""
+    def symbol_specific_universe(settings, batch_size, rotation_state):
+        # Normalize symbols
+        normalized = [s.upper().strip() for s in symbols if s and s.strip()]
+        # Return symbols and empty rotation state (no rotation needed)
+        return normalized, {"mode": "fixed", "symbols": normalized}
+    return symbol_specific_universe
+
+
 def run_enhanced_scan(
     max_symbols: Optional[int] = None,
     *,
@@ -898,10 +908,27 @@ def run_enhanced_scan(
     force_refresh: bool = False,
     batch_builder = None,
     allow_relaxed_fallback: bool | None = None,
+    symbols: Optional[List[str]] = None,
 ) -> ScanResult:
-    """Run enhanced scan with institutional-grade components."""
+    """Run enhanced scan with institutional-grade components.
 
-    print("🚀 Starting enhanced institutional-grade scan...", file=sys.stderr)
+    Args:
+        max_symbols: Maximum symbols to scan (ignored if symbols is provided)
+        max_results: Maximum total opportunities to return
+        max_per_symbol: Maximum opportunities per symbol
+        force_refresh: Force refresh of data (ignore cache)
+        batch_builder: Custom universe builder function
+        allow_relaxed_fallback: Whether to allow relaxed fallback filters
+        symbols: Optional list of specific symbols to scan (e.g., ['TSLA', 'AAPL'])
+    """
+
+    if symbols:
+        print(f"🎯 Targeting specific symbols: {', '.join(symbols)}", file=sys.stderr)
+        batch_builder = _create_symbol_specific_builder(symbols)
+        # Override max_symbols since we have a specific list
+        max_symbols = None
+    else:
+        print("🚀 Starting enhanced institutional-grade scan...", file=sys.stderr)
 
     scanner = InstitutionalOptionsScanner(
         max_symbols=max_symbols,
@@ -913,7 +940,7 @@ def run_enhanced_scan(
         force_refresh=force_refresh,
         allow_relaxed_fallback=allow_relaxed_fallback,
     )
-    
+
     # Add enhanced statistics to metadata
     enhanced_stats = scanner.get_enhanced_statistics()
     result.metadata.update({
@@ -921,7 +948,10 @@ def run_enhanced_scan(
         'institutionalGrade': True,
         'enhancedStatistics': enhanced_stats
     })
-    
+
+    if symbols:
+        result.metadata['targetSymbols'] = symbols
+
     return result
 
 
@@ -964,8 +994,20 @@ def cli(argv: Optional[Sequence[str]] = None) -> None:
         default=None,
         help="Disable relaxed fallback filters and only return strict matches"
     )
+    parser.add_argument(
+        "--symbols",
+        type=str,
+        help="Comma-separated list of specific symbols to scan (e.g., 'TSLA,AAPL,NVDA')"
+    )
 
     args = parser.parse_args(argv)
+
+    # Parse symbols if provided
+    target_symbols = None
+    if args.symbols:
+        target_symbols = [s.strip().upper() for s in args.symbols.split(',') if s.strip()]
+        if not target_symbols:
+            target_symbols = None
 
     symbol_limit = args.max_symbols if args.max_symbols and args.max_symbols > 0 else None
     allow_relaxed = None if args.strict_only is None else not args.strict_only
@@ -974,7 +1016,8 @@ def cli(argv: Optional[Sequence[str]] = None) -> None:
         max_results=args.max_results,
         max_per_symbol=args.max_per_symbol,
         force_refresh=args.force_refresh,
-        allow_relaxed_fallback=allow_relaxed
+        allow_relaxed_fallback=allow_relaxed,
+        symbols=target_symbols
     )
     
     print(result.to_json(indent=args.json_indent))

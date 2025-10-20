@@ -160,6 +160,10 @@ export interface Database {
           user_id: string
           portfolio_size: number | null
           daily_contract_budget: number | null
+          user_name: string | null
+          broker: string | null
+          trading_strategy: string | null
+          has_completed_first_scan: boolean | null
           created_at: string
           updated_at: string
         }
@@ -167,6 +171,10 @@ export interface Database {
           user_id: string
           portfolio_size?: number | null
           daily_contract_budget?: number | null
+          user_name?: string | null
+          broker?: string | null
+          trading_strategy?: string | null
+          has_completed_first_scan?: boolean | null
           created_at?: string
           updated_at?: string
         }
@@ -174,6 +182,10 @@ export interface Database {
           user_id?: string
           portfolio_size?: number | null
           daily_contract_budget?: number | null
+          user_name?: string | null
+          broker?: string | null
+          trading_strategy?: string | null
+          has_completed_first_scan?: boolean | null
           created_at?: string
           updated_at?: string
         }

@@ -21,16 +21,16 @@ export default function LandingPage() {
             href="/auth/login"
             className="rounded-full border border-emerald-500/40 bg-white/5 px-5 py-2 text-sm font-medium text-emerald-200 transition hover:bg-emerald-500/10"
           >
-            Duplicate Template
+            Login
           </Link>
         </header>
 
         {/* Hero Section */}
         <main className="grid flex-1 gap-12 lg:grid-cols-[1.2fr_1fr] lg:gap-16">
           <div className="flex flex-col justify-center">
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-emerald-500/40 bg-white/5 px-4 py-1 text-sm text-emerald-200">
+            <div className="mb-6 inline-flex w-fit items-center gap-2 rounded-full border border-emerald-500/40 bg-white/5 px-4 py-1 text-sm text-emerald-200">
               <span className="h-2 w-2 rounded-full bg-emerald-400"></span>
-              They trust us
+              Your Trading Floor is Open
             </div>
             <h1 className="text-4xl font-display font-bold leading-tight text-white sm:text-5xl lg:text-6xl">
               Your Personal

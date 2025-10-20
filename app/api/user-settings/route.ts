@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import type { Database } from '@/lib/types/database.types'
 
 export async function GET() {
   try {
@@ -59,20 +60,33 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { user_name, broker, trading_strategy, portfolio_size, daily_contract_budget } = body
+    const {
+      user_name,
+      broker,
+      trading_strategy,
+      portfolio_size,
+      daily_contract_budget,
+      has_completed_first_scan,
+    } = body
+
+    const payload: Database['public']['Tables']['user_settings']['Insert'] = {
+      user_id: user.id,
+      user_name,
+      broker,
+      trading_strategy,
+      portfolio_size,
+      daily_contract_budget,
+      updated_at: new Date().toISOString(),
+    }
+
+    if (typeof has_completed_first_scan === 'boolean') {
+      payload.has_completed_first_scan = has_completed_first_scan
+    }
 
     // Upsert user settings
     const { data, error } = await supabase
       .from('user_settings')
-      .upsert({
-        user_id: user.id,
-        user_name,
-        broker,
-        trading_strategy,
-        portfolio_size,
-        daily_contract_budget,
-        updated_at: new Date().toISOString()
-      }, {
+      .upsert(payload, {
         onConflict: 'user_id'
       })
       .select()

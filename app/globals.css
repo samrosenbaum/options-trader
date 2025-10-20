@@ -171,6 +171,65 @@ body {
   @apply dark:border-emerald-500/30 dark:from-emerald-950/50 dark:to-emerald-900/30 dark:text-emerald-300;
 }
 
+/* First Scan Aurora Animation */
+@keyframes first-scan-sweep {
+  0% {
+    transform: translateX(-140%) skewX(-12deg);
+    opacity: 0;
+  }
+  30% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateX(140%) skewX(-12deg);
+    opacity: 0;
+  }
+}
+
+@keyframes first-scan-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.65;
+  }
+}
+
+.first-scan-aurora {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.first-scan-aurora::before {
+  content: '';
+  position: absolute;
+  inset: -40% -120%;
+  background: linear-gradient(120deg, transparent, rgba(110, 231, 183, 0.5), transparent);
+  opacity: 0;
+  filter: blur(18px);
+  transform: translateX(-120%);
+}
+
+.first-scan-aurora::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 20% 20%, rgba(110, 231, 183, 0.35), transparent 60%);
+  opacity: 0.45;
+  mix-blend-mode: screen;
+  animation: first-scan-pulse 4s ease-in-out infinite;
+}
+
+html.first-scan-glow-active .first-scan-aurora::before {
+  animation: first-scan-sweep 1.8s cubic-bezier(0.6, 0.1, 0.3, 1) forwards;
+}
+
+html.first-scan-glow-active {
+  scroll-behavior: smooth;
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
