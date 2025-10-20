@@ -62,14 +62,16 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
         self.max_per_symbol = max_per_symbol
         self.hot_scan_mode = hot_scan_mode
 
-        # Initialize enhanced components
+        # Initialize enhanced components with relaxed filters for hot scan mode
+        data_quality_filters = {
+            'max_spread_pct': 0.35 if hot_scan_mode else 0.15,  # 35% for volatile stocks, 15% for normal
+            'min_volume': 5,  # Keep volume requirement
+            'min_open_interest': 10,  # Keep OI requirement
+            'max_price_age_minutes': 15  # Fresh data for accurate pricing
+        }
+
         self.enhanced_scanner = EnhancedOptionsScanner(
-            data_quality_config={
-                'max_spread_pct': 0.15,  # 15% maximum spread - strict for good execution
-                'min_volume': 5,  # Lowered from 10 - options make money daily!
-                'min_open_interest': 10,  # Lowered from 50 - more realistic for smaller stocks
-                'max_price_age_minutes': 15  # Fresh data for accurate pricing
-            },
+            data_quality_config=data_quality_filters,
             probability_config={
                 'risk_free_rate': 0.045,  # 4.5% risk-free rate
                 'use_confidence_intervals': True
@@ -192,33 +194,49 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
             print("📊 No legacy opportunities found", file=sys.stderr)
             return []
 
-        print(f"🔍 Enhancing {len(legacy_opportunities)} opportunities with institutional-grade analysis...", file=sys.stderr)
-        
-        # Convert legacy opportunities to enhanced format
-        enhanced_opportunities = []
-        for legacy_opp in legacy_opportunities:
-            try:
-                enhanced_opp = self._enhance_opportunity(legacy_opp, options_data)
-                if enhanced_opp:
-                    enhanced_opportunities.append(enhanced_opp)
-            except Exception as e:
-                print(f"⚠️  Error enhancing opportunity {legacy_opp.get('symbol', 'unknown')}: {e}", file=sys.stderr)
-                # Fall back to legacy opportunity
-                enhanced_opportunities.append(legacy_opp)
-                
-        print(f"📋 Before institutional filtering: {len(enhanced_opportunities)} opportunities", file=sys.stderr)
+        # Hot scan mode: Skip institutional filters, use simple volume + Greeks ranking
+        if self.hot_scan_mode:
+            print(f"🔥 HOT SCAN: Ranking {len(legacy_opportunities)} opportunities by volume + Greeks only", file=sys.stderr)
+            # Sort by volume first, then by score
+            sorted_opps = sorted(
+                legacy_opportunities,
+                key=lambda x: (x.get('volume', 0), x.get('score', 0)),
+                reverse=True
+            )
+            # Take top results
+            filtered_opportunities = sorted_opps[:self.max_results]
+            print(f"✅ Hot scan complete: {len(filtered_opportunities)} opportunities", file=sys.stderr)
+        else:
+            # Normal mode: Use institutional-grade analysis
+            print(f"🔍 Enhancing {len(legacy_opportunities)} opportunities with institutional-grade analysis...", file=sys.stderr)
 
-        # Apply institutional-grade filtering
-        filtered_opportunities = self._apply_institutional_filters(
-            enhanced_opportunities,
-            max_results=self.max_results,
-            max_per_symbol=self.max_per_symbol
-        )
+            # Convert legacy opportunities to enhanced format
+            enhanced_opportunities = []
+            for legacy_opp in legacy_opportunities:
+                try:
+                    enhanced_opp = self._enhance_opportunity(legacy_opp, options_data)
+                    if enhanced_opp:
+                        enhanced_opportunities.append(enhanced_opp)
+                except Exception as e:
+                    print(f"⚠️  Error enhancing opportunity {legacy_opp.get('symbol', 'unknown')}: {e}", file=sys.stderr)
+                    # Fall back to legacy opportunity
+                    enhanced_opportunities.append(legacy_opp)
 
-        print(f"📊 After institutional filtering: {len(filtered_opportunities)} opportunities", file=sys.stderr)
+            print(f"📋 Before institutional filtering: {len(enhanced_opportunities)} opportunities", file=sys.stderr)
 
-        # Re-sort by risk-adjusted score
-        filtered_opportunities.sort(key=lambda x: x.get('riskAdjustedScore', x.get('score', 0)), reverse=True)
+            # Apply institutional-grade filtering
+            filtered_opportunities = self._apply_institutional_filters(
+                enhanced_opportunities,
+                max_results=self.max_results,
+                max_per_symbol=self.max_per_symbol
+            )
+
+        if not self.hot_scan_mode:
+            print(f"📊 After institutional filtering: {len(filtered_opportunities)} opportunities", file=sys.stderr)
+
+        # Re-sort by risk-adjusted score (skip for hot scan, already sorted by volume)
+        if not self.hot_scan_mode:
+            filtered_opportunities.sort(key=lambda x: x.get('riskAdjustedScore', x.get('score', 0)), reverse=True)
 
         if len(filtered_opportunities) > 0:
             print(f"✅ Enhanced analysis complete: {len(filtered_opportunities)} institutional-grade opportunities", file=sys.stderr)
