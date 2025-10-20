@@ -37,10 +37,6 @@ import type {
   RiskProfileKey,
 } from "@/lib/ai-strategy-hub/types";
 
-interface AIStrategyHubProps {
-  userEmail?: string;
-}
-
 interface UserSettings {
   user_name?: string;
   broker?: string;

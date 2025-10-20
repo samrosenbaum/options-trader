@@ -1316,7 +1316,7 @@ export default function ScannerPage({ user }: ScannerPageProps) {
     setIsFirstScanIntroOpen(false)
     setHasCompletedFirstScan(true) // Update state immediately to prevent re-showing
     void markFirstScanComplete()
-  }, [markFirstScanComplete, isFirstScanIntroOpen])
+  }, [markFirstScanComplete])
 
   const handleWelcomeComplete = useCallback(async (data: {
     userName: string

@@ -70,7 +70,7 @@ export default function AIStrategyHubPage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       <Navigation userEmail={user.email ?? undefined} />
       <main className="py-8">
-        <AIStrategyHub userEmail={user.email ?? undefined} />
+        <AIStrategyHub />
       </main>
     </div>
   )
