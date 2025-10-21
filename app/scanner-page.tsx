@@ -2139,7 +2139,7 @@ export default function ScannerPage({ user }: ScannerPageProps) {
         }, 500)
       }
     }
-  }, [attemptFallbackFetch, earningsScanMode, handleScanPayload, hasCompletedFirstScan, hotScanMode, investmentAmount, targetSymbolInput, userPortfolioConstraints])
+  }, [attemptFallbackFetch, earningsScanMode, handleScanPayload, hasCompletedFirstScan, hotScanMode, investmentAmount, isFirstScanIntroOpen, targetSymbolInput, userPortfolioConstraints])
 
   const fetchCryptoAlerts = useCallback(async () => {
     try {
@@ -3661,10 +3661,10 @@ export default function ScannerPage({ user }: ScannerPageProps) {
             </p>
             <div className="mx-auto mb-6 max-w-2xl rounded-2xl border border-slate-200/60 bg-white/70 px-6 py-4 text-left shadow-sm dark:border-slate-700/60 dark:bg-slate-800/40">
               <p className="text-sm italic leading-relaxed text-slate-700 dark:text-slate-200">
-                "Trading is about discipline. Not trading is just as important as trading—you can't rush."
+                &ldquo;Trading is about discipline. Not trading is just as important as trading—you can&apos;t rush.&rdquo;
               </p>
               <p className="mt-2 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-                Stay patient, and when you're ready to find moves, try widening the filters or running another scan for fresh setups.
+                Stay patient, and when you&apos;re ready to find moves, try widening the filters or running another scan for fresh setups.
               </p>
             </div>
             {relaxedSuggestionAvailable && (
