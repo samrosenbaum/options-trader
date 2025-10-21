@@ -134,12 +134,12 @@ def fetch_option_data(symbol: str, strike: float, expiration: Any, option_type: 
         days_to_expiry = (exp_date - date.today()).days
         time_to_expiry = max(days_to_expiry / 365.0, 0.001)
 
-        greeks = calculator.calculate_greeks(
+        greeks = calculator.calculate_all_greeks(
+            option_type=option_type.lower(),
             stock_price=stock_price,
-            strike=strike,
-            time_to_expiry=time_to_expiry,
+            strike_price=strike,
+            time_to_expiration=time_to_expiry,
             volatility=implied_volatility,
-            option_type=option_type.lower()
         )
 
         return {
@@ -150,10 +150,10 @@ def fetch_option_data(symbol: str, strike: float, expiration: Any, option_type: 
             'open_interest': open_interest,
             'implied_volatility': implied_volatility,
             'stock_price': stock_price,
-            'delta': greeks['delta'],
-            'theta': greeks['theta'],
-            'gamma': greeks['gamma'],
-            'vega': greeks['vega'],
+            'delta': greeks.delta,
+            'theta': greeks.theta,
+            'gamma': greeks.gamma,
+            'vega': greeks.vega,
         }
 
     except Exception as e:
@@ -325,9 +325,9 @@ def update_positions(positions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
             })
 
             signal_emoji = '🔴' if exit_data['exit_signal'] == 'exit_now' else '🟡' if exit_data['exit_signal'] == 'consider' else '🟢'
-            print(f"{signal_emoji} Updated {position['symbol']} ${position['strike']} {position['option_type']}: ${current_data['current_price']:.2f} ({pl_data['unrealized_pl_percent']:.1f}%) - {exit_data['exit_signal'].upper()} ({exit_data['exit_urgency_score']})", file=sys.stderr)
+            print(f"{signal_emoji} Updated {position['symbol']} ${position['strike']} {position['option_type']}: ${current_data['current_price']:.2f} ({pl_data['unrealized_pl_percent']:.1f}%) - {exit_data['exit_signal'].upper()} ({exit_data['exit_urgency_score']})", file=sys.stderr, flush=True)
         else:
-            print(f"✗ Failed to update {position['symbol']} ${position['strike']} {position['option_type']}", file=sys.stderr)
+            print(f"✗ Failed to update {position['symbol']} ${position['strike']} {position['option_type']}", file=sys.stderr, flush=True)
 
         updated_positions.append(position)
 
@@ -336,19 +336,26 @@ def update_positions(positions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 
 def main():
     """Main entry point for updating position prices."""
+    print("=== Starting position price update ===", file=sys.stderr, flush=True)
+
     # Read positions from stdin
     try:
         input_data = sys.stdin.read()
+        print(f"Received {len(input_data)} bytes of input", file=sys.stderr, flush=True)
         positions = json.loads(input_data)
+        print(f"Parsed {len(positions)} positions from input", file=sys.stderr, flush=True)
     except Exception as e:
-        print(f"Error reading input: {e}", file=sys.stderr)
+        print(f"Error reading input: {e}", file=sys.stderr, flush=True)
         sys.exit(1)
 
     # Update positions
+    print(f"Updating {len(positions)} positions...", file=sys.stderr, flush=True)
     updated = update_positions(positions)
+    print(f"Update complete. Returning {len(updated)} positions.", file=sys.stderr, flush=True)
 
     # Output updated positions as JSON
     print(json.dumps(updated, indent=2, default=str))
+    sys.stdout.flush()
 
 
 if __name__ == '__main__':

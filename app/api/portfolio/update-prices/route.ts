@@ -52,9 +52,11 @@ export async function POST() {
 
     const updatedPositions = await new Promise<Position[]>((resolve, reject) => {
       const python = spawn(pythonPath, [
-        'scripts/update_position_prices.py',
+        '-m',
+        'scripts.update_position_prices',
       ], {
         env: { ...process.env, PYTHONPATH: process.cwd() },
+        cwd: process.cwd(), // Run from project root
       })
 
       let stdoutBuffer = ''
@@ -78,18 +80,25 @@ export async function POST() {
       })
 
       python.on('close', (code) => {
+        // Always log stderr to see progress messages
+        if (stderrBuffer) {
+          console.log('Python script output:', stderrBuffer)
+        }
+
         if (code !== 0) {
-          console.error('Python script error:', stderrBuffer)
+          console.error('Python script error (exit code):', code)
           reject(new Error(`Python script exited with code ${code}`))
           return
         }
 
         try {
           const updated = JSON.parse(stdoutBuffer)
+          console.log(`Successfully parsed ${updated.length} updated positions`)
           resolve(updated)
         } catch (error) {
           console.error('Failed to parse Python output:', error)
-          console.error('Raw output:', stdoutBuffer)
+          console.error('Raw stdout:', stdoutBuffer)
+          console.error('Raw stderr:', stderrBuffer)
           reject(error)
         }
       })
