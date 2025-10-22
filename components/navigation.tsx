@@ -2,8 +2,6 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { useState, useEffect } from 'react'
 
@@ -22,8 +20,6 @@ const FUN_GREETINGS = [
 
 export default function Navigation({ userEmail }: { userEmail?: string }) {
   const pathname = usePathname()
-  const router = useRouter()
-  const supabase = createClient()
   const [greeting, setGreeting] = useState('')
 
   useEffect(() => {
@@ -31,12 +27,6 @@ export default function Navigation({ userEmail }: { userEmail?: string }) {
     const randomGreeting = FUN_GREETINGS[Math.floor(Math.random() * FUN_GREETINGS.length)]
     setGreeting(randomGreeting)
   }, [])
-
-  const handleSignOut = async () => {
-    await supabase.auth.signOut()
-    router.push('/')
-    router.refresh()
-  }
 
   const navItems = [
     { href: '/', label: 'Scanner' },
@@ -46,7 +36,6 @@ export default function Navigation({ userEmail }: { userEmail?: string }) {
     { href: '/rejection-learning', label: 'Anti-Portfolio' },
     { href: '/watchlist', label: 'Watchlist' },
     { href: '/portfolio', label: 'Portfolio' },
-    { href: '/settings', label: 'Settings' },
   ]
 
   return (
@@ -99,12 +88,16 @@ export default function Navigation({ userEmail }: { userEmail?: string }) {
                 {greeting}
               </span>
             )}
-            <button
-              onClick={handleSignOut}
-              className="text-sm text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            <Link
+              href="/settings"
+              className={`text-sm px-3 py-2 rounded-lg transition-colors ${
+                pathname === '/settings'
+                  ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20'
+                  : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
             >
-              Sign Out
-            </button>
+              Settings
+            </Link>
           </div>
         </div>
       </div>

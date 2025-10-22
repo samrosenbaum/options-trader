@@ -7,8 +7,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Settings, Save, Loader2 } from "lucide-react"
+import { Settings, Save, Loader2, LogOut } from "lucide-react"
 import Navigation from "@/components/navigation"
+import { createClient } from "@/lib/supabase/client"
 
 const brokerOptions = [
   { id: "robinhood", label: "Robinhood" },
@@ -32,6 +33,7 @@ const strategyOptions = [
 
 export default function SettingsPage() {
   const router = useRouter()
+  const supabase = createClient()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [userName, setUserName] = useState("")
@@ -90,6 +92,12 @@ export default function SettingsPage() {
     } finally {
       setSaving(false)
     }
+  }
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
+    router.push("/")
+    router.refresh()
   }
 
   if (loading) {
@@ -218,28 +226,38 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        {/* Save Button */}
-        <div className="flex justify-end gap-4">
+        {/* Actions */}
+        <div className="flex justify-between items-center gap-4">
           <Button
-            variant="outline"
-            onClick={() => router.back()}
+            variant="destructive"
+            onClick={handleSignOut}
             disabled={saving}
           >
-            Cancel
+            <LogOut className="mr-2 h-4 w-4" />
+            Sign Out
           </Button>
-          <Button onClick={handleSave} disabled={saving}>
-            {saving ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              <>
-                <Save className="mr-2 h-4 w-4" />
-                Save Settings
-              </>
-            )}
-          </Button>
+          <div className="flex gap-4">
+            <Button
+              variant="outline"
+              onClick={() => router.back()}
+              disabled={saving}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="mr-2 h-4 w-4" />
+                  Save Settings
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </div>
     </div>
