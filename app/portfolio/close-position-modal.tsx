@@ -96,15 +96,14 @@ export default function ClosePositionModal({
         }
 
         // Log to rejection tracking (non-blocking - don't fail the close if this fails)
-        await supabase
-          .from('rejected_options')
-          .insert(rejectionData)
-          .then(() => {
-            console.log('Position tracked in anti-portfolio')
-          })
-          .catch((err) => {
-            console.error('Failed to log to anti-portfolio:', err)
-          })
+        try {
+          await supabase
+            .from('rejected_options')
+            .insert(rejectionData)
+          console.log('Position tracked in anti-portfolio')
+        } catch (err) {
+          console.error('Failed to log to anti-portfolio:', err)
+        }
       }
 
       if (data) {

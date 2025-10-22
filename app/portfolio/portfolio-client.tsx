@@ -10,6 +10,7 @@ import {
 import { createClient } from '@/lib/supabase/client'
 import type { Database } from '@/lib/types/database.types'
 import AddPositionModal from './add-position-modal'
+import EditPositionModal from './edit-position-modal'
 import ClosePositionModal from './close-position-modal'
 import CSVImportModal from '@/components/csv-import-modal'
 import {
@@ -157,8 +158,12 @@ export default function PortfolioClient({
   const [showAddModal, setShowAddModal] = useState(false)
   const [showImportModal, setShowImportModal] = useState(false)
   const [positionToClose, setPositionToClose] = useState<Position | null>(null)
+  const [positionToEdit, setPositionToEdit] = useState<Position | null>(null)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [refreshMessage, setRefreshMessage] = useState<string | null>(null)
+  const [isCheckingSignals, setIsCheckingSignals] = useState(false)
+  const [signalsMessage, setSignalsMessage] = useState<string | null>(null)
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false)
   const supabase = useMemo(() => createClient(), [])
   const [portfolioSizeInput, setPortfolioSizeInput] = useState<string>('')
   const [dailyBudgetInput, setDailyBudgetInput] = useState<string>('')
@@ -167,6 +172,61 @@ export default function PortfolioClient({
   const [isSavingSettings, setIsSavingSettings] = useState(false)
   const [settingsFeedback, setSettingsFeedback] = useState<'idle' | 'success' | 'error'>('idle')
   const [hasAutoRefreshed, setHasAutoRefreshed] = useState(false)
+
+  // Request notification permission on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      if (Notification.permission === 'granted') {
+        setNotificationsEnabled(true)
+      } else if (Notification.permission !== 'denied') {
+        Notification.requestPermission().then((permission) => {
+          setNotificationsEnabled(permission === 'granted')
+        })
+      }
+    }
+  }, [])
+
+  // Helper to check if market is currently open (9:30 AM - 4:00 PM ET, Mon-Fri)
+  const isMarketHours = useCallback(() => {
+    const now = new Date()
+
+    // Convert to ET (UTC-5 or UTC-4 depending on DST)
+    const etTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }))
+
+    // Check if weekday (Mon-Fri, 1-5)
+    const day = etTime.getDay()
+    if (day === 0 || day === 6) return false
+
+    // Check if between 9:30 AM and 4:00 PM
+    const hours = etTime.getHours()
+    const minutes = etTime.getMinutes()
+    const timeInMinutes = hours * 60 + minutes
+
+    const marketOpen = 9 * 60 + 30  // 9:30 AM
+    const marketClose = 16 * 60     // 4:00 PM
+
+    return timeInMinutes >= marketOpen && timeInMinutes < marketClose
+  }, [])
+
+  // Helper function to send browser notifications
+  const sendNotification = useCallback((title: string, body: string, urgent = false) => {
+    if (!notificationsEnabled || typeof window === 'undefined' || !('Notification' in window)) {
+      return
+    }
+
+    const notification = new Notification(title, {
+      body,
+      icon: '/icon-192x192.png', // Adjust path if needed
+      badge: '/icon-192x192.png',
+      tag: 'exit-signal',
+      requireInteraction: urgent, // Keep notification visible if urgent
+    })
+
+    // Close after 10 seconds if not urgent
+    if (!urgent) {
+      setTimeout(() => notification.close(), 10000)
+    }
+  }, [notificationsEnabled])
 
   useEffect(() => {
     let isMounted = true
@@ -310,6 +370,15 @@ export default function PortfolioClient({
     setPositionToClose(null)
   }
 
+  const handlePositionEdited = (editedPosition: Position) => {
+    setPositions(
+      positions.map((p) =>
+        p.id === editedPosition.id ? editedPosition : p
+      )
+    )
+    setPositionToEdit(null)
+  }
+
   const handleRefreshPrices = useCallback(async () => {
     console.log('[Portfolio] Starting price refresh...')
     setHasAutoRefreshed(true)
@@ -368,8 +437,194 @@ export default function PortfolioClient({
     }
   }, [supabase, user.id])
 
+  const handleCheckExitSignals = useCallback(async () => {
+    console.log('[Portfolio] Starting exit signal check...')
+    setIsCheckingSignals(true)
+    setSignalsMessage(null)
+
+    try {
+      const openPositions = positions.filter((p) => p.status === 'open')
+
+      if (openPositions.length === 0) {
+        setSignalsMessage('No open positions to check')
+        return
+      }
+
+      // Store previous signals for comparison
+      const previousSignals = new Map<string, string>()
+      openPositions.forEach((p) => {
+        if (p.exit_signal) {
+          previousSignals.set(p.id, p.exit_signal)
+        }
+      })
+
+      console.log('[Portfolio] Checking signals for', openPositions.length, 'positions')
+
+      // Prepare positions for exit signal API
+      const positionsForApi = openPositions.map((p) => ({
+        symbol: p.symbol,
+        optionType: p.option_type,
+        strike: p.strike,
+        expiration: p.expiration,
+        entryPrice: p.entry_price,
+        entryDate: p.entry_date.split('T')[0], // Extract just the date part (YYYY-MM-DD)
+        currentPrice: p.current_price || undefined,
+        playType: 'BREAKOUT', // Default - could be stored in position
+        stopLossPct: -50,
+        targetProfitPct: 50,
+      }))
+
+      // Call exit signals API
+      const response = await fetch('/api/exit-signals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ positions: positionsForApi }),
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('[Portfolio] Exit signals API error:', errorText)
+        throw new Error(`Failed to check exit signals: ${response.status}`)
+      }
+
+      const result = await response.json()
+      console.log('[Portfolio] Exit signals result:', result)
+
+      const signals = result.signals || {}
+      let updatedCount = 0
+
+      // Update each position in database with exit signal data
+      for (const position of openPositions) {
+        const posKey = `${position.symbol}_${position.strike}_${position.expiration}_${position.option_type}`
+        const signal = signals[posKey]
+
+        if (!signal) continue
+
+        // Map exit signal engine format to database schema
+        let exitSignal: 'hold' | 'consider' | 'exit_now'
+        if (signal.signal === 'SELL_ALL' || signal.signal === 'CUT_LOSS') {
+          exitSignal = 'exit_now'
+        } else if (signal.signal === 'SELL_PARTIAL') {
+          exitSignal = 'consider'
+        } else {
+          exitSignal = 'hold'
+        }
+
+        const updateData = {
+          exit_signal: exitSignal,
+          exit_urgency_score: Math.round(signal.confidence),
+          exit_reasons: signal.reasoning,
+          last_signal_check: new Date().toISOString(),
+        }
+
+        const { error } = await supabase
+          .from('positions')
+          .update(updateData)
+          .eq('id', position.id)
+
+        if (error) {
+          console.error('[Portfolio] Error updating position', position.id, error)
+        } else {
+          updatedCount++
+        }
+      }
+
+      // Refresh positions from database
+      const { data: updatedPositions, error: fetchError } = await supabase
+        .from('positions')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('entry_date', { ascending: false })
+
+      if (fetchError) {
+        console.error('[Portfolio] Supabase error:', fetchError)
+        throw new Error('Failed to fetch updated positions')
+      }
+
+      console.log('[Portfolio] Got', updatedPositions?.length, 'positions from database')
+      setPositions(updatedPositions || [])
+
+      // Check for signal changes and send notifications
+      let urgentNotifications = 0
+      updatedPositions?.forEach((position) => {
+        const previousSignal = previousSignals.get(position.id)
+        const currentSignal = position.exit_signal
+
+        // Only notify if signal changed
+        if (previousSignal && currentSignal && previousSignal !== currentSignal) {
+          const isUrgent = currentSignal === 'exit_now'
+
+          // Format notification message
+          let title = 'Exit Signal Changed'
+          let body = `${position.symbol} ${position.option_type.toUpperCase()} $${position.strike}`
+
+          if (currentSignal === 'exit_now') {
+            title = '🚨 EXIT NOW Signal'
+            body += ` - ${position.exit_reasons && Array.isArray(position.exit_reasons) ? (position.exit_reasons as string[])[0] : 'Time to exit'}`
+            urgentNotifications++
+          } else if (currentSignal === 'consider') {
+            title = '⚠️ Consider Exiting'
+            body += ` - ${position.exit_reasons && Array.isArray(position.exit_reasons) ? (position.exit_reasons as string[])[0] : 'Consider taking profits'}`
+          } else if (currentSignal === 'hold') {
+            title = '✅ Back to Hold'
+            body += ' - Signal improved'
+          }
+
+          sendNotification(title, body, isUrgent)
+        }
+      })
+
+      const message = urgentNotifications > 0
+        ? `✓ Checked ${updatedCount} positions - ${urgentNotifications} urgent signal${urgentNotifications > 1 ? 's' : ''}!`
+        : `✓ Checked ${updatedCount} positions`
+      console.log('[Portfolio]', message)
+      setSignalsMessage(message)
+
+      // Clear message after 5 seconds
+      setTimeout(() => setSignalsMessage(null), 5000)
+    } catch (error) {
+      console.error('[Portfolio] Error checking exit signals:', error)
+      const errorMsg = `✗ Error: ${error instanceof Error ? error.message : 'Failed to check signals'}`
+      setSignalsMessage(errorMsg)
+
+      // Keep error message visible longer
+      setTimeout(() => setSignalsMessage(null), 10000)
+    } finally {
+      setIsCheckingSignals(false)
+      console.log('[Portfolio] Exit signal check complete')
+    }
+  }, [positions, supabase, user.id, sendNotification])
+
   const openPositions = positions.filter((p) => p.status === 'open')
   const closedPositions = positions.filter((p) => p.status === 'closed')
+
+  // Auto-refresh exit signals during market hours
+  useEffect(() => {
+    if (openPositions.length === 0) return
+
+    const checkAndRefresh = () => {
+      if (isMarketHours()) {
+        console.log('[Portfolio] Auto-checking exit signals during market hours')
+        void handleCheckExitSignals()
+      }
+    }
+
+    // Check every 10 minutes during market hours
+    const interval = setInterval(checkAndRefresh, 10 * 60 * 1000)
+
+    // Initial check after 1 minute (to avoid immediate check on mount)
+    const initialTimeout = setTimeout(() => {
+      if (isMarketHours()) {
+        console.log('[Portfolio] Initial auto-check of exit signals')
+        void handleCheckExitSignals()
+      }
+    }, 60 * 1000)
+
+    return () => {
+      clearInterval(interval)
+      clearTimeout(initialTimeout)
+    }
+  }, [openPositions.length, isMarketHours, handleCheckExitSignals])
 
   const totalUnrealizedPL = openPositions.reduce(
     (sum, p) => sum + (p.unrealized_pl || 0),
@@ -1099,6 +1354,59 @@ export default function PortfolioClient({
               )}
             </button>
 
+            <button
+              onClick={handleCheckExitSignals}
+              disabled={isCheckingSignals || openPositions.length === 0}
+              className={`flex items-center gap-2 font-semibold py-3 px-6 rounded-lg transition-colors ${
+                isCheckingSignals || openPositions.length === 0
+                  ? 'bg-slate-300 dark:bg-slate-700 text-slate-500 dark:text-slate-400 cursor-not-allowed'
+                  : 'bg-orange-600 hover:bg-orange-700 dark:bg-orange-500 dark:hover:bg-orange-600 text-white'
+              }`}
+            >
+              {isCheckingSignals ? (
+                <>
+                  <svg
+                    className="animate-spin h-5 w-5"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Checking...
+                </>
+              ) : (
+                <>
+                  <svg
+                    className="h-5 w-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                    />
+                  </svg>
+                  Check Exit Signals
+                </>
+              )}
+            </button>
+
             {refreshMessage && (
               <div
                 className={`px-4 py-2 rounded-lg text-sm font-medium ${
@@ -1108,6 +1416,18 @@ export default function PortfolioClient({
                 }`}
               >
                 {refreshMessage}
+              </div>
+            )}
+
+            {signalsMessage && (
+              <div
+                className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                  signalsMessage.startsWith('✓')
+                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                    : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                }`}
+              >
+                {signalsMessage}
               </div>
             )}
           </div>
@@ -1203,7 +1523,7 @@ export default function PortfolioClient({
                           </div>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <td className="px-6 py-4 text-sm min-w-[200px] max-w-[300px]">
                         {position.exit_signal && (() => {
                           const signal = position.exit_signal
                           const urgency = position.exit_urgency_score || 0
@@ -1228,13 +1548,13 @@ export default function PortfolioClient({
 
                           return (
                             <div className="space-y-1">
-                              <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold ${bgColor} ${textColor}`}>
+                              <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold whitespace-nowrap ${bgColor} ${textColor}`}>
                                 <span>{emoji}</span>
                                 <span>{label}</span>
                                 <span className="text-[10px]">({urgency})</span>
                               </div>
                               {reasons.length > 0 && (
-                                <div className="text-[10px] text-slate-500 dark:text-slate-400">
+                                <div className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">
                                   {reasons.map(r => r.replace(/_/g, ' ')).join(', ')}
                                 </div>
                               )}
@@ -1243,16 +1563,24 @@ export default function PortfolioClient({
                         })()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center text-sm">
-                        <button
-                          onClick={() => setPositionToClose(position)}
-                          className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors ${
-                            position.exit_signal === 'exit_now'
-                              ? 'bg-red-600 hover:bg-red-700 text-white'
-                              : 'bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200'
-                          }`}
-                        >
-                          Close
-                        </button>
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            onClick={() => setPositionToEdit(position)}
+                            className="px-3 py-1 rounded-lg text-xs font-semibold transition-colors bg-blue-600 hover:bg-blue-700 text-white"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => setPositionToClose(position)}
+                            className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors ${
+                              position.exit_signal === 'exit_now'
+                                ? 'bg-red-600 hover:bg-red-700 text-white'
+                                : 'bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200'
+                            }`}
+                          >
+                            Close
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -1302,6 +1630,15 @@ export default function PortfolioClient({
           userId={user.id}
           onClose={() => setShowAddModal(false)}
           onSuccess={handlePositionAdded}
+        />
+      )}
+
+      {/* Edit Position Modal */}
+      {positionToEdit && (
+        <EditPositionModal
+          position={positionToEdit}
+          onClose={() => setPositionToEdit(null)}
+          onSuccess={handlePositionEdited}
         />
       )}
 

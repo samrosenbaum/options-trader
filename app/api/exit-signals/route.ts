@@ -158,11 +158,18 @@ print(json.dumps(signals, default=str))
           return
         }
 
+        // Always log stderr for debugging (warnings, etc)
+        if (stderr) {
+          console.log("Exit signal engine stderr:", stderr)
+        }
+
         try {
           // Parse last JSON object from stdout
           const lines = stdout.trim().split('\n')
           const jsonLine = lines[lines.length - 1]
+          console.log("Exit signal engine output (last line):", jsonLine)
           const parsed = JSON.parse(jsonLine)
+          console.log("Exit signal engine parsed result:", parsed)
           resolve(parsed)
         } catch (parseError) {
           console.error("Failed to parse exit signal output:", stdout, parseError)
