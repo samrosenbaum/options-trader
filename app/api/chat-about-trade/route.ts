@@ -64,50 +64,48 @@ export async function POST(request: Request) {
 
     // Build context about the trade
     const tradeContext = `
-You are a helpful options trading advisor analyzing this specific trade opportunity:
+You are Monty, an expert options trade analyst helping users understand opportunities that have ALREADY PASSED strict institutional-grade filters.
 
-**Trade Details:**
-- Symbol: ${opportunity.symbol}
-- Option Type: ${opportunity.optionType.toUpperCase()}
-- Strike: $${opportunity.strike}
-- Current Stock Price: $${opportunity.stockPrice}
-- Premium: $${opportunity.premium} (total cost for 1 contract of 100 shares = $${(opportunity.premium / 100).toFixed(2)} per share)
-- Expiration: ${opportunity.expiration}
+🎯 **IMPORTANT CONTEXT:** This trade scored ${opportunity.score}/100 and passed rigorous filters including:
+- Liquidity requirements (volume, open interest, bid-ask spread)
+- Risk-adjusted scoring (probability, Greeks, implied volatility)
+- Position sizing analysis (Kelly criterion, drawdown limits)
+
+Your role is to help the user UNDERSTAND and EXECUTE this trade effectively, not to second-guess the filters.
+
+**Trade Setup:**
+- ${opportunity.symbol} ${opportunity.optionType.toUpperCase()} $${opportunity.strike} exp ${opportunity.expiration}
+- Current Stock: $${opportunity.stockPrice} | Premium: $${(opportunity.premium / 100).toFixed(2)}/share
 - Days to Expiration: ${opportunity.daysToExpiration || "N/A"}
-- Trade Summary: ${opportunity.tradeSummary || "N/A"}
+${opportunity.tradeSummary ? `- Setup: ${opportunity.tradeSummary}` : ''}
 
-**Scoring & Probability:**
-- Scanner Score: ${opportunity.score}/100
-- Probability of Profit: ${opportunity.probabilityOfProfit ?? "N/A"}%
-- Potential Return: ${opportunity.potentialReturn}%
-- Max Potential Return: ${opportunity.maxReturn}%
+**Scanner Analysis:**
+- Quality Score: ${opportunity.score}/100 ⭐
+- Win Probability: ${opportunity.probabilityOfProfit ?? "N/A"}%
+- Potential Return: ${opportunity.potentialReturn}% (max ${opportunity.maxReturn}%)
 - Risk Level: ${opportunity.riskLevel}
 
-${opportunity.directionalBias ? `**Directional Analysis:**
-- Direction: ${opportunity.directionalBias.direction}${opportunity.directionalBias.confidence ? ` (${opportunity.directionalBias.confidence}% confidence)` : ''}${opportunity.directionalBias.score ? `\n- Signal Score: ${opportunity.directionalBias.score}` : ''}` : ""}
+${opportunity.directionalBias ? `**Directional Signal:**
+- ${opportunity.directionalBias.direction.toUpperCase()} bias${opportunity.directionalBias.confidence ? ` with ${opportunity.directionalBias.confidence}% confidence` : ''}${opportunity.directionalBias.score ? ` (signal strength: ${opportunity.directionalBias.score})` : ''}` : ""}
 
-${opportunity.positionSizing ? `**Position Sizing (Kelly Criterion):**
-- Recommended Allocation: ${(opportunity.positionSizing.recommendedFraction * 100).toFixed(2)}%
-${opportunity.positionSizing.expectedEdge ? `- Expected Edge: ${(opportunity.positionSizing.expectedEdge * 100).toFixed(2)}%` : ''}
-- Kelly Fraction: ${(opportunity.positionSizing.kellyFraction * 100).toFixed(2)}%
+${opportunity.positionSizing ? `**Institutional Position Sizing:**
+- Recommended: ${(opportunity.positionSizing.recommendedFraction * 100).toFixed(2)}% of portfolio
+${opportunity.positionSizing.expectedEdge !== undefined && opportunity.positionSizing.expectedEdge >= 0 ? `- Positive Expected Edge: ${(opportunity.positionSizing.expectedEdge * 100).toFixed(2)}%` : ''}
 - Risk Tier: ${opportunity.positionSizing.riskBudgetTier}
-- Rationale: ${opportunity.positionSizing.rationale.join(" ")}` : ""}
+- Strategy: ${opportunity.positionSizing.rationale.join(" ")}` : ""}
 
-${opportunity.greeks ? `**Greeks:**
-- Delta: ${opportunity.greeks.delta.toFixed(4)}
-- Gamma: ${opportunity.greeks.gamma.toFixed(4)}
-- Theta: ${opportunity.greeks.theta.toFixed(4)} (daily decay)
-- Vega: ${opportunity.greeks.vega.toFixed(4)}` : ""}
+${opportunity.greeks ? `**Greeks Snapshot:**
+- Delta: ${opportunity.greeks.delta.toFixed(3)} | Theta: ${opportunity.greeks.theta.toFixed(3)}/day
+- Gamma: ${opportunity.greeks.gamma.toFixed(4)} | Vega: ${opportunity.greeks.vega.toFixed(3)}` : ""}
 
-Answer the user's questions about this trade with clear, actionable advice. Consider:
-- Risk/reward profile
-- What needs to happen for profit
-- Market conditions and catalysts
-- Position sizing recommendations
-- Entry/exit strategies
-- Potential pitfalls
+**Your Mission:**
+Help the user understand:
+1. What needs to happen for this trade to win (breakeven, targets, timeline)
+2. Key risks and how to manage them (theta decay, volatility changes, adverse moves)
+3. Optimal entry/exit strategy (when to take profits, stop losses, roll options)
+4. Market catalysts or events that could impact the trade
 
-Be honest about risks and negative expected value when present. Help the user make informed decisions.
+Be constructive, educational, and specific. This trade already passed the filters—focus on execution excellence.
 `
 
     // Prepare messages for Claude
@@ -118,7 +116,7 @@ Be honest about risks and negative expected value when present. Help the user ma
       },
       {
         role: "assistant",
-        content: "I understand the trade details. I'm ready to answer your questions about this opportunity. What would you like to know?",
+        content: `Got it! This ${opportunity.symbol} ${opportunity.optionType} trade scored ${opportunity.score}/100 and passed our institutional filters. I'm here to help you understand the setup and execute it well. What would you like to know?`,
       },
       ...messages,
     ]

@@ -1168,7 +1168,7 @@ Liquidity: ${((opp as Record<string, unknown>).liquidityScore as number | undefi
                   </div>
                   <div className="rounded-xl border border-blue-200 bg-white/80 p-4 shadow-sm dark:border-blue-800 dark:bg-slate-900/60">
                     <div className="text-xs font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-300">Historical Frequency</div>
-                    <div className="mt-1 text-2xl font-bold text-slate-900 dark:text-white">{(enhancedHistorical.historicalFrequency * 100).toFixed(0)}%</div>
+                    <div className="mt-1 text-2xl font-bold text-slate-900 dark:text-white">{enhancedHistorical.historicalFrequency.toFixed(0)}%</div>
                   </div>
                   <div className="rounded-xl border border-blue-200 bg-white/80 p-4 shadow-sm dark:border-blue-800 dark:bg-slate-900/60">
                     <div className="text-xs font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-300">Recent Examples</div>
