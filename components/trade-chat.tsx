@@ -20,6 +20,22 @@ interface TradeChatProps {
       confidence?: number
       score?: number
     } | null
+    enhancedDirectionalBias?: {
+      direction: string
+      confidence: number
+      score: number
+      recommendation: string
+      signals: Array<{
+        name: string
+        weight: number
+        direction: string
+        score: number
+        confidence: number
+        weighted_contribution: number
+        rationale: string
+      }>
+      timestamp: string
+    } | null
     positionSizing?: {
       recommendedFraction: number
       expectedEdge?: number
@@ -93,6 +109,7 @@ export function TradeChat({ opportunity, isOpen, onClose }: TradeChatProps) {
             maxReturn: opportunity.maxReturn,
             riskLevel: opportunity.riskLevel,
             directionalBias: opportunity.directionalBias,
+            enhancedDirectionalBias: opportunity.enhancedDirectionalBias,
             positionSizing: opportunity.positionSizing,
             greeks: opportunity.greeks,
             tradeSummary: opportunity.tradeSummary,
