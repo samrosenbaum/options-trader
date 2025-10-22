@@ -46,6 +46,7 @@ export default function Navigation({ userEmail }: { userEmail?: string }) {
     { href: '/rejection-learning', label: 'Anti-Portfolio' },
     { href: '/watchlist', label: 'Watchlist' },
     { href: '/portfolio', label: 'Portfolio' },
+    { href: '/settings', label: 'Settings' },
   ]
 
   return (
