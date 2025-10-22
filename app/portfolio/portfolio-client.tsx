@@ -11,6 +11,7 @@ import { createClient } from '@/lib/supabase/client'
 import type { Database } from '@/lib/types/database.types'
 import AddPositionModal from './add-position-modal'
 import ClosePositionModal from './close-position-modal'
+import CSVImportModal from '@/components/csv-import-modal'
 import {
   Bar,
   BarChart,
@@ -154,6 +155,7 @@ export default function PortfolioClient({
 }) {
   const [positions, setPositions] = useState<Position[]>(initialPositions)
   const [showAddModal, setShowAddModal] = useState(false)
+  const [showImportModal, setShowImportModal] = useState(false)
   const [positionToClose, setPositionToClose] = useState<Position | null>(null)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [refreshMessage, setRefreshMessage] = useState<string | null>(null)
@@ -1035,6 +1037,16 @@ export default function PortfolioClient({
             </button>
 
             <button
+              onClick={() => setShowImportModal(true)}
+              className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center gap-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+              Import CSV
+            </button>
+
+            <button
               onClick={handleRefreshPrices}
               disabled={isRefreshing || openPositions.length === 0}
               className={`flex items-center gap-2 font-semibold py-3 px-6 rounded-lg transition-colors ${
@@ -1301,6 +1313,24 @@ export default function PortfolioClient({
           onSuccess={handlePositionClosed}
         />
       )}
+
+      {/* CSV Import Modal */}
+      <CSVImportModal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        onImportSuccess={async () => {
+          // Refresh positions after import
+          const { data } = await supabase
+            .from('positions')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false })
+
+          if (data) {
+            setPositions(data)
+          }
+        }}
+      />
     </div>
   )
 }
