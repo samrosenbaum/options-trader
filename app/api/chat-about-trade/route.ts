@@ -28,6 +28,14 @@ interface ChatRequest {
       confidence?: number
       score?: number
     } | null
+    enhancedDirectionalBias?: {
+      direction: string
+      confidence: number
+      score: number
+      recommendation: string
+      signals?: Record<string, any>
+      timestamp?: string
+    } | null
     positionSizing?: {
       recommendedFraction: number
       expectedEdge?: number
@@ -71,7 +79,7 @@ You are Monty, an expert options trade analyst helping users understand opportun
 - Risk-adjusted scoring (probability, Greeks, implied volatility)
 - Position sizing analysis (Kelly criterion, drawdown limits)
 
-Your role is to help the user UNDERSTAND and EXECUTE this trade effectively. ALWAYS ALIGN with the directional bias shown below - it comes from sophisticated technical analysis and should be treated as the foundation of your analysis. If you mention direction, use the same direction shown in the "Directional Signal" section below.
+Your role is to help the user UNDERSTAND and EXECUTE this trade effectively. The scanner shows a directional bias below - if your analysis differs from this bias, ACKNOWLEDGE the scanner's view first, then explain WHY you see it differently and what information led you to a different conclusion. Be transparent about disagreements rather than forcing alignment.
 
 **Trade Setup:**
 - ${opportunity.symbol} ${opportunity.optionType.toUpperCase()} $${opportunity.strike} exp ${opportunity.expiration}
@@ -85,8 +93,14 @@ ${opportunity.tradeSummary ? `- Setup: ${opportunity.tradeSummary}` : ''}
 - Potential Return: ${opportunity.potentialReturn}% (max ${opportunity.maxReturn}%)
 - Risk Level: ${opportunity.riskLevel}
 
-${opportunity.directionalBias ? `**Directional Signal:**
-- ${opportunity.directionalBias.direction.toUpperCase()} bias${opportunity.directionalBias.confidence ? ` with ${opportunity.directionalBias.confidence}% confidence` : ''}${opportunity.directionalBias.score ? ` (signal strength: ${opportunity.directionalBias.score})` : ''}` : ""}
+${opportunity.enhancedDirectionalBias || opportunity.directionalBias ? `**Directional Signal (from scanner's technical analysis):**
+${opportunity.enhancedDirectionalBias ? `- ${opportunity.enhancedDirectionalBias.direction.toUpperCase()} bias with ${opportunity.enhancedDirectionalBias.confidence.toFixed(1)}% confidence (score: ${opportunity.enhancedDirectionalBias.score.toFixed(1)})
+- Recommendation: ${opportunity.enhancedDirectionalBias.recommendation}
+${opportunity.enhancedDirectionalBias.signals ? `- Individual Signal Scores:
+${Object.entries(opportunity.enhancedDirectionalBias.signals).map(([name, data]: [string, any]) => `  • ${name}: ${data.score?.toFixed(1) || 'N/A'} (weight: ${data.weight?.toFixed(2) || 'N/A'})`).join('\n')}` : ''}
+- Based on: Options flow (call/put volume ratio), IV skew analysis, price momentum (30d), and aggregated technical indicators` :
+`- ${opportunity.directionalBias!.direction.toUpperCase()} bias${opportunity.directionalBias!.confidence ? ` with ${opportunity.directionalBias!.confidence}% confidence` : ''}${opportunity.directionalBias!.score ? ` (signal strength: ${opportunity.directionalBias!.score})` : ''}`}
+- Note: Use this technical data in your analysis. If you reach a different conclusion, explain which factors led you there and how they might differ from or complement these technical signals.` : ""}
 
 ${opportunity.positionSizing ? `**Institutional Position Sizing:**
 - Recommended: ${(opportunity.positionSizing.recommendedFraction * 100).toFixed(2)}% of portfolio
