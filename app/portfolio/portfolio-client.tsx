@@ -1599,6 +1599,104 @@ export default function PortfolioClient({
           </div>
         )}
 
+        {/* Closed Positions History */}
+        {closedPositions.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">
+              Closed Positions History ({closedPositions.length})
+            </h2>
+            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+              <table className="w-full">
+                <thead className="bg-slate-50 dark:bg-slate-800">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      Symbol
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      Type
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      Strike
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      Expiration
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      Contracts
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      Entry
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      Exit
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      Realized P&L
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      Closed Date
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                  {closedPositions.map((position) => (
+                    <tr key={position.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-white">
+                        {position.symbol}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">
+                        <span
+                          className={`px-2 py-1 rounded text-xs font-semibold ${
+                            position.option_type === 'call'
+                              ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                              : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                          }`}
+                        >
+                          {position.option_type.toUpperCase()}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">
+                        ${position.strike}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">
+                        {new Date(position.expiration).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">
+                        {position.contracts}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">
+                        ${position.entry_price.toFixed(2)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">
+                        ${position.exit_price?.toFixed(2) || '—'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <div
+                          className={`font-semibold ${
+                            (position.realized_pl || 0) >= 0
+                              ? 'text-emerald-600'
+                              : 'text-red-600'
+                          }`}
+                        >
+                          ${position.realized_pl?.toFixed(2) || '—'}
+                        </div>
+                        {position.realized_pl_percent && (
+                          <div className="text-xs text-slate-500">
+                            ({position.realized_pl_percent.toFixed(1)}%)
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">
+                        {position.exit_date ? new Date(position.exit_date).toLocaleDateString() : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
         {/* Empty State */}
         {positions.length === 0 && (
           <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-12 text-center">
