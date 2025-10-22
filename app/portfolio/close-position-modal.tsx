@@ -44,22 +44,69 @@ export default function ClosePositionModal({
     try {
       const exitPriceValue = parseFloat(exitPrice)
       const { pl, plPercent } = calculateRealizedPL()
+      const now = new Date()
+      const expirationDate = new Date(position.expiration)
+
+      // Calculate days until expiration
+      const daysUntilExpiration = Math.ceil(
+        (expirationDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+      )
+
+      // Calculate days held
+      const entryDate = new Date(position.entry_date)
+      const daysHeld = Math.ceil(
+        (now.getTime() - entryDate.getTime()) / (1000 * 60 * 60 * 24)
+      )
 
       const { data, error: updateError } = await supabase
         .from('positions')
         .update({
           status: 'closed',
           exit_price: exitPriceValue,
-          exit_date: new Date().toISOString(),
+          exit_date: now.toISOString(),
           realized_pl: pl,
           realized_pl_percent: plPercent,
-          updated_at: new Date().toISOString(),
+          updated_at: now.toISOString(),
         })
         .eq('id', position.id)
         .select()
         .single()
 
       if (updateError) throw updateError
+
+      // If closed before expiration, log to anti-portfolio
+      if (daysUntilExpiration > 0) {
+        const rejectionData = {
+          symbol: position.symbol,
+          strike: position.strike,
+          expiration: position.expiration,
+          option_type: position.option_type,
+          stock_price: position.current_stock_price || position.entry_stock_price,
+          option_price: exitPriceValue,
+          volume: null,
+          open_interest: null,
+          rejection_reason: 'CLOSED_TOO_SOON',
+          filter_stage: 'position_closed_early',
+          rejection_source: 'user_closed_position',
+          position_id: position.id,
+          days_until_expiration: daysUntilExpiration,
+          days_held: daysHeld,
+          realized_pl: pl,
+          realized_pl_percent: plPercent,
+        }
+
+        // Log to rejection tracking (non-blocking - don't fail the close if this fails)
+        await supabase
+          .from('rejected_options')
+          .insert(rejectionData)
+          .then(() => {
+            console.log('Position tracked in anti-portfolio')
+          })
+          .catch((err) => {
+            console.error('Failed to log to anti-portfolio:', err)
+          })
+      }
+
       if (data) {
         onSuccess(data)
       }

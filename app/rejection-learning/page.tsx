@@ -18,6 +18,7 @@ interface RejectedOption {
   rejection_reason: string
   filter_stage: string
   rejected_at: string
+  rejection_source?: string
   stock_price?: number
   option_price: number
   volume: number
@@ -25,6 +26,11 @@ interface RejectedOption {
   next_day_price: number | null
   price_change_percent: number | null
   was_profitable: boolean | null
+  position_id?: string | null
+  days_until_expiration?: number | null
+  days_held?: number | null
+  realized_pl?: number | null
+  realized_pl_percent?: number | null
 }
 
 interface RejectionStats {
@@ -345,11 +351,94 @@ export default function RejectionLearningPage() {
           </Card>
         )}
 
+        {/* Closed Positions Section */}
+        {rejections.filter(r => r.rejection_source === 'user_closed_position').length > 0 && (
+          <Card className="modern-card border-amber-200 dark:border-amber-800">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <span>⏰</span>
+                Closed Too Soon
+              </CardTitle>
+              <CardDescription>
+                Positions you closed before expiration - track what you missed
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left p-3 text-sm font-medium text-muted-foreground">Symbol</th>
+                      <th className="text-left p-3 text-sm font-medium text-muted-foreground">Type</th>
+                      <th className="text-left p-3 text-sm font-medium text-muted-foreground">Strike</th>
+                      <th className="text-left p-3 text-sm font-medium text-muted-foreground">Days Left</th>
+                      <th className="text-left p-3 text-sm font-medium text-muted-foreground">You Made</th>
+                      <th className="text-left p-3 text-sm font-medium text-muted-foreground">Next Day</th>
+                      <th className="text-left p-3 text-sm font-medium text-muted-foreground">Closed</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rejections
+                      .filter(r => r.rejection_source === 'user_closed_position')
+                      .slice(0, 20)
+                      .map((rej, idx) => (
+                        <tr key={idx} className="border-b hover:bg-muted/50">
+                          <td className="p-3">
+                            <span className="font-mono font-semibold">{rej.symbol}</span>
+                          </td>
+                          <td className="p-3">
+                            <Badge variant={rej.option_type === "call" ? "default" : "secondary"}>
+                              {rej.option_type.toUpperCase()}
+                            </Badge>
+                          </td>
+                          <td className="p-3 font-mono">${rej.strike.toFixed(2)}</td>
+                          <td className="p-3">
+                            <span className={`font-semibold ${(rej.days_until_expiration || 0) > 7 ? 'text-amber-600' : 'text-slate-600'}`}>
+                              {rej.days_until_expiration || 0}d
+                            </span>
+                          </td>
+                          <td className="p-3">
+                            <div className={`font-mono text-sm ${(rej.realized_pl || 0) >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                              ${(rej.realized_pl || 0).toFixed(0)}
+                              <span className="text-xs ml-1">
+                                ({(rej.realized_pl_percent || 0) > 0 ? '+' : ''}{(rej.realized_pl_percent || 0).toFixed(0)}%)
+                              </span>
+                            </div>
+                          </td>
+                          <td className="p-3">
+                            {rej.price_change_percent !== null ? (
+                              <div className="flex items-center gap-1">
+                                {rej.price_change_percent > 0 ? (
+                                  <TrendingUp className="h-4 w-4 text-emerald-600" />
+                                ) : (
+                                  <TrendingDown className="h-4 w-4 text-red-600" />
+                                )}
+                                <span className={`font-mono text-sm ${rej.price_change_percent > 0 ? "text-emerald-600" : "text-red-600"}`}>
+                                  {rej.price_change_percent > 0 ? "+" : ""}
+                                  {rej.price_change_percent.toFixed(1)}%
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">Tracking...</span>
+                            )}
+                          </td>
+                          <td className="p-3 text-xs text-muted-foreground">
+                            {new Date(rej.rejected_at).toLocaleDateString()}
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         <Card className="modern-card">
           <CardHeader>
-            <CardTitle>Rejected Options</CardTitle>
+            <CardTitle>Scanner Rejections</CardTitle>
             <CardDescription>
-              {rejections.length} options rejected in the last 7 days
+              {rejections.filter(r => r.rejection_source !== 'user_closed_position').length} options rejected in the last 7 days
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -375,7 +464,10 @@ export default function RejectionLearningPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {rejections.slice(0, 50).map((rej, idx) => (
+                    {rejections
+                      .filter(r => r.rejection_source !== 'user_closed_position')
+                      .slice(0, 50)
+                      .map((rej, idx) => (
                       <tr key={idx} className="border-b hover:bg-muted/50">
                         <td className="p-3">
                           <span className="font-mono font-semibold">{rej.symbol}</span>
