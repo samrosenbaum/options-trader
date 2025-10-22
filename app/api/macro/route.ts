@@ -28,11 +28,11 @@ export async function GET() {
       let stdoutBuffer = ''
       let stderrBuffer = ''
 
-      python.stdout.on('data', (data) => {
+      python.stdout.on('data', (data: Buffer) => {
         stdoutBuffer += data.toString()
       })
 
-      python.stderr.on('data', (data) => {
+      python.stderr.on('data', (data: Buffer) => {
         stderrBuffer += data.toString()
       })
 
