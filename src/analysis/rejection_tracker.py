@@ -47,6 +47,7 @@ class RejectedOption:
     # Rejection details
     rejection_reason: str
     filter_stage: str  # "liquidity", "quality", "scoring", etc.
+    rejection_source: str  # "scanner_rejected" or "user_rejected"
     rejected_at: datetime
 
     # Metrics at rejection time
@@ -177,7 +178,8 @@ class RejectionTracker:
         option_data: Dict[str, Any],
         rejection_reason: str,
         filter_stage: str,
-        scores: Optional[Dict[str, float]] = None
+        scores: Optional[Dict[str, float]] = None,
+        rejection_source: str = "scanner_rejected"
     ) -> Dict[str, Any]:
         """Build a rejection record dict (used for both single and batch logging)."""
         return {
@@ -187,6 +189,7 @@ class RejectionTracker:
             "option_type": str(option_data.get("type", option_data.get("optionType", "call"))).lower(),
             "rejection_reason": rejection_reason,
             "filter_stage": filter_stage,
+            "rejection_source": rejection_source,
             "rejected_at": datetime.now(timezone.utc).isoformat(),
             "stock_price": self._safe_float(option_data.get("stock_price", option_data.get("stockPrice")), 0),
             "option_price": self._safe_float(option_data.get("lastPrice"), 0),
@@ -205,7 +208,8 @@ class RejectionTracker:
         option_data: Dict[str, Any],
         rejection_reason: str,
         filter_stage: str,
-        scores: Optional[Dict[str, float]] = None
+        scores: Optional[Dict[str, float]] = None,
+        rejection_source: str = "scanner_rejected"
     ) -> None:
         """
         Log an option that was filtered out.
@@ -216,13 +220,14 @@ class RejectionTracker:
             rejection_reason: Why it was rejected (e.g., "volume_too_low", "quality_score_below_threshold")
             filter_stage: Which filter rejected it (e.g., "liquidity", "quality", "scoring")
             scores: Optional dict with probability_score, risk_adjusted_score, quality_score
+            rejection_source: "scanner_rejected" (internal filter) or "user_rejected" (manual rejection)
         """
         if not self.is_enabled:
             self._emit_disabled_notice()
             return
 
         try:
-            record = self._build_rejection_record(symbol, option_data, rejection_reason, filter_stage, scores)
+            record = self._build_rejection_record(symbol, option_data, rejection_reason, filter_stage, scores, rejection_source)
             # Insert into Supabase
             self.supabase.table(self.table_name).insert(record).execute()
 
@@ -241,6 +246,7 @@ class RejectionTracker:
                 - rejection_reason: str
                 - filter_stage: str
                 - scores: Optional[Dict]
+                - rejection_source: str (default: "scanner_rejected")
 
         Returns:
             Number of rejections successfully logged
@@ -261,7 +267,8 @@ class RejectionTracker:
                         rej["option_data"],
                         rej["rejection_reason"],
                         rej["filter_stage"],
-                        rej.get("scores")
+                        rej.get("scores"),
+                        rej.get("rejection_source", "scanner_rejected")
                     )
                     records.append(record)
                 except Exception as e:
@@ -474,6 +481,7 @@ class RejectionTracker:
                     option_type=row["option_type"],
                     rejection_reason=row["rejection_reason"],
                     filter_stage=row["filter_stage"],
+                    rejection_source=row.get("rejection_source", "scanner_rejected"),
                     rejected_at=datetime.fromisoformat(row["rejected_at"]),
                     stock_price=row["stock_price"],
                     option_price=row["option_price"],

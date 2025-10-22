@@ -4,6 +4,10 @@ import { resolvePythonExecutable } from '@/lib/server/python'
 export const runtime = 'nodejs'
 export const maxDuration = 30
 
+interface MacroIndicatorsData {
+  [key: string]: unknown
+}
+
 export async function GET() {
   try {
     console.log('Fetching macro indicators...')
@@ -11,7 +15,7 @@ export async function GET() {
     const { spawn } = await import('child_process')
     const pythonPath = await resolvePythonExecutable()
 
-    const macroData = await new Promise<any>((resolve, reject) => {
+    const macroData = await new Promise<MacroIndicatorsData>((resolve, reject) => {
       const python = spawn(
         pythonPath,
         ['-m', 'scripts.fetch_macro_indicators'],

@@ -131,7 +131,7 @@ export default function RejectionLearningPage() {
       const response = await fetch("/api/rejection-analysis", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ daysBack: 7, minProfitPercent: 10 })
+        body: JSON.stringify({ action: 'analyze', daysBack: 7, minProfitPercent: 10 })
       })
       const data = await response.json()
       setAnalysis(data.analysis)
@@ -170,7 +170,10 @@ export default function RejectionLearningPage() {
               Anti-Portfolio
             </h1>
             <p className="text-muted-foreground mt-1">
-              Track what you didn&apos;t buy — learn from filtered opportunities
+              Track opportunities you manually rejected — learn from the ones you passed on
+            </p>
+            <p className="text-xs text-muted-foreground mt-1 italic">
+              Note: This shows only opportunities you rejected, not what the scanner filtered internally
             </p>
           </div>
           <div className="flex gap-2">

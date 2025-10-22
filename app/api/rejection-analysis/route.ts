@@ -5,7 +5,30 @@ import { createClient } from "@/lib/supabase/server"
 export const runtime = "nodejs"
 export const maxDuration = 60
 
+interface LogRejectionParams {
+  action: 'log'
+  symbol: string
+  strike: number
+  expiration: string
+  optionType: string
+  stockPrice: number
+  premium: number
+  volume: number
+  openInterest: number
+  impliedVolatility?: number
+  delta?: number
+  rejectionReason: string
+  filterStage: string
+  rejectionSource: 'user_rejected' | 'scanner_rejected'
+  scores?: {
+    probability_score?: number | null
+    risk_adjusted_score?: number | null
+    quality_score?: number | null
+  }
+}
+
 interface AnalysisParams {
+  action?: 'analyze'
   daysBack?: number
   minProfitPercent?: number
 }
@@ -282,9 +305,61 @@ async function generateAISummary(analysis: NormalizedAnalysis): Promise<string |
 
 export async function POST(request: Request): Promise<NextResponse> {
   try {
-    const body: AnalysisParams = await request.json()
-    const daysBack = body.daysBack || 7
-    const minProfitPercent = body.minProfitPercent || 10
+    const body: LogRejectionParams | AnalysisParams = await request.json()
+
+    // Handle rejection logging
+    if ('action' in body && body.action === 'log') {
+      const logParams = body as LogRejectionParams
+
+      try {
+        const supabase = await createClient()
+
+        const record = {
+          symbol: logParams.symbol,
+          strike: logParams.strike,
+          expiration: logParams.expiration,
+          option_type: logParams.optionType,
+          rejection_reason: logParams.rejectionReason,
+          filter_stage: logParams.filterStage,
+          rejection_source: logParams.rejectionSource,
+          rejected_at: new Date().toISOString(),
+          stock_price: logParams.stockPrice,
+          option_price: logParams.premium,
+          volume: logParams.volume,
+          open_interest: logParams.openInterest,
+          implied_volatility: logParams.impliedVolatility ?? null,
+          delta: logParams.delta ?? null,
+          probability_score: logParams.scores?.probability_score ?? null,
+          risk_adjusted_score: logParams.scores?.risk_adjusted_score ?? null,
+          quality_score: logParams.scores?.quality_score ?? null,
+        }
+
+        const { error } = await supabase
+          .from('rejected_options')
+          .insert(record)
+
+        if (error) {
+          console.error('Failed to log rejection:', error)
+          return NextResponse.json(
+            { success: false, error: 'Failed to log rejection', details: error.message },
+            { status: 500 }
+          )
+        }
+
+        return NextResponse.json({ success: true })
+      } catch (error) {
+        console.error('Error logging rejection:', error)
+        return NextResponse.json(
+          { success: false, error: 'Failed to log rejection' },
+          { status: 500 }
+        )
+      }
+    }
+
+    // Handle rejection analysis
+    const analysisParams = body as AnalysisParams
+    const daysBack = analysisParams.daysBack || 7
+    const minProfitPercent = analysisParams.minProfitPercent || 10
 
     // Execute Python script to analyze rejections
     const { spawn } = await import("child_process")
@@ -368,20 +443,33 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const supabase = await createClient()
+    const { searchParams } = new URL(request.url)
 
-    // Get recent rejections (last 7 days)
-    const sevenDaysAgo = new Date()
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+    // Get query parameters
+    const source = searchParams.get('source') || 'user_rejected' // Default to user rejections only
+    const daysBack = parseInt(searchParams.get('days') || '7', 10)
 
-    const { data, error } = await supabase
+    // Calculate date range
+    const startDate = new Date()
+    startDate.setDate(startDate.getDate() - daysBack)
+
+    // Build query
+    let query = supabase
       .from("rejected_options")
       .select("*")
-      .gte("rejected_at", sevenDaysAgo.toISOString())
+      .gte("rejected_at", startDate.toISOString())
       .order("rejected_at", { ascending: false })
       .limit(500)
+
+    // Filter by rejection source
+    if (source !== 'all') {
+      query = query.eq('rejection_source', source)
+    }
+
+    const { data, error } = await query
 
     if (error) {
       throw error
@@ -391,6 +479,7 @@ export async function GET() {
       success: true,
       rejections: data || [],
       count: data?.length || 0,
+      source,
     })
   } catch (error) {
     console.error("Error fetching rejections:", error)

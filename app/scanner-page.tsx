@@ -695,6 +695,8 @@ const renderOpportunityCard = (
       moveThesis: ReactNode
       onAddToWatchlist: () => void
       isOnWatchlist: boolean
+      onRejectOpportunity: () => void
+      isRejected: boolean
       onOpenChat: () => void
       loadingBacktest: boolean
       enhancedBacktest: EnhancedBacktestResult | null
@@ -731,6 +733,8 @@ const renderOpportunityCard = (
       moveThesis,
       onAddToWatchlist,
       isOnWatchlist: isAlreadyOnWatchlist,
+      onRejectOpportunity,
+      isRejected: isAlreadyRejected,
       onOpenChat,
       loadingBacktest,
       enhancedBacktest,
@@ -967,7 +971,7 @@ Liquidity: ${((opp as Record<string, unknown>).liquidityScore as number | undefi
         </div>
       )}
 
-      <div className="mt-6 flex justify-between items-center gap-3">
+      <div className="mt-6 flex justify-between items-center gap-3 flex-wrap">
         <button
           type="button"
           onClick={onAddToWatchlist}
@@ -991,6 +995,33 @@ Liquidity: ${((opp as Record<string, unknown>).liquidityScore as number | undefi
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
               Add to Watchlist
+            </>
+          )}
+        </button>
+
+        <button
+          type="button"
+          onClick={onRejectOpportunity}
+          disabled={isAlreadyRejected}
+          className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wide shadow-sm transition-colors ${
+            isAlreadyRejected
+              ? 'border border-slate-300 bg-slate-50 text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-500 cursor-not-allowed'
+              : 'border border-red-400 bg-white text-red-600 hover:bg-red-50 dark:border-red-600 dark:bg-slate-800 dark:text-red-400 dark:hover:bg-slate-700'
+          }`}
+        >
+          {isAlreadyRejected ? (
+            <>
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+              Rejected
+            </>
+          ) : (
+            <>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              Reject
             </>
           )}
         </button>
@@ -1239,6 +1270,7 @@ export default function ScannerPage({ user }: ScannerPageProps) {
   const [loadingHistoricals, setLoadingHistoricals] = useState<Record<string, boolean>>({})
   const [showNotRecommended, setShowNotRecommended] = useState(false)
   const [chatOpportunity, setChatOpportunity] = useState<Opportunity | null>(null)
+  const [rejectedOpportunities, setRejectedOpportunities] = useState<Set<string>>(new Set())
   const [hasCompletedFirstScan, setHasCompletedFirstScan] = useState<boolean | null>(null)
   const [isFirstScanIntroOpen, setIsFirstScanIntroOpen] = useState(false)
   const [isWelcomeSetupOpen, setIsWelcomeSetupOpen] = useState(false)
@@ -1504,6 +1536,44 @@ export default function ScannerPage({ user }: ScannerPageProps) {
         ...prev,
         [cardId]: false,
       }))
+    }
+  }, [])
+
+  const rejectOpportunity = useCallback(async (opp: Opportunity) => {
+    const cardId = `${opp.symbol}-${opp.strike}-${opp.expiration}-${opp.optionType}`
+
+    // Add to rejected set
+    setRejectedOpportunities(prev => new Set(prev).add(cardId))
+
+    // Send to backend for tracking
+    try {
+      await fetch('/api/rejection-analysis', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'log',
+          symbol: opp.symbol,
+          strike: opp.strike,
+          expiration: opp.expiration,
+          optionType: opp.optionType,
+          stockPrice: opp.stockPrice,
+          premium: opp.premium,
+          volume: opp.volume,
+          openInterest: opp.openInterest,
+          impliedVolatility: opp.impliedVolatility,
+          delta: opp.greeks.delta,
+          rejectionReason: 'user_manual_rejection',
+          filterStage: 'user_review',
+          rejectionSource: 'user_rejected',
+          scores: {
+            probability_score: opp.probabilityOfProfit,
+            risk_adjusted_score: opp.riskRewardRatio,
+            quality_score: opp.score,
+          }
+        }),
+      })
+    } catch (error) {
+      console.error('Failed to log rejection:', error)
     }
   }, [])
 
@@ -3794,6 +3864,8 @@ export default function ScannerPage({ user }: ScannerPageProps) {
                         tradeSummary: opp.tradeSummary,
                       }),
                       isOnWatchlist: isOnWatchlist(cardId),
+                      onRejectOpportunity: () => rejectOpportunity(opp),
+                      isRejected: rejectedOpportunities.has(cardId),
                       onOpenChat: () => setChatOpportunity(opp),
                       loadingBacktest: loadingBacktests[cardId] ?? false,
                       enhancedBacktest: enhancedBacktests[cardId] ?? null,
@@ -3872,6 +3944,8 @@ export default function ScannerPage({ user }: ScannerPageProps) {
                           tradeSummary: opp.tradeSummary,
                         }),
                         isOnWatchlist: isOnWatchlist(cardId),
+                        onRejectOpportunity: () => rejectOpportunity(opp),
+                        isRejected: rejectedOpportunities.has(cardId),
                         onOpenChat: () => setChatOpportunity(opp),
                         loadingBacktest: loadingBacktests[cardId] ?? false,
                         enhancedBacktest: enhancedBacktests[cardId] ?? null,
