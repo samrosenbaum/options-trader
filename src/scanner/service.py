@@ -26,7 +26,17 @@ from src.models.preferences import (
 from src.scanner.historical_moves import HistoricalMoveAnalyzer
 from src.scanner.iv_rank_history import IVRankHistory
 from src.scanner.universe import build_scan_universe
-from src.signals import OptionsSkewAnalyzer, SmartMoneyFlowDetector, RegimeDetector, VolumeProfileAnalyzer, SignalAggregator
+from src.signals import (
+    OptionsSkewAnalyzer,
+    SmartMoneyFlowDetector,
+    RegimeDetector,
+    VolumeProfileAnalyzer,
+    SignalAggregator,
+    AnalystConsensusSignal,
+    NewsSentimentSignal,
+    EarningsCatalystSignal,
+    FundamentalHealthCalculator,
+)
 from src.validation import OptionsDataValidator, DataQuality
 
 
@@ -122,11 +132,19 @@ class SmartOptionsScanner:
 
         # Initialize directional signal framework
         self.signal_aggregator = SignalAggregator([
-            OptionsSkewAnalyzer(weight=0.30),  # 30% weight
-            SmartMoneyFlowDetector(weight=0.30),  # 30% weight
-            RegimeDetector(weight=0.20),  # 20% weight
-            VolumeProfileAnalyzer(weight=0.20),  # 20% weight
+            SmartMoneyFlowDetector(weight=0.30),        # 30% - Institutional flow
+            OptionsSkewAnalyzer(weight=0.25),           # 25% - IV skew signals
+            VolumeProfileAnalyzer(weight=0.15),         # 15% - Support/resistance levels
+            NewsSentimentSignal(weight=0.15),           # 15% - News sentiment impact
+            RegimeDetector(weight=0.10),                # 10% - Trend context
+            AnalystConsensusSignal(weight=0.05),        # 5% - Wall Street view
         ])
+
+        # Initialize earnings catalyst with dynamic weighting (5-20% based on timing)
+        self.earnings_catalyst = EarningsCatalystSignal(weight=0.05)
+
+        # Initialize fundamental health calculator (risk overlay, not directional signal)
+        self.fundamental_health = FundamentalHealthCalculator()
         self.relaxed_scan_info: Dict[str, Any] | None = None
 
         # Initialize rejection tracker for filter optimization
@@ -1868,6 +1886,51 @@ class SmartOptionsScanner:
                 except Exception as e:
                     print(f"Warning: Could not fetch price history for {symbol}: {e}", file=sys.stderr)
 
+            # Fetch fundamental data (ticker.info) for new signals
+            ticker_info = {}
+            earnings_in_days = None
+            recent_news = []
+
+            try:
+                ticker = yf.Ticker(symbol)
+                ticker_info = ticker.info
+
+                # Extract earnings date if available
+                earnings_date = ticker_info.get("earningsDate")
+                if earnings_date:
+                    # If earningsDate is a list, use the first date
+                    if isinstance(earnings_date, list) and len(earnings_date) > 0:
+                        earnings_date = earnings_date[0]
+
+                    # Calculate days to earnings
+                    if hasattr(earnings_date, 'timestamp'):
+                        # It's a datetime object
+                        from datetime import datetime, timezone
+                        now = datetime.now(timezone.utc)
+                        if earnings_date.tzinfo is None:
+                            earnings_date = earnings_date.replace(tzinfo=timezone.utc)
+                        earnings_in_days = (earnings_date - now).days
+
+                # Get recent news (yfinance provides this)
+                try:
+                    news = ticker.news
+                    if news:
+                        # Convert to our expected format
+                        recent_news = [
+                            {
+                                "sentiment": {"score": 0},  # yfinance doesn't provide sentiment scores
+                                "impact_score": 50,  # Default moderate impact
+                                "title": article.get("title", ""),
+                                "link": article.get("link", ""),
+                            }
+                            for article in news[:10]  # Limit to 10 most recent
+                        ]
+                except:
+                    pass  # News not available, continue without it
+
+            except Exception as e:
+                print(f"Warning: Could not fetch ticker info for {symbol}: {e}", file=sys.stderr)
+
             # Prepare data for signal aggregator
             signal_data = {
                 "options_chain": options_chain,
@@ -1877,13 +1940,56 @@ class SmartOptionsScanner:
                 "historical_volume": historical_volume,
                 "price_change": price_change,
                 "price_history": price_history,  # For regime detection
+                "ticker_info": ticker_info,  # For analyst consensus
+                "recent_news": recent_news,  # For news sentiment
+                "earnings_in_days": earnings_in_days,  # For earnings catalyst
             }
 
             # Calculate directional score using signal aggregator
             directional_score = self.signal_aggregator.aggregate(symbol, signal_data)
 
+            # Add earnings catalyst signal separately (dynamic weight)
+            if earnings_in_days is not None:
+                earnings_data = {
+                    "earnings_in_days": earnings_in_days,
+                    "stock_price": stock_price,
+                    "price_change": price_change,
+                }
+                earnings_result = self.earnings_catalyst.calculate(earnings_data)
+
+                # Blend earnings signal into aggregate (weighted by dynamic weight)
+                earnings_weight = self.earnings_catalyst.get_dynamic_weight(earnings_data)
+                directional_score.score = (
+                    directional_score.score * (1 - earnings_weight) +
+                    earnings_result.score * earnings_weight
+                )
+                directional_score.confidence = (
+                    directional_score.confidence * (1 - earnings_weight) +
+                    earnings_result.confidence * earnings_weight
+                )
+
+            # Calculate fundamental health score
+            fundamental_health = self.fundamental_health.calculate(ticker_info)
+
+            # Apply fundamental health as confidence/risk multiplier
+            health_score = fundamental_health.get("health_score", 0.6)
+            confidence_multiplier = fundamental_health.get("confidence_multiplier", 1.0)
+            directional_score.confidence *= confidence_multiplier
+
             # Get detailed breakdown
             breakdown = self.signal_aggregator.get_signal_breakdown(directional_score)
+
+            # Add fundamental health and earnings info to breakdown
+            breakdown["fundamental_health"] = {
+                "health_score": health_score,
+                "risk_level": fundamental_health.get("risk_level", "medium"),
+                "position_multiplier": fundamental_health.get("position_multiplier", 1.0),
+            }
+            if earnings_in_days is not None:
+                breakdown["earnings_catalyst"] = {
+                    "days_to_earnings": earnings_in_days,
+                    "dynamic_weight": self.earnings_catalyst.get_dynamic_weight(earnings_data) if earnings_in_days is not None else 0.05,
+                }
 
             # Convert to format compatible with existing code
             return {

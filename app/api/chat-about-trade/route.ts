@@ -33,7 +33,7 @@ interface ChatRequest {
       confidence: number
       score: number
       recommendation: string
-      signals?: Record<string, any>
+      signals?: Record<string, { score?: number; weight?: number; [key: string]: unknown }>
       timestamp?: string
     } | null
     positionSizing?: {
@@ -97,7 +97,7 @@ ${opportunity.enhancedDirectionalBias || opportunity.directionalBias ? `**Direct
 ${opportunity.enhancedDirectionalBias ? `- ${opportunity.enhancedDirectionalBias.direction.toUpperCase()} bias with ${opportunity.enhancedDirectionalBias.confidence.toFixed(1)}% confidence (score: ${opportunity.enhancedDirectionalBias.score.toFixed(1)})
 - Recommendation: ${opportunity.enhancedDirectionalBias.recommendation}
 ${opportunity.enhancedDirectionalBias.signals ? `- Individual Signal Scores:
-${Object.entries(opportunity.enhancedDirectionalBias.signals).map(([name, data]: [string, any]) => `  • ${name}: ${data.score?.toFixed(1) || 'N/A'} (weight: ${data.weight?.toFixed(2) || 'N/A'})`).join('\n')}` : ''}
+${Object.entries(opportunity.enhancedDirectionalBias.signals).map(([name, data]) => `  • ${name}: ${data.score?.toFixed(1) || 'N/A'} (weight: ${data.weight?.toFixed(2) || 'N/A'})`).join('\n')}` : ''}
 - Based on: Options flow (call/put volume ratio), IV skew analysis, price momentum (30d), and aggregated technical indicators` :
 `- ${opportunity.directionalBias!.direction.toUpperCase()} bias${opportunity.directionalBias!.confidence ? ` with ${opportunity.directionalBias!.confidence}% confidence` : ''}${opportunity.directionalBias!.score ? ` (signal strength: ${opportunity.directionalBias!.score})` : ''}`}
 - Note: Use this technical data in your analysis. If you reach a different conclusion, explain which factors led you there and how they might differ from or complement these technical signals.` : ""}

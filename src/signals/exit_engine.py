@@ -61,6 +61,13 @@ class ExitSignalEngine:
         peak_price: Optional[float] = None,
         stop_loss_pct: float = -50,
         target_profit_pct: float = 50,
+
+        # NEW: Directional signals (optional)
+        entry_directional_bias: Optional[str] = None,  # Direction at entry
+        current_directional_bias: Optional[str] = None,  # Current direction
+        current_directional_confidence: Optional[float] = None,  # Current confidence
+        fundamental_health_score: Optional[float] = None,  # 0.0-1.0
+        earnings_in_days: Optional[int] = None,  # Days to earnings
     ) -> ExitSignal:
         """
         Analyze a position and generate exit signal.
@@ -96,6 +103,96 @@ class ExitSignalEngine:
 
         # Build reasoning
         reasoning = []
+
+        # NEW DIRECTIONAL SIGNAL CHECKS (apply before other rules)
+
+        # Check 1: Pre-earnings caution (0-3 days before earnings)
+        if earnings_in_days is not None and 0 < earnings_in_days <= 3:
+            if profit_pct > 15:
+                reasoning.append(f"⚠️ Earnings in {earnings_in_days} day{'s' if earnings_in_days != 1 else ''} - IV crush risk")
+                reasoning.append(f"Take {profit_pct:.1f}% profit before binary event")
+                return ExitSignal(
+                    signal="SELL_ALL",
+                    confidence=80,
+                    reasoning=reasoning,
+                    suggested_action=f"Exit before earnings - secure +{profit_pct:.1f}%",
+                    momentum_strength=momentum['strength'],
+                    volume_ratio=momentum['volume_ratio']
+                )
+            elif profit_pct > 0:
+                reasoning.append(f"⚠️ Earnings in {earnings_in_days} day{'s' if earnings_in_days != 1 else ''} - high uncertainty")
+                reasoning.append(f"Consider exiting - current +{profit_pct:.1f}% gain at risk")
+
+        # Check 2: Directional thesis invalidated
+        if (entry_directional_bias and current_directional_bias and
+            current_directional_confidence and current_directional_confidence >= 60):
+
+            # CALL position but directional bias flipped BEARISH
+            if option_type.lower() == "call" and entry_directional_bias.upper() in ["BULLISH", "NEUTRAL"]:
+                if current_directional_bias.upper() == "BEARISH":
+                    reasoning.append(f"🔴 Directional thesis INVALIDATED - entered {entry_directional_bias.upper()}, now {current_directional_bias.upper()} ({current_directional_confidence:.0f}% confidence)")
+                    if profit_pct > 10:
+                        reasoning.append(f"Exit with +{profit_pct:.1f}% profit before reversal worsens")
+                        return ExitSignal(
+                            signal="SELL_ALL",
+                            confidence=75,
+                            reasoning=reasoning,
+                            suggested_action=f"Thesis changed - exit at +{profit_pct:.1f}%",
+                            momentum_strength=momentum['strength'],
+                            volume_ratio=momentum['volume_ratio']
+                        )
+                    else:
+                        reasoning.append(f"Cut position - thesis no longer supports CALL")
+                        return ExitSignal(
+                            signal="CUT_LOSS" if profit_pct < -15 else "SELL_ALL",
+                            confidence=70,
+                            reasoning=reasoning,
+                            suggested_action=f"Exit - bias flipped against you",
+                            momentum_strength=momentum['strength'],
+                            volume_ratio=momentum['volume_ratio']
+                        )
+
+            # PUT position but directional bias flipped BULLISH
+            elif option_type.lower() == "put" and entry_directional_bias.upper() in ["BEARISH", "NEUTRAL"]:
+                if current_directional_bias.upper() == "BULLISH":
+                    reasoning.append(f"🟢 Directional thesis INVALIDATED - entered {entry_directional_bias.upper()}, now {current_directional_bias.upper()} ({current_directional_confidence:.0f}% confidence)")
+                    if profit_pct > 10:
+                        reasoning.append(f"Exit with +{profit_pct:.1f}% profit before reversal worsens")
+                        return ExitSignal(
+                            signal="SELL_ALL",
+                            confidence=75,
+                            reasoning=reasoning,
+                            suggested_action=f"Thesis changed - exit at +{profit_pct:.1f}%",
+                            momentum_strength=momentum['strength'],
+                            volume_ratio=momentum['volume_ratio']
+                        )
+                    else:
+                        reasoning.append(f"Cut position - thesis no longer supports PUT")
+                        return ExitSignal(
+                            signal="CUT_LOSS" if profit_pct < -15 else "SELL_ALL",
+                            confidence=70,
+                            reasoning=reasoning,
+                            suggested_action=f"Exit - bias flipped against you",
+                            momentum_strength=momentum['strength'],
+                            volume_ratio=momentum['volume_ratio']
+                        )
+
+        # Check 3: Fundamental health deterioration
+        if fundamental_health_score is not None and fundamental_health_score < 0.3:
+            if profit_pct > 5:
+                reasoning.append(f"⚠️ Fundamental health deteriorated (score: {fundamental_health_score:.2f}/1.0)")
+                reasoning.append(f"Elevated risk - consider exiting with +{profit_pct:.1f}%")
+            elif profit_pct < -20:
+                reasoning.append(f"🛑 Fundamental health poor (score: {fundamental_health_score:.2f}/1.0) + losing position")
+                reasoning.append("Cut losses - company risk too high")
+                return ExitSignal(
+                    signal="CUT_LOSS",
+                    confidence=75,
+                    reasoning=reasoning,
+                    suggested_action=f"Exit now - fundamental risk + {profit_pct:.1f}% loss",
+                    momentum_strength=momentum['strength'],
+                    volume_ratio=momentum['volume_ratio']
+                )
 
         # UNIVERSAL RULES (apply to all play types)
 

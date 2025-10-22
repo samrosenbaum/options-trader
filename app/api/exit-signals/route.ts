@@ -16,6 +16,12 @@ interface ExitSignalRequest {
     playType?: string  // "PULLBACK", "BREAKOUT", "BOUNCE"
     stopLossPct?: number
     targetProfitPct?: number
+    // NEW: Directional signal data
+    entryDirectionalBias?: string  // Direction at entry
+    currentDirectionalBias?: string  // Current direction
+    currentDirectionalConfidence?: number  // Current confidence
+    fundamentalHealthScore?: number  // 0.0-1.0
+    earningsInDays?: number  // Days to earnings
   }>
 }
 
@@ -106,7 +112,13 @@ for pos in positions:
             current_option_price=current_option_price,
             current_stock_price=current_stock_price,
             stop_loss_pct=pos.get('stopLossPct', -50),
-            target_profit_pct=pos.get('targetProfitPct', 50)
+            target_profit_pct=pos.get('targetProfitPct', 50),
+            # NEW: Pass directional signal data
+            entry_directional_bias=pos.get('entryDirectionalBias'),
+            current_directional_bias=pos.get('currentDirectionalBias'),
+            current_directional_confidence=pos.get('currentDirectionalConfidence'),
+            fundamental_health_score=pos.get('fundamentalHealthScore'),
+            earnings_in_days=pos.get('earningsInDays')
         )
 
         # Calculate profit

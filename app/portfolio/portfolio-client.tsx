@@ -462,19 +462,68 @@ export default function PortfolioClient({
 
       console.log('[Portfolio] Checking signals for', openPositions.length, 'positions')
 
+      // Get unique symbols
+      const uniqueSymbols = [...new Set(openPositions.map(p => p.symbol))]
+
+      // Fetch current directional bias for each symbol (lightweight scan)
+      const directionalData: Record<string, {
+        direction: string
+        confidence: number
+        fundamentalHealth?: { health_score?: number }
+        earningsInDays?: number
+      }> = {}
+      try {
+        console.log('[Portfolio] Fetching directional bias for', uniqueSymbols.length, 'symbols')
+        const scanResponse = await fetch('/api/scan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            symbols: uniqueSymbols,
+            // Just need directional bias, no full scan
+            quickBiasOnly: true
+          }),
+        })
+
+        if (scanResponse.ok) {
+          const scanResult = await scanResponse.json()
+          // Map scan results by symbol
+          for (const opp of (scanResult.opportunities || [])) {
+            if (opp.symbol && opp.enhancedDirectionalBias) {
+              directionalData[opp.symbol] = {
+                direction: opp.enhancedDirectionalBias.direction,
+                confidence: opp.enhancedDirectionalBias.confidence,
+                fundamentalHealth: opp.enhancedDirectionalBias.signals?.fundamental_health,
+                earningsInDays: opp.enhancedDirectionalBias.signals?.earnings_catalyst?.days_to_earnings
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.warn('[Portfolio] Could not fetch directional bias, continuing without it:', error)
+      }
+
       // Prepare positions for exit signal API
-      const positionsForApi = openPositions.map((p) => ({
-        symbol: p.symbol,
-        optionType: p.option_type,
-        strike: p.strike,
-        expiration: p.expiration,
-        entryPrice: p.entry_price,
-        entryDate: p.entry_date.split('T')[0], // Extract just the date part (YYYY-MM-DD)
-        currentPrice: p.current_price || undefined,
-        playType: 'BREAKOUT', // Default - could be stored in position
-        stopLossPct: -50,
-        targetProfitPct: 50,
-      }))
+      const positionsForApi = openPositions.map((p) => {
+        const bias = directionalData[p.symbol]
+        return {
+          symbol: p.symbol,
+          optionType: p.option_type,
+          strike: p.strike,
+          expiration: p.expiration,
+          entryPrice: p.entry_price,
+          entryDate: p.entry_date.split('T')[0], // Extract just the date part (YYYY-MM-DD)
+          currentPrice: p.current_price || undefined,
+          playType: 'BREAKOUT', // Default - could be stored in position
+          stopLossPct: -50,
+          targetProfitPct: 50,
+          // NEW: Add directional signal data if available
+          entryDirectionalBias: undefined, // TODO: Store this when position is opened
+          currentDirectionalBias: bias?.direction,
+          currentDirectionalConfidence: bias?.confidence,
+          fundamentalHealthScore: bias?.fundamentalHealth?.health_score,
+          earningsInDays: bias?.earningsInDays,
+        }
+      })
 
       // Call exit signals API
       const response = await fetch('/api/exit-signals', {
