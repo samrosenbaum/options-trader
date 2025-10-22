@@ -12,6 +12,7 @@ import type { Database } from '@/lib/types/database.types'
 import AddPositionModal from './add-position-modal'
 import EditPositionModal from './edit-position-modal'
 import ClosePositionModal from './close-position-modal'
+import PositionAnalysisModal from './position-analysis-modal'
 import CSVImportModal from '@/components/csv-import-modal'
 import {
   Bar,
@@ -159,6 +160,7 @@ export default function PortfolioClient({
   const [showImportModal, setShowImportModal] = useState(false)
   const [positionToClose, setPositionToClose] = useState<Position | null>(null)
   const [positionToEdit, setPositionToEdit] = useState<Position | null>(null)
+  const [positionToAnalyze, setPositionToAnalyze] = useState<Position | null>(null)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [refreshMessage, setRefreshMessage] = useState<string | null>(null)
   const [isCheckingSignals, setIsCheckingSignals] = useState(false)
@@ -1565,6 +1567,13 @@ export default function PortfolioClient({
                       <td className="px-6 py-4 whitespace-nowrap text-center text-sm">
                         <div className="flex items-center justify-center gap-2">
                           <button
+                            onClick={() => setPositionToAnalyze(position)}
+                            className="px-3 py-1 rounded-lg text-xs font-semibold transition-colors bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 text-white"
+                            title="Ask Monty for advice"
+                          >
+                            🤖 Ask Monty
+                          </button>
+                          <button
                             onClick={() => setPositionToEdit(position)}
                             className="px-3 py-1 rounded-lg text-xs font-semibold transition-colors bg-blue-600 hover:bg-blue-700 text-white"
                           >
@@ -1648,6 +1657,14 @@ export default function PortfolioClient({
           position={positionToClose}
           onClose={() => setPositionToClose(null)}
           onSuccess={handlePositionClosed}
+        />
+      )}
+
+      {/* Ask Monty Analysis Modal */}
+      {positionToAnalyze && (
+        <PositionAnalysisModal
+          position={positionToAnalyze}
+          onClose={() => setPositionToAnalyze(null)}
         />
       )}
 
