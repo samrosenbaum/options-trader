@@ -819,6 +819,16 @@ Liquidity: ${((opp as Record<string, unknown>).liquidityScore as number | undefi
             <span>Stock: ${opp.stockPrice.toFixed(2)}</span>
             <span>Premium: ${opp.premium.toFixed(2)}</span>
             <span>Exp: {opp.expiration}</span>
+            {extras.breakevenRequirement && (
+              <span className="px-3 py-1 rounded-lg text-sm font-bold bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 border border-blue-300 dark:border-blue-700">
+                🎯 {extras.breakevenRequirement}
+              </span>
+            )}
+            {opp.breakevenPrice && (
+              <span className="px-3 py-1 rounded-lg text-sm font-bold bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300 border border-purple-300 dark:border-purple-700">
+                Breakeven: ${opp.breakevenPrice.toFixed(2)}
+              </span>
+            )}
             {hasPositionSizing && recommendedFractionLabel && (
               <span className="px-3 py-1 rounded-lg text-[11px] font-semibold uppercase tracking-wide bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-200 dark:border-emerald-500/40">
                 Risk {recommendedFractionLabel} of portfolio
