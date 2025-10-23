@@ -61,3 +61,20 @@ services:
   #     - key: DISABLE_BACKTESTING
   #       value: "1"
   #   autoDeploy: false
+
+  # Cache warmup - runs 5 minutes before market open to pre-fetch fresh data
+  - type: cron
+    name: cache-warmup
+    runtime: python
+    plan: starter
+    schedule: "25 13 * * 1-5"  # 9:25 AM ET (13:25 UTC) on weekdays
+    buildCommand: bash build.sh
+    startCommand: curl -f -X GET "${RENDER_EXTERNAL_URL}/api/warmup-cache" || exit 0
+    envVars:
+      - key: NODE_VERSION
+        value: 18
+      - key: PYTHON_VERSION
+        value: 3.12
+      - key: NODE_ENV
+        value: production
+    autoDeploy: true
