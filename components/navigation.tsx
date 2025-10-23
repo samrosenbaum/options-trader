@@ -29,7 +29,6 @@ export default function Navigation({ userEmail }: { userEmail?: string }) {
   }, [])
 
   const navItems = [
-    { href: '/', label: 'Dashboard' },
     { href: '/scanner', label: 'Scanner' },
     { href: '/macro', label: 'Macro' },
     { href: '/market-info', label: 'Market Info' },
@@ -42,8 +41,8 @@ export default function Navigation({ userEmail }: { userEmail?: string }) {
     <nav className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Logo/Brand */}
-          <div className="flex items-center gap-3">
+          {/* Logo/Brand - Clickable, links to dashboard */}
+          <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
             <Image
               src="/money-printer.png"
               alt="Money Printer"
@@ -59,7 +58,7 @@ export default function Navigation({ userEmail }: { userEmail?: string }) {
                 Your personal trading desk
               </div>
             </div>
-          </div>
+          </Link>
 
           {/* Navigation Links */}
           <div className="flex items-center gap-1">
