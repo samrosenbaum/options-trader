@@ -169,12 +169,13 @@ export default function DashboardPage() {
       <div className="pointer-events-none absolute inset-0 -z-10">
         {/* Vintage trading desk background - very subtle */}
         <div
-          className="absolute inset-0 opacity-[0.03]"
+          className="absolute inset-0 opacity-[0.15]"
           style={{
             backgroundImage: 'url(/trade_desk.png)',
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat',
+            filter: 'brightness(1.2)',
           }}
         />
         <div className="absolute -top-32 left-1/2 h-[28rem] w-[28rem] -translate-x-1/2 rounded-full bg-emerald-500/20 blur-3xl" />
