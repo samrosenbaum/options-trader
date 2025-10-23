@@ -150,12 +150,13 @@ export default function DashboardPage() {
             muted
             playsInline
             className="w-full max-w-3xl mx-auto rounded-lg shadow-2xl"
-            onLoadedMetadata={(e) => {
+            onLoadedData={(e) => {
               const video = e.currentTarget
               video.currentTime = 2 // Start at 2 seconds
+              video.play().catch(err => console.log('Video play failed:', err))
             }}
           >
-            <source src="/garage.mp4" type="video/mp4" />
+            <source src="/garage.mp4#t=2" type="video/mp4" />
             {/* Fallback to GIF if video doesn't load */}
             <img src="/garage.gif" alt="Opening trading desk" className="w-full" />
           </video>
