@@ -1574,7 +1574,7 @@ export default function PortfolioClient({
                           </div>
                         )}
                       </td>
-                      <td className="px-6 py-4 text-sm min-w-[200px] max-w-[300px]">
+                      <td className="px-6 py-4 text-sm align-top">
                         {position.exit_signal && (() => {
                           const signal = position.exit_signal
                           const urgency = position.exit_urgency_score || 0
@@ -1598,7 +1598,7 @@ export default function PortfolioClient({
                           }
 
                           return (
-                            <div className="space-y-1">
+                            <div className="space-y-1 max-w-[240px]">
                               <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold whitespace-nowrap ${bgColor} ${textColor}`}>
                                 <span>{emoji}</span>
                                 <span>{label}</span>
