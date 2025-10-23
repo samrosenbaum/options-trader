@@ -56,7 +56,6 @@ export default function DashboardPage() {
     const fetchDashboardData = async () => {
       try {
         setLoading(true)
-        const startTime = Date.now()
 
         // Run all queries in parallel for much faster loading
         const [snapshotsData, positionsResult, winnersResult, losersResult] = await Promise.all([

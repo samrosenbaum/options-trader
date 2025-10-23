@@ -104,7 +104,6 @@ export async function POST() {
           .insert(rejectionData)
 
         if (insertError) {
-          const errorMsg = `${position.symbol} $${position.strike} ${position.option_type}: ${insertError.message}`
           console.error(`❌ Error inserting ${position.symbol}:`, insertError.message)
           errorDetails.push({ symbol: position.symbol, error: insertError.message })
           errors++
