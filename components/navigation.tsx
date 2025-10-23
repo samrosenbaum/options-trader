@@ -44,20 +44,12 @@ export default function Navigation({ userEmail }: { userEmail?: string }) {
           {/* Logo/Brand - Clickable, links to dashboard */}
           <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
             <Image
-              src="/money-printer.png"
-              alt="Money Printer"
-              width={40}
-              height={40}
+              src="/Monty_logo.png"
+              alt="Money Printer - Your personal trading desk"
+              width={70}
+              height={70}
               className="rounded-lg"
             />
-            <div>
-              <div className="text-xl font-bold font-display text-slate-900 dark:text-white">
-                Money Printer
-              </div>
-              <div className="text-xs text-slate-600 dark:text-slate-400">
-                Your personal trading desk
-              </div>
-            </div>
           </Link>
 
           {/* Navigation Links */}
