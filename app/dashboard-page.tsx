@@ -56,6 +56,7 @@ export default function DashboardPage() {
     const fetchDashboardData = async () => {
       try {
         setLoading(true)
+        const startTime = Date.now()
 
         // Run all queries in parallel for much faster loading
         const [snapshotsData, positionsResult, winnersResult, losersResult] = await Promise.all([
@@ -109,6 +110,13 @@ export default function DashboardPage() {
 
         if (losersResult.data) {
           setBiggestLosers(losersResult.data)
+        }
+
+        // Ensure garage door animation plays for at least 3 seconds
+        const elapsedTime = Date.now() - startTime
+        const minLoadTime = 3000 // 3 seconds minimum
+        if (elapsedTime < minLoadTime) {
+          await new Promise(resolve => setTimeout(resolve, minLoadTime - elapsedTime))
         }
       } catch (err) {
         console.error('Error fetching dashboard data:', err)
