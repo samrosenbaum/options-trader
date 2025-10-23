@@ -12,6 +12,11 @@ import {
 import { DataQualityBadge } from './data-quality-badge'
 import { Button } from '@/components/ui/button'
 import { useWatchlist } from '@/components/watchlist-context'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
 
 const isFiniteNumber = (value: unknown): value is number =>
   typeof value === 'number' && Number.isFinite(value)
@@ -865,7 +870,21 @@ interface OpportunityCardProps {
 }
 
 const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps) => {
-  const [isExpanded, setIsExpanded] = React.useState(false)
+  const cardInstanceId = React.useMemo(
+    () =>
+      `${opportunity.symbol}-${opportunity.optionType}-${opportunity.strike}-${opportunity.expiration}`.toLowerCase(),
+    [opportunity.symbol, opportunity.optionType, opportunity.strike, opportunity.expiration],
+  )
+  const storageKey = React.useMemo(
+    () => `opportunity-card:advanced:${cardInstanceId}`,
+    [cardInstanceId],
+  )
+  const [showAdvanced, setShowAdvanced] = React.useState(() => {
+    if (typeof window === 'undefined') {
+      return false
+    }
+    return window.localStorage.getItem(storageKey) === 'true'
+  })
   const [loadingBacktest, setLoadingBacktest] = React.useState(false)
   const [enhancedBacktest, setEnhancedBacktest] = React.useState<{
     winRate: number
@@ -886,15 +905,35 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
     confidence: 'high' | 'medium' | 'low'
   } | null>(null)
 
+  React.useEffect(() => {
+    if (typeof window === 'undefined') {
+      return
+    }
+    const storedValue = window.localStorage.getItem(storageKey)
+    if (storedValue === null) {
+      if (showAdvanced !== false) {
+        setShowAdvanced(false)
+      }
+      return
+    }
+    const nextValue = storedValue === 'true'
+    if (nextValue !== showAdvanced) {
+      setShowAdvanced(nextValue)
+    }
+  }, [showAdvanced, storageKey])
+
+  React.useEffect(() => {
+    if (typeof window === 'undefined') {
+      return
+    }
+    window.localStorage.setItem(storageKey, showAdvanced ? 'true' : 'false')
+  }, [storageKey, showAdvanced])
+
   const scenario = calculateInvestmentScenario(opportunity, investmentAmount)
   const isPerContractView = scenario.basis === 'perContract'
 
   const { addItem, removeItem, isOnWatchlist } = useWatchlist()
-  const watchlistId = React.useMemo(
-    () =>
-      `${opportunity.symbol}-${opportunity.optionType}-${opportunity.strike}-${opportunity.expiration}`.toLowerCase(),
-    [opportunity.symbol, opportunity.optionType, opportunity.strike, opportunity.expiration],
-  )
+  const watchlistId = cardInstanceId
 
   const watchlistPayload = React.useMemo(
     () => ({
@@ -1080,7 +1119,7 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
     }
 
     const driverOverflowCount = directionalDrivers.length > 4 ? directionalDrivers.length - 4 : 0
-    const showSignalBreakdown = isExpanded && directionalSignals.length > 0
+    const showSignalBreakdown = showAdvanced && directionalSignals.length > 0
 
     return (
       <div className="mt-4 rounded-2xl border border-indigo-200/70 bg-indigo-50/60 p-4 shadow-sm dark:border-indigo-900/40 dark:bg-indigo-950/20">
@@ -1703,61 +1742,67 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
         </div>
       )}
 
-      {/* Expand/Collapse Button */}
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full mb-5 px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-bold shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40 transition-all duration-200 flex items-center justify-center gap-2"
-      >
-        <span>{isExpanded ? 'Hide Details' : 'Show Full Analysis'}</span>
-        <svg
-          className={`w-5 h-5 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
-
-      {/* Collapsible Content */}
-      {isExpanded && (
-        <div className="space-y-6">
-          {dataQuality && (
-            <div>
-              <DataQualityBadge quality={dataQuality} />
+      <Collapsible open={showAdvanced} onOpenChange={setShowAdvanced}>
+        <CollapsibleTrigger asChild>
+          <button
+            type="button"
+            className="w-full mb-5 px-6 py-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40 transition-all duration-200 flex items-center justify-between gap-4"
+          >
+            <div className="text-left">
+              <div className="text-base font-semibold">Read advanced insights</div>
+              <p className="text-xs font-normal text-emerald-50/80 sm:text-sm">
+                Unlock probability tables, scenario analysis, and detailed risk/reward diagnostics.
+              </p>
             </div>
-          )}
-
-          {/* Exit Strategy - NEW SECTION */}
-      <section className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border border-amber-200/60 dark:border-amber-800/60 rounded-xl p-5 mb-5">
-        <div className="flex items-start gap-3 mb-4">
-          <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center flex-shrink-0">
-            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <svg
+              className={`w-5 h-5 flex-shrink-0 transition-transform duration-200 ${showAdvanced ? 'rotate-180' : ''}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
-          </div>
-          <div className="flex-1">
-            <h4 className="text-lg font-semibold text-amber-900 dark:text-amber-100">Exit Strategy</h4>
-            <p className="text-sm text-amber-800/80 dark:text-amber-200/80">
-              Recommended profit targets and stop losses based on historical patterns
-            </p>
-          </div>
-        </div>
+          </button>
+        </CollapsibleTrigger>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Profit Target */}
-          <div className="bg-white/70 dark:bg-slate-900/60 border border-emerald-200 dark:border-emerald-800 rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-2xl">🎯</span>
-              <div className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">Profit Target</div>
-            </div>
-            <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-              {formatCurrency(opportunity.premium * 1.5)}
-            </div>
-            <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-              +50% gain • Sell when reached
-            </div>
-          </div>
+        <CollapsibleContent className="data-[state=open]:animate-collapsible-down data-[state=closed]:animate-collapsible-up">
+          <div className="space-y-6">
+            {dataQuality && (
+              <div>
+                <DataQualityBadge quality={dataQuality} />
+              </div>
+            )}
+
+            {/* Exit Strategy - NEW SECTION */}
+            <section className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border border-amber-200/60 dark:border-amber-800/60 rounded-xl p-5 mb-5">
+              <div className="flex items-start gap-3 mb-4">
+                <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-lg font-semibold text-amber-900 dark:text-amber-100">Exit Strategy</h4>
+                  <p className="text-sm text-amber-800/80 dark:text-amber-200/80">
+                    Recommended profit targets and stop losses based on historical patterns
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Profit Target */}
+                <div className="bg-white/70 dark:bg-slate-900/60 border border-emerald-200 dark:border-emerald-800 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-2xl">🎯</span>
+                    <div className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">Profit Target</div>
+                  </div>
+                  <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+                    {formatCurrency(opportunity.premium * 1.5)}
+                  </div>
+                  <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                    +50% gain • Sell when reached
+                  </div>
+                </div>
 
           {/* Stop Loss */}
           <div className="bg-white/70 dark:bg-slate-900/60 border border-red-200 dark:border-red-800 rounded-xl p-4">
@@ -2538,8 +2583,9 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
               ))}
             </div>
           </section>
-        </div>
-      )}
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
     </div>
   )
 }
