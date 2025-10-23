@@ -39,6 +39,7 @@ export async function POST() {
     let backfilled = 0
     let skipped = 0
     let errors = 0
+    const errorDetails: Array<{ symbol: string; error: string }> = []
 
     for (const position of closedPositions) {
       try {
@@ -103,14 +104,18 @@ export async function POST() {
           .insert(rejectionData)
 
         if (insertError) {
+          const errorMsg = `${position.symbol} $${position.strike} ${position.option_type}: ${insertError.message}`
           console.error(`❌ Error inserting ${position.symbol}:`, insertError.message)
+          errorDetails.push({ symbol: position.symbol, error: insertError.message })
           errors++
         } else {
           console.log(`✅ Backfilled ${position.symbol} $${position.strike} ${position.option_type} (${daysUntilExpiration} days early)`)
           backfilled++
         }
       } catch (err) {
-        console.error(`❌ Error processing position:`, err)
+        const errorMsg = err instanceof Error ? err.message : 'Unknown error'
+        console.error(`❌ Error processing position ${position.symbol}:`, errorMsg)
+        errorDetails.push({ symbol: position.symbol, error: errorMsg })
         errors++
       }
     }
@@ -121,7 +126,8 @@ export async function POST() {
       backfilled,
       skipped,
       errors,
-      total: closedPositions.length
+      total: closedPositions.length,
+      errorDetails: errorDetails.length > 0 ? errorDetails : undefined
     }
 
     console.log('📊 Backfill Summary:', summary)

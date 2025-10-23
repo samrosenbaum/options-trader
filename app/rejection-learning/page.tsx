@@ -78,7 +78,7 @@ export default function RejectionLearningPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [isBackfilling, setIsBackfilling] = useState(false)
-  const [backfillResult, setBackfillResult] = useState<{backfilled: number, skipped: number, errors: number} | null>(null)
+  const [backfillResult, setBackfillResult] = useState<{backfilled: number, skipped: number, errors: number, errorDetails?: Array<{symbol: string, error: string}>} | null>(null)
   const router = useRouter()
   const supabase = useMemo(() => createClient(), [])
 
@@ -163,7 +163,8 @@ export default function RejectionLearningPage() {
         setBackfillResult({
           backfilled: data.backfilled,
           skipped: data.skipped,
-          errors: data.errors
+          errors: data.errors,
+          errorDetails: data.errorDetails
         })
         await fetchRejections() // Refresh the list
       }
@@ -247,7 +248,7 @@ export default function RejectionLearningPage() {
               <CardTitle className="text-emerald-400">Backfill Complete</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex gap-6 text-sm">
+              <div className="flex gap-6 text-sm mb-4">
                 <div>
                   <span className="text-muted-foreground">Imported:</span>
                   <span className="ml-2 font-bold text-emerald-400">{backfillResult.backfilled}</span>
@@ -263,6 +264,22 @@ export default function RejectionLearningPage() {
                   </div>
                 )}
               </div>
+              {backfillResult.errorDetails && backfillResult.errorDetails.length > 0 && (
+                <div className="mt-4 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertTriangle className="h-4 w-4 text-red-400" />
+                    <span className="text-sm font-semibold text-red-400">Error Details</span>
+                  </div>
+                  <div className="space-y-2">
+                    {backfillResult.errorDetails.map((err, idx) => (
+                      <div key={idx} className="text-xs font-mono">
+                        <span className="text-red-300">{err.symbol}:</span>{' '}
+                        <span className="text-muted-foreground">{err.error}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
