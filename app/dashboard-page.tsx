@@ -83,12 +83,12 @@ export default function DashboardPage() {
           setTopPositions(positions)
         }
 
-        // Fetch biggest winners (closed positions)
+        // Fetch biggest winners (closed positions with positive P&L)
         const { data: winners } = await supabase
           .from('positions')
           .select('id, symbol, strike, option_type, realized_pl, realized_pl_percent, exit_date')
           .eq('status', 'closed')
-          .not('realized_pl', 'is', null)
+          .gt('realized_pl', 0)
           .order('realized_pl', { ascending: false })
           .limit(3)
 
@@ -96,12 +96,12 @@ export default function DashboardPage() {
           setBiggestWinners(winners)
         }
 
-        // Fetch biggest losers (closed positions)
+        // Fetch biggest losers (closed positions with negative P&L)
         const { data: losers } = await supabase
           .from('positions')
           .select('id, symbol, strike, option_type, realized_pl, realized_pl_percent, exit_date')
           .eq('status', 'closed')
-          .not('realized_pl', 'is', null)
+          .lt('realized_pl', 0)
           .order('realized_pl', { ascending: true })
           .limit(3)
 
