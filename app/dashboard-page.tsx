@@ -45,6 +45,7 @@ interface Position {
 
 export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
+  const [fadeOut, setFadeOut] = useState(false)
   const [snapshots, setSnapshots] = useState<PortfolioSnapshot[]>([])
   const [currentSnapshot, setCurrentSnapshot] = useState<PortfolioSnapshot | null>(null)
   const [topPositions, setTopPositions] = useState<Position[]>([])
@@ -118,6 +119,11 @@ export default function DashboardPage() {
         if (elapsedTime < minLoadTime) {
           await new Promise(resolve => setTimeout(resolve, minLoadTime - elapsedTime))
         }
+
+        // Start fade out transition
+        setFadeOut(true)
+        // Wait for fade out to complete before removing loading screen
+        await new Promise(resolve => setTimeout(resolve, 500))
       } catch (err) {
         console.error('Error fetching dashboard data:', err)
       } finally {
@@ -141,9 +147,33 @@ export default function DashboardPage() {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
   }
 
+  // Check if animation was shown this session
+  const hasSeenAnimation = typeof window !== 'undefined' && sessionStorage.getItem('hasSeenGarageAnimation') === 'true'
+
   if (loading) {
+    // Skip animation if already seen this session
+    if (hasSeenAnimation) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-[#05070E]">
+          <div className="text-center">
+            <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-emerald-100/70">Loading dashboard...</p>
+          </div>
+        </div>
+      )
+    }
+
+    // Mark as seen for this session
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('hasSeenGarageAnimation', 'true')
+    }
+
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#05070E]">
+      <div
+        className={`min-h-screen flex items-center justify-center bg-[#05070E] transition-opacity duration-500 ${
+          fadeOut ? 'opacity-0' : 'opacity-100'
+        }`}
+      >
         <div className="text-center max-w-4xl mx-auto px-4">
           <video
             autoPlay
@@ -176,7 +206,12 @@ export default function DashboardPage() {
     : 0
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#05070E] text-slate-100">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+      className="relative min-h-screen overflow-hidden bg-[#05070E] text-slate-100"
+    >
       {/* Live Ticker Tape */}
       <TickerTape />
 
@@ -534,6 +569,6 @@ export default function DashboardPage() {
           </motion.div>
         </div>
       </div>
-    </div>
+    </motion.div>
   )
 }
