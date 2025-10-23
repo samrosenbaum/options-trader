@@ -123,7 +123,7 @@ export default function RejectionLearningPage() {
   const fetchRejections = async () => {
     try {
       setIsLoading(true)
-      const response = await fetch("/api/rejection-analysis")
+      const response = await fetch("/api/rejection-analysis?source=all")
       const data = await response.json()
       setRejections(data.rejections || [])
     } catch (err) {
