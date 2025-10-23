@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { TickerTape } from '@/components/ticker-tape'
+import { TradingDeskBanner } from '@/components/trading-desk-banner'
 import { motion } from 'framer-motion'
 import { Trophy, TrendingDown } from 'lucide-react'
 
@@ -135,9 +136,12 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#05070E]">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-emerald-100/70">Loading dashboard...</p>
+        <div className="text-center max-w-4xl mx-auto px-4">
+          <img
+            src="/garage.gif"
+            alt="Opening trading desk"
+            className="w-full max-w-3xl mx-auto rounded-lg shadow-2xl"
+          />
         </div>
       </div>
     )
@@ -158,8 +162,21 @@ export default function DashboardPage() {
       {/* Live Ticker Tape */}
       <TickerTape />
 
+      {/* Trading Desk Banner */}
+      <TradingDeskBanner deskName="Samski Tendies Capital" />
+
       {/* Background */}
       <div className="pointer-events-none absolute inset-0 -z-10">
+        {/* Vintage trading desk background - very subtle */}
+        <div
+          className="absolute inset-0 opacity-[0.03]"
+          style={{
+            backgroundImage: 'url(/trade_desk.png)',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+          }}
+        />
         <div className="absolute -top-32 left-1/2 h-[28rem] w-[28rem] -translate-x-1/2 rounded-full bg-emerald-500/20 blur-3xl" />
         <div className="absolute bottom-[-18rem] left-[-10rem] h-[32rem] w-[32rem] rounded-full bg-sky-500/10 blur-3xl" />
         <div className="absolute top-1/3 -right-40 h-[26rem] w-[26rem] rounded-full bg-purple-500/10 blur-3xl" />
