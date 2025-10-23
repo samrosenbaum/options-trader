@@ -372,12 +372,22 @@ class SmartOptionsScanner:
         return _parse_bool_env("SCANNER_ALLOW_RELAXED", True)
 
     def is_market_hours(self) -> bool:
-        """Check if market is currently open."""
+        """Check if market is currently open (9:30 AM - 4:00 PM ET, Mon-Fri)."""
+        import pytz
 
-        now = datetime.now()
-        market_open = now.replace(hour=9, minute=30, second=0, microsecond=0)
-        market_close = now.replace(hour=16, minute=0, second=0, microsecond=0)
-        return market_open <= now <= market_close
+        et_tz = pytz.timezone('America/New_York')
+        now_et = datetime.now(et_tz)
+
+        # Weekend check
+        is_weekend = now_et.weekday() >= 5  # 5=Saturday, 6=Sunday
+        if is_weekend:
+            return False
+
+        # Market hours: 9:30 AM - 4:00 PM ET
+        hour_decimal = now_et.hour + now_et.minute / 60
+        is_market_hours = 9.5 <= hour_decimal < 16.0
+
+        return is_market_hours
 
     def should_refresh_data(self) -> bool:
         """Determine whether cached option data is too stale to use."""
