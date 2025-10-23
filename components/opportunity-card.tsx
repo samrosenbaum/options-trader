@@ -10,6 +10,7 @@ import {
   DirectionalSignalBreakdown,
 } from '../lib/types/opportunity'
 import { DataQualityBadge } from './data-quality-badge'
+import { Button } from '@/components/ui/button'
 import { useWatchlist } from '@/components/watchlist-context'
 
 const isFiniteNumber = (value: unknown): value is number =>
@@ -135,6 +136,20 @@ const formatFractionAsPercent = (value: number | null | undefined, digits = 1) =
 
   return `${(value * 100).toFixed(digits)}%`
 }
+
+const getOptionalNumber = (source: unknown, key: string): number | null => {
+  if (!source || typeof source !== 'object') {
+    return null
+  }
+
+  const value = (source as Record<string, unknown>)[key]
+  return typeof value === 'number' && Number.isFinite(value) ? value : null
+}
+
+const getChangeBadgeClass = (value: number) =>
+  value >= 0
+    ? 'bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-200 dark:border-emerald-500/40'
+    : 'bg-rose-100 text-rose-700 border border-rose-200 dark:bg-rose-500/10 dark:text-rose-200 dark:border-rose-500/40'
 
 const getRiskBudgetMeta = (tier?: string | null) => {
   switch (tier) {
@@ -1388,116 +1403,248 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
         )
     : false
 
+  const stockChange24h =
+    getOptionalNumber(opportunity, 'stockChangePercent24h') ??
+    getOptionalNumber(opportunity, 'stock_change_percent_24h') ??
+    getOptionalNumber(opportunity, 'underlyingChangePercent24h') ??
+    getOptionalNumber(opportunity, 'underlying_change_percent_24h') ??
+    getOptionalNumber(opportunity, 'stockChange1d') ??
+    getOptionalNumber(opportunity, 'stock_change_1d') ??
+    null
+  const stockChange5d =
+    getOptionalNumber(opportunity, 'stockChangePercent5d') ??
+    getOptionalNumber(opportunity, 'stock_change_percent_5d') ??
+    getOptionalNumber(opportunity, 'underlyingChangePercent5d') ??
+    getOptionalNumber(opportunity, 'underlying_change_percent_5d') ??
+    getOptionalNumber(opportunity, 'stockChange5d') ??
+    getOptionalNumber(opportunity, 'stock_change_5d') ??
+    null
+  const stockPriceDisplay = formatCurrency(opportunity.stockPrice)
+  const breakevenPriceDisplay = formatCurrency(opportunity.breakevenPrice)
+  const breakevenRequirementText = formatBreakevenRequirement(opportunity)
+
+  const rawSentimentLabel = (() => {
+    if (typeof opportunity.eventIntel?.news_sentiment_label === 'string') {
+      return opportunity.eventIntel.news_sentiment_label
+    }
+
+    if (typeof opportunity.swingSignal?.classification === 'string') {
+      return opportunity.swingSignal.classification
+    }
+
+    return directionalMeta.label
+  })()
+
+  const sentimentLabel = rawSentimentLabel
+    ? rawSentimentLabel
+        .toString()
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, (match) => match.toUpperCase())
+    : 'Market sentiment'
+  const normalizedSentiment = rawSentimentLabel ? rawSentimentLabel.toString().toLowerCase() : ''
+  const sentimentBadgeClass = (() => {
+    if (normalizedSentiment.includes('bull')) {
+      return 'bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-200 dark:border-emerald-500/40'
+    }
+
+    if (normalizedSentiment.includes('bear')) {
+      return 'bg-rose-100 text-rose-700 border border-rose-200 dark:bg-rose-500/10 dark:text-rose-200 dark:border-rose-500/40'
+    }
+
+    if (normalizedSentiment.includes('neutral')) {
+      return 'bg-slate-200 text-slate-700 border border-slate-300 dark:bg-slate-700/30 dark:text-slate-200 dark:border-slate-600/40'
+    }
+
+    return 'bg-slate-100 text-slate-700 border border-slate-200 dark:bg-slate-700/40 dark:text-slate-200 dark:border-slate-600/50'
+  })()
+
+  const volumeHighlight = isFiniteNumber(opportunity.volumeRatio)
+    ? `${opportunity.volumeRatio.toFixed(1)}x average`
+    : null
+
   return (
     <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 hover:shadow-lg transition-all">
       {/* Header - Always Visible */}
-      <div className="flex items-start justify-between mb-5">
-        <div className="space-y-3 flex-1">
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="text-3xl font-bold text-slate-900 dark:text-white">{opportunity.symbol}</div>
-            <div className={`px-4 py-1.5 rounded-lg text-base font-bold ${getScoreColor(opportunity.score)}`}>
-              {opportunity.score}
+      <div className="mb-6 space-y-4">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="text-3xl font-bold text-slate-900 dark:text-white">{opportunity.symbol}</div>
+              <div className={`px-4 py-1.5 rounded-lg text-base font-bold ${getScoreColor(opportunity.score)}`}>
+                {opportunity.score}
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                {opportunity.gammaSqueezeScore && opportunity.gammaSqueezeScore > 0 && (
+                  <span className="px-3 py-1 bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 rounded-lg text-sm font-semibold">
+                    GAMMA {opportunity.gammaSqueezeScore}
+                  </span>
+                )}
+                {opportunity.unusualFlowScore && opportunity.unusualFlowScore > 0 && (
+                  <span className="px-3 py-1 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 rounded-lg text-sm font-semibold">
+                    FLOW {opportunity.unusualFlowScore}
+                  </span>
+                )}
+                {opportunity.newsImpactScore && opportunity.newsImpactScore > 0 && (
+                  <span className="px-3 py-1 bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 rounded-lg text-sm font-semibold">
+                    NEWS {opportunity.newsImpactScore}
+                  </span>
+                )}
+                {showAsymmetricEdge && (
+                  <span className="px-3 py-1 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 rounded-lg text-sm font-bold">
+                    {riskRewardRatioLabel}x EDGE
+                  </span>
+                )}
+                {opportunity.probabilityOfProfit !== null && opportunity.probabilityOfProfit >= 55 && (
+                  <span className="px-3 py-1 bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400 rounded-lg text-sm font-bold">
+                    {opportunity.probabilityOfProfit.toFixed(0)}% WIN
+                  </span>
+                )}
+              </div>
             </div>
-            <button
-              type="button"
-              onClick={handleWatchlistToggle}
-              className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors flex items-center gap-1.5 ${
-                onWatchlist
-                  ? 'bg-amber-500 text-white hover:bg-amber-600'
-                  : 'bg-emerald-500 text-white hover:bg-emerald-600'
-              }`}
-              aria-pressed={onWatchlist}
-              title={watchlistButtonLabel}
-            >
-              <span className="text-base font-bold" aria-hidden>
-                {onWatchlist ? '★' : '☆'}
+
+            <div className="flex flex-wrap items-center gap-3 text-base text-slate-700 dark:text-slate-200">
+              <span className="font-semibold">
+                {opportunity.optionType.toUpperCase()} ${opportunity.strike}
               </span>
-              <span className="hidden sm:inline">
-                {onWatchlist ? 'Saved' : 'Save'}
+              <span>Exp: {opportunity.expiration}</span>
+              <span className="font-medium">{opportunity.daysToExpiration}d</span>
+              <span className={`px-3 py-1 rounded-lg text-sm font-bold border ${getRiskColor(opportunity.riskLevel)}`}>
+                {opportunity.riskLevel.toUpperCase()}
               </span>
-            </button>
-            <div className="flex items-center gap-2 flex-wrap">
-              {opportunity.gammaSqueezeScore && opportunity.gammaSqueezeScore > 0 && (
-                <span className="px-3 py-1 bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 rounded-lg text-sm font-semibold">
-                  GAMMA {opportunity.gammaSqueezeScore}
+              {hasPositionSizing && recommendedFractionLabel && (
+                <span className="px-3 py-1 rounded-lg text-[11px] font-semibold uppercase tracking-wide bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-200 dark:border-emerald-500/40">
+                  Risk {recommendedFractionLabel} of portfolio
                 </span>
               )}
-              {opportunity.unusualFlowScore && opportunity.unusualFlowScore > 0 && (
-                <span className="px-3 py-1 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 rounded-lg text-sm font-semibold">
-                  FLOW {opportunity.unusualFlowScore}
-                </span>
-              )}
-              {opportunity.newsImpactScore && opportunity.newsImpactScore > 0 && (
-                <span className="px-3 py-1 bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 rounded-lg text-sm font-semibold">
-                  NEWS {opportunity.newsImpactScore}
-                </span>
-              )}
-              {showAsymmetricEdge && (
-                <span className="px-3 py-1 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 rounded-lg text-sm font-bold">
-                  {riskRewardRatioLabel}x EDGE
-                </span>
-              )}
-              {opportunity.probabilityOfProfit !== null && opportunity.probabilityOfProfit >= 55 && (
-                <span className="px-3 py-1 bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400 rounded-lg text-sm font-bold">
-                  {opportunity.probabilityOfProfit.toFixed(0)}% WIN
+              {hasPositionSizing && maxPerTradeLabel && (
+                <span className="px-3 py-1 rounded-lg text-[11px] font-semibold uppercase tracking-wide bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/5 dark:text-emerald-200 dark:border-emerald-500/30">
+                  Cap {maxPerTradeLabel}
                 </span>
               )}
             </div>
           </div>
 
-          <div className="flex items-center gap-5 text-base text-slate-700 dark:text-slate-200 flex-wrap">
-            <span className="font-semibold">
-              {opportunity.optionType.toUpperCase()} ${opportunity.strike}
-            </span>
-            <span>Exp: {opportunity.expiration}</span>
-            <span className="font-medium">{opportunity.daysToExpiration}d</span>
-            <span className={`px-3 py-1 rounded-lg text-sm font-bold border ${getRiskColor(opportunity.riskLevel)}`}>
-              {opportunity.riskLevel.toUpperCase()}
-            </span>
-            {hasPositionSizing && recommendedFractionLabel && (
-              <span className="px-3 py-1 rounded-lg text-[11px] font-semibold uppercase tracking-wide bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-200 dark:border-emerald-500/40">
-                Risk {recommendedFractionLabel} of portfolio
-              </span>
+          <div className="flex min-w-[14rem] flex-col items-end gap-2">
+            {dataQuality && (
+              <div className="flex justify-end">
+                <DataQualityBadge quality={dataQuality} compact />
+              </div>
             )}
-            {hasPositionSizing && maxPerTradeLabel && (
-              <span className="px-3 py-1 rounded-lg text-[11px] font-semibold uppercase tracking-wide bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/5 dark:text-emerald-200 dark:border-emerald-500/30">
-                Cap {maxPerTradeLabel}
+            <Button
+              type="button"
+              onClick={handleWatchlistToggle}
+              className={`w-full sm:w-auto rounded-lg px-4 py-2 text-sm font-semibold shadow-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 ${
+                onWatchlist
+                  ? 'bg-amber-500 text-white hover:bg-amber-600 focus-visible:outline-amber-300'
+                  : 'bg-emerald-500 text-white hover:bg-emerald-600 focus-visible:outline-emerald-300'
+              }`}
+              aria-pressed={onWatchlist}
+            >
+              <span className="mr-2 text-base font-bold" aria-hidden>
+                {onWatchlist ? '−' : '+'}
               </span>
+              {watchlistButtonLabel}
+            </Button>
+            <div className="text-[11px] text-slate-500 dark:text-slate-400">{watchlistHelperText}</div>
+            {fallbackSignalsActive && (
+              <div className="text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
+                Institutional fallback data active — sanitized for pre-market review.
+              </div>
             )}
           </div>
         </div>
 
-        <div className="text-right space-y-3 ml-4 min-w-[14rem]">
-          {dataQuality && (
-            <div className="flex justify-end">
-              <DataQualityBadge quality={dataQuality} compact />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="rounded-2xl border border-slate-200 bg-white/70 p-4 dark:border-slate-700 dark:bg-slate-900/60">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Underlying price</div>
+            <div className="mt-2 flex items-baseline gap-3">
+              <span className="text-2xl font-bold text-slate-900 dark:text-white">{stockPriceDisplay}</span>
+              <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">{opportunity.symbol}</span>
             </div>
-          )}
-          <div className="text-3xl font-bold text-slate-900 dark:text-white">
-            {formatCurrency(opportunity.premium)}
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              {stockChange24h !== null && (
+                <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${getChangeBadgeClass(stockChange24h)}`}>
+                  24h {stockChange24h >= 0 ? '+' : ''}
+                  {stockChange24h.toFixed(1)}%
+                </span>
+              )}
+              {stockChange5d !== null && (
+                <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${getChangeBadgeClass(stockChange5d)}`}>
+                  5d {stockChange5d >= 0 ? '+' : ''}
+                  {stockChange5d.toFixed(1)}%
+                </span>
+              )}
+            </div>
           </div>
-          <div className="text-sm text-slate-500 dark:text-slate-400 font-medium">Contract Price</div>
-          {fallbackSignalsActive && (
-            <div className="text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
-              Institutional fallback data active — sanitized for pre-market review.
+
+          <div className="rounded-2xl border border-slate-200 bg-white/70 p-4 dark:border-slate-700 dark:bg-slate-900/60">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Premium per contract</div>
+            <div className="mt-2 text-2xl font-bold text-slate-900 dark:text-white">{formatCurrency(opportunity.premium)}</div>
+            <div className="mt-2 text-sm font-medium text-slate-700 dark:text-slate-200">
+              Breakeven price {breakevenPriceDisplay}
             </div>
-          )}
-          <button
+            {breakevenRequirementText && (
+              <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">{breakevenRequirementText}</div>
+            )}
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-white/70 p-4 dark:border-slate-700 dark:bg-slate-900/60">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Market sentiment</div>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <span className={`px-3 py-1 text-xs font-semibold uppercase tracking-wide rounded-full ${sentimentBadgeClass}`}>
+                {sentimentLabel}
+              </span>
+            </div>
+            <div className="mt-3 text-sm font-semibold text-slate-900 dark:text-white">
+              {volumeHighlight ?? 'Volume data unavailable'}
+            </div>
+            <div className="text-xs text-slate-500 dark:text-slate-400">Relative option volume</div>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
             type="button"
-            onClick={handleWatchlistToggle}
-            className={`w-full rounded-lg px-4 py-2 text-sm font-semibold transition-colors shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 ${
-              onWatchlist
-                ? 'bg-amber-500 text-white hover:bg-amber-600 focus-visible:outline-amber-300'
-                : 'bg-emerald-500 text-white hover:bg-emerald-600 focus-visible:outline-emerald-300'
-            }`}
-            aria-pressed={onWatchlist}
+            onClick={runBacktest}
+            disabled={loadingBacktest}
+            className="rounded-lg border border-purple-300 bg-purple-50/60 px-4 py-2 text-sm font-semibold text-purple-700 transition-colors hover:bg-purple-100 disabled:cursor-not-allowed disabled:opacity-70 dark:border-purple-700 dark:bg-purple-500/10 dark:text-purple-200 dark:hover:bg-purple-500/20"
           >
-            <span className="mr-2 text-base font-bold" aria-hidden>
-              {onWatchlist ? '−' : '+'}
-            </span>
-            {watchlistButtonLabel}
-          </button>
-          <div className="text-[11px] text-slate-500 dark:text-slate-400">{watchlistHelperText}</div>
+            {loadingBacktest ? (
+              <span className="flex items-center gap-2">
+                <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" role="img" aria-label="Loading">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                Running backtest…
+              </span>
+            ) : (
+              <span className="flex items-center gap-2">
+                <span aria-hidden>🎯</span>
+                Run backtest
+              </span>
+            )}
+          </Button>
+          <Button
+            type="button"
+            onClick={runHistorical}
+            disabled={loadingHistorical}
+            className="rounded-lg border border-blue-300 bg-blue-50/60 px-4 py-2 text-sm font-semibold text-blue-700 transition-colors hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-70 dark:border-blue-700 dark:bg-blue-500/10 dark:text-blue-200 dark:hover:bg-blue-500/20"
+          >
+            {loadingHistorical ? (
+              <span className="flex items-center gap-2">
+                <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" role="img" aria-label="Loading">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                Loading history…
+              </span>
+            ) : (
+              <span className="flex items-center gap-2">
+                <span aria-hidden>📈</span>
+                Analyze history
+              </span>
+            )}
+          </Button>
         </div>
       </div>
 
