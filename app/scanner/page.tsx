@@ -1,24 +1,22 @@
 import { createClient } from '@/lib/supabase/server'
-import LandingPage from './landing-page'
 import Navigation from '@/components/navigation'
-import { TradeDeskDashboard } from '@/components/trade-desk-dashboard'
+import ScannerPage from '../scanner-page'
+import LandingPage from '../landing-page'
 
-export default async function HomePage() {
+export default async function ScannerRoute() {
   const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // Show landing page if not logged in
   if (!user) {
     return <LandingPage />
   }
 
-  // Show trade desk HQ with navigation if logged in
   return (
     <>
       <Navigation userEmail={user.email} />
-      <TradeDeskDashboard user={user} />
+      <ScannerPage user={user} />
     </>
   )
 }
