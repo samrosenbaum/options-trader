@@ -117,6 +117,7 @@ export default function WatchlistView() {
     if (isReady && items.length > 0) {
       fetchPrices()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isReady, items.length])
 
   // Calculate portfolio totals
