@@ -77,6 +77,8 @@ export default function RejectionLearningPage() {
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [isBackfilling, setIsBackfilling] = useState(false)
+  const [backfillResult, setBackfillResult] = useState<{backfilled: number, skipped: number, errors: number} | null>(null)
   const router = useRouter()
   const supabase = useMemo(() => createClient(), [])
 
@@ -149,6 +151,29 @@ export default function RejectionLearningPage() {
     }
   }
 
+  const runBackfill = async () => {
+    try {
+      setIsBackfilling(true)
+      setBackfillResult(null)
+      const response = await fetch("/api/backfill-rejections", {
+        method: "POST"
+      })
+      const data = await response.json()
+      if (data.success) {
+        setBackfillResult({
+          backfilled: data.backfilled,
+          skipped: data.skipped,
+          errors: data.errors
+        })
+        await fetchRejections() // Refresh the list
+      }
+    } catch (err) {
+      console.error("Backfill failed:", err)
+    } finally {
+      setIsBackfilling(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -187,6 +212,19 @@ export default function RejectionLearningPage() {
               <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
               Refresh
             </Button>
+            <Button variant="outline" onClick={runBackfill} disabled={isBackfilling}>
+              {isBackfilling ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Backfilling...
+                </>
+              ) : (
+                <>
+                  <TrendingUp className="h-4 w-4 mr-2" />
+                  Import Old Trades
+                </>
+              )}
+            </Button>
             <Button onClick={runAnalysis} disabled={isAnalyzing || rejections.length === 0}>
               {isAnalyzing ? (
                 <>
@@ -202,6 +240,32 @@ export default function RejectionLearningPage() {
             </Button>
           </div>
         </div>
+
+        {backfillResult && (
+          <Card className="modern-card mb-6 border-emerald-500/20 bg-emerald-500/5">
+            <CardHeader>
+              <CardTitle className="text-emerald-400">Backfill Complete</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex gap-6 text-sm">
+                <div>
+                  <span className="text-muted-foreground">Imported:</span>
+                  <span className="ml-2 font-bold text-emerald-400">{backfillResult.backfilled}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Skipped:</span>
+                  <span className="ml-2 font-bold">{backfillResult.skipped}</span>
+                </div>
+                {backfillResult.errors > 0 && (
+                  <div>
+                    <span className="text-muted-foreground">Errors:</span>
+                    <span className="ml-2 font-bold text-red-400">{backfillResult.errors}</span>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {analysis && analysis.ai_summary && (
           <Card className="modern-card mb-6">
