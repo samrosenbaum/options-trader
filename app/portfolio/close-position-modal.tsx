@@ -75,6 +75,8 @@ export default function ClosePositionModal({
       if (updateError) throw updateError
 
       // If closed before expiration, log to anti-portfolio
+      console.log(`Days until expiration: ${daysUntilExpiration}, Expiration: ${position.expiration}, Now: ${now.toISOString()}`)
+
       if (daysUntilExpiration > 0) {
         const rejectionData = {
           symbol: position.symbol,
@@ -83,8 +85,8 @@ export default function ClosePositionModal({
           option_type: position.option_type,
           stock_price: position.current_stock_price || position.entry_stock_price,
           option_price: exitPriceValue,
-          volume: null,
-          open_interest: null,
+          volume: 0, // Not tracked for closed positions
+          open_interest: 0, // Not tracked for closed positions
           rejection_reason: 'CLOSED_TOO_SOON',
           filter_stage: 'position_closed_early',
           rejection_source: 'user_closed_position',
@@ -95,15 +97,25 @@ export default function ClosePositionModal({
           realized_pl_percent: plPercent,
         }
 
+        console.log('Attempting to log to anti-portfolio:', rejectionData)
+
         // Log to rejection tracking (non-blocking - don't fail the close if this fails)
         try {
-          await supabase
+          const { data: insertData, error: insertError } = await supabase
             .from('rejected_options')
             .insert(rejectionData)
-          console.log('Position tracked in anti-portfolio')
+            .select()
+
+          if (insertError) {
+            console.error('Anti-portfolio insert error:', insertError)
+          } else {
+            console.log('Position tracked in anti-portfolio:', insertData)
+          }
         } catch (err) {
           console.error('Failed to log to anti-portfolio:', err)
         }
+      } else {
+        console.log('Position not logged to anti-portfolio - already expired or expires today')
       }
 
       if (data) {
@@ -175,18 +187,15 @@ export default function ClosePositionModal({
           {/* Exit Signal Warning */}
           {position.exit_signal === 'exit_now' && (
             <div className="mt-4 bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg p-3">
-              <div className="flex items-center gap-2">
-                <span className="text-2xl">🔴</span>
-                <div>
-                  <div className="font-bold text-red-700 dark:text-red-400">
-                    Exit Recommended
-                  </div>
-                  <div className="text-xs text-red-600 dark:text-red-400">
-                    {position.exit_reasons &&
-                      (position.exit_reasons as string[]).map(r =>
-                        r.replace(/_/g, ' ')
-                      ).join(', ')}
-                  </div>
+              <div>
+                <div className="font-bold text-red-700 dark:text-red-400">
+                  Exit Recommended
+                </div>
+                <div className="text-xs text-red-600 dark:text-red-400">
+                  {position.exit_reasons &&
+                    (position.exit_reasons as string[]).map(r =>
+                      r.replace(/_/g, ' ')
+                    ).join(', ')}
                 </div>
               </div>
             </div>

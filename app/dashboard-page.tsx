@@ -121,7 +121,7 @@ export default function DashboardPage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">Welcome back to the trade desk</h1>
-          <p className="text-emerald-100/70">Your portfolio at a glance</p>
+          <p className="text-emerald-100/70">Here's your portfolio at a glance</p>
         </div>
 
         {/* Portfolio Value Card */}
