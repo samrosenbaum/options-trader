@@ -173,21 +173,32 @@ def calculate_pl(entry_price: float, current_price: float, contracts: int) -> Di
     Returns:
         Dictionary with unrealized P&L amount and percentage
     """
-    contract_value = max(contracts, 0) * CONTRACT_MULTIPLIER
+    contract_value = abs(contracts) * CONTRACT_MULTIPLIER
+
     if contract_value == 0:
         return {
             'unrealized_pl': 0.0,
             'unrealized_pl_percent': 0.0,
         }
 
-    cost_basis = entry_price * contract_value
-    current_value = current_price * contract_value
-    pl_amount = current_value - cost_basis
-    pl_percent = (pl_amount / cost_basis) * 100 if cost_basis > 0 else 0
+    is_short = contracts < 0
+
+    if is_short:
+        premium_received = entry_price * contract_value
+        cost_to_close = current_price * contract_value
+        pl_amount = premium_received - cost_to_close
+        basis = premium_received
+    else:
+        cost_basis = entry_price * contract_value
+        current_value = current_price * contract_value
+        pl_amount = current_value - cost_basis
+        basis = cost_basis
+
+    pl_percent = (pl_amount / basis) * 100 if basis > 0 else 0.0
 
     return {
         'unrealized_pl': pl_amount,
-        'unrealized_pl_percent': pl_percent
+        'unrealized_pl_percent': pl_percent,
     }
 
 
