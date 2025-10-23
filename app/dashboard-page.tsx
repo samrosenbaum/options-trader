@@ -45,7 +45,6 @@ interface Position {
 
 export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
-  const [fadeOut, setFadeOut] = useState(false)
   const [snapshots, setSnapshots] = useState<PortfolioSnapshot[]>([])
   const [currentSnapshot, setCurrentSnapshot] = useState<PortfolioSnapshot | null>(null)
   const [topPositions, setTopPositions] = useState<Position[]>([])
@@ -112,18 +111,6 @@ export default function DashboardPage() {
         if (losersResult.data) {
           setBiggestLosers(losersResult.data)
         }
-
-        // Ensure garage door animation plays for at least 3 seconds
-        const elapsedTime = Date.now() - startTime
-        const minLoadTime = 3000 // 3 seconds minimum
-        if (elapsedTime < minLoadTime) {
-          await new Promise(resolve => setTimeout(resolve, minLoadTime - elapsedTime))
-        }
-
-        // Start fade out transition
-        setFadeOut(true)
-        // Wait for fade out to complete before removing loading screen
-        await new Promise(resolve => setTimeout(resolve, 500))
       } catch (err) {
         console.error('Error fetching dashboard data:', err)
       } finally {
@@ -147,49 +134,12 @@ export default function DashboardPage() {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
   }
 
-  // Check if animation was shown this session
-  const hasSeenAnimation = typeof window !== 'undefined' && sessionStorage.getItem('hasSeenGarageAnimation') === 'true'
-
   if (loading) {
-    // Skip animation if already seen this session
-    if (hasSeenAnimation) {
-      return (
-        <div className="min-h-screen flex items-center justify-center bg-[#05070E]">
-          <div className="text-center">
-            <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-emerald-100/70">Loading dashboard...</p>
-          </div>
-        </div>
-      )
-    }
-
-    // Mark as seen for this session
-    if (typeof window !== 'undefined') {
-      sessionStorage.setItem('hasSeenGarageAnimation', 'true')
-    }
-
     return (
-      <div
-        className={`min-h-screen flex items-center justify-center bg-[#05070E] transition-opacity duration-500 ${
-          fadeOut ? 'opacity-0' : 'opacity-100'
-        }`}
-      >
-        <div className="text-center max-w-4xl mx-auto px-4">
-          <video
-            autoPlay
-            muted
-            playsInline
-            className="w-full max-w-3xl mx-auto rounded-lg shadow-2xl"
-            onLoadedData={(e) => {
-              const video = e.currentTarget
-              video.currentTime = 2 // Start at 2 seconds
-              video.play().catch(err => console.log('Video play failed:', err))
-            }}
-          >
-            <source src="/garage.mp4#t=2" type="video/mp4" />
-            {/* Fallback to GIF if video doesn't load */}
-            <img src="/garage.gif" alt="Opening trading desk" className="w-full" />
-          </video>
+      <div className="min-h-screen flex items-center justify-center bg-[#05070E]">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-lg text-emerald-100/70">Loading dashboard...</p>
         </div>
       </div>
     )
@@ -206,12 +156,7 @@ export default function DashboardPage() {
     : 0
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-      className="relative min-h-screen overflow-hidden bg-[#05070E] text-slate-100"
-    >
+    <div className="relative min-h-screen overflow-hidden bg-[#05070E] text-slate-100">
       {/* Live Ticker Tape */}
       <TickerTape />
 
@@ -220,22 +165,14 @@ export default function DashboardPage() {
 
       {/* Background */}
       <div className="pointer-events-none absolute inset-0 -z-10">
-        {/* Vintage trading desk background - very subtle */}
-        <div
-          className="absolute inset-0 opacity-[0.15]"
-          style={{
-            backgroundImage: 'url(/trade_desk.png)',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat',
-            filter: 'brightness(1.2)',
-          }}
-        />
+        {/* Gradient overlays */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(16,185,129,0.12),_transparent_60%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(15,23,42,0.75),transparent_60%)]" />
+
+        {/* Blur orbs - subtle accents */}
         <div className="absolute -top-32 left-1/2 h-[28rem] w-[28rem] -translate-x-1/2 rounded-full bg-emerald-500/20 blur-3xl" />
         <div className="absolute bottom-[-18rem] left-[-10rem] h-[32rem] w-[32rem] rounded-full bg-sky-500/10 blur-3xl" />
         <div className="absolute top-1/3 -right-40 h-[26rem] w-[26rem] rounded-full bg-purple-500/10 blur-3xl" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(16,185,129,0.12),_transparent_60%)]" />
-        <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(15,23,42,0.75),transparent_60%)]" />
       </div>
 
       <div className="max-w-7xl mx-auto px-6 py-8">
@@ -246,7 +183,30 @@ export default function DashboardPage() {
         </div>
 
         {/* Portfolio Value Card */}
-        <div className="bg-slate-900/40 backdrop-blur-sm rounded-2xl border border-emerald-500/20 p-8 shadow-lg mb-6">
+        <div className="relative bg-gradient-to-br from-slate-900/80 via-emerald-900/30 to-slate-900/80 backdrop-blur-xl rounded-2xl border border-emerald-500/40 p-8 shadow-[0_8px_32px_rgba(16,185,129,0.2),0_0_0_1px_rgba(16,185,129,0.1)_inset] mb-6 overflow-hidden transition-all duration-300 hover:shadow-[0_12px_48px_rgba(16,185,129,0.25),0_0_0_1px_rgba(16,185,129,0.15)_inset] hover:scale-[1.01] hover:border-emerald-500/50">
+          {/* Vintage trading desk background */}
+          <div
+            className="absolute inset-0 opacity-[0.03]"
+            style={{
+              backgroundImage: 'url(/trade_desk.png)',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
+              filter: 'brightness(1.1) saturate(0.8)',
+            }}
+          ></div>
+
+          {/* Glass reflection effect */}
+          <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent opacity-40"></div>
+          <div className="absolute inset-0 bg-gradient-to-tl from-emerald-400/5 via-transparent to-transparent"></div>
+
+          {/* Gradient accent glow */}
+          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-emerald-400/60 to-transparent"></div>
+          <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-emerald-500/30 to-transparent"></div>
+          <div className="absolute -top-24 -right-24 w-48 h-48 bg-emerald-500/15 rounded-full blur-3xl"></div>
+          <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-emerald-500/15 rounded-full blur-3xl"></div>
+
+          <div className="relative z-10">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             {/* Total Value */}
             <div>
@@ -339,6 +299,7 @@ export default function DashboardPage() {
               <p>No portfolio history yet. Start trading to see your progress!</p>
             </div>
           )}
+          </div>
         </div>
 
         {/* Top Positions & Quick Actions */}
@@ -414,9 +375,9 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Trophy Case & Wall of Shame */}
+        {/* Wall of Gains & Wall of Shame */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-          {/* Trophy Case - Biggest Winners */}
+          {/* Wall of Gains - Biggest Winners */}
           <motion.div
             initial={{ opacity: 0, y: 20, rotateX: 10 }}
             animate={{ opacity: 1, y: 0, rotateX: 0 }}
@@ -441,7 +402,7 @@ export default function DashboardPage() {
                   <Trophy className="h-6 w-6 text-amber-400" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-white">Trophy Case</h2>
+                  <h2 className="text-xl font-bold text-white">Wall of Gains</h2>
                   <p className="text-sm text-slate-400">Your greatest victories</p>
                 </div>
               </div>
@@ -569,6 +530,6 @@ export default function DashboardPage() {
           </motion.div>
         </div>
       </div>
-    </motion.div>
+    </div>
   )
 }
