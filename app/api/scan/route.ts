@@ -56,3 +56,29 @@ export async function GET() {
     return NextResponse.json({ success: false, error: message }, { status: 502 })
   }
 }
+
+export async function POST(request: Request) {
+  try {
+    const body = await request.json()
+    const { symbols, quickBiasOnly } = body
+
+    // If quickBiasOnly, just return empty directional data
+    // This endpoint isn't fully implemented for POST - portfolio should use a different endpoint
+    if (quickBiasOnly && symbols) {
+      return NextResponse.json({
+        success: true,
+        directionalData: {},
+      })
+    }
+
+    // Otherwise fall back to GET behavior
+    return NextResponse.json({
+      success: false,
+      error: "POST not fully implemented, use /api/scan-python for full scans"
+    }, { status: 501 })
+  } catch (error) {
+    console.error("Error in POST /api/scan:", error)
+    const message = error instanceof Error ? error.message : "Failed to process scan request"
+    return NextResponse.json({ success: false, error: message }, { status: 500 })
+  }
+}
