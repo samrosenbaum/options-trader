@@ -139,7 +139,7 @@ export default function DashboardPage() {
       <div className="min-h-screen flex items-center justify-center bg-[#05070E]">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-lg text-emerald-100/70">Loading dashboard...</p>
+          <p className="text-lg text-emerald-100/70">Preparing your trading desk...</p>
         </div>
       </div>
     )
