@@ -29,11 +29,10 @@ export default function Navigation({ userEmail }: { userEmail?: string }) {
   }, [])
 
   const navItems = [
-    { href: '/', label: 'Trade Desk' },
+    { href: '/', label: 'Dashboard' },
     { href: '/scanner', label: 'Scanner' },
     { href: '/macro', label: 'Macro' },
     { href: '/market-info', label: 'Market Info' },
-    { href: '/ai-strategy-hub', label: "Today's Plays" },
     { href: '/rejection-learning', label: 'Anti-Portfolio' },
     { href: '/watchlist', label: 'Watchlist' },
     { href: '/portfolio', label: 'Portfolio' },
@@ -97,7 +96,7 @@ export default function Navigation({ userEmail }: { userEmail?: string }) {
                   : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
               }`}
             >
-              Settings
+              Account
             </Link>
           </div>
         </div>

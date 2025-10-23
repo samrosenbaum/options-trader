@@ -190,6 +190,56 @@ export interface Database {
           updated_at?: string
         }
       }
+      portfolio_snapshots: {
+        Row: {
+          id: string
+          user_id: string
+          snapshot_date: string
+          total_value: number
+          cash_value: number
+          positions_value: number
+          unrealized_pl: number
+          realized_pl: number
+          daily_change: number
+          daily_change_percent: number
+          open_positions_count: number
+          closed_positions_count: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          snapshot_date: string
+          total_value: number
+          cash_value?: number
+          positions_value: number
+          unrealized_pl?: number
+          realized_pl?: number
+          daily_change?: number
+          daily_change_percent?: number
+          open_positions_count?: number
+          closed_positions_count?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          snapshot_date?: string
+          total_value?: number
+          cash_value?: number
+          positions_value?: number
+          unrealized_pl?: number
+          realized_pl?: number
+          daily_change?: number
+          daily_change_percent?: number
+          open_positions_count?: number
+          closed_positions_count?: number
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
   }
 }

@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
 import Navigation from '@/components/navigation'
 import ScannerPage from '../scanner-page'
-import LandingPage from '../landing-page'
 
 export default async function ScannerRoute() {
   const supabase = await createClient()
@@ -10,7 +10,7 @@ export default async function ScannerRoute() {
   } = await supabase.auth.getUser()
 
   if (!user) {
-    return <LandingPage />
+    redirect('/auth/login')
   }
 
   return (

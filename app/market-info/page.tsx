@@ -8,6 +8,7 @@ import Navigation from '@/components/navigation'
 import LiveTicker from '@/components/live-ticker'
 import { PoliticianTradesFeed } from '@/components/politician-trades-feed'
 import { LiveNewsFeed } from '@/components/live-news-feed'
+import { WSBTrending } from '@/components/wsb-trending'
 
 export default function MarketInfoPage() {
   const [user, setUser] = useState<User | null>(null)
@@ -73,6 +74,11 @@ export default function MarketInfoPage() {
         {/* Live Ticker */}
         <div className="mb-8">
           <LiveTicker />
+        </div>
+
+        {/* WSB Trending */}
+        <div className="mb-8">
+          <WSBTrending />
         </div>
 
         {/* Market Intelligence Feeds */}

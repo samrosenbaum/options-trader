@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import LandingPage from './landing-page'
+import DashboardPage from './dashboard-page'
 import Navigation from '@/components/navigation'
-import { TradeDeskDashboard } from '@/components/trade-desk-dashboard'
 
 export default async function HomePage() {
   const supabase = await createClient()
@@ -14,11 +14,11 @@ export default async function HomePage() {
     return <LandingPage />
   }
 
-  // Show trade desk HQ with navigation if logged in
+  // Show dashboard with navigation if logged in
   return (
     <>
       <Navigation userEmail={user.email} />
-      <TradeDeskDashboard user={user} />
+      <DashboardPage />
     </>
   )
 }
