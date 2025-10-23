@@ -517,9 +517,9 @@ export default function RejectionLearningPage() {
 
         <Card className="modern-card">
           <CardHeader>
-            <CardTitle>Scanner Rejections</CardTitle>
+            <CardTitle>Automatically Filtered Options</CardTitle>
             <CardDescription>
-              {rejections.filter(r => r.rejection_source !== 'user_closed_position').length} options rejected in the last 7 days
+              {rejections.filter(r => r.rejection_source !== 'user_closed_position').length} options automatically filtered out by the scanner in the last 7 days (not manually rejected by you)
             </CardDescription>
           </CardHeader>
           <CardContent>
