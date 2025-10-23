@@ -29,7 +29,8 @@ export default function Navigation({ userEmail }: { userEmail?: string }) {
   }, [])
 
   const navItems = [
-    { href: '/', label: 'Scanner' },
+    { href: '/', label: 'Trade Desk' },
+    { href: '/scanner', label: 'Scanner' },
     { href: '/macro', label: 'Macro' },
     { href: '/market-info', label: 'Market Info' },
     { href: '/ai-strategy-hub', label: "Today's Plays" },
