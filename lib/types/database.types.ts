@@ -240,6 +240,56 @@ export interface Database {
           updated_at?: string
         }
       }
+      watchlist: {
+        Row: {
+          id: string
+          user_id: string
+          symbol: string
+          option_type: 'call' | 'put'
+          strike: number
+          expiration: string
+          premium: number
+          score: number | null
+          risk_level: string | null
+          days_to_expiration: number | null
+          trade_summary: string | null
+          added_at: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id: string
+          user_id: string
+          symbol: string
+          option_type: 'call' | 'put'
+          strike: number
+          expiration: string
+          premium: number
+          score?: number | null
+          risk_level?: string | null
+          days_to_expiration?: number | null
+          trade_summary?: string | null
+          added_at?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          symbol?: string
+          option_type?: 'call' | 'put'
+          strike?: number
+          expiration?: string
+          premium?: number
+          score?: number | null
+          risk_level?: string | null
+          days_to_expiration?: number | null
+          trade_summary?: string | null
+          added_at?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
   }
 }
