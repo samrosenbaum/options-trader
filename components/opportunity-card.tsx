@@ -2,6 +2,7 @@
 import React from 'react'
 
 import { formatDistanceToNowStrict } from 'date-fns'
+import { Info } from 'lucide-react'
 
 import {
   Opportunity,
@@ -17,6 +18,26 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
+
+const InfoTooltip = ({ text, ariaLabel = 'More context' }: { text: string; ariaLabel?: string }) => (
+  <span
+    className="relative inline-flex ml-1 align-middle group focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/70"
+    tabIndex={0}
+    aria-label={ariaLabel}
+  >
+    <Info
+      aria-hidden="true"
+      className="h-3.5 w-3.5 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors"
+    />
+    <span
+      role="tooltip"
+      className="pointer-events-none invisible group-hover:visible group-focus-visible:visible opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity duration-150 absolute left-1/2 -translate-x-1/2 top-5 z-50 w-56 rounded-lg border border-slate-200/70 bg-slate-900 text-white text-xs leading-relaxed p-3 shadow-xl shadow-slate-900/30"
+    >
+      <span className="absolute -top-1 left-1/2 -translate-x-1/2 h-2 w-2 rotate-45 bg-slate-900 border-l border-t border-slate-200/70" />
+      {text}
+    </span>
+  </span>
+)
 
 const isFiniteNumber = (value: unknown): value is number =>
   typeof value === 'number' && Number.isFinite(value)
@@ -550,39 +571,49 @@ const getGreeksExplanation = (opp: Opportunity) => {
 
   const deltaPercent = (greeks.delta * 100).toFixed(1)
   if (Math.abs(greeks.delta) > 0.5) {
-    explanations.push(`Delta of ${deltaPercent}% means this option will move significantly with stock price changes - expect big swings in option value.`)
+    explanations.push(`Delta (stock sensitivity): High at ${deltaPercent}% — expect sharp option moves with the underlying.`)
   } else if (Math.abs(greeks.delta) > 0.3) {
-    explanations.push(`Delta of ${deltaPercent}% provides good sensitivity to stock moves while maintaining reasonable premium cost.`)
+    explanations.push(`Delta (stock sensitivity): Balanced at ${deltaPercent}% — keeps upside while limiting cost.`)
   } else {
-    explanations.push(`Delta of ${deltaPercent}% means the option is less sensitive to small stock moves but cheaper to own.`)
+    explanations.push(`Delta (stock sensitivity): Lower at ${deltaPercent}% — needs a stronger stock move to respond.`)
   }
 
   if (greeks.gamma > 0.02) {
-    explanations.push(`High gamma of ${greeks.gamma.toFixed(3)} means the option's sensitivity to stock price changes will increase dramatically as the stock moves in your favor.`)
+    explanations.push(`Gamma (acceleration): Elevated at ${greeks.gamma.toFixed(3)} — sensitivity will build quickly if price trends.`)
   } else if (greeks.gamma > 0.01) {
-    explanations.push(`Moderate gamma of ${greeks.gamma.toFixed(3)} provides good acceleration as the stock moves in your direction.`)
+    explanations.push(`Gamma (acceleration): Moderate at ${greeks.gamma.toFixed(3)} — steady boost as the move develops.`)
   } else {
-    explanations.push(`Lower gamma of ${greeks.gamma.toFixed(3)} means more linear price movement relative to the stock.`)
+    explanations.push(`Gamma (acceleration): Calmer at ${greeks.gamma.toFixed(3)} — expect more linear price changes.`)
   }
 
   const thetaDaily = greeks.theta
   if (Math.abs(thetaDaily) > 0.5) {
-    explanations.push(`High theta decay of ${thetaDaily.toFixed(2)} per day means this option loses significant value each day - time is working against you.`)
+    explanations.push(`Theta (time decay): Steep at ${thetaDaily.toFixed(2)}/day — budget for daily premium erosion.`)
   } else if (Math.abs(thetaDaily) > 0.2) {
-    explanations.push(`Moderate theta decay of ${thetaDaily.toFixed(2)} per day means reasonable time decay that won't destroy the trade quickly.`)
+    explanations.push(`Theta (time decay): Manageable at ${thetaDaily.toFixed(2)}/day — decay is present but tolerable.`)
   } else {
-    explanations.push(`Low theta decay of ${thetaDaily.toFixed(2)} per day means time decay is minimal, giving you more time for the trade to work.`)
+    explanations.push(`Theta (time decay): Gentle at ${thetaDaily.toFixed(2)}/day — time decay is a minor drag.`)
   }
 
   if (greeks.vega > 0.2) {
-    explanations.push(`High vega of ${greeks.vega.toFixed(2)} means this option is very sensitive to volatility changes - a volatility spike could significantly boost option value.`)
+    explanations.push(`Vega (volatility impact): High at ${greeks.vega.toFixed(2)} — volatility spikes can add serious fuel.`)
   } else if (greeks.vega > 0.1) {
-    explanations.push(`Moderate vega of ${greeks.vega.toFixed(2)} provides good exposure to volatility expansion while managing premium cost.`)
+    explanations.push(`Vega (volatility impact): Balanced at ${greeks.vega.toFixed(2)} — benefits from a modest IV lift.`)
   } else {
-    explanations.push(`Lower vega of ${greeks.vega.toFixed(2)} means the option is less affected by volatility changes, focusing more on directional moves.`)
+    explanations.push(`Vega (volatility impact): Light at ${greeks.vega.toFixed(2)} — trade leans mostly on direction.`)
   }
 
   return explanations
+}
+
+const formatGreekValue = (value: number | null | undefined) => {
+  if (!isFiniteNumber(value)) {
+    return '—'
+  }
+
+  const rounded = Number(value.toFixed(2))
+  const formatted = rounded.toFixed(2)
+  return rounded >= 0 ? `+${formatted}` : formatted
 }
 
 const formatBreakevenRequirement = (opp: Opportunity) => {
@@ -971,6 +1002,49 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
       addItem(watchlistPayload)
     }
   }, [addItem, removeItem, watchlistPayload, watchlistId, onWatchlist])
+
+  const greekMetrics = React.useMemo(
+    () => [
+      {
+        key: 'delta',
+        label: 'Delta',
+        subtitle: 'Stock sensitivity',
+        value: formatGreekValue(opportunity.greeks.delta),
+        tooltip:
+          'Delta estimates how much the option price should move for a $1 move in the stock. Higher delta means more stock-like exposure.',
+      },
+      {
+        key: 'gamma',
+        label: 'Gamma',
+        subtitle: 'Delta momentum',
+        value: formatGreekValue(opportunity.greeks.gamma),
+        tooltip:
+          'Gamma tracks how quickly delta will change as the stock moves. Elevated gamma signals the position can accelerate into or out of the money.',
+      },
+      {
+        key: 'theta',
+        label: 'Theta',
+        subtitle: 'Time decay',
+        value: formatGreekValue(opportunity.greeks.theta),
+        tooltip:
+          'Theta is the expected daily change from time decay. Negative theta means the option bleeds value as expiration approaches.',
+      },
+      {
+        key: 'vega',
+        label: 'Vega',
+        subtitle: 'Volatility impact',
+        value: formatGreekValue(opportunity.greeks.vega),
+        tooltip:
+          'Vega measures sensitivity to implied volatility shifts. Larger vega benefits more if volatility spikes after entry.',
+      },
+    ],
+    [
+      opportunity.greeks.delta,
+      opportunity.greeks.gamma,
+      opportunity.greeks.theta,
+      opportunity.greeks.vega,
+    ],
+  )
 
   // Enhancement functions for on-demand deep dive
   const runBacktest = React.useCallback(async () => {
@@ -2557,31 +2631,33 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
           </section>
 
           <section>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center">
-                <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Delta</div>
-                <div className="text-sm font-semibold text-slate-900 dark:text-white">{opportunity.greeks.delta.toFixed(3)}</div>
-              </div>
-              <div className="text-center">
-                <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Gamma</div>
-                <div className="text-sm font-semibold text-slate-900 dark:text-white">{opportunity.greeks.gamma.toFixed(3)}</div>
-              </div>
-              <div className="text-center">
-                <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Theta</div>
-                <div className="text-sm font-semibold text-slate-900 dark:text-white">{opportunity.greeks.theta.toFixed(3)}</div>
-              </div>
-              <div className="text-center">
-                <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Vega</div>
-                <div className="text-sm font-semibold text-slate-900 dark:text-white">{opportunity.greeks.vega.toFixed(3)}</div>
-              </div>
-            </div>
-            <div className="mt-4 space-y-2">
-              {getGreeksExplanation(opportunity).map((explanation, index) => (
-                <p key={index} className="text-xs text-slate-600 dark:text-slate-400">
-                  {explanation}
-                </p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {greekMetrics.map((metric) => (
+                <div
+                  key={metric.key}
+                  className="rounded-xl border border-slate-200/70 dark:border-slate-700/70 bg-white dark:bg-slate-800/70 p-3 shadow-sm shadow-slate-900/5"
+                >
+                  <div className="flex items-center justify-between text-xs font-medium text-slate-600 dark:text-slate-300">
+                    <span>{metric.label}</span>
+                    <InfoTooltip text={metric.tooltip} ariaLabel={`More context about ${metric.label}`} />
+                  </div>
+                  <div className="mt-2 text-right text-lg font-semibold text-slate-900 dark:text-white">
+                    {metric.value}
+                  </div>
+                  <div className="mt-1 text-[11px] tracking-wide uppercase text-right text-slate-400 dark:text-slate-500">
+                    {metric.subtitle}
+                  </div>
+                </div>
               ))}
             </div>
+            <ul className="mt-4 space-y-1 text-xs text-slate-600 dark:text-slate-400">
+              {getGreeksExplanation(opportunity).map((explanation, index) => (
+                <li key={index} className="flex items-start gap-2">
+                  <span className="mt-1 inline-flex h-1.5 w-1.5 flex-none rounded-full bg-slate-400/60 dark:bg-slate-500/70" />
+                  <span className="leading-relaxed">{explanation}</span>
+                </li>
+              ))}
+            </ul>
           </section>
           </div>
         </CollapsibleContent>
