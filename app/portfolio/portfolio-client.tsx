@@ -13,6 +13,7 @@ import AddPositionModal from './add-position-modal'
 import EditPositionModal from './edit-position-modal'
 import ClosePositionModal from './close-position-modal'
 import PositionAnalysisModal from './position-analysis-modal'
+import CashRain from './cash-rain'
 import CSVImportModal from '@/components/csv-import-modal'
 import {
   Bar,
@@ -174,6 +175,8 @@ export default function PortfolioClient({
   const [isSavingSettings, setIsSavingSettings] = useState(false)
   const [settingsFeedback, setSettingsFeedback] = useState<'idle' | 'success' | 'error'>('idle')
   const [hasAutoRefreshed, setHasAutoRefreshed] = useState(false)
+  const [showCashRain, setShowCashRain] = useState(false)
+  const [cashRainKey, setCashRainKey] = useState(0)
 
   // Request notification permission on mount
   useEffect(() => {
@@ -364,11 +367,18 @@ export default function PortfolioClient({
   }
 
   const handlePositionClosed = (closedPosition: Position) => {
-    setPositions(
-      positions.map((p) =>
+    setPositions((prevPositions) =>
+      prevPositions.map((p) =>
         p.id === closedPosition.id ? closedPosition : p
       )
     )
+
+    const realizedPL = Number(closedPosition.realized_pl ?? 0)
+    if (Number.isFinite(realizedPL) && realizedPL > 0) {
+      setCashRainKey((prev) => prev + 1)
+      setShowCashRain(true)
+    }
+
     setPositionToClose(null)
   }
 
@@ -900,6 +910,12 @@ export default function PortfolioClient({
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+      {showCashRain && (
+        <CashRain
+          key={cashRainKey}
+          onComplete={() => setShowCashRain(false)}
+        />
+      )}
 
       {/* Summary Cards */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
