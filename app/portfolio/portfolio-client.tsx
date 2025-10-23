@@ -28,6 +28,13 @@ import {
   YAxis,
 } from 'recharts'
 
+// Helper to format date strings without timezone shifts
+// Treats "2025-11-07" as Nov 7, not as UTC midnight (which becomes Nov 6 in PT)
+function formatDateLocal(dateString: string): string {
+  const [year, month, day] = dateString.split('T')[0].split('-').map(Number)
+  return new Date(year, month - 1, day).toLocaleDateString()
+}
+
 type Position = Database['public']['Tables']['positions']['Row']
 type UserSettings = Database['public']['Tables']['user_settings']['Row']
 type User = { id: string; email?: string }
@@ -1564,7 +1571,7 @@ export default function PortfolioClient({
                         ${position.strike}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">
-                        {new Date(position.expiration).toLocaleDateString()}
+                        {formatDateLocal(position.expiration)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">
                         {position.contracts}
@@ -1729,7 +1736,7 @@ export default function PortfolioClient({
                         ${position.strike}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">
-                        {new Date(position.expiration).toLocaleDateString()}
+                        {formatDateLocal(position.expiration)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">
                         {position.contracts}
@@ -1757,7 +1764,7 @@ export default function PortfolioClient({
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">
-                        {position.exit_date ? new Date(position.exit_date).toLocaleDateString() : '—'}
+                        {position.exit_date ? formatDateLocal(position.exit_date) : '—'}
                       </td>
                       </tr>
                     ))}
