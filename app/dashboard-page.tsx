@@ -145,11 +145,20 @@ export default function DashboardPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#05070E]">
         <div className="text-center max-w-4xl mx-auto px-4">
-          <img
-            src="/garage.gif"
-            alt="Opening trading desk"
+          <video
+            autoPlay
+            muted
+            playsInline
             className="w-full max-w-3xl mx-auto rounded-lg shadow-2xl"
-          />
+            onLoadedMetadata={(e) => {
+              const video = e.currentTarget
+              video.currentTime = 2 // Start at 2 seconds
+            }}
+          >
+            <source src="/garage.mp4" type="video/mp4" />
+            {/* Fallback to GIF if video doesn't load */}
+            <img src="/garage.gif" alt="Opening trading desk" className="w-full" />
+          </video>
         </div>
       </div>
     )
