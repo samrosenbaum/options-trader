@@ -57,15 +57,29 @@ class WSBTracker:
                 headers=self.headers,
                 timeout=10
             )
+
+            # Log response details for debugging
+            print(f"[WSB] Status code: {response.status_code}")
+            if response.status_code != 200:
+                print(f"[WSB] Response body: {response.text[:500]}")
+
             response.raise_for_status()
 
             data = response.json()
             posts = data.get('data', {}).get('children', [])
 
+            print(f"[WSB] Successfully fetched {len(posts)} posts")
             return [post['data'] for post in posts]
 
+        except requests.exceptions.HTTPError as e:
+            print(f"[WSB] HTTP Error fetching posts: {e}")
+            print(f"[WSB] Status: {e.response.status_code if hasattr(e, 'response') else 'N/A'}")
+            return []
+        except requests.exceptions.Timeout:
+            print("[WSB] Request timed out after 10 seconds")
+            return []
         except Exception as e:
-            print(f"Error fetching WSB posts: {e}")
+            print(f"[WSB] Unexpected error fetching posts: {type(e).__name__}: {e}")
             return []
 
     def extract_tickers(self, text: str) -> List[str]:
