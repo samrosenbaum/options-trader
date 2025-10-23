@@ -56,57 +56,58 @@ export default function DashboardPage() {
       try {
         setLoading(true)
 
-        // Create today's snapshot first
-        await fetch('/api/portfolio-snapshot', { method: 'POST' })
+        // Run all queries in parallel for much faster loading
+        const [snapshotsData, positionsResult, winnersResult, losersResult] = await Promise.all([
+          // Create snapshot and fetch historical data
+          fetch('/api/portfolio-snapshot', { method: 'POST' })
+            .then(() => fetch('/api/portfolio-snapshot?days=30'))
+            .then(res => res.json()),
 
-        // Fetch historical snapshots (last 30 days)
-        const snapshotsRes = await fetch('/api/portfolio-snapshot?days=30')
-        const snapshotsData = await snapshotsRes.json()
+          // Fetch top performing open positions
+          supabase
+            .from('positions')
+            .select('id, symbol, strike, option_type, unrealized_pl, unrealized_pl_percent, exit_signal')
+            .eq('status', 'open')
+            .order('unrealized_pl', { ascending: false })
+            .limit(5),
 
+          // Fetch biggest winners
+          supabase
+            .from('positions')
+            .select('id, symbol, strike, option_type, realized_pl, realized_pl_percent, exit_date')
+            .eq('status', 'closed')
+            .gt('realized_pl', 0)
+            .order('realized_pl', { ascending: false })
+            .limit(3),
+
+          // Fetch biggest losers
+          supabase
+            .from('positions')
+            .select('id, symbol, strike, option_type, realized_pl, realized_pl_percent, exit_date')
+            .eq('status', 'closed')
+            .lt('realized_pl', 0)
+            .order('realized_pl', { ascending: true })
+            .limit(3)
+        ])
+
+        // Update state with results
         if (snapshotsData.success && snapshotsData.snapshots) {
           setSnapshots(snapshotsData.snapshots)
-          // Set current snapshot to the most recent
           if (snapshotsData.snapshots.length > 0) {
             setCurrentSnapshot(snapshotsData.snapshots[snapshotsData.snapshots.length - 1])
           }
         }
 
-        // Fetch top performing open positions
-        const { data: positions } = await supabase
-          .from('positions')
-          .select('id, symbol, strike, option_type, unrealized_pl, unrealized_pl_percent, exit_signal')
-          .eq('status', 'open')
-          .order('unrealized_pl', { ascending: false })
-          .limit(5)
-
-        if (positions) {
-          setTopPositions(positions)
+        if (positionsResult.data) {
+          setTopPositions(positionsResult.data)
         }
 
-        // Fetch biggest winners (closed positions with positive P&L)
-        const { data: winners } = await supabase
-          .from('positions')
-          .select('id, symbol, strike, option_type, realized_pl, realized_pl_percent, exit_date')
-          .eq('status', 'closed')
-          .gt('realized_pl', 0)
-          .order('realized_pl', { ascending: false })
-          .limit(3)
-
-        if (winners) {
-          setBiggestWinners(winners)
+        if (winnersResult.data) {
+          setBiggestWinners(winnersResult.data)
         }
 
-        // Fetch biggest losers (closed positions with negative P&L)
-        const { data: losers } = await supabase
-          .from('positions')
-          .select('id, symbol, strike, option_type, realized_pl, realized_pl_percent, exit_date')
-          .eq('status', 'closed')
-          .lt('realized_pl', 0)
-          .order('realized_pl', { ascending: true })
-          .limit(3)
-
-        if (losers) {
-          setBiggestLosers(losers)
+        if (losersResult.data) {
+          setBiggestLosers(losersResult.data)
         }
       } catch (err) {
         console.error('Error fetching dashboard data:', err)
