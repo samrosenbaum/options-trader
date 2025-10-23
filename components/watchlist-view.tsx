@@ -1,9 +1,10 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import Link from 'next/link'
 import { formatDistanceToNowStrict, parseISO } from 'date-fns'
 import { useWatchlist } from '@/components/watchlist-context'
+import { RefreshCw } from 'lucide-react'
 
 const formatCurrency = (amount: number) =>
   new Intl.NumberFormat('en-US', {
@@ -58,8 +59,17 @@ const formatAddedAt = (value: string) => {
   }
 }
 
+interface PriceData {
+  currentPremium: number | null
+  plAmount: number | null
+  plPercent: number | null
+  stockPrice: number | null
+}
+
 export default function WatchlistView() {
   const { items, removeItem, isReady } = useWatchlist()
+  const [priceData, setPriceData] = useState<Record<string, PriceData>>({})
+  const [loadingPrices, setLoadingPrices] = useState(false)
 
   const sortedItems = useMemo(
     () =>
@@ -70,6 +80,44 @@ export default function WatchlistView() {
       }),
     [items],
   )
+
+  const fetchPrices = async () => {
+    if (items.length === 0) return
+
+    setLoadingPrices(true)
+    try {
+      const response = await fetch('/api/watchlist/prices', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items }),
+      })
+
+      const data = await response.json()
+      if (data.success && data.results) {
+        const priceMap: Record<string, PriceData> = {}
+        data.results.forEach((result: PriceData & { id: string }) => {
+          priceMap[result.id] = {
+            currentPremium: result.currentPremium,
+            plAmount: result.plAmount,
+            plPercent: result.plPercent,
+            stockPrice: result.stockPrice,
+          }
+        })
+        setPriceData(priceMap)
+      }
+    } catch (err) {
+      console.error('Error fetching watchlist prices:', err)
+    } finally {
+      setLoadingPrices(false)
+    }
+  }
+
+  // Auto-fetch prices when component mounts and items are loaded
+  useEffect(() => {
+    if (isReady && items.length > 0) {
+      fetchPrices()
+    }
+  }, [isReady, items.length])
 
   if (!isReady) {
     return (
@@ -92,10 +140,24 @@ export default function WatchlistView() {
   }
 
   return (
-    <div className="mt-8 space-y-5">
+    <div className="mt-8 space-y-3">
+      {/* Refresh button */}
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={fetchPrices}
+          disabled={loadingPrices}
+          className="flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+        >
+          <RefreshCw className={`h-4 w-4 ${loadingPrices ? 'animate-spin' : ''}`} />
+          {loadingPrices ? 'Updating...' : 'Refresh Prices'}
+        </button>
+      </div>
+
       {sortedItems.map((item) => {
         const addedDescription = formatAddedAt(item.addedAt)
         const riskLabel = item.riskLevel ? item.riskLevel.toUpperCase() : 'RISK'
+        const prices = priceData[item.id]
         return (
           <div
             key={item.id}
@@ -126,10 +188,44 @@ export default function WatchlistView() {
               </div>
 
               <div className="flex min-w-[13rem] flex-col items-end gap-3">
-                <div className="text-3xl font-bold text-slate-900 dark:text-white">{formatCurrency(item.premium)}</div>
-                <div className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                  Contract Price
+                <div className="space-y-2">
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-slate-900 dark:text-white">{formatCurrency(item.premium)}</div>
+                    <div className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      Added At
+                    </div>
+                  </div>
+
+                  {prices && prices.currentPremium !== null && (
+                    <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700 text-right">
+                      <div className="text-2xl font-bold text-slate-900 dark:text-white">{formatCurrency(prices.currentPremium)}</div>
+                      <div className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        Current Price
+                      </div>
+                      <div className={`mt-2 text-lg font-bold ${
+                        prices.plAmount && prices.plAmount > 0 ? 'text-emerald-600 dark:text-emerald-400' :
+                        prices.plAmount && prices.plAmount < 0 ? 'text-red-600 dark:text-red-400' :
+                        'text-slate-600 dark:text-slate-400'
+                      }`}>
+                        {prices.plAmount !== null && prices.plPercent !== null && (
+                          <>
+                            {prices.plAmount >= 0 ? '+' : ''}{formatCurrency(prices.plAmount)}
+                            <span className="text-sm ml-1">
+                              ({prices.plPercent >= 0 ? '+' : ''}{prices.plPercent.toFixed(1)}%)
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {loadingPrices && !prices && (
+                    <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700 text-right">
+                      <div className="text-xs text-slate-500 dark:text-slate-400 italic">Loading...</div>
+                    </div>
+                  )}
                 </div>
+
                 <button
                   type="button"
                   onClick={() => removeItem(item.id)}
