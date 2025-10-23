@@ -1350,17 +1350,17 @@ export default function PortfolioClient({
 
         {/* Action Buttons */}
         <div className="mb-6">
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
             <button
               onClick={handleAddPosition}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
+              className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
             >
               + Add Position
             </button>
 
             <button
               onClick={() => setShowImportModal(true)}
-              className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center gap-2"
+              className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center gap-2 justify-center"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
@@ -1371,7 +1371,7 @@ export default function PortfolioClient({
             <button
               onClick={handleRefreshPrices}
               disabled={isRefreshing || openPositions.length === 0}
-              className={`flex items-center gap-2 font-semibold py-3 px-6 rounded-lg transition-colors ${
+              className={`w-full sm:w-auto flex items-center justify-center gap-2 font-semibold py-3 px-6 rounded-lg transition-colors ${
                 isRefreshing || openPositions.length === 0
                   ? 'bg-slate-300 dark:bg-slate-700 text-slate-500 dark:text-slate-400 cursor-not-allowed'
                   : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700'
@@ -1424,7 +1424,7 @@ export default function PortfolioClient({
             <button
               onClick={handleCheckExitSignals}
               disabled={isCheckingSignals || openPositions.length === 0}
-              className={`flex items-center gap-2 font-semibold py-3 px-6 rounded-lg transition-colors ${
+              className={`w-full sm:w-auto flex items-center justify-center gap-2 font-semibold py-3 px-6 rounded-lg transition-colors ${
                 isCheckingSignals || openPositions.length === 0
                   ? 'bg-slate-300 dark:bg-slate-700 text-slate-500 dark:text-slate-400 cursor-not-allowed'
                   : 'bg-orange-600 hover:bg-orange-700 dark:bg-orange-500 dark:hover:bg-orange-600 text-white'
@@ -1476,7 +1476,7 @@ export default function PortfolioClient({
 
             {refreshMessage && (
               <div
-                className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                className={`w-full sm:w-auto px-4 py-2 rounded-lg text-sm font-medium ${
                   refreshMessage.startsWith('✓')
                     ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
                     : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
@@ -1488,7 +1488,7 @@ export default function PortfolioClient({
 
             {signalsMessage && (
               <div
-                className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                className={`w-full sm:w-auto px-4 py-2 rounded-lg text-sm font-medium ${
                   signalsMessage.startsWith('✓')
                     ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
                     : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
@@ -1506,10 +1506,11 @@ export default function PortfolioClient({
             <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">
               Open Positions ({openPositions.length})
             </h2>
-            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-              <table className="w-full">
-                <thead className="bg-slate-50 dark:bg-slate-800">
-                  <tr>
+            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
+              <div className="overflow-x-auto">
+                <table className="min-w-[960px] w-full">
+                  <thead className="bg-slate-50 dark:bg-slate-800">
+                    <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                       Symbol
                     </th>
@@ -1540,11 +1541,11 @@ export default function PortfolioClient({
                     <th className="px-6 py-3 text-center text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                       Actions
                     </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
-                  {openPositions.map((position) => (
-                    <tr key={position.id}>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                    {openPositions.map((position) => (
+                      <tr key={position.id}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-white">
                         {position.symbol}
                       </td>
@@ -1658,10 +1659,11 @@ export default function PortfolioClient({
                           </div>
                         </div>
                       </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}
@@ -1672,10 +1674,11 @@ export default function PortfolioClient({
             <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">
               Closed Positions History ({closedPositions.length})
             </h2>
-            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-              <table className="w-full">
-                <thead className="bg-slate-50 dark:bg-slate-800">
-                  <tr>
+            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
+              <div className="overflow-x-auto">
+                <table className="min-w-[880px] w-full">
+                  <thead className="bg-slate-50 dark:bg-slate-800">
+                    <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                       Symbol
                     </th>
@@ -1703,11 +1706,11 @@ export default function PortfolioClient({
                     <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                       Closed Date
                     </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
-                  {closedPositions.map((position) => (
-                    <tr key={position.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                    {closedPositions.map((position) => (
+                      <tr key={position.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-white">
                         {position.symbol}
                       </td>
@@ -1756,10 +1759,11 @@ export default function PortfolioClient({
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">
                         {position.exit_date ? new Date(position.exit_date).toLocaleDateString() : '—'}
                       </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}
