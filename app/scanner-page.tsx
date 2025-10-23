@@ -815,10 +815,10 @@ Liquidity: ${((opp as Record<string, unknown>).liquidityScore as number | undefi
             )}
           </div>
 
-          <div className="flex items-center gap-5 text-sm text-slate-700 dark:text-slate-200 flex-wrap">
-            <span>Stock: ${opp.stockPrice.toFixed(2)}</span>
-            <span>Premium: ${opp.premium.toFixed(2)}</span>
-            <span>Exp: {opp.expiration}</span>
+          <div className="flex items-center gap-5 text-sm text-slate-700 dark:text-slate-100 flex-wrap">
+            <span className="dark:text-white/90">Stock: ${opp.stockPrice.toFixed(2)}</span>
+            <span className="dark:text-white/90">Premium: ${opp.premium.toFixed(2)}</span>
+            <span className="dark:text-white/90">Exp: {opp.expiration}</span>
             {extras.breakevenRequirement && (
               <span className="px-3 py-1 rounded-lg text-sm font-bold bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 border border-blue-300 dark:border-blue-700">
                 🎯 {extras.breakevenRequirement}
