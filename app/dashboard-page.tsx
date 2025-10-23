@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import { TickerTape } from '@/components/ticker-tape'
+import { motion } from 'framer-motion'
+import { Trophy, TrendingDown } from 'lucide-react'
 
 interface PortfolioSnapshot {
   id: string
@@ -16,12 +19,27 @@ interface PortfolioSnapshot {
   open_positions_count: number
 }
 
+interface ClosedPosition {
+  id: string
+  symbol: string
+  strike: number
+  option_type: string
+  realized_pl: number | null
+  realized_pl_percent: number | null
+  exit_date: string | null
+}
+
 interface Position {
   id: string
   symbol: string
+  strike: number
+  option_type: string
   unrealized_pl: number | null
   unrealized_pl_percent: number | null
   exit_signal: 'hold' | 'consider' | 'exit_now'
+  realized_pl?: number | null
+  realized_pl_percent?: number | null
+  exit_date?: string | null
 }
 
 export default function DashboardPage() {
@@ -29,6 +47,8 @@ export default function DashboardPage() {
   const [snapshots, setSnapshots] = useState<PortfolioSnapshot[]>([])
   const [currentSnapshot, setCurrentSnapshot] = useState<PortfolioSnapshot | null>(null)
   const [topPositions, setTopPositions] = useState<Position[]>([])
+  const [biggestWinners, setBiggestWinners] = useState<ClosedPosition[]>([])
+  const [biggestLosers, setBiggestLosers] = useState<ClosedPosition[]>([])
   const supabase = createClient()
 
   useEffect(() => {
@@ -51,16 +71,42 @@ export default function DashboardPage() {
           }
         }
 
-        // Fetch top performing positions
+        // Fetch top performing open positions
         const { data: positions } = await supabase
           .from('positions')
-          .select('id, symbol, unrealized_pl, unrealized_pl_percent, exit_signal')
+          .select('id, symbol, strike, option_type, unrealized_pl, unrealized_pl_percent, exit_signal')
           .eq('status', 'open')
           .order('unrealized_pl', { ascending: false })
           .limit(5)
 
         if (positions) {
           setTopPositions(positions)
+        }
+
+        // Fetch biggest winners (closed positions)
+        const { data: winners } = await supabase
+          .from('positions')
+          .select('id, symbol, strike, option_type, realized_pl, realized_pl_percent, exit_date')
+          .eq('status', 'closed')
+          .not('realized_pl', 'is', null)
+          .order('realized_pl', { ascending: false })
+          .limit(3)
+
+        if (winners) {
+          setBiggestWinners(winners)
+        }
+
+        // Fetch biggest losers (closed positions)
+        const { data: losers } = await supabase
+          .from('positions')
+          .select('id, symbol, strike, option_type, realized_pl, realized_pl_percent, exit_date')
+          .eq('status', 'closed')
+          .not('realized_pl', 'is', null)
+          .order('realized_pl', { ascending: true })
+          .limit(3)
+
+        if (losers) {
+          setBiggestLosers(losers)
         }
       } catch (err) {
         console.error('Error fetching dashboard data:', err)
@@ -108,6 +154,9 @@ export default function DashboardPage() {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#05070E] text-slate-100">
+      {/* Live Ticker Tape */}
+      <TickerTape />
+
       {/* Background */}
       <div className="pointer-events-none absolute inset-0 -z-10">
         <div className="absolute -top-32 left-1/2 h-[28rem] w-[28rem] -translate-x-1/2 rounded-full bg-emerald-500/20 blur-3xl" />
@@ -121,7 +170,7 @@ export default function DashboardPage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">Welcome back to the trade desk</h1>
-          <p className="text-emerald-100/70">Here's your portfolio at a glance</p>
+          <p className="text-emerald-100/70">Here&apos;s your portfolio at a glance</p>
         </div>
 
         {/* Portfolio Value Card */}
@@ -291,6 +340,161 @@ export default function DashboardPage() {
               </Link>
             </div>
           </div>
+        </div>
+
+        {/* Trophy Case & Wall of Shame */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+          {/* Trophy Case - Biggest Winners */}
+          <motion.div
+            initial={{ opacity: 0, y: 20, rotateX: 10 }}
+            animate={{ opacity: 1, y: 0, rotateX: 0 }}
+            transition={{ duration: 0.6, delay: 0.2, type: "spring" }}
+            whileHover={{
+              rotateY: 2,
+              rotateX: -2,
+              scale: 1.02,
+              transition: { duration: 0.3 }
+            }}
+            style={{
+              transformStyle: "preserve-3d",
+              perspective: "1000px"
+            }}
+            className="bg-gradient-to-br from-amber-500/10 via-slate-900/80 to-slate-900/80 backdrop-blur-sm rounded-2xl border border-amber-500/20 p-6 shadow-[0_20px_50px_rgba(217,119,6,0.3)] hover:shadow-[0_30px_60px_rgba(217,119,6,0.4)] relative overflow-hidden transition-shadow duration-300"
+          >
+            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-3xl"></div>
+            <div className="absolute inset-0 bg-gradient-to-br from-amber-400/5 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300"></div>
+            <div className="relative">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-3 rounded-xl bg-amber-500/20">
+                  <Trophy className="h-6 w-6 text-amber-400" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-white">Trophy Case</h2>
+                  <p className="text-sm text-slate-400">Your greatest victories</p>
+                </div>
+              </div>
+
+              {biggestWinners.length > 0 ? (
+                <div className="space-y-3">
+                  {biggestWinners.map((position, idx) => (
+                    <motion.div
+                      key={position.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.3, delay: idx * 0.1 }}
+                      className="relative group"
+                    >
+                      <div className="flex items-center justify-between p-4 rounded-xl bg-slate-800/60 border border-slate-700/50 hover:border-amber-500/50 transition-all">
+                        <div className="flex items-center gap-4">
+                          <div className={`flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm ${
+                            idx === 0 ? 'bg-amber-500/20 text-amber-300' :
+                            idx === 1 ? 'bg-slate-400/20 text-slate-300' :
+                            'bg-orange-500/20 text-orange-300'
+                          }`}>
+                            #{idx + 1}
+                          </div>
+                          <div>
+                            <div className="font-semibold text-white">
+                              {position.symbol} ${position.strike} {position.option_type.toUpperCase()}
+                            </div>
+                            <div className="text-xs text-slate-400">
+                              {position.exit_date && new Date(position.exit_date).toLocaleDateString()}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-lg font-bold text-emerald-400">
+                            +{formatCurrency(position.realized_pl || 0)}
+                          </div>
+                          <div className="text-sm text-emerald-400">
+                            +{(position.realized_pl_percent || 0).toFixed(1)}%
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-slate-400">
+                  <p>No closed winners yet. Keep trading!</p>
+                </div>
+              )}
+            </div>
+          </motion.div>
+
+          {/* Wall of Shame - Biggest Losers */}
+          <motion.div
+            initial={{ opacity: 0, y: 20, rotateX: 10 }}
+            animate={{ opacity: 1, y: 0, rotateX: 0 }}
+            transition={{ duration: 0.6, delay: 0.3, type: "spring" }}
+            whileHover={{
+              rotateY: -2,
+              rotateX: -2,
+              scale: 1.02,
+              transition: { duration: 0.3 }
+            }}
+            style={{
+              transformStyle: "preserve-3d",
+              perspective: "1000px"
+            }}
+            className="bg-gradient-to-br from-red-500/10 via-slate-900/80 to-slate-900/80 backdrop-blur-sm rounded-2xl border border-red-500/20 p-6 shadow-[0_20px_50px_rgba(239,68,68,0.3)] hover:shadow-[0_30px_60px_rgba(239,68,68,0.4)] relative overflow-hidden transition-shadow duration-300"
+          >
+            <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/10 rounded-full blur-3xl"></div>
+            <div className="absolute inset-0 bg-gradient-to-br from-red-400/5 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300"></div>
+            <div className="relative">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-3 rounded-xl bg-red-500/20">
+                  <TrendingDown className="h-6 w-6 text-red-400" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-white">Wall of Shame</h2>
+                  <p className="text-sm text-slate-400">Learn from these lessons</p>
+                </div>
+              </div>
+
+              {biggestLosers.length > 0 ? (
+                <div className="space-y-3">
+                  {biggestLosers.map((position, idx) => (
+                    <motion.div
+                      key={position.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.3, delay: idx * 0.1 }}
+                      className="relative group"
+                    >
+                      <div className="flex items-center justify-between p-4 rounded-xl bg-slate-800/60 border border-slate-700/50 hover:border-red-500/50 transition-all">
+                        <div className="flex items-center gap-4">
+                          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-red-500/20 text-red-300 font-bold text-sm">
+                            #{idx + 1}
+                          </div>
+                          <div>
+                            <div className="font-semibold text-white">
+                              {position.symbol} ${position.strike} {position.option_type.toUpperCase()}
+                            </div>
+                            <div className="text-xs text-slate-400">
+                              {position.exit_date && new Date(position.exit_date).toLocaleDateString()}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-lg font-bold text-red-400">
+                            {formatCurrency(position.realized_pl || 0)}
+                          </div>
+                          <div className="text-sm text-red-400">
+                            {(position.realized_pl_percent || 0).toFixed(1)}%
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-slate-400">
+                  <p>No losses to show. Perfect track record!</p>
+                </div>
+              )}
+            </div>
+          </motion.div>
         </div>
       </div>
     </div>

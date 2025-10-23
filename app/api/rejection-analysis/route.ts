@@ -358,7 +358,8 @@ export async function POST(request: Request): Promise<NextResponse> {
 
     // Handle rejection analysis
     const analysisParams = body as AnalysisParams
-    const daysBack = analysisParams.daysBack || 7
+    // Reduced from 7 to 3 days to prevent Supabase timeout
+    const daysBack = analysisParams.daysBack || 3
     const minProfitPercent = analysisParams.minProfitPercent || 10
 
     // Execute Python script to analyze rejections

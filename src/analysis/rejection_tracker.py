@@ -390,7 +390,7 @@ class RejectionTracker:
         try:
             start_date = datetime.now(timezone.utc) - timedelta(days=days_back)
 
-            # Get profitable rejections
+            # Get profitable rejections (limit to prevent timeout)
             profitable_response = self.supabase.table(self.table_name).select("*").gte(
                 "rejected_at", start_date.isoformat()
             ).eq(
@@ -399,7 +399,7 @@ class RejectionTracker:
                 "price_change_percent", min_profit_percent
             ).order(
                 "price_change_percent", desc=True
-            ).execute()
+            ).limit(500).execute()
 
             profitable_rejections = profitable_response.data
 
@@ -410,11 +410,12 @@ class RejectionTracker:
             ).execute()
 
             # Fallback if RPC doesn't exist - calculate manually
+            # IMPORTANT: Add LIMIT to prevent timeout on large datasets
             all_response = self.supabase.table(self.table_name).select("*").gte(
                 "rejected_at", start_date.isoformat()
             ).not_.is_(
                 "next_day_price", "null"
-            ).execute()
+            ).order("rejected_at", desc=True).limit(1000).execute()
 
             all_rejections = all_response.data
             total = len(all_rejections)

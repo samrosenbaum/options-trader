@@ -1,0 +1,388 @@
+"use client"
+
+import { useState, useEffect } from "react"
+
+interface WSBTicker {
+  ticker: string
+  mentions: number
+  sentiment: string
+  emoji: string
+  bullish_pct: number
+  bearish_pct: number
+  sample_posts: Array<{
+    title: string
+    url: string
+    upvotes: number
+  }>
+}
+
+interface SimplifiedPlay {
+  ticker: string
+  companyName: string
+  wsbMentions: number
+  wsbSentiment: string
+  wsbEmoji: string
+
+  // Simple explanation
+  direction: "UP" | "DOWN" | "SIDEWAYS"
+  confidence: string  // "High", "Medium", "Low"
+
+  // The play (simplified)
+  optionType: "CALL" | "PUT"
+  strike: number
+  premium: number
+  stockPrice: number
+
+  // Simple targets
+  targetProfit: string  // e.g., "+50%"
+  maxLoss: string  // e.g., "Lose $520"
+
+  // Why (ELI5)
+  reason: string
+
+  // Full analysis (hidden by default)
+  fullAnalysis?: unknown
+}
+
+export default function TodaysPlays() {
+  const [wsbTickers, setWsbTickers] = useState<WSBTicker[]>([])
+  const [plays, setPlays] = useState<SimplifiedPlay[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetchTodaysPlays()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  async function fetchTodaysPlays() {
+    setLoading(true)
+    setError(null)
+
+    try {
+      // Step 1: Get WSB trending tickers
+      const wsbResponse = await fetch('/api/wsb-trending', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topN: 10 }),
+      })
+
+      if (!wsbResponse.ok) {
+        throw new Error('Failed to fetch WSB trending tickers')
+      }
+
+      const wsbData = await wsbResponse.json()
+      const trending = wsbData.trending || []
+      setWsbTickers(trending)
+
+      // Step 2: Scan these tickers for plays
+      const symbols = trending.map((t: WSBTicker) => t.ticker).slice(0, 5) // Top 5 only
+
+      const scanResponse = await fetch('/api/scan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          symbols,
+          quickScan: true  // Fast scan, just get top opportunity per ticker
+        }),
+      })
+
+      if (!scanResponse.ok) {
+        console.warn('Scanner failed, showing WSB tickers only')
+        setLoading(false)
+        return
+      }
+
+      const scanData = await scanResponse.json()
+      const opportunities = scanData.opportunities || []
+
+      // Step 3: Simplify the plays (ELI5)
+      const simplified = opportunities.map((opp: Record<string, unknown>) => {
+        const wsbData = trending.find((t: WSBTicker) => t.ticker === opp.symbol)
+
+        return simplifyPlay(opp, wsbData)
+      })
+
+      setPlays(simplified)
+    } catch (err) {
+      console.error('Error fetching plays:', err)
+      setError(err instanceof Error ? err.message : 'Failed to load plays')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  function simplifyPlay(opportunity: Record<string, unknown>, wsbData?: WSBTicker): SimplifiedPlay {
+    // Determine direction (ELI5)
+    let direction: "UP" | "DOWN" | "SIDEWAYS" = "SIDEWAYS"
+    let confidence = "Medium"
+
+    const enhancedBias = opportunity.enhancedDirectionalBias as { direction: string; confidence: number } | undefined
+    if (enhancedBias) {
+      const bias = enhancedBias
+      if (bias.direction === "bullish") {
+        direction = "UP"
+      } else if (bias.direction === "bearish") {
+        direction = "DOWN"
+      }
+
+      // Confidence in plain English
+      if (bias.confidence >= 70) {
+        confidence = "High"
+      } else if (bias.confidence >= 50) {
+        confidence = "Medium"
+      } else {
+        confidence = "Low"
+      }
+    }
+
+    // Simple profit/loss
+    const premium = (opportunity.premium as number) / 100 // Convert to dollars
+    const targetProfit = `+${opportunity.potentialReturn}%`
+    const maxLoss = `Lose $${premium.toFixed(2)}`
+
+    // Simple reason (ELI5)
+    let reason = `WSB is ${wsbData?.sentiment || 'talking'} about this`
+
+    if (wsbData && wsbData.mentions > 20) {
+      reason = `🔥 ${wsbData.mentions} people on Reddit are buying this`
+    }
+
+    const tradeSummary = opportunity.tradeSummary as string | undefined
+    if (tradeSummary) {
+      reason += `. ${simplifyTradeSummary(tradeSummary)}`
+    }
+
+    return {
+      ticker: opportunity.symbol as string,
+      companyName: getCompanyName(opportunity.symbol as string),
+      wsbMentions: wsbData?.mentions || 0,
+      wsbSentiment: wsbData?.sentiment || "neutral",
+      wsbEmoji: wsbData?.emoji || "➡️",
+
+      direction,
+      confidence,
+
+      optionType: (opportunity.optionType as string).toUpperCase() as "CALL" | "PUT",
+      strike: opportunity.strike as number,
+      premium,
+      stockPrice: opportunity.stockPrice as number,
+
+      targetProfit,
+      maxLoss,
+
+      reason,
+      fullAnalysis: opportunity,
+    }
+  }
+
+  function simplifyTradeSummary(summary: string): string {
+    // Convert technical jargon to ELI5
+    return summary
+      .replace(/directional bias/gi, 'stock movement')
+      .replace(/delta.*\d+/gi, '')
+      .replace(/theta.*\d+/gi, '')
+      .replace(/IV rank/gi, 'option price')
+      .replace(/breakeven/gi, 'needs to hit')
+  }
+
+  function getCompanyName(ticker: string): string {
+    // Simple ticker-to-name mapping for common stocks
+    const names: Record<string, string> = {
+      'TSLA': 'Tesla',
+      'AAPL': 'Apple',
+      'NVDA': 'Nvidia',
+      'AMD': 'AMD',
+      'SPY': 'S&P 500',
+      'QQQ': 'Nasdaq',
+      'BYND': 'Beyond Meat',
+      'GLD': 'Gold',
+      'META': 'Meta',
+      'GOOGL': 'Google',
+      'AMZN': 'Amazon',
+    }
+    return names[ticker] || ticker
+  }
+
+  if (loading) {
+    return (
+      <div className="p-8 text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+        <p className="text-gray-600 dark:text-gray-400">Loading today&apos;s plays...</p>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-red-600 dark:text-red-400">⚠️ {error}</p>
+        <button
+          onClick={fetchTodaysPlays}
+          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+        >
+          Try Again
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="max-w-6xl mx-auto p-6">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2">🔥 Today&apos;s Plays</h1>
+        <p className="text-gray-600 dark:text-gray-400">
+          Simple plays based on what Reddit is buying + our AI analysis
+        </p>
+      </div>
+
+      {/* WSB Trending Tickers */}
+      {wsbTickers.length > 0 && (
+        <div className="mb-8 p-6 bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
+          <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+            <span>📈</span>
+            <span>Trending on r/WallStreetBets</span>
+          </h2>
+          <div className="flex flex-wrap gap-3">
+            {wsbTickers.slice(0, 8).map((ticker) => (
+              <div
+                key={ticker.ticker}
+                className="px-4 py-2 bg-white dark:bg-gray-800 rounded-lg border-2 border-orange-300 dark:border-orange-700 shadow-sm"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">{ticker.emoji}</span>
+                  <div>
+                    <div className="font-bold text-lg">{ticker.ticker}</div>
+                    <div className="text-xs text-gray-600 dark:text-gray-400">
+                      {ticker.mentions} mentions
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Simplified Plays */}
+      {plays.length === 0 ? (
+        <div className="text-center p-12 bg-gray-50 dark:bg-gray-900 rounded-lg">
+          <p className="text-gray-600 dark:text-gray-400 mb-4">
+            No plays found for trending tickers right now.
+          </p>
+          <p className="text-sm text-gray-500 dark:text-gray-500">
+            Try running a full scan to find more opportunities
+          </p>
+        </div>
+      ) : (
+        <div className="grid gap-6">
+          {plays.map((play, idx) => (
+            <PlayCard key={`${play.ticker}-${idx}`} play={play} />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function PlayCard({ play }: { play: SimplifiedPlay }) {
+  const [showFullAnalysis, setShowFullAnalysis] = useState(false)
+
+  // Direction color
+  const directionColor = {
+    UP: "text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20",
+    DOWN: "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20",
+    SIDEWAYS: "text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/20"
+  }[play.direction]
+
+  const directionEmoji = {
+    UP: "📈",
+    DOWN: "📉",
+    SIDEWAYS: "➡️"
+  }[play.direction]
+
+  return (
+    <div className="p-6 bg-white dark:bg-gray-800 rounded-xl border-2 border-gray-200 dark:border-gray-700 shadow-lg hover:shadow-xl transition-shadow">
+      {/* Header */}
+      <div className="flex items-start justify-between mb-4">
+        <div>
+          <div className="flex items-center gap-3 mb-1">
+            <h3 className="text-2xl font-bold">{play.ticker}</h3>
+            {play.wsbMentions > 0 && (
+              <span className="text-lg">{play.wsbEmoji}</span>
+            )}
+          </div>
+          <p className="text-gray-600 dark:text-gray-400">{play.companyName}</p>
+          {play.wsbMentions > 0 && (
+            <p className="text-sm text-orange-600 dark:text-orange-400 mt-1">
+              🔥 {play.wsbMentions} WSB mentions
+            </p>
+          )}
+        </div>
+
+        <div className={`px-4 py-2 rounded-lg font-bold ${directionColor}`}>
+          {directionEmoji} {play.direction}
+        </div>
+      </div>
+
+      {/* The Play (Simple) */}
+      <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg mb-4 border-2 border-blue-200 dark:border-blue-800">
+        <h4 className="font-bold text-lg mb-2">💡 The Play (Simple)</h4>
+        <div className="space-y-2 text-sm">
+          <div className="flex justify-between">
+            <span className="text-gray-600 dark:text-gray-400">What to buy:</span>
+            <span className="font-bold">
+              ${play.strike} {play.optionType} for ${play.premium.toFixed(2)}
+            </span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-gray-600 dark:text-gray-400">Stock is at:</span>
+            <span className="font-bold">${play.stockPrice.toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-gray-600 dark:text-gray-400">If it works:</span>
+            <span className="font-bold text-green-600 dark:text-green-400">{play.targetProfit}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-gray-600 dark:text-gray-400">If it fails:</span>
+            <span className="font-bold text-red-600 dark:text-red-400">{play.maxLoss}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-gray-600 dark:text-gray-400">Our confidence:</span>
+            <span className="font-bold">{play.confidence}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Why */}
+      <div className="mb-4">
+        <h4 className="font-bold mb-2">🤔 Why This Play?</h4>
+        <p className="text-gray-700 dark:text-gray-300">{play.reason}</p>
+      </div>
+
+      {/* Actions */}
+      <div className="flex gap-3">
+        <button
+          onClick={() => setShowFullAnalysis(!showFullAnalysis)}
+          className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+        >
+          {showFullAnalysis ? "Hide" : "Show"} Full Analysis
+        </button>
+        <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+          Ask Monty
+        </button>
+      </div>
+
+      {/* Full Analysis (Collapsible) */}
+      {showFullAnalysis && play.fullAnalysis && (
+        <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-300 dark:border-gray-700">
+          <h4 className="font-bold mb-2">📊 Full Technical Analysis</h4>
+          <pre className="text-xs overflow-auto">
+            {JSON.stringify(play.fullAnalysis as Record<string, unknown>, null, 2)}
+          </pre>
+        </div>
+      )}
+    </div>
+  )
+}

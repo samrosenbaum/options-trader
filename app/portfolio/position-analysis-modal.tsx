@@ -76,8 +76,7 @@ export default function PositionAnalysisModal({
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
       <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto p-8 border border-slate-200 dark:border-slate-800">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <span>🤖</span>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
             Ask Monty: Position Analysis
           </h2>
           <button
@@ -130,9 +129,9 @@ export default function PositionAnalysisModal({
                 position.exit_signal === 'consider' ? 'text-amber-600' :
                 'text-emerald-600'
               }`}>
-                {position.exit_signal === 'exit_now' ? '🔴 Exit Now' :
-                 position.exit_signal === 'consider' ? '🟡 Consider Exit' :
-                 '🟢 Hold'}
+                {position.exit_signal === 'exit_now' ? 'Exit Now' :
+                 position.exit_signal === 'consider' ? 'Consider Exit' :
+                 'Hold'}
               </div>
             </div>
           </div>

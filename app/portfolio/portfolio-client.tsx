@@ -1629,31 +1629,33 @@ export default function PortfolioClient({
                           )
                         })()}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-center text-sm">
-                        <div className="flex items-center justify-center gap-2">
+                      <td className="px-6 py-4 text-sm">
+                        <div className="flex flex-col gap-1.5 w-[110px]">
                           <button
                             onClick={() => setPositionToAnalyze(position)}
-                            className="px-3 py-1 rounded-lg text-xs font-semibold transition-colors bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 text-white"
+                            className="w-full px-2 py-1 rounded text-[11px] font-semibold transition-colors bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 text-white"
                             title="Ask Monty for advice"
                           >
-                            🤖 Ask Monty
+                            Ask Monty
                           </button>
-                          <button
-                            onClick={() => setPositionToEdit(position)}
-                            className="px-3 py-1 rounded-lg text-xs font-semibold transition-colors bg-blue-600 hover:bg-blue-700 text-white"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => setPositionToClose(position)}
-                            className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors ${
-                              position.exit_signal === 'exit_now'
-                                ? 'bg-red-600 hover:bg-red-700 text-white'
-                                : 'bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200'
-                            }`}
-                          >
-                            Close
-                          </button>
+                          <div className="flex gap-1.5">
+                            <button
+                              onClick={() => setPositionToEdit(position)}
+                              className="flex-1 px-2 py-1 rounded text-[11px] font-semibold transition-colors bg-blue-600 hover:bg-blue-700 text-white"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => setPositionToClose(position)}
+                              className={`flex-1 px-2 py-1 rounded text-[11px] font-semibold transition-colors ${
+                                position.exit_signal === 'exit_now'
+                                  ? 'bg-red-600 hover:bg-red-700 text-white'
+                                  : 'bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200'
+                              }`}
+                            >
+                              Close
+                            </button>
+                          </div>
                         </div>
                       </td>
                     </tr>
