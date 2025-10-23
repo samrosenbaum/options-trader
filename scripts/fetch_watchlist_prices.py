@@ -32,7 +32,9 @@ def main():
                 option_data = fetch_option_data(symbol, strike, expiration, option_type)
 
                 if option_data:
-                    current_premium = option_data.get('current_price', 0)
+                    # Get per-share premium and multiply by 100 for full contract price
+                    per_share_premium = option_data.get('current_price', 0)
+                    current_premium = per_share_premium * 100  # Convert to contract price
 
                     # Calculate return
                     pl_amount = current_premium - original_premium
