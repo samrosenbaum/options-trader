@@ -466,7 +466,10 @@ export async function GET(request: Request) {
       .limit(500)
 
     // Filter by rejection source
-    if (source !== 'all') {
+    if (source === 'user') {
+      // Fetch both user_rejected and user_closed_position (but NOT scanner_rejected)
+      query = query.in('rejection_source', ['user_rejected', 'user_closed_position'])
+    } else if (source !== 'all') {
       query = query.eq('rejection_source', source)
     }
 

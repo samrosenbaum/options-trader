@@ -125,7 +125,7 @@ export default function RejectionLearningPage() {
   const fetchRejections = async () => {
     try {
       setIsLoading(true)
-      const response = await fetch("/api/rejection-analysis?source=all")
+      const response = await fetch("/api/rejection-analysis?source=user")
       const data = await response.json()
       setRejections(data.rejections || [])
     } catch (err) {
@@ -599,18 +599,21 @@ export default function RejectionLearningPage() {
 
         <Card className="modern-card">
           <CardHeader>
-            <CardTitle>Automatically Filtered Options</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <span>👎</span>
+              Rejected Opportunities
+            </CardTitle>
             <CardDescription>
-              {rejections.filter(r => r.rejection_source !== 'user_closed_position').length} options automatically filtered out by the scanner in the last 7 days (not manually rejected by you)
+              {rejections.filter(r => r.rejection_source === 'user_rejected').length} opportunities you manually rejected in the scanner - track if you made the right call
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {rejections.length === 0 ? (
+            {rejections.filter(r => r.rejection_source === 'user_rejected').length === 0 ? (
               <div className="text-center py-12">
                 <AlertTriangle className="mx-auto h-12 w-12 text-muted-foreground" />
-                <p className="mt-4 text-muted-foreground">No rejected options found</p>
+                <p className="mt-4 text-muted-foreground">No manually rejected options found</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Run a scan to start collecting rejection data
+                  When you reject opportunities in the scanner, they'll appear here
                 </p>
               </div>
             ) : (
@@ -621,14 +624,14 @@ export default function RejectionLearningPage() {
                       <th className="text-left p-3 text-sm font-medium text-muted-foreground">Symbol</th>
                       <th className="text-left p-3 text-sm font-medium text-muted-foreground">Type</th>
                       <th className="text-left p-3 text-sm font-medium text-muted-foreground">Strike</th>
-                      <th className="text-left p-3 text-sm font-medium text-muted-foreground">Rejection Reason</th>
-                      <th className="text-left p-3 text-sm font-medium text-muted-foreground">Performance</th>
+                      <th className="text-left p-3 text-sm font-medium text-muted-foreground">Why Rejected</th>
+                      <th className="text-left p-3 text-sm font-medium text-muted-foreground">Next Day</th>
                       <th className="text-left p-3 text-sm font-medium text-muted-foreground">Rejected</th>
                     </tr>
                   </thead>
                   <tbody>
                     {rejections
-                      .filter(r => r.rejection_source !== 'user_closed_position')
+                      .filter(r => r.rejection_source === 'user_rejected')
                       .slice(0, 50)
                       .map((rej, idx) => (
                       <tr key={idx} className="border-b hover:bg-muted/50">
@@ -647,18 +650,18 @@ export default function RejectionLearningPage() {
                         <td className="p-3">
                           {rej.price_change_percent !== null ? (
                             <div className="flex items-center gap-1">
-                              {rej.was_profitable ? (
-                                <TrendingUp className="h-4 w-4 text-bull" />
+                              {rej.price_change_percent > 0 ? (
+                                <TrendingUp className="h-4 w-4 text-emerald-600" />
                               ) : (
-                                <TrendingDown className="h-4 w-4 text-bear" />
+                                <TrendingDown className="h-4 w-4 text-red-600" />
                               )}
-                              <span className={`font-mono text-sm ${rej.was_profitable ? "text-bull" : "text-bear"}`}>
+                              <span className={`font-mono text-sm ${rej.price_change_percent > 0 ? "text-emerald-600" : "text-red-600"}`}>
                                 {rej.price_change_percent > 0 ? "+" : ""}
                                 {rej.price_change_percent.toFixed(1)}%
                               </span>
                             </div>
                           ) : (
-                            <span className="text-xs text-muted-foreground">Not analyzed</span>
+                            <span className="text-xs text-muted-foreground">Tracking...</span>
                           )}
                         </td>
                         <td className="p-3 text-xs text-muted-foreground">
