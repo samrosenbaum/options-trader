@@ -264,8 +264,9 @@ def format_brief_for_display(brief: Dict) -> str:
 
     # Watchlist Summary
     if brief['watchlist']:
-        output.append(f"TODAY'S WATCHLIST ({len(brief['watchlist'])} stocks)")
-        for symbol in brief['watchlist'][:5]:  # Top 5
+        watchlist_display = brief['watchlist'][:10]  # Show top 10
+        output.append(f"TODAY'S WATCHLIST ({len(watchlist_display)} stocks)")
+        for symbol in watchlist_display:
             reasons = []
             if symbol in brief['uoa_signals']:
                 reasons.append("UOA")
@@ -283,25 +284,36 @@ def format_brief_for_display(brief: Dict) -> str:
         output.append(f"UNUSUAL OPTIONS ACTIVITY ({len(brief['uoa_signals'])} stocks)")
         output.append("  → These are stocks where smart money is placing big bets")
         output.append("")
-        for symbol, data in list(brief['uoa_signals'].items())[:3]:  # Top 3
-            bias_indicator = "[BULL]" if data['bias'] == 'bullish' else "[BEAR]" if data['bias'] == 'bearish' else "[NEUT]"
+        for symbol, data in list(brief['uoa_signals'].items())[:5]:  # Top 5
+            # Calculate actual bias from volume
+            call_volume = sum(s['volume'] for s in data['call_signals'])
+            put_volume = sum(s['volume'] for s in data['put_signals'])
 
-            # Add plain English explanation
-            if data['bias'] == 'bullish':
-                explanation = "→ Expect stock to go UP in next 5-10 days"
-            elif data['bias'] == 'bearish':
-                explanation = "→ Expect stock to go DOWN in next 5-10 days"
-            else:
-                explanation = "→ Mixed signals, wait for clearer direction"
+            # Determine bias indicator
+            if call_volume > put_volume * 1.5:  # Calls dominate
+                bias_indicator = "[BULL]"
+                explanation = "→ Expect stock to go UP (heavy CALL buying)"
+            elif put_volume > call_volume * 1.5:  # Puts dominate
+                bias_indicator = "[BEAR]"
+                explanation = "→ Expect stock to go DOWN (heavy PUT buying)"
+            else:  # Mixed
+                bias_indicator = "[MIXED]"
+                explanation = "→ Mixed signals (both CALLS and PUTS active)"
 
             output.append(f"  {bias_indicator} {symbol} - {explanation}")
+            output.append(f"     Call Volume: {call_volume:,} | Put Volume: {put_volume:,}")
 
-            # Show top signal
-            all_signals = data['call_signals'] + data['put_signals']
-            if all_signals:
-                top_signal = max(all_signals, key=lambda x: x['vol_oi_ratio'])
-                atm = " ATM" if top_signal['is_atm'] else ""
-                output.append(f"     ${top_signal['strike']} {top_signal['type'].upper()}: {top_signal['volume']:,} vol / {top_signal['oi']:,} OI = {top_signal['vol_oi_ratio']:.1f}x{atm}")
+            # Show top call and put if both exist
+            if data['call_signals']:
+                top_call = max(data['call_signals'], key=lambda x: x['vol_oi_ratio'])
+                atm = " ATM" if top_call['is_atm'] else ""
+                output.append(f"     Top CALL: ${top_call['strike']} - {top_call['volume']:,} vol / {top_call['oi']:,} OI = {top_call['vol_oi_ratio']:.1f}x{atm}")
+
+            if data['put_signals']:
+                top_put = max(data['put_signals'], key=lambda x: x['vol_oi_ratio'])
+                atm = " ATM" if top_put['is_atm'] else ""
+                output.append(f"     Top PUT: ${top_put['strike']} - {top_put['volume']:,} vol / {top_put['oi']:,} OI = {top_put['vol_oi_ratio']:.1f}x{atm}")
+
             output.append("")
 
     # Pre-market Movers

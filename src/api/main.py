@@ -20,6 +20,8 @@ from src.models import (
 )
 from src.scoring.engine import CompositeScoringEngine
 from src.scanner.custom_scanner import CustomScanner, CustomFilterCriteria
+from src.analyst.morning_brief import generate_morning_brief, format_brief_for_display
+from src.analyst.nightly_brief import generate_nightly_brief, format_nightly_brief
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -160,6 +162,81 @@ async def scan_custom(payload: CustomScanRequest) -> Dict[str, Any]:
 
     response = ScanResponse(signals=signals, errors=errors)
     return serialize_scan_response(response)
+
+
+@app.get("/analyst/morning-brief")
+async def get_morning_brief() -> Dict[str, Any]:
+    """
+    Generate morning brief (7:00 AM pre-market intelligence).
+
+    Returns:
+        - formatted_text: Plain text email-ready brief
+        - brief: Structured data (UOA, pre-market movers, watchlist, etc.)
+    """
+    try:
+        # Major symbols to scan
+        symbols = [
+            'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA',
+            'NVDA', 'META', 'NFLX', 'COIN', 'AMD',
+            'SPY', 'QQQ', 'SOFI', 'PLTR', 'RBLX'
+        ]
+
+        brief = generate_morning_brief(symbols)
+        formatted_text = format_brief_for_display(brief)
+
+        return {
+            "success": True,
+            "formatted_text": formatted_text,
+            "brief": {
+                "timestamp": brief['timestamp'].isoformat(),
+                "uoa_signals": brief['uoa_signals'],
+                "earnings_today": brief['earnings_today'],
+                "premarket_movers": brief['premarket_movers'],
+                "watchlist": brief['watchlist'],
+                "portfolio_alerts": brief['portfolio_alerts'],
+                "market_conditions": brief['market_conditions']
+            }
+        }
+    except Exception as e:
+        logger.exception("Failed to generate morning brief")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/analyst/nightly-brief")
+async def get_nightly_brief() -> Dict[str, Any]:
+    """
+    Generate nightly brief (8:00 PM tomorrow's battle plan).
+
+    Returns:
+        - formatted_text: Plain text email-ready brief
+        - brief: Structured data (key setups, watchlist, market levels, etc.)
+    """
+    try:
+        # Major symbols to scan
+        symbols = [
+            'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA',
+            'NVDA', 'META', 'NFLX', 'COIN', 'AMD',
+            'SPY', 'QQQ', 'SOFI', 'PLTR', 'RBLX'
+        ]
+
+        brief = generate_nightly_brief(symbols)
+        formatted_text = format_nightly_brief(brief)
+
+        return {
+            "success": True,
+            "formatted_text": formatted_text,
+            "brief": {
+                "timestamp": brief['timestamp'].isoformat(),
+                "tomorrows_watchlist": brief['tomorrows_watchlist'],
+                "earnings_tomorrow": brief['earnings_tomorrow'],
+                "market_levels": brief['market_levels'],
+                "portfolio_summary": brief['portfolio_summary'],
+                "key_setups": brief['key_setups']
+            }
+        }
+    except Exception as e:
+        logger.exception("Failed to generate nightly brief")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 __all__ = ["app", "track_background_task"]
