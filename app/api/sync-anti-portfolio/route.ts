@@ -52,8 +52,8 @@ export async function POST() {
     const errorDetails: Array<{ symbol: string; error: string }> = []
 
     for (const pos of positions) {
-      // Check if this position exists in rejected_options
-      const { data: rejection, error: rejError } = await supabase
+      // Check if this position exists in rejected_options (by position_id)
+      let { data: rejection, error: rejError } = await supabase
         .from('rejected_options')
         .select('*')
         .eq('position_id', pos.id)
@@ -66,6 +66,25 @@ export async function POST() {
         errors++
         errorDetails.push({ symbol: pos.symbol, error: rejError.message })
         continue
+      }
+
+      // Fallback: Try matching by symbol/strike/expiration if no position_id match
+      if (!rejection) {
+        const fallbackQuery = await supabase
+          .from('rejected_options')
+          .select('*')
+          .eq('symbol', pos.symbol)
+          .eq('strike', pos.strike)
+          .eq('expiration', pos.expiration)
+          .eq('option_type', pos.option_type)
+          .eq('user_id', user.id)
+          .eq('rejection_source', 'user_closed_position')
+          .maybeSingle()
+
+        if (!fallbackQuery.error && fallbackQuery.data) {
+          rejection = fallbackQuery.data
+          console.log(`📌 Matched ${pos.symbol} by symbol/strike/expiration (no position_id link)`)
+        }
       }
 
       if (!rejection) {
@@ -85,13 +104,15 @@ export async function POST() {
       }
 
       // Update with correct P&L from positions table
+      // Use rejection.id for precise matching (works for both position_id and fallback matches)
       const { error: updateError } = await supabase
         .from('rejected_options')
         .update({
           realized_pl: pos.realized_pl,
           realized_pl_percent: pos.realized_pl_percent,
+          position_id: pos.id, // Also set position_id if it was missing
         })
-        .eq('position_id', pos.id)
+        .eq('id', rejection.id)
         .eq('user_id', user.id)
 
       if (updateError) {
