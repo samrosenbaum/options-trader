@@ -481,74 +481,76 @@ const getTradeLogic = (opp: Opportunity) => {
   const ivRank = opp.ivRank
   const eventIntel = opp.eventIntel || {}
 
-  let logic = ''
+  const logicParts: string[] = []
 
-  if (isCall) {
-    logic += `This is a CALL option betting that ${opp.symbol} will go UP. `
-  } else {
-    logic += `This is a PUT option betting that ${opp.symbol} will go DOWN. `
-  }
+  logicParts.push(
+    isCall
+      ? `This call targets an upside move in ${opp.symbol}.`
+      : `This put benefits from a downside move in ${opp.symbol}.`,
+  )
 
   const price = Math.max(opp.stockPrice, 0)
   const strike = opp.strike
   const relativeDiff = price > 0 ? Math.abs(price - strike) / price : 0
 
   if (relativeDiff < 0.01) {
-    logic += 'The strike price is essentially at-the-money, so even small moves in the underlying can swing this trade. '
+    logicParts.push('The strike sits near the stock price, so even a small swing can move this contract.')
   } else if (isCall) {
     const diffPct = price > 0 ? ((price - strike) / price) * 100 : 0
     if (diffPct > 0) {
-      logic += `The strike is ${Math.abs(diffPct).toFixed(1)}% below the stock price, giving this call intrinsic value from the start. `
+      logicParts.push(`The strike is ${Math.abs(diffPct).toFixed(1)}% below spot, giving the call built-in intrinsic value.`)
     } else {
       const neededMove = Math.abs(diffPct)
-      logic += `The strike is ${neededMove.toFixed(1)}% above the stock price, so the shares need roughly a ${neededMove.toFixed(1)}% rally to move in-the-money. `
+      logicParts.push(`Price needs roughly a ${neededMove.toFixed(1)}% rally to push this call in-the-money.`)
     }
   } else {
     const diffPct = price > 0 ? ((strike - price) / price) * 100 : 0
     if (diffPct > 0) {
-      logic += `The strike is ${Math.abs(diffPct).toFixed(1)}% above the stock price, meaning this put already carries intrinsic value from the recent downside move. `
+      logicParts.push(`The strike is ${Math.abs(diffPct).toFixed(1)}% above spot, so the put already carries intrinsic value.`)
     } else {
       const neededDrop = Math.abs(diffPct)
-      logic += `The strike is ${neededDrop.toFixed(1)}% below the stock price, so the underlying would need to drop about ${neededDrop.toFixed(1)}% for the put to move in-the-money. `
+      logicParts.push(`Price would need to fall about ${neededDrop.toFixed(1)}% for this put to finish in-the-money.`)
     }
   }
 
   if (daysToExp <= 7) {
-    logic += `With only ${daysToExp} days until expiration, this is a short-term trade that requires quick price movement. `
+    logicParts.push(`It expires in ${daysToExp} day${daysToExp === 1 ? '' : 's'}, so the thesis must play out quickly.`)
   } else if (daysToExp <= 30) {
-    logic += `With ${daysToExp} days until expiration, this gives a reasonable timeframe for the expected move to play out. `
+    logicParts.push(`Expiration in ${daysToExp} days leaves a short swing window with manageable decay.`)
   } else {
-    logic += `With ${daysToExp} days until expiration, this provides plenty of time for the trade thesis to develop. `
+    logicParts.push(`Expiration in ${daysToExp} days leaves plenty of time for the idea to develop.`)
   }
 
   if (ivRank < 30) {
-    logic += `The implied volatility is relatively low (${ivRank.toFixed(0)}% rank), meaning options are cheap and volatility could expand, boosting option prices. `
+    logicParts.push(`IV rank near ${ivRank.toFixed(0)} keeps premiums cheaper and leaves room for volatility expansion.`)
   } else if (ivRank > 70) {
-    logic += `The implied volatility is high (${ivRank.toFixed(0)}% rank), meaning options are expensive but could benefit from volatility contraction. `
+    logicParts.push(`IV rank near ${ivRank.toFixed(0)} signals rich premiums that could compress if volatility cools.`)
   } else {
-    logic += `The implied volatility is moderate (${ivRank.toFixed(0)}% rank), providing a balanced environment for the trade. `
+    logicParts.push(`IV rank around ${ivRank.toFixed(0)} is mid-range, so pricing is balanced.`)
   }
 
   if (opp.gammaSqueezeScore && opp.gammaSqueezeScore > 0) {
-    logic += `The high gamma squeeze score suggests potential for explosive upside if the stock breaks through key resistance levels. `
+    logicParts.push('A high gamma score flags fast moves if price breaks key levels.')
   }
 
   if (opp.unusualFlowScore && opp.unusualFlowScore > 0) {
-    logic += `Unusual options activity indicates smart money positioning, potentially signaling an upcoming move. `
+    logicParts.push('Unusual flow shows larger traders leaning into this direction.')
   }
 
   if (typeof eventIntel.earnings_in_days === 'number') {
     if (eventIntel.earnings_in_days >= 0) {
-      logic += `Upcoming earnings in ${Math.round(eventIntel.earnings_in_days)} days could be a key catalyst for volatility. `
-    } else if (eventIntel.earnings_in_days < 0 && eventIntel.earnings_in_days > -7) {
-      logic += `The stock is still reacting to a fresh earnings release from ${Math.abs(Math.round(eventIntel.earnings_in_days))} days ago. `
+      const days = Math.round(eventIntel.earnings_in_days)
+      logicParts.push(`Earnings in about ${days} day${days === 1 ? '' : 's'} could spark extra volatility.`)
+    } else if (eventIntel.earnings_in_days > -7) {
+      const daysAgo = Math.abs(Math.round(eventIntel.earnings_in_days))
+      logicParts.push(`The setup is still digesting earnings from ${daysAgo} day${daysAgo === 1 ? '' : 's'} ago.`)
     }
   }
 
   if (typeof eventIntel.news_sentiment_label === 'string') {
     const sentimentLabel = String(eventIntel.news_sentiment_label).replace('_', ' ')
     if (['bullish', 'very bullish', 'bearish', 'very bearish'].includes(sentimentLabel.toLowerCase())) {
-      logic += `News flow is ${sentimentLabel.toLowerCase()}, reinforcing the directional bias behind this trade. `
+      logicParts.push(`Recent news reads ${sentimentLabel.toLowerCase()}, backing the bias.`)
     }
   }
 
@@ -559,10 +561,10 @@ const getTradeLogic = (opp: Opportunity) => {
       : []
 
   if (drivers.length > 0) {
-    logic += `Primary drivers include ${drivers.join(', ')}. `
+    logicParts.push(`Key drivers: ${drivers.join(', ')}.`)
   }
 
-  return logic
+  return logicParts.join(' ')
 }
 
 const getGreeksExplanation = (opp: Opportunity) => {
@@ -720,32 +722,18 @@ const getRiskRewardExplanation = (opp: Opportunity) => {
   const potentialReturn = Number.isFinite(opp.potentialReturn) ? opp.potentialReturn : null
   const daysToExp = Number.isFinite(opp.daysToExpiration) ? opp.daysToExpiration : null
 
-  const explanationParts: string[] = []
+  const parts: string[] = []
 
   if (potentialReturn !== null && maxReturn !== null) {
-    explanationParts.push(
-      `This trade offers a potential return of ${potentialReturn.toFixed(1)}% on a 10% stock move, with a maximum possible return of ${maxReturn.toFixed(1)}%.`
+    parts.push(
+      `A 10% move could return about ${potentialReturn.toFixed(1)}% and the max payoff tops out near ${maxReturn.toFixed(1)}%.`,
     )
+  } else if (potentialReturn !== null) {
+    parts.push(`A 10% move could return about ${potentialReturn.toFixed(1)}%.`)
+  } else if (maxReturn !== null) {
+    parts.push(`Max payoff tops out near ${maxReturn.toFixed(1)}%.`)
   } else {
-    explanationParts.push('This trade highlights an asymmetric payoff profile, but some return metrics are unavailable.')
-  }
-
-  if (maxLossPercent !== null && maxLossAmount !== null) {
-    if (maxLossPercent < 100) {
-      explanationParts.push(
-        `Your maximum loss is limited to ${maxLossPercent.toFixed(1)}% of your investment (${formatCurrency(maxLossAmount)} per contract).`
-      )
-    } else {
-      explanationParts.push(
-        `Your maximum loss is ${maxLossPercent.toFixed(1)}% of your investment (${formatCurrency(maxLossAmount)} per contract).`
-      )
-    }
-  } else if (maxLossPercent !== null) {
-    explanationParts.push(`Your maximum loss is approximately ${maxLossPercent.toFixed(1)}% of your investment.`)
-  } else if (maxLossAmount !== null) {
-    explanationParts.push(`Your maximum loss per contract is approximately ${formatCurrency(maxLossAmount)}.`)
-  } else {
-    explanationParts.push('Review the option chain to understand the maximum loss profile for this trade.')
+    parts.push('Return metrics are limited for this contract; review the chain for full payoff details.')
   }
 
   const lossBasis = maxLossPercent !== null ? Math.max(Math.abs(maxLossPercent), 1) : null
@@ -768,51 +756,38 @@ const getRiskRewardExplanation = (opp: Opportunity) => {
     return null
   })()
 
-  if (shortTermRatio !== null) {
-    if (shortTermRatio > 5) {
-      explanationParts.push(
-        `This creates an excellent near-term risk/reward ratio of ${shortTermRatio.toFixed(1)}:1 on a 10% move, meaning you could make ${shortTermRatio.toFixed(1)}x more than you could lose.`
-      )
-    } else if (shortTermRatio > 2) {
-      explanationParts.push(
-        `This creates a good risk/reward ratio of ${shortTermRatio.toFixed(1)}:1, providing favorable odds even on a modest move.`
-      )
-    } else {
-      explanationParts.push(
-        `This creates a risk/reward ratio of ${shortTermRatio.toFixed(1)}:1 on the first 10% move.`
-      )
-    }
+  let riskSentence: string
+  if (maxLossPercent !== null && maxLossAmount !== null) {
+    riskSentence = `Max loss is ${maxLossPercent.toFixed(1)}% (${formatCurrency(maxLossAmount)} per contract).`
+  } else if (maxLossPercent !== null) {
+    riskSentence = `Max loss is roughly ${maxLossPercent.toFixed(1)}% of capital.`
+  } else if (maxLossAmount !== null) {
+    riskSentence = `Max loss per contract is about ${formatCurrency(maxLossAmount)}.`
+  } else {
+    riskSentence = 'Confirm max loss directly on the option chain before sizing the trade.'
   }
 
-  if (asymmetryRatio !== null) {
-    if (asymmetryRatio >= 3) {
-      explanationParts.push(
-        `The max payoff is ${asymmetryRatio.toFixed(1)}x larger than the capital at risk, giving this setup major asymmetric upside if the stock really runs.`
-      )
-    } else if (asymmetryRatio >= 1.5) {
-      explanationParts.push(
-        `There's still ${asymmetryRatio.toFixed(1)}x more upside than downside if the bigger move plays out.`
-      )
-    }
+  const riskClauses: string[] = []
+  if (shortTermRatio !== null) {
+    riskClauses.push(`Risk/reward runs about ${shortTermRatio.toFixed(1)}:1`)
+  } else if (asymmetryRatio !== null) {
+    riskClauses.push(`Payoff vs risk is about ${asymmetryRatio.toFixed(1)}:1`)
   }
 
   if (daysToExp !== null) {
     if (daysToExp <= 7) {
-      explanationParts.push(
-        `With only ${daysToExp} days left, this is a high-conviction trade that needs to work quickly. The short timeframe amplifies both profit potential and time decay risk.`
-      )
+      riskClauses.push(`expiration is in ${daysToExp} day${daysToExp === 1 ? '' : 's'}, so time decay is urgent`)
     } else if (daysToExp <= 30) {
-      explanationParts.push(
-        `With ${daysToExp} days until expiration, you have a reasonable timeframe for the trade to develop while managing time decay.`
-      )
+      riskClauses.push(`expiration is in ${daysToExp} days, keeping the window short`)
     } else {
-      explanationParts.push(
-        `With ${daysToExp} days until expiration, you have plenty of time for the trade thesis to play out with lower time decay pressure.`
-      )
+      riskClauses.push(`expiration is in ${daysToExp} days, leaving plenty of runway`)
     }
   }
 
-  return explanationParts.join(' ')
+  const clauseSentence = riskClauses.length > 0 ? `${riskClauses.join('; ')}.` : ''
+  parts.push(`${riskSentence} ${clauseSentence}`.trim())
+
+  return parts.join(' ')
 }
 
 const calculateInvestmentScenario = (opp: Opportunity, amount: number): InvestmentScenario => {
@@ -1728,12 +1703,12 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                 </svg>
-                Running backtest…
+                Backtesting…
               </span>
             ) : (
               <span className="flex items-center gap-2">
                 <span aria-hidden>🎯</span>
-                Run backtest
+                Backtest this setup
               </span>
             )}
           </Button>
@@ -1749,12 +1724,12 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                 </svg>
-                Loading history…
+                Fetching history…
               </span>
             ) : (
               <span className="flex items-center gap-2">
                 <span aria-hidden>📈</span>
-                Analyze history
+                View historical performance
               </span>
             )}
           </Button>
