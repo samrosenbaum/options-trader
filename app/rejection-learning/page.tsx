@@ -81,6 +81,8 @@ export default function RejectionLearningPage() {
   const [backfillResult, setBackfillResult] = useState<{backfilled: number, skipped: number, errors: number, errorDetails?: Array<{symbol: string, error: string}>} | null>(null)
   const [isSyncing, setIsSyncing] = useState(false)
   const [syncResult, setSyncResult] = useState<{updated: number, skipped: number, errors: number, errorDetails?: Array<{symbol: string, error: string}>} | null>(null)
+  const [isUpdatingPerformance, setIsUpdatingPerformance] = useState(false)
+  const [performanceResult, setPerformanceResult] = useState<{updated: number, skipped: number, errors: number, errorDetails?: Array<{symbol: string, error: string}>} | null>(null)
   const router = useRouter()
   const supabase = useMemo(() => createClient(), [])
 
@@ -224,6 +226,30 @@ export default function RejectionLearningPage() {
     }
   }
 
+  const updateNextDayPerformance = async () => {
+    try {
+      setIsUpdatingPerformance(true)
+      setPerformanceResult(null)
+      const response = await fetch("/api/update-closed-position-performance", {
+        method: "POST"
+      })
+      const data = await response.json()
+      if (data.success) {
+        setPerformanceResult({
+          updated: data.updated,
+          skipped: data.skipped,
+          errors: data.errors,
+          errorDetails: data.errorDetails
+        })
+        await fetchRejections() // Refresh to show updated performance data
+      }
+    } catch (err) {
+      console.error("Performance update failed:", err)
+    } finally {
+      setIsUpdatingPerformance(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -288,9 +314,18 @@ export default function RejectionLearningPage() {
                 </>
               )}
             </Button>
-            <Button variant="outline" onClick={cleanupOrphans} disabled={isLoading}>
-              <AlertTriangle className="h-4 w-4 mr-2" />
-              Cleanup
+            <Button variant="outline" onClick={updateNextDayPerformance} disabled={isUpdatingPerformance}>
+              {isUpdatingPerformance ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Updating...
+                </>
+              ) : (
+                <>
+                  <TrendingUp className="h-4 w-4 mr-2" />
+                  Update Prices
+                </>
+              )}
             </Button>
             <Button onClick={runAnalysis} disabled={isAnalyzing || rejections.length === 0}>
               {isAnalyzing ? (
@@ -562,7 +597,7 @@ export default function RejectionLearningPage() {
                       <th className="text-left p-3 text-sm font-medium text-muted-foreground">Strike</th>
                       <th className="text-left p-3 text-sm font-medium text-muted-foreground">Days Left</th>
                       <th className="text-left p-3 text-sm font-medium text-muted-foreground">You Made</th>
-                      <th className="text-left p-3 text-sm font-medium text-muted-foreground">Next Day</th>
+                      <th className="text-left p-3 text-sm font-medium text-muted-foreground">If Held</th>
                       <th className="text-left p-3 text-sm font-medium text-muted-foreground">Closed</th>
                     </tr>
                   </thead>
@@ -595,9 +630,7 @@ export default function RejectionLearningPage() {
                             </div>
                           </td>
                           <td className="p-3">
-                            {rej.rejection_source === 'user_closed_position' ? (
-                              <span className="text-xs text-muted-foreground">N/A (Closed)</span>
-                            ) : rej.price_change_percent !== null ? (
+                            {rej.price_change_percent !== null ? (
                               <div className="flex items-center gap-1">
                                 {rej.price_change_percent > 0 ? (
                                   <TrendingUp className="h-4 w-4 text-emerald-600" />
@@ -652,7 +685,7 @@ export default function RejectionLearningPage() {
                       <th className="text-left p-3 text-sm font-medium text-muted-foreground">Type</th>
                       <th className="text-left p-3 text-sm font-medium text-muted-foreground">Strike</th>
                       <th className="text-left p-3 text-sm font-medium text-muted-foreground">Why Rejected</th>
-                      <th className="text-left p-3 text-sm font-medium text-muted-foreground">Next Day</th>
+                      <th className="text-left p-3 text-sm font-medium text-muted-foreground">If Held</th>
                       <th className="text-left p-3 text-sm font-medium text-muted-foreground">Rejected</th>
                     </tr>
                   </thead>

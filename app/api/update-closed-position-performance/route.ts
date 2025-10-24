@@ -1,0 +1,209 @@
+import { createClient } from '@/lib/supabase/server'
+import { NextResponse } from 'next/server'
+
+export const runtime = 'nodejs'
+export const maxDuration = 60
+
+/**
+ * Update current/final performance for closed positions in anti-portfolio
+ *
+ * For positions still within expiration: Shows current option price (what you'd have now)
+ * For expired positions: Shows final value (worthless = $0, or intrinsic value if ITM)
+ *
+ * This helps you learn if you closed too soon.
+ */
+export async function POST() {
+  try {
+    const supabase = await createClient()
+
+    // Verify user is authenticated
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    console.log('📊 Updating next-day performance for closed positions...')
+
+    // Get all closed-too-soon entries (always update to show current price)
+    const { data: closedPositions, error: fetchError } = await supabase
+      .from('rejected_options')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('rejection_source', 'user_closed_position')
+      .order('rejected_at', { ascending: false })
+      .limit(50) // Process 50 at a time to avoid timeout
+
+    if (fetchError) {
+      console.error('Error fetching closed positions:', fetchError)
+      return NextResponse.json({ error: fetchError.message }, { status: 500 })
+    }
+
+    if (!closedPositions || closedPositions.length === 0) {
+      return NextResponse.json({
+        success: true,
+        message: 'No positions need next-day data',
+        updated: 0,
+      })
+    }
+
+    console.log(`Found ${closedPositions.length} positions to update`)
+
+    let updated = 0
+    let skipped = 0
+    let errors = 0
+    const errorDetails: Array<{ symbol: string; error: string }> = []
+
+    for (const pos of closedPositions) {
+      try {
+        const expirationDate = new Date(pos.expiration)
+        const now = new Date()
+
+        // Check if position has expired
+        if (now > expirationDate) {
+          // Position expired - calculate final intrinsic value
+          // For now, set to 0 (worthless). TODO: Calculate ITM value if stock price data available
+          const { error: updateError } = await supabase
+            .from('rejected_options')
+            .update({
+              next_day_price: 0,
+              price_change_percent: -100,
+              was_profitable: false,
+            })
+            .eq('id', pos.id)
+            .eq('user_id', user.id)
+
+          if (updateError) {
+            console.error(`  ❌ Error updating expired ${pos.symbol}:`, updateError)
+            errors++
+            errorDetails.push({ symbol: pos.symbol, error: updateError.message })
+            continue
+          }
+
+          console.log(`  ✅ Updated ${pos.symbol} - expired (worthless)`)
+          updated++
+          continue
+        }
+
+        // Fetch current option price from yfinance
+        // Format: SYMBOL + YY + MM + DD + C/P + strike*1000
+        const year = expirationDate.getFullYear().toString().slice(2)
+        const month = (expirationDate.getMonth() + 1).toString().padStart(2, '0')
+        const day = expirationDate.getDate().toString().padStart(2, '0')
+        const optionType = pos.option_type === 'call' ? 'C' : 'P'
+        const strikeInt = Math.round(pos.strike * 1000)
+        const ticker = `${pos.symbol}${year}${month}${day}${optionType}${strikeInt.toString().padStart(8, '0')}`
+
+        console.log(`  🔍 Fetching current price for ${pos.symbol} (${ticker})`)
+
+        // Use Python to fetch the most recent option price
+        const { spawn } = await import('child_process')
+
+        const pythonCode = `
+import yfinance as yf
+import sys
+
+ticker = "${ticker}"
+
+try:
+    # Fetch recent data (last 5 trading days)
+    data = yf.Ticker(ticker).history(period='5d')
+
+    if data.empty:
+        print("NO_DATA")
+        sys.exit(0)
+
+    # Get the most recent close price
+    price = data['Close'].iloc[-1]
+
+    print(f"PRICE:{price}")
+except Exception as e:
+    print(f"ERROR:{str(e)}")
+`
+
+        const python = spawn('python3', ['-c', pythonCode])
+
+        let output = ''
+        let errorOutput = ''
+
+        await new Promise<void>((resolve) => {
+          python.stdout.on('data', (data) => {
+            output += data.toString()
+          })
+
+          python.stderr.on('data', (data) => {
+            errorOutput += data.toString()
+          })
+
+          python.on('close', () => {
+            resolve()
+          })
+        })
+
+        if (output.includes('PRICE:')) {
+          const currentPrice = parseFloat(output.split('PRICE:')[1].trim())
+          const exitPrice = pos.option_price  // Price you sold at
+          const priceChange = ((currentPrice - exitPrice) / exitPrice) * 100
+          const wasProfitable = currentPrice > exitPrice
+
+          const { error: updateError } = await supabase
+            .from('rejected_options')
+            .update({
+              next_day_price: currentPrice,
+              price_change_percent: priceChange,
+              was_profitable: wasProfitable,
+            })
+            .eq('id', pos.id)
+            .eq('user_id', user.id)
+
+          if (updateError) {
+            console.error(`  ❌ Error updating ${pos.symbol}:`, updateError)
+            errors++
+            errorDetails.push({ symbol: pos.symbol, error: updateError.message })
+            continue
+          }
+
+          console.log(
+            `  ✅ Updated ${pos.symbol}: Sold at $${exitPrice.toFixed(2)}, now worth $${currentPrice.toFixed(2)} (${priceChange > 0 ? '+' : ''}${priceChange.toFixed(1)}%)`
+          )
+          updated++
+        } else if (output.includes('NO_DATA')) {
+          console.log(`  ⚠️  No data available for ${pos.symbol}, skipping`)
+          skipped++
+        } else {
+          console.error(`  ❌ Failed to fetch ${pos.symbol}:`, errorOutput || output)
+          errors++
+          errorDetails.push({ symbol: pos.symbol, error: 'Failed to fetch price data' })
+        }
+
+        // Small delay to avoid rate limiting
+        await new Promise(resolve => setTimeout(resolve, 100))
+
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : 'Unknown error'
+        console.error(`  ❌ Error processing ${pos.symbol}:`, errorMsg)
+        errors++
+        errorDetails.push({ symbol: pos.symbol, error: errorMsg })
+      }
+    }
+
+    console.log(`✅ Update complete: ${updated} updated, ${skipped} skipped, ${errors} errors`)
+
+    return NextResponse.json({
+      success: true,
+      message: `Updated ${updated} positions`,
+      updated,
+      skipped,
+      errors,
+      errorDetails: errors > 0 ? errorDetails : undefined,
+    })
+  } catch (error) {
+    console.error('Update error:', error)
+    return NextResponse.json(
+      {
+        error: 'Failed to update performance data',
+        details: error instanceof Error ? error.message : String(error),
+      },
+      { status: 500 }
+    )
+  }
+}
