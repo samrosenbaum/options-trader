@@ -700,7 +700,7 @@ export default function RejectionLearningPage() {
                 <AlertTriangle className="mx-auto h-12 w-12 text-muted-foreground" />
                 <p className="mt-4 text-muted-foreground">No manually rejected options found</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  When you reject opportunities in the scanner, they'll appear here
+                  When you reject opportunities in the scanner, they&apos;ll appear here
                 </p>
               </div>
             ) : (

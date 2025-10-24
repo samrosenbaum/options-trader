@@ -57,7 +57,8 @@ export async function POST() {
       console.log(`\n🔍 Checking ${pos.symbol} $${pos.strike} ${pos.option_type} (realized_pl: $${pos.realized_pl})`)
 
       // Check if this position exists in rejected_options (by position_id)
-      let { data: rejection, error: rejError } = await supabase
+      let rejection
+      const { data: rejectionData, error: rejError } = await supabase
         .from('rejected_options')
         .select('*')
         .eq('position_id', pos.id)
@@ -72,6 +73,7 @@ export async function POST() {
         continue
       }
 
+      rejection = rejectionData
       if (rejection) {
         console.log(`  ✅ Found by position_id: ${pos.id}`)
       }
