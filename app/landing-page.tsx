@@ -178,13 +178,21 @@ export default function LandingPage() {
             </div>
             <div className="mt-6 grid gap-6 sm:grid-cols-3 relative z-[3]">
               {proofPoints.map((item) => (
-                <div
+                <motion.div
                   key={item.label}
-                  className="flex flex-col justify-center rounded-2xl border border-white/10 bg-black/20 p-6 backdrop-blur"
+                  className="group relative flex flex-col justify-center rounded-2xl border border-white/10 bg-black/20 p-6 backdrop-blur transition-all duration-300 hover:border-emerald-400/40 hover:bg-black/40 hover:shadow-[0_20px_60px_-15px_rgba(52,211,153,0.3)]"
+                  whileHover={{
+                    scale: 1.05,
+                    y: -5,
+                  }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 20 }}
                 >
-                  <p className="text-xs uppercase tracking-[0.3em] text-white/50">{item.label}</p>
-                  <p className="mt-3 text-3xl font-semibold text-white">{item.value}</p>
-                </div>
+                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-emerald-400/0 via-emerald-400/0 to-emerald-400/0 opacity-0 transition-opacity duration-300 group-hover:from-emerald-400/5 group-hover:via-cyan-400/5 group-hover:to-transparent group-hover:opacity-100" />
+                  <div className="relative">
+                    <p className="text-xs uppercase tracking-[0.3em] text-white/50 transition-colors group-hover:text-emerald-300/70">{item.label}</p>
+                    <p className="mt-3 text-3xl font-semibold text-white transition-colors group-hover:text-emerald-100">{item.value}</p>
+                  </div>
+                </motion.div>
               ))}
             </div>
           </main>
