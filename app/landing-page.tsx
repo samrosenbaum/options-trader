@@ -50,6 +50,47 @@ const proofPoints = [
   },
 ]
 
+const manifestoPoints = [
+  {
+    title: 'Scan thousands of options contracts',
+    description:
+      'Monty sifts through the noise of every chain, surfacing only the contracts that meet strict flow, volatility, and momentum criteria—so only the best ideas reach your desk.',
+  },
+  {
+    title: 'Chat with your personal trade analyst',
+    description:
+      "Think of a quant as a data-obsessed strategist. Monty translates their models into plain language, so you can pressure-test any setup without needing Wall Street jargon.",
+  },
+  {
+    title: 'Sell or hold signals for confident exits',
+    description:
+      'Our signals monitor gamma shifts, liquidity, and sentiment to tell you exactly when it is time to secure profits or let the position ride.',
+  },
+  {
+    title: 'Track your misses, learn from your losses',
+    description:
+      'The Anti-Portfolio records every rejection and outcome, helping you iterate like a pro desk and sharpen your edge over time.',
+  },
+]
+
+const uprisingTimeline = [
+  {
+    era: 'Bucket shop rebels',
+    story:
+      'Retail traders hustled their way out of smoky backrooms by mastering tape reading and discipline, proving the house could be beaten with focus and data.',
+  },
+  {
+    era: 'Garage quants of the 80s',
+    story:
+      'Outside the big banks, small teams built models on personal computers and forced Wall Street to recognize the power of independent analytics.',
+  },
+  {
+    era: 'The online trading uprising',
+    story:
+      'Forums and chat rooms gave everyday traders a seat at the table. Today, AI puts institutional-grade insights directly into your workflow.',
+  },
+]
+
 export default function LandingPage() {
   const cardsRef = useRef<HTMLDivElement | null>(null)
   const cardsInView = useInView(cardsRef, { once: true, amount: 0.2 })
@@ -58,6 +99,7 @@ export default function LandingPage() {
     () => [
       { href: '#features', label: 'Features' },
       { href: '#how-it-works', label: 'How It Works' },
+      { href: '/manifesto', label: 'Manifesto' },
       { href: '#get-started', label: 'Get Started' },
     ],
     [],
@@ -189,6 +231,55 @@ export default function LandingPage() {
               <p className="mt-3 text-sm text-white/70">{card.description}</p>
             </motion.div>
           ))}
+        </div>
+      </section>
+
+      <section
+        id="manifesto"
+        className="relative overflow-hidden bg-gradient-to-b from-black/80 via-[#0A0E1A] to-[#05070E] px-6 py-28"
+      >
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(12,188,141,0.18),transparent_60%)]" />
+        <div className="relative mx-auto grid w-full max-w-6xl gap-16 lg:grid-cols-[1.1fr_0.9fr]">
+          <div className="space-y-6">
+            <span className="text-sm font-semibold uppercase tracking-[0.4em] text-emerald-300/80">The Monty Manifesto</span>
+            <h2 className="text-3xl font-display font-semibold text-white sm:text-4xl">
+              Wall Street wrote the rules. Retail traders are rewriting them.
+            </h2>
+            <p className="text-base text-white/70">
+              Derivatives were built to keep retail on the outside looking in. When the house writes the rules and hides the
+              math, the house always wins. Monty flips the script by putting a battle-tested analyst&mdash;a data-driven
+              strategist focused on your edge&mdash;right on your desk, no finance degree required.
+            </p>
+            <div className="grid gap-5">
+              {manifestoPoints.map((point) => (
+                <div
+                  key={point.title}
+                  className="rounded-2xl border border-white/10 bg-black/40 p-6 shadow-[0_25px_60px_-30px_rgba(0,0,0,0.7)]"
+                >
+                  <p className="text-sm font-semibold text-white">{point.title}</p>
+                  <p className="mt-2 text-sm text-white/70">{point.description}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="space-y-6 rounded-[2rem] border border-white/10 bg-white/5 p-8 backdrop-blur">
+            <p className="text-sm font-semibold uppercase tracking-[0.4em] text-white/40">From the bottom up</p>
+            <p className="text-lg font-semibold text-white">
+              Every generation of traders had to claw their way into the room. We are that next wave.
+            </p>
+            <div className="space-y-5">
+              {uprisingTimeline.map((chapter) => (
+                <div key={chapter.era} className="rounded-xl border border-white/10 bg-black/40 p-5">
+                  <p className="text-xs uppercase tracking-[0.3em] text-emerald-200/80">{chapter.era}</p>
+                  <p className="mt-2 text-sm text-white/70">{chapter.story}</p>
+                </div>
+              ))}
+            </div>
+            <p className="text-sm text-white/60">
+              We study their grit, automate their edge, and package it in tools the street can&apos;t ignore. Your seat at the desk
+              is no longer optional&mdash;it&apos;s inevitable.
+            </p>
+          </div>
         </div>
       </section>
 
