@@ -102,7 +102,7 @@ interface EnhancedBacktestResult {
 interface EnhancedHistoricalResult {
   requiredMove: number
   historicalFrequency: number
-  recentExamples: Array<{ date: string; daysToTarget: number }>
+  recentExamples: Array<{ date: string; move: string; achieved: boolean }>
   direction: 'up' | 'down'
   summary: string
   confidence: 'high' | 'medium' | 'low'
@@ -754,15 +754,116 @@ const renderOpportunityCard = (
       className="modern-card p-6"
     >
       <div className="flex items-start justify-between gap-4 mb-4">
-        <div className="space-y-3 flex-1">
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="text-3xl font-bold metallic-accent">{opp.symbol}</div>
-            <div className="px-3 py-1 bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 rounded-lg text-sm font-bold">
-              {opp.optionType.toUpperCase()}
+        <div className="space-y-4 flex-1">
+          {/* Critical Trade Info - Prominent at Top */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="space-y-0.5">
+                <div className="text-3xl font-bold metallic-accent">{opp.symbol}</div>
+                {(() => {
+                  // Simple company name mapping - can be expanded or fetched from API later
+                  const companyNames: Record<string, string> = {
+                    'AAPL': 'Apple Inc.',
+                    'MSFT': 'Microsoft Corporation',
+                    'GOOGL': 'Alphabet Inc.',
+                    'GOOG': 'Alphabet Inc.',
+                    'AMZN': 'Amazon.com Inc.',
+                    'NVDA': 'NVIDIA Corporation',
+                    'TSLA': 'Tesla Inc.',
+                    'META': 'Meta Platforms Inc.',
+                    'BRK.B': 'Berkshire Hathaway Inc.',
+                    'V': 'Visa Inc.',
+                    'JPM': 'JPMorgan Chase & Co.',
+                    'WMT': 'Walmart Inc.',
+                    'MA': 'Mastercard Inc.',
+                    'PG': 'Procter & Gamble Co.',
+                    'XOM': 'Exxon Mobil Corporation',
+                    'JNJ': 'Johnson & Johnson',
+                    'CVX': 'Chevron Corporation',
+                    'HD': 'The Home Depot Inc.',
+                    'BAC': 'Bank of America Corp.',
+                    'ABBV': 'AbbVie Inc.',
+                    'PFE': 'Pfizer Inc.',
+                    'KO': 'The Coca-Cola Company',
+                    'COST': 'Costco Wholesale Corp.',
+                    'AVGO': 'Broadcom Inc.',
+                    'MRK': 'Merck & Co. Inc.',
+                    'PEP': 'PepsiCo Inc.',
+                    'TMO': 'Thermo Fisher Scientific',
+                    'CSCO': 'Cisco Systems Inc.',
+                    'AMD': 'Advanced Micro Devices',
+                    'NFLX': 'Netflix Inc.',
+                    'ADBE': 'Adobe Inc.',
+                    'NKE': 'Nike Inc.',
+                    'INTC': 'Intel Corporation',
+                    'DIS': 'The Walt Disney Company',
+                    'CRM': 'Salesforce Inc.',
+                    'ORCL': 'Oracle Corporation',
+                    'QCOM': 'Qualcomm Inc.',
+                    'COIN': 'Coinbase Global Inc.',
+                    'UBER': 'Uber Technologies Inc.',
+                    'LYFT': 'Lyft Inc.',
+                    'SNAP': 'Snap Inc.',
+                    'SPOT': 'Spotify Technology',
+                    'SQ': 'Block Inc.',
+                    'PYPL': 'PayPal Holdings Inc.',
+                    'SHOP': 'Shopify Inc.',
+                    'ABNB': 'Airbnb Inc.',
+                    'RBLX': 'Roblox Corporation',
+                    'PLTR': 'Palantir Technologies',
+                    'SNOW': 'Snowflake Inc.',
+                    'DKNG': 'DraftKings Inc.',
+                    'SPY': 'S&P 500 ETF',
+                    'QQQ': 'Nasdaq-100 ETF',
+                    'IWM': 'Russell 2000 ETF',
+                    'DIA': 'Dow Jones ETF',
+                  }
+                  const companyName = companyNames[opp.symbol]
+                  if (companyName) {
+                    return <div className="text-xs text-slate-400 dark:text-slate-500 font-medium">{companyName}</div>
+                  }
+                  return null
+                })()}
+              </div>
+              <div className="text-2xl font-bold text-white">${opp.strike}</div>
+              <div className="px-3 py-1.5 bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 rounded-lg text-base font-bold">
+                {opp.optionType.toUpperCase()}
+              </div>
             </div>
-            <div className="px-3 py-1 bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 rounded-lg text-sm font-medium">
-              ${opp.strike}
+
+            <div className="flex items-center gap-4 text-sm flex-wrap">
+              <div className="flex items-center gap-1.5">
+                <span className="text-slate-400 dark:text-slate-500">Contract Premium:</span>
+                <span className="font-mono font-semibold text-white text-base">
+                  ${opp.premium.toFixed(2)}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-slate-400 dark:text-slate-500">Expires:</span>
+                <span className="font-semibold text-white">
+                  {opp.expiration}
+                  {(() => {
+                    const daysUntilExp = Math.ceil((new Date(opp.expiration).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+                    if (daysUntilExp > 0) {
+                      return <span className="ml-1.5 text-slate-400">({daysUntilExp}d)</span>
+                    }
+                    return null
+                  })()}
+                </span>
+              </div>
+              {opp.breakevenPrice && (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-slate-400 dark:text-slate-500">Breakeven:</span>
+                  <span className="font-mono font-semibold text-white">
+                    ${opp.breakevenPrice.toFixed(2)}
+                  </span>
+                </div>
+              )}
             </div>
+          </div>
+
+          {/* Secondary Badges */}
+          <div className="flex items-center gap-2 flex-wrap">
             {(opp.enhancedDirectionalBias || opp.directionalBias) && (() => {
               const bias = opp.enhancedDirectionalBias || opp.directionalBias
               const direction = bias?.direction || 'neutral'
@@ -773,9 +874,10 @@ const renderOpportunityCard = (
                 neutral: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-700'
               }
               const colorClass = directionColors[direction as keyof typeof directionColors] || directionColors.neutral
+              const confidencePercent = confidence <= 1 ? confidence * 100 : confidence
               return (
-                <div className={`px-3 py-1 rounded-lg text-sm font-bold border ${colorClass}`}>
-                  {direction.toUpperCase()} {confidence > 0 && `(${confidence.toFixed(0)}%)`}
+                <div className={`px-3 py-1 rounded-lg text-xs font-bold border ${colorClass}`}>
+                  {direction.toUpperCase()} {confidence > 0 && `(${confidencePercent.toFixed(0)}%)`}
                 </div>
               )
             })()}
@@ -813,22 +915,6 @@ Liquidity: ${((opp as Record<string, unknown>).liquidityScore as number | undefi
                 ℹ️ FALLBACK
               </span>
             )}
-          </div>
-
-          <div className="flex items-center gap-5 text-sm text-slate-700 dark:text-slate-100 flex-wrap">
-            <span className="dark:text-white/90">Stock: ${opp.stockPrice.toFixed(2)}</span>
-            <span className="dark:text-white/90">Premium: ${opp.premium.toFixed(2)}</span>
-            <span className="dark:text-white/90">Exp: {opp.expiration}</span>
-            {extras.breakevenRequirement && (
-              <span className="px-3 py-1 rounded-lg text-sm font-bold bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 border border-blue-300 dark:border-blue-700">
-                🎯 {extras.breakevenRequirement}
-              </span>
-            )}
-            {opp.breakevenPrice && (
-              <span className="px-3 py-1 rounded-lg text-sm font-bold bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300 border border-purple-300 dark:border-purple-700">
-                Breakeven: ${opp.breakevenPrice.toFixed(2)}
-              </span>
-            )}
             {hasPositionSizing && recommendedFractionLabel && (
               <span className="px-3 py-1 rounded-lg text-[11px] font-semibold uppercase tracking-wide bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-200 dark:border-emerald-500/40">
                 Risk {recommendedFractionLabel} of portfolio
@@ -840,15 +926,216 @@ Liquidity: ${((opp as Record<string, unknown>).liquidityScore as number | undefi
               </span>
             )}
           </div>
+
+          {/* Monty's Takeaway - Plain English */}
+          {(() => {
+            const bias = opp.enhancedDirectionalBias || opp.directionalBias
+            const direction = bias?.direction || 'neutral'
+            const moveDirection = opp.optionType === 'call' ? 'up' : 'down'
+            const breakevenMove = opp.breakevenPrice
+              ? ((opp.optionType === 'call'
+                  ? (opp.breakevenPrice - opp.stockPrice) / opp.stockPrice
+                  : (opp.stockPrice - opp.breakevenPrice) / opp.stockPrice) * 100)
+              : 0
+            // Premium is already the total contract cost, no need to multiply
+            const premiumPerContract = opp.premium
+
+            return (
+              <>
+                <div className="rounded-lg bg-blue-500/10 dark:bg-blue-500/5 p-3 text-sm border border-blue-500/20">
+                  <p className="font-semibold text-blue-400 dark:text-blue-300 mb-1.5">Monty's takeaway</p>
+                  <p className="text-slate-200 dark:text-slate-300 leading-relaxed">
+                    Stock is at ${opp.stockPrice.toFixed(2)}. You need roughly a {Math.abs(breakevenMove).toFixed(1)}% move {moveDirection} by {opp.expiration} to break even.
+                    {premiumPerContract >= 100 && ` Each contract costs $${premiumPerContract.toFixed(0)} (controls 100 shares).`}
+                    {bias && direction !== 'neutral' && ` Market showing ${direction} bias with ${(bias.confidence <= 1 ? bias.confidence * 100 : bias.confidence).toFixed(0)}% confidence.`}
+                  </p>
+                </div>
+
+                {/* Simplified Metric Grid */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                  <div className="rounded-md border border-border/60 bg-muted/40 p-3">
+                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Stock Price</p>
+                    <p className="mt-1 text-sm font-semibold text-foreground">${opp.stockPrice.toFixed(2)}</p>
+                  </div>
+                  <div className="rounded-md border border-border/60 bg-muted/40 p-3">
+                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Premium/Share</p>
+                    <p className="mt-1 text-sm font-semibold text-foreground">${(opp.premium / 100).toFixed(2)}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">${premiumPerContract.toFixed(2)} per contract (100 shares)</p>
+                  </div>
+                  <div className="rounded-md border border-border/60 bg-muted/40 p-3">
+                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Breakeven Move</p>
+                    <p className="mt-1 text-sm font-semibold text-foreground">{Math.abs(breakevenMove).toFixed(1)}% {moveDirection}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Needs ${opp.breakevenPrice?.toFixed(2) || 'N/A'}</p>
+                  </div>
+                  <div className="rounded-md border border-border/60 bg-muted/40 p-3">
+                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Volume / Open Interest</p>
+                    <p className="mt-1 text-sm font-semibold text-foreground">
+                      {opp.volume ? new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format(opp.volume) : 'N/A'}
+                      {' / '}
+                      {opp.openInterest ? new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format(opp.openInterest) : 'N/A'}
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {opp.openInterest ? (() => {
+                        const ratio = opp.volume / opp.openInterest
+                        if (ratio >= 1) return 'Heavy flow today'
+                        if (ratio >= 0.5) return 'Healthy activity'
+                        return 'Light volume'
+                      })() : 'Contracts traded today'}
+                    </p>
+                  </div>
+                  <div className="rounded-md border border-border/60 bg-muted/40 p-3">
+                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Risk per Contract</p>
+                    <p className="mt-1 text-sm font-semibold text-foreground">${premiumPerContract.toFixed(2)}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Max loss if trade fails</p>
+                  </div>
+                </div>
+              </>
+            )
+          })()}
         </div>
 
-        <div className="text-right space-y-1 ml-4">
-          <div className="text-3xl font-bold text-white">
-            ${opp.premium.toFixed(2)}
-          </div>
-          <div className="text-sm text-emerald-100/70">Premium</div>
+        {/* Action Buttons - Top Right */}
+        <div className="flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={onOpenChat}
+            className="inline-flex items-center gap-2 rounded-full border-2 border-transparent bg-gradient-to-r from-blue-600 to-purple-600 px-5 py-2 text-sm font-bold uppercase tracking-wide text-white shadow-lg transition-all hover:shadow-xl hover:scale-105 dark:from-blue-500 dark:to-purple-500"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            </svg>
+            Ask Monty
+          </button>
+
+          <button
+            type="button"
+            onClick={onAddToWatchlist}
+            disabled={isAlreadyOnWatchlist}
+            className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wide shadow-sm transition-colors ${
+              isAlreadyOnWatchlist
+                ? 'border border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 cursor-not-allowed'
+                : 'border border-emerald-500 bg-emerald-500 text-white hover:bg-emerald-600 dark:border-emerald-600 dark:bg-emerald-600 dark:hover:bg-emerald-700'
+            }`}
+          >
+            {isAlreadyOnWatchlist ? (
+              <>
+                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+                On Watchlist
+              </>
+            ) : (
+              <>
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Add to Watchlist
+              </>
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={onRejectOpportunity}
+            disabled={isAlreadyRejected}
+            className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wide shadow-sm transition-colors ${
+              isAlreadyRejected
+                ? 'border border-slate-300 bg-slate-50 text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-500 cursor-not-allowed'
+                : 'border border-red-400 bg-white text-red-600 hover:bg-red-50 dark:border-red-600 dark:bg-slate-800 dark:text-red-400 dark:hover:bg-slate-700'
+            }`}
+          >
+            {isAlreadyRejected ? (
+              <>
+                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+                Rejected
+              </>
+            ) : (
+              <>
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Reject
+              </>
+            )}
+          </button>
         </div>
       </div>
+
+      {/* See Data Behind This - Collapsible Advanced Details */}
+      <div className="mt-4">
+            <button
+              type="button"
+              onClick={onToggle}
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-600 bg-slate-700/50 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-600/50 transition-colors"
+            >
+              {isExpanded ? 'Hide full data' : 'See data behind this'}
+              <svg
+                className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : 'rotate-0'}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+          {isExpanded && (
+            <div className="mt-4 rounded-lg border border-border bg-muted/30 p-4 space-y-4">
+              <div>
+                <h5 className="text-sm font-semibold text-foreground mb-3">Greeks in plain English</h5>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  {opp.greeks && (
+                    <>
+                      <div className="rounded-md border border-border/60 bg-background p-3">
+                        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Delta</p>
+                        <p className="mt-1 font-mono text-sm font-semibold text-foreground">
+                          {opp.greeks.delta?.toFixed(2) || 'N/A'}
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground">How much the option moves if the stock changes by $1.</p>
+                      </div>
+                      <div className="rounded-md border border-border/60 bg-background p-3">
+                        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Gamma</p>
+                        <p className="mt-1 font-mono text-sm font-semibold text-foreground">
+                          {opp.greeks.gamma?.toFixed(3) || 'N/A'}
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground">How quickly delta itself can change as the stock moves.</p>
+                      </div>
+                      <div className="rounded-md border border-border/60 bg-background p-3">
+                        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Theta</p>
+                        <p className="mt-1 font-mono text-sm font-semibold text-foreground">
+                          {opp.greeks.theta?.toFixed(2) || 'N/A'}
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground">Daily time decay — what you pay to hold the contract.</p>
+                      </div>
+                      <div className="rounded-md border border-border/60 bg-background p-3">
+                        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Vega</p>
+                        <p className="mt-1 font-mono text-sm font-semibold text-foreground">
+                          {opp.greeks.vega?.toFixed(2) || 'N/A'}
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground">Sensitivity to volatility. Higher vega likes bigger swings.</p>
+                      </div>
+                      <div className="rounded-md border border-border/60 bg-background p-3">
+                        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">IV</p>
+                        <p className="mt-1 font-mono text-sm font-semibold text-foreground">
+                          {opp.impliedVolatility ? (opp.impliedVolatility * 100).toFixed(1) + '%' : 'N/A'}
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground">Implied volatility shows what the market expects for movement.</p>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {greeksExplanation && (
+                <div className="rounded-md bg-background p-4 text-sm text-muted-foreground">
+                  {greeksExplanation}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
       {hasPositionSizing && (
         <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50/60 p-5 dark:border-emerald-800/40 dark:bg-emerald-900/20">
@@ -981,72 +1268,7 @@ Liquidity: ${((opp as Record<string, unknown>).liquidityScore as number | undefi
         </div>
       )}
 
-      <div className="mt-6 flex justify-between items-center gap-3 flex-wrap">
-        <button
-          type="button"
-          onClick={onAddToWatchlist}
-          disabled={isAlreadyOnWatchlist}
-          className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wide shadow-sm transition-colors ${
-            isAlreadyOnWatchlist
-              ? 'border border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 cursor-not-allowed'
-              : 'border border-emerald-500 bg-emerald-500 text-white hover:bg-emerald-600 dark:border-emerald-600 dark:bg-emerald-600 dark:hover:bg-emerald-700'
-          }`}
-        >
-          {isAlreadyOnWatchlist ? (
-            <>
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-              On Watchlist
-            </>
-          ) : (
-            <>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              Add to Watchlist
-            </>
-          )}
-        </button>
-
-        <button
-          type="button"
-          onClick={onRejectOpportunity}
-          disabled={isAlreadyRejected}
-          className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wide shadow-sm transition-colors ${
-            isAlreadyRejected
-              ? 'border border-slate-300 bg-slate-50 text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-500 cursor-not-allowed'
-              : 'border border-red-400 bg-white text-red-600 hover:bg-red-50 dark:border-red-600 dark:bg-slate-800 dark:text-red-400 dark:hover:bg-slate-700'
-          }`}
-        >
-          {isAlreadyRejected ? (
-            <>
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-              Rejected
-            </>
-          ) : (
-            <>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-              Reject
-            </>
-          )}
-        </button>
-
-        <button
-          type="button"
-          onClick={onOpenChat}
-          className="inline-flex items-center gap-2 rounded-full border-2 border-blue-600 bg-blue-600 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white shadow-sm transition-colors hover:bg-blue-700 dark:border-blue-500 dark:bg-blue-500 dark:hover:bg-blue-600"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-          </svg>
-          Ask Monty
-        </button>
-
+      <div className="mt-6 flex justify-end items-center gap-3">
         <button
           type="button"
           onClick={onToggle}
@@ -1193,7 +1415,7 @@ Liquidity: ${((opp as Record<string, unknown>).liquidityScore as number | undefi
                       {enhancedHistorical.recentExamples.slice(0, 3).map((example, index) => (
                         <li key={`${example.date}-${index}`} className="flex items-center justify-between">
                           <span>{new Date(example.date).toLocaleDateString()}</span>
-                          <span className="text-slate-500 dark:text-slate-400">{example.daysToTarget} days to target</span>
+                          <span className="text-emerald-600 dark:text-emerald-400 font-semibold">✓ Hit {example.move} target</span>
                         </li>
                       ))}
                     </ul>
