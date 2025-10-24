@@ -1,0 +1,58 @@
+
+> money-printer@0.1.0 build
+> rm -rf .next && next build
+
+ ⚠ Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of /Users/samrosenbaum/package-lock.json as the root directory.
+ To silence this warning, set `outputFileTracingRoot` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/output#caveats for more information.
+ Detected additional lockfiles: 
+   * /Users/samrosenbaum/options-trader/package-lock.json
+
+   ▲ Next.js 15.5.4
+   - Environments: .env.local
+
+   Creating an optimized production build ...
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (118kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+ ⚠ Compiled with warnings in 3.3s
+
+./node_modules/@supabase/realtime-js/dist/module/lib/websocket-factory.js
+A Node.js API is used (process.versions at line: 32) which is not supported in the Edge Runtime.
+Learn more: https://nextjs.org/docs/api-reference/edge-runtime
+
+Import trace for requested module:
+./node_modules/@supabase/realtime-js/dist/module/lib/websocket-factory.js
+./node_modules/@supabase/realtime-js/dist/module/index.js
+./node_modules/@supabase/supabase-js/dist/module/index.js
+./node_modules/@supabase/ssr/dist/module/createBrowserClient.js
+./node_modules/@supabase/ssr/dist/module/index.js
+
+./node_modules/@supabase/supabase-js/dist/module/index.js
+A Node.js API is used (process.version at line: 24) which is not supported in the Edge Runtime.
+Learn more: https://nextjs.org/docs/api-reference/edge-runtime
+
+Import trace for requested module:
+./node_modules/@supabase/supabase-js/dist/module/index.js
+./node_modules/@supabase/ssr/dist/module/createBrowserClient.js
+./node_modules/@supabase/ssr/dist/module/index.js
+
+ ✓ Compiled successfully in 31.6s
+   Linting and checking validity of types ...
+   Collecting page data ...
+[Error [PageNotFoundError]: Cannot find module for page: /api/enhance/historical] {
+  code: 'ENOENT'
+}
+[Error [PageNotFoundError]: Cannot find module for page: /api/macro] {
+  code: 'ENOENT'
+}
+[Error [PageNotFoundError]: Cannot find module for page: /api/exit-signals] {
+  code: 'ENOENT'
+}
+[Error [PageNotFoundError]: Cannot find module for page: /api/news-python] {
+  code: 'ENOENT'
+}
+
+> Build error occurred
+[Error: Failed to collect page data for /api/enhance/historical] {
+  type: 'Error'
+}

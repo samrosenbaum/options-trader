@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useRef, useState } from 'react'
+import { useMemo, useRef } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { motion, useInView } from 'framer-motion'
@@ -49,46 +49,6 @@ const proofPoints = [
     backDescription: 'Skip the manual research. Monty instantly surfaces the best opportunities with full technical analysis, risk metrics, and profit projections. Spend less time researching, more time trading.',
   },
 ]
-
-function FlipCard({ item, index }: { item: typeof proofPoints[0]; index: number }) {
-  const [isHovered, setIsHovered] = useState(false)
-
-  return (
-    <div
-      className="relative w-full h-[200px] cursor-pointer rounded-2xl overflow-hidden"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      {/* Front of card */}
-      <div
-        className="absolute inset-0 flex flex-col justify-between rounded-2xl border border-white/10 bg-black/20 p-6 backdrop-blur transition-all duration-300"
-        style={{
-          opacity: isHovered ? 0 : 1,
-          transform: isHovered ? 'scale(0.95)' : 'scale(1)',
-        }}
-      >
-        <div className="flex-1 flex flex-col justify-center">
-          <p className="text-xs uppercase tracking-[0.3em] text-white/50">{item.label}</p>
-          <p className="mt-3 text-3xl font-semibold text-white">{item.value}</p>
-        </div>
-        <p className="text-xs text-white/40 mt-4">Hover to learn more</p>
-      </div>
-
-      {/* Back of card */}
-      <div
-        className="absolute inset-0 flex flex-col rounded-2xl border border-emerald-400/30 bg-gradient-to-br from-emerald-500/10 to-emerald-900/10 p-6 backdrop-blur transition-all duration-300"
-        style={{
-          opacity: isHovered ? 1 : 0,
-          transform: isHovered ? 'scale(1)' : 'scale(0.95)',
-          pointerEvents: isHovered ? 'auto' : 'none',
-        }}
-      >
-        <h3 className="text-base font-semibold text-emerald-400 mb-3">{item.backTitle}</h3>
-        <p className="text-sm text-white/70 leading-relaxed">{item.backDescription}</p>
-      </div>
-    </div>
-  )
-}
 
 export default function LandingPage() {
   const cardsRef = useRef<HTMLDivElement | null>(null)
@@ -244,7 +204,7 @@ export default function LandingPage() {
               From market scan to profitable exit—all in one platform
             </h2>
             <p className="text-base text-white/70">
-              Monty combines real-time market data, quantitative analysis, and AI-powered insights to help you make smarter trades. Whether you're hunting for momentum plays or managing complex positions, Monty has you covered.
+              Monty combines real-time market data, quantitative analysis, and AI-powered insights to help you make smarter trades. Whether you&apos;re hunting for momentum plays or managing complex positions, Monty has you covered.
             </p>
             <div className="grid gap-5 text-sm text-white/70">
               {[

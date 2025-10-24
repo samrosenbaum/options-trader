@@ -13,9 +13,10 @@ type Message = {
 }
 
 const quickPrompts = [
-  'Can you analyze this position and tell me if I should exit or hold?',
-  'What adjustments could improve this trade before expiration?',
-  "How should I manage risk on this position over the next week?",
+  'Should I exit or hold this position?',
+  'What adjustments could improve this trade?',
+  'How should I manage risk here?',
+  'What is the profit potential from here?',
 ]
 
 export default function PositionAnalysisModal({
@@ -29,15 +30,23 @@ export default function PositionAnalysisModal({
   const [input, setInput] = useState('')
   const [isStreaming, setIsStreaming] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [sendButtonText, setSendButtonText] = useState('Ask Monty')
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
+    const greetings = [
+      `Hey! Ready to talk about your ${position.symbol} ${position.option_type.toUpperCase()}? I've got the insights you need.`,
+      `What's up! Let's dig into your ${position.symbol} ${position.option_type.toUpperCase()} position. Fire away with your questions!`,
+      `Hi there! I'm Monty, your options strategist. Let's analyze your ${position.symbol} ${position.option_type.toUpperCase()} together.`,
+      `Welcome back! Got questions about your ${position.symbol} ${position.option_type.toUpperCase()}? I'm here to help you nail this trade.`,
+    ]
+
     setMessages([
       {
         role: 'assistant',
-        content: `Hi, I'm Monty. Ask me anything about your ${position.symbol} ${position.option_type.toUpperCase()} position, or click a quick prompt below to get my take.`,
+        content: greetings[Math.floor(Math.random() * greetings.length)],
         isSystem: true,
       },
     ])
@@ -57,6 +66,21 @@ export default function PositionAnalysisModal({
       inputRef.current?.focus()
     }
   }, [isStreaming])
+
+  const hasActiveConversation = messages.some(
+    (message) => !message.isSystem && message.role === 'assistant'
+  )
+
+  // Update send button text based on conversation state
+  useEffect(() => {
+    const buttonTexts = hasActiveConversation
+      ? ['Send to Monty', 'Ask Away', 'Fire Away', 'Send It']
+      : ['Ask Monty', 'Get Advice', 'Consult Monty', 'Ask Away']
+
+    // Pick a random fun text on mount or when conversation state changes
+    const randomText = buttonTexts[Math.floor(Math.random() * buttonTexts.length)]
+    setSendButtonText(randomText)
+  }, [hasActiveConversation])
 
   const sendMessage = async (messageContent?: string) => {
     const trimmedContent = (messageContent ?? input).trim()
@@ -178,10 +202,6 @@ export default function PositionAnalysisModal({
     }
   }
 
-  const hasActiveConversation = messages.some(
-    (message) => !message.isSystem && message.role === 'assistant'
-  )
-
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
       <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto p-8 border border-slate-200 dark:border-slate-800">
@@ -259,8 +279,8 @@ export default function PositionAnalysisModal({
         </div>
 
         <div className="mb-4">
-          <p className="text-sm text-slate-500 dark:text-slate-400 mb-2">
-            Quick prompts
+          <p className="text-sm font-semibold text-slate-600 dark:text-slate-400 mb-3">
+            Quick Questions
           </p>
           <div className="flex flex-wrap gap-2">
             {quickPrompts.map((prompt) => (
@@ -268,7 +288,7 @@ export default function PositionAnalysisModal({
                 key={prompt}
                 onClick={() => sendMessage(prompt)}
                 disabled={isStreaming}
-                className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 shadow-sm transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-70 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+                className="group rounded-full border-2 border-blue-200 bg-gradient-to-r from-blue-50 to-purple-50 px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition-all hover:shadow-md hover:scale-105 hover:border-blue-300 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:scale-100 dark:border-blue-800 dark:from-blue-900/30 dark:to-purple-900/30 dark:text-slate-200 dark:hover:border-blue-600"
               >
                 {prompt}
               </button>
@@ -290,9 +310,9 @@ export default function PositionAnalysisModal({
                 <div
                   className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm shadow-sm ${
                     message.isSystem
-                      ? 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200'
+                      ? 'bg-gradient-to-r from-blue-100 to-purple-100 text-slate-800 border-2 border-blue-200 dark:from-blue-900/40 dark:to-purple-900/40 dark:text-slate-100 dark:border-blue-700/50'
                       : message.role === 'user'
-                        ? 'bg-blue-600 text-white dark:bg-blue-500'
+                        ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-md dark:from-blue-500 dark:to-blue-400'
                         : 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100'
                   }`}
                 >
@@ -310,8 +330,15 @@ export default function PositionAnalysisModal({
             ))}
             {isStreaming && (
               <div className="flex justify-start">
-                <div className="rounded-2xl bg-slate-100 px-4 py-3 text-sm text-slate-600 shadow-sm dark:bg-slate-800 dark:text-slate-300">
-                  Monty is thinking...
+                <div className="rounded-2xl bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 px-4 py-3 text-sm text-slate-700 dark:text-slate-300 shadow-sm border border-blue-100 dark:border-blue-800/30">
+                  <div className="flex items-center gap-2">
+                    <div className="flex gap-1">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                    </div>
+                    <span className="font-medium">Monty is analyzing...</span>
+                  </div>
                 </div>
               </div>
             )}
@@ -344,14 +371,14 @@ export default function PositionAnalysisModal({
               <button
                 onClick={() => sendMessage()}
                 disabled={isStreaming || !input.trim()}
-                className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70 dark:bg-blue-500 dark:hover:bg-blue-400"
+                className="group inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-2.5 text-sm font-semibold text-white shadow-lg transition-all hover:shadow-xl hover:scale-105 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:scale-100 dark:from-blue-500 dark:to-purple-500"
               >
-                Send
+                {sendButtonText}
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 20 20"
                   fill="currentColor"
-                  className="h-4 w-4"
+                  className="h-4 w-4 transition-transform group-hover:translate-x-1 group-hover:-translate-y-1"
                 >
                   <path d="M2.94 2.939a.75.75 0 0 1 .806-.182l13 5a.75.75 0 0 1 .008 1.392l-5.216 2.24a.25.25 0 0 0-.132.132l-2.24 5.215a.75.75 0 0 1-1.392-.007l-5-13a.75.75 0 0 1 .166-.79Zm2.738 2.25 3.639 3.64a1.75 1.75 0 0 0 .694.43l4.036 1.166-3.31 1.421a1.75 1.75 0 0 0-.926.925l-1.42 3.31-1.167-4.036a1.75 1.75 0 0 0-.43-.694l-3.64-3.64Z" />
                 </svg>

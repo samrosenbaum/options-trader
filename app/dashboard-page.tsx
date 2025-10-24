@@ -150,8 +150,10 @@ export default function DashboardPage() {
   }))
 
   const totalPL = (currentSnapshot?.unrealized_pl || 0) + (currentSnapshot?.realized_pl || 0)
-  const totalPLPercent = currentSnapshot && currentSnapshot.total_value > 0
-    ? (totalPL / (currentSnapshot.total_value - totalPL)) * 100
+  // Calculate percentage based on initial investment (total value minus total P&L)
+  const initialInvestment = currentSnapshot ? currentSnapshot.total_value - totalPL : 0
+  const totalPLPercent = initialInvestment > 0
+    ? (totalPL / initialInvestment) * 100
     : 0
 
   return (

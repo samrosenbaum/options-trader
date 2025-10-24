@@ -79,6 +79,8 @@ export default function RejectionLearningPage() {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [isBackfilling, setIsBackfilling] = useState(false)
   const [backfillResult, setBackfillResult] = useState<{backfilled: number, skipped: number, errors: number, errorDetails?: Array<{symbol: string, error: string}>} | null>(null)
+  const [isSyncing, setIsSyncing] = useState(false)
+  const [syncResult, setSyncResult] = useState<{updated: number, skipped: number, errors: number, errorDetails?: Array<{symbol: string, error: string}>} | null>(null)
   const router = useRouter()
   const supabase = useMemo(() => createClient(), [])
 
@@ -175,6 +177,30 @@ export default function RejectionLearningPage() {
     }
   }
 
+  const syncAntiPortfolio = async () => {
+    try {
+      setIsSyncing(true)
+      setSyncResult(null)
+      const response = await fetch("/api/sync-anti-portfolio", {
+        method: "POST"
+      })
+      const data = await response.json()
+      if (data.success) {
+        setSyncResult({
+          updated: data.updated,
+          skipped: data.skipped,
+          errors: data.errors,
+          errorDetails: data.errorDetails
+        })
+        await fetchRejections() // Refresh the list with corrected P&L
+      }
+    } catch (err) {
+      console.error("Sync failed:", err)
+    } finally {
+      setIsSyncing(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -226,6 +252,19 @@ export default function RejectionLearningPage() {
                 </>
               )}
             </Button>
+            <Button variant="outline" onClick={syncAntiPortfolio} disabled={isSyncing}>
+              {isSyncing ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Syncing...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Sync P&L
+                </>
+              )}
+            </Button>
             <Button onClick={runAnalysis} disabled={isAnalyzing || rejections.length === 0}>
               {isAnalyzing ? (
                 <>
@@ -272,6 +311,49 @@ export default function RejectionLearningPage() {
                   </div>
                   <div className="space-y-2">
                     {backfillResult.errorDetails.map((err, idx) => (
+                      <div key={idx} className="text-xs font-mono">
+                        <span className="text-red-300">{err.symbol}:</span>{' '}
+                        <span className="text-muted-foreground">{err.error}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {syncResult && (
+          <Card className="modern-card mb-6 border-blue-500/20 bg-blue-500/5">
+            <CardHeader>
+              <CardTitle className="text-blue-400">P&L Sync Complete</CardTitle>
+              <CardDescription>Anti-Portfolio P&L values synced with closed positions</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex gap-6 text-sm mb-4">
+                <div>
+                  <span className="text-muted-foreground">Updated:</span>
+                  <span className="ml-2 font-bold text-blue-400">{syncResult.updated}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Already in sync:</span>
+                  <span className="ml-2 font-bold">{syncResult.skipped}</span>
+                </div>
+                {syncResult.errors > 0 && (
+                  <div>
+                    <span className="text-muted-foreground">Errors:</span>
+                    <span className="ml-2 font-bold text-red-400">{syncResult.errors}</span>
+                  </div>
+                )}
+              </div>
+              {syncResult.errorDetails && syncResult.errorDetails.length > 0 && (
+                <div className="mt-4 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertTriangle className="h-4 w-4 text-red-400" />
+                    <span className="text-sm font-semibold text-red-400">Error Details</span>
+                  </div>
+                  <div className="space-y-2">
+                    {syncResult.errorDetails.map((err, idx) => (
                       <div key={idx} className="text-xs font-mono">
                         <span className="text-red-300">{err.symbol}:</span>{' '}
                         <span className="text-muted-foreground">{err.error}</span>

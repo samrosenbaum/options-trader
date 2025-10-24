@@ -86,9 +86,9 @@ export async function POST() {
       return sum + (pos.realized_pl || 0)
     }, 0)
 
-    // Total value is the sum of all open positions
-    const totalValue = positionsValue
-    const cashValue = 0 // Not tracking cash separately
+    // Total account value = current position values + all realized P&L
+    const totalValue = positionsValue + realizedPL
+    const cashValue = realizedPL // Realized P&L represents cash from closed trades
 
     // Get yesterday's snapshot to calculate daily change
     const yesterday = new Date()

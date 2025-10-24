@@ -49,7 +49,7 @@ export default function TermsPage() {
                 <div>
                   <h3 className="mb-2 font-semibold text-red-400">NO WARRANTIES</h3>
                   <p>
-                    The platform and all data, analysis, and tools are provided "as is" without warranties of any kind, either express or implied. We make no guarantees regarding the accuracy, completeness, or timeliness of any information provided.
+                    The platform and all data, analysis, and tools are provided &quot;as is&quot; without warranties of any kind, either express or implied. We make no guarantees regarding the accuracy, completeness, or timeliness of any information provided.
                   </p>
                 </div>
 
