@@ -67,7 +67,9 @@ async function backfillClosedPositions() {
       }
 
       // Insert into rejected_options
+      // CRITICAL: Explicitly set user_id to prevent cross-user data leakage
       const rejectionData = {
+        user_id: position.user_id, // Explicitly set user_id from position
         symbol: position.symbol,
         strike: position.strike,
         expiration: position.expiration,

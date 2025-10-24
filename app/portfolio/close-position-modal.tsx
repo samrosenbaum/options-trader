@@ -78,41 +78,48 @@ export default function ClosePositionModal({
       console.log(`Days until expiration: ${daysUntilExpiration}, Expiration: ${position.expiration}, Now: ${now.toISOString()}`)
 
       if (daysUntilExpiration > 0) {
-        const rejectionData = {
-          symbol: position.symbol,
-          strike: position.strike,
-          expiration: position.expiration,
-          option_type: position.option_type,
-          stock_price: position.current_stock_price || position.entry_stock_price,
-          option_price: exitPriceValue,
-          volume: 0, // Not tracked for closed positions
-          open_interest: 0, // Not tracked for closed positions
-          rejection_reason: 'CLOSED_TOO_SOON',
-          filter_stage: 'position_closed_early',
-          rejection_source: 'user_closed_position',
-          position_id: position.id,
-          days_until_expiration: daysUntilExpiration,
-          days_held: daysHeld,
-          realized_pl: pl,
-          realized_pl_percent: plPercent,
-        }
-
-        console.log('Attempting to log to anti-portfolio:', rejectionData)
-
-        // Log to rejection tracking (non-blocking - don't fail the close if this fails)
-        try {
-          const { data: insertData, error: insertError } = await supabase
-            .from('rejected_options')
-            .insert(rejectionData)
-            .select()
-
-          if (insertError) {
-            console.error('Anti-portfolio insert error:', insertError)
-          } else {
-            console.log('Position tracked in anti-portfolio:', insertData)
+        // CRITICAL: Explicitly set user_id to prevent cross-user data leakage
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+          console.error('Cannot log to anti-portfolio: User not authenticated')
+        } else {
+          const rejectionData = {
+            user_id: user.id, // Explicitly set user_id for data isolation
+            symbol: position.symbol,
+            strike: position.strike,
+            expiration: position.expiration,
+            option_type: position.option_type,
+            stock_price: position.current_stock_price || position.entry_stock_price,
+            option_price: exitPriceValue,
+            volume: 0, // Not tracked for closed positions
+            open_interest: 0, // Not tracked for closed positions
+            rejection_reason: 'CLOSED_TOO_SOON',
+            filter_stage: 'position_closed_early',
+            rejection_source: 'user_closed_position',
+            position_id: position.id,
+            days_until_expiration: daysUntilExpiration,
+            days_held: daysHeld,
+            realized_pl: pl,
+            realized_pl_percent: plPercent,
           }
-        } catch (err) {
-          console.error('Failed to log to anti-portfolio:', err)
+
+          console.log('Attempting to log to anti-portfolio:', rejectionData)
+
+          // Log to rejection tracking (non-blocking - don't fail the close if this fails)
+          try {
+            const { data: insertData, error: insertError } = await supabase
+              .from('rejected_options')
+              .insert(rejectionData)
+              .select()
+
+            if (insertError) {
+              console.error('Anti-portfolio insert error:', insertError)
+            } else {
+              console.log('Position tracked in anti-portfolio:', insertData)
+            }
+          } catch (err) {
+            console.error('Failed to log to anti-portfolio:', err)
+          }
         }
       } else {
         console.log('Position not logged to anti-portfolio - already expired or expires today')

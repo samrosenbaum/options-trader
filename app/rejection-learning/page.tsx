@@ -543,7 +543,7 @@ export default function RejectionLearningPage() {
 
         {/* Closed Positions Section */}
         {rejections.filter(r => r.rejection_source === 'user_closed_position').length > 0 && (
-          <Card className="modern-card border-amber-200 dark:border-amber-800">
+          <Card className="modern-card border-amber-200 dark:border-amber-800 mb-6">
             <CardHeader>
               <CardTitle>
                 Closed Too Soon

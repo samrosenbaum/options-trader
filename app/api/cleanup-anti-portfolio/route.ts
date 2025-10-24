@@ -50,10 +50,10 @@ export async function POST() {
     for (const rejection of rejections) {
       // Check if there's a corresponding position
       if (rejection.position_id) {
-        // Has position_id link, check if position exists
+        // Has position_id link, check if position exists AND matches strike/expiration
         const { data: position } = await supabase
           .from('positions')
-          .select('id')
+          .select('id, symbol, strike, expiration, option_type')
           .eq('id', rejection.position_id)
           .eq('user_id', user.id)
           .maybeSingle()
@@ -73,6 +73,27 @@ export async function POST() {
             symbol: rejection.symbol,
             strike: rejection.strike,
             reason: 'position_id link broken',
+          })
+        } else if (
+          position.symbol !== rejection.symbol ||
+          position.strike !== rejection.strike ||
+          position.expiration !== rejection.expiration ||
+          position.option_type !== rejection.option_type
+        ) {
+          // Position exists but doesn't match - wrong link, delete it
+          console.log(`  🗑️  Deleting mismatched ${rejection.symbol} $${rejection.strike} - linked to wrong position`)
+
+          await supabase
+            .from('rejected_options')
+            .delete()
+            .eq('id', rejection.id)
+            .eq('user_id', user.id)
+
+          deleted++
+          deletedEntries.push({
+            symbol: rejection.symbol,
+            strike: rejection.strike,
+            reason: 'position_id points to wrong position',
           })
         }
       } else {
