@@ -29,6 +29,8 @@ export async function POST() {
       .eq('status', 'closed')
       .order('exit_date', { ascending: false })
 
+    console.log(`Found ${positions?.length || 0} closed positions for user ${user.id}`)
+
     if (posError) {
       console.error('Error fetching positions:', posError)
       return NextResponse.json({ error: posError.message }, { status: 500 })
@@ -52,6 +54,8 @@ export async function POST() {
     const errorDetails: Array<{ symbol: string; error: string }> = []
 
     for (const pos of positions) {
+      console.log(`\n🔍 Checking ${pos.symbol} $${pos.strike} ${pos.option_type} (realized_pl: $${pos.realized_pl})`)
+
       // Check if this position exists in rejected_options (by position_id)
       let { data: rejection, error: rejError } = await supabase
         .from('rejected_options')
@@ -62,14 +66,19 @@ export async function POST() {
         .maybeSingle()
 
       if (rejError) {
-        console.error(`Error checking rejection for ${pos.symbol}:`, rejError)
+        console.error(`❌ Error checking rejection for ${pos.symbol}:`, rejError)
         errors++
         errorDetails.push({ symbol: pos.symbol, error: rejError.message })
         continue
       }
 
+      if (rejection) {
+        console.log(`  ✅ Found by position_id: ${pos.id}`)
+      }
+
       // Fallback: Try matching by symbol/strike/expiration if no position_id match
       if (!rejection) {
+        console.log(`  ⚠️  No position_id match, trying fallback...`)
         const fallbackQuery = await supabase
           .from('rejected_options')
           .select('*')
@@ -83,15 +92,20 @@ export async function POST() {
 
         if (!fallbackQuery.error && fallbackQuery.data) {
           rejection = fallbackQuery.data
-          console.log(`📌 Matched ${pos.symbol} by symbol/strike/expiration (no position_id link)`)
+          console.log(`  📌 Matched by symbol/strike/expiration/type`)
+        } else {
+          console.log(`  ❌ No fallback match found`)
         }
       }
 
       if (!rejection) {
         // Position not in anti-portfolio, skip
+        console.log(`  ⏭️  Not in anti-portfolio, skipping`)
         skipped++
         continue
       }
+
+      console.log(`  Current anti-portfolio P&L: $${rejection.realized_pl} (should be $${pos.realized_pl})`)
 
       // Check if P&L matches
       if (

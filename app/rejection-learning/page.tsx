@@ -201,6 +201,29 @@ export default function RejectionLearningPage() {
     }
   }
 
+  const cleanupOrphans = async () => {
+    if (!confirm('Remove orphaned anti-portfolio entries that don\'t match any real positions?')) {
+      return
+    }
+
+    try {
+      setIsLoading(true)
+      const response = await fetch("/api/cleanup-anti-portfolio", {
+        method: "POST"
+      })
+      const data = await response.json()
+      if (data.success) {
+        alert(`Cleanup complete: Deleted ${data.deleted} orphaned entries`)
+        await fetchRejections()
+      }
+    } catch (err) {
+      console.error("Cleanup failed:", err)
+      alert("Cleanup failed")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -264,6 +287,10 @@ export default function RejectionLearningPage() {
                   Sync P&L
                 </>
               )}
+            </Button>
+            <Button variant="outline" onClick={cleanupOrphans} disabled={isLoading}>
+              <AlertTriangle className="h-4 w-4 mr-2" />
+              Cleanup
             </Button>
             <Button onClick={runAnalysis} disabled={isAnalyzing || rejections.length === 0}>
               {isAnalyzing ? (
@@ -518,8 +545,7 @@ export default function RejectionLearningPage() {
         {rejections.filter(r => r.rejection_source === 'user_closed_position').length > 0 && (
           <Card className="modern-card border-amber-200 dark:border-amber-800">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <span>⏰</span>
+              <CardTitle>
                 Closed Too Soon
               </CardTitle>
               <CardDescription>
@@ -599,8 +625,7 @@ export default function RejectionLearningPage() {
 
         <Card className="modern-card">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <span>👎</span>
+            <CardTitle>
               Rejected Opportunities
             </CardTitle>
             <CardDescription>
