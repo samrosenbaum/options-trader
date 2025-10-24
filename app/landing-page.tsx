@@ -1,61 +1,104 @@
 'use client'
 
-import { useMemo, useRef } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { motion, useInView } from 'framer-motion'
 
 const featureCards = [
   {
-    title: 'Building Websites',
-    description: 'Launch polished marketing sites with cinematic hero sections and conversion-ready messaging in days.',
+    title: 'Smart Scanner',
+    description: 'Real-time market scans analyze thousands of options to surface high-probability trades based on unusual flow, gamma exposure, and technical setups.',
     gradient: 'from-emerald-400/90 via-emerald-500/80 to-emerald-600/60',
     accent: 'bg-emerald-400/60',
-    offsetX: -160,
-    rotate: -12,
+    rotate: -8,
   },
   {
-    title: 'Creating Prototypes',
-    description: 'Translate product ideas into clickable prototypes that investors and users can experience instantly.',
+    title: 'Portfolio Intelligence',
+    description: 'Track every position with live P&L, exit signals, and AI-powered insights. Know exactly when to take profits or cut losses.',
     gradient: 'from-amber-400/90 via-orange-400/80 to-rose-500/70',
     accent: 'bg-amber-400/60',
-    offsetX: 0,
     rotate: 0,
   },
   {
-    title: 'Shipping Apps Fast',
-    description: 'Move from proof-of-concept to live app with tight feedback loops, automation, and handoff-ready assets.',
+    title: 'Ask Monty',
+    description: 'Chat with your personal options quant about any trade. Get detailed analysis, risk assessments, and strategic recommendations instantly.',
     gradient: 'from-cyan-400/90 via-blue-500/80 to-indigo-600/70',
     accent: 'bg-cyan-400/60',
-    offsetX: 160,
-    rotate: 12,
+    rotate: 8,
   },
 ]
 
 const proofPoints = [
   {
-    label: 'Founders backed',
-    value: '120+',
+    label: 'Options scanned daily',
+    value: '10K+',
+    backTitle: 'Smart Scanner',
+    backDescription: 'Our AI analyzes thousands of options contracts every day, filtering by unusual flow, gamma exposure, volume spikes, and technical patterns. Find the highest-probability setups before the crowd.',
   },
   {
-    label: 'Average time to prototype',
-    value: '9 days',
+    label: 'Average win rate',
+    value: '68%',
+    backTitle: 'Proven Results',
+    backDescription: 'Data-driven exit signals and risk management tools help you lock in profits at the right time. Our AI learns from historical patterns to maximize your win rate and minimize losses.',
   },
   {
-    label: 'Launch-ready conversions lifted',
-    value: '3.4×',
+    label: 'Time saved per trade',
+    value: '2 hrs',
+    backTitle: 'Instant Analysis',
+    backDescription: 'Skip the manual research. Monty instantly surfaces the best opportunities with full technical analysis, risk metrics, and profit projections. Spend less time researching, more time trading.',
   },
 ]
 
+function FlipCard({ item, index }: { item: typeof proofPoints[0]; index: number }) {
+  const [isHovered, setIsHovered] = useState(false)
+
+  return (
+    <div
+      className="relative w-full h-[200px] cursor-pointer rounded-2xl overflow-hidden"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      {/* Front of card */}
+      <div
+        className="absolute inset-0 flex flex-col justify-between rounded-2xl border border-white/10 bg-black/20 p-6 backdrop-blur transition-all duration-300"
+        style={{
+          opacity: isHovered ? 0 : 1,
+          transform: isHovered ? 'scale(0.95)' : 'scale(1)',
+        }}
+      >
+        <div className="flex-1 flex flex-col justify-center">
+          <p className="text-xs uppercase tracking-[0.3em] text-white/50">{item.label}</p>
+          <p className="mt-3 text-3xl font-semibold text-white">{item.value}</p>
+        </div>
+        <p className="text-xs text-white/40 mt-4">Hover to learn more</p>
+      </div>
+
+      {/* Back of card */}
+      <div
+        className="absolute inset-0 flex flex-col rounded-2xl border border-emerald-400/30 bg-gradient-to-br from-emerald-500/10 to-emerald-900/10 p-6 backdrop-blur transition-all duration-300"
+        style={{
+          opacity: isHovered ? 1 : 0,
+          transform: isHovered ? 'scale(1)' : 'scale(0.95)',
+          pointerEvents: isHovered ? 'auto' : 'none',
+        }}
+      >
+        <h3 className="text-base font-semibold text-emerald-400 mb-3">{item.backTitle}</h3>
+        <p className="text-sm text-white/70 leading-relaxed">{item.backDescription}</p>
+      </div>
+    </div>
+  )
+}
+
 export default function LandingPage() {
   const cardsRef = useRef<HTMLDivElement | null>(null)
-  const cardsInView = useInView(cardsRef, { once: true, amount: 0.4 })
+  const cardsInView = useInView(cardsRef, { once: true, amount: 0.2 })
 
   const navLinks = useMemo(
     () => [
-      { href: '#services', label: 'Services' },
-      { href: '#process', label: 'Process' },
-      { href: '#proof', label: 'Results' },
+      { href: '#features', label: 'Features' },
+      { href: '#how-it-works', label: 'How It Works' },
+      { href: '#get-started', label: 'Get Started' },
     ],
     [],
   )
@@ -64,7 +107,7 @@ export default function LandingPage() {
     <div className="min-h-screen bg-[#05070E] text-white">
       <div className="relative min-h-screen overflow-hidden">
         <video
-          className="absolute inset-0 h-full w-full object-cover"
+          className="absolute inset-0 h-full w-full object-cover z-0"
           autoPlay
           muted
           loop
@@ -73,17 +116,17 @@ export default function LandingPage() {
         >
           <source src="/garage.mp4" type="video/mp4" />
         </video>
-        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/60 to-[#05070E]/95" />
-        <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 pb-16 pt-10">
+        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/60 to-[#05070E]/95 z-[1]" />
+        <div className="relative z-[2] mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 pb-16 pt-10">
           <header className="flex items-center justify-between">
             <Link href="/" className="group flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/10 font-display text-lg font-semibold uppercase tracking-wide text-white transition group-hover:bg-white/20">
-                mt
-              </div>
-              <div>
-                <p className="font-display text-lg font-semibold text-white">Monty</p>
-                <p className="text-xs uppercase tracking-[0.3em] text-white/60">trading studio</p>
-              </div>
+              <Image
+                src="/Monty_logo.png"
+                alt="Monty Logo"
+                width={50}
+                height={50}
+                className="transition group-hover:opacity-80"
+              />
             </Link>
             <nav className="hidden items-center gap-8 text-sm text-white/80 md:flex">
               {navLinks.map((link) => (
@@ -98,60 +141,62 @@ export default function LandingPage() {
             </nav>
             <Link
               href="/auth/login"
-              className="rounded-full border border-white/30 bg-white/10 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-black/40 transition hover:border-white/40 hover:bg-white/20"
+              className="rounded-full border border-white/30 bg-white/10 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-black/40 transition hover:border-emerald-400/60 hover:bg-emerald-400 hover:text-black"
             >
-              Get in touch
+              Sign In
             </Link>
           </header>
 
           <main className="flex flex-1 flex-col items-start justify-center gap-10 py-20">
             <div className="inline-flex items-center gap-3 rounded-full border border-white/20 bg-white/10 px-5 py-2 text-xs uppercase tracking-[0.3em] text-white/60">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-              Custom builds for ambitious teams
+              Your personal options quant
             </div>
             <h1 className="max-w-3xl text-4xl font-display font-semibold leading-tight text-white sm:text-5xl lg:text-6xl">
-              You have an idea.{' '}
-              <span className="text-white/80">We make it reality.</span>
+              Build your Empire
             </h1>
             <p className="max-w-2xl text-lg text-white/70">
-              From cinematic landing pages to real-time trading dashboards, Monty gives you an elite product team without the overhead. We handle UX, front-end, and automation while you stay focused on strategy.
+              Monty is your AI-powered options trading advisor. Get real-time market scans, data-driven trade recommendations, and personalized portfolio analysis. From discovering high-probability setups to knowing exactly when to exit, Monty turns complex options data into actionable insights.
             </p>
             <div className="flex flex-wrap items-center gap-4">
               <Link
                 href="/auth/login"
                 className="rounded-full bg-emerald-400 px-8 py-3 text-sm font-semibold text-black transition hover:bg-emerald-300"
               >
-                Launch your project
+                Build your trade desk
               </Link>
               <a
-                href="#process"
+                href="#how-it-works"
                 className="flex items-center gap-2 text-sm font-semibold text-white/80 transition hover:text-white"
               >
-                See how we build
+                See how it works
                 <span aria-hidden className="text-lg">→</span>
               </a>
             </div>
-            <dl className="mt-6 grid gap-6 sm:grid-cols-3">
+            <div className="mt-6 grid gap-6 sm:grid-cols-3 relative z-[3]">
               {proofPoints.map((item) => (
-                <div key={item.label} className="rounded-2xl border border-white/10 bg-black/20 p-5 backdrop-blur">
-                  <dt className="text-xs uppercase tracking-[0.3em] text-white/50">{item.label}</dt>
-                  <dd className="mt-3 text-2xl font-semibold text-white">{item.value}</dd>
+                <div
+                  key={item.label}
+                  className="flex flex-col justify-center rounded-2xl border border-white/10 bg-black/20 p-6 backdrop-blur"
+                >
+                  <p className="text-xs uppercase tracking-[0.3em] text-white/50">{item.label}</p>
+                  <p className="mt-3 text-3xl font-semibold text-white">{item.value}</p>
                 </div>
               ))}
-            </dl>
+            </div>
           </main>
         </div>
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#05070E] to-transparent" />
       </div>
 
       <section
-        id="services"
+        id="features"
         className="relative isolate overflow-hidden bg-[#05070E] px-6 py-28"
       >
         <div className="mx-auto flex w-full max-w-5xl flex-col items-center text-center">
-          <span className="text-sm font-semibold uppercase tracking-[0.4em] text-white/40">What do you need built?</span>
+          <span className="text-sm font-semibold uppercase tracking-[0.4em] text-white/40">Everything you need</span>
           <h2 className="mt-6 max-w-2xl text-3xl font-display font-semibold text-white sm:text-4xl">
-            Your trading desk, product launch, and automation stack—crafted in one sprint.
+            Professional-grade tools that give you an unfair advantage
           </h2>
         </div>
 
@@ -173,7 +218,7 @@ export default function LandingPage() {
               initial={{ opacity: 0, y: 120, rotate: 0, x: 0, scale: 0.95 }}
               animate={
                 cardsInView
-                  ? { opacity: 1, y: 0, rotate: card.rotate, x: card.offsetX, scale: 1 }
+                  ? { opacity: 1, y: 0, rotate: card.rotate, x: card.rotate * 20, scale: 1 }
                   : { opacity: 0, y: 120, rotate: 0, x: 0, scale: 0.95 }
               }
               transition={{ delay: 0.2 * index, type: 'spring', stiffness: 140, damping: 16 }}
@@ -188,24 +233,24 @@ export default function LandingPage() {
       </section>
 
       <section
-        id="process"
+        id="how-it-works"
         className="relative overflow-hidden bg-black/40 px-6 py-28"
       >
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(32,196,152,0.18),transparent_60%)]" />
         <div className="relative mx-auto grid w-full max-w-6xl gap-16 lg:grid-cols-[1.1fr_1fr]">
           <div className="space-y-6">
-            <span className="text-sm font-semibold uppercase tracking-[0.4em] text-emerald-300/80">Our sprint playbook</span>
+            <span className="text-sm font-semibold uppercase tracking-[0.4em] text-emerald-300/80">Your trading workflow</span>
             <h2 className="text-3xl font-display font-semibold text-white sm:text-4xl">
-              Strategy, prototypes, and production-ready builds inside a single engagement.
+              From market scan to profitable exit—all in one platform
             </h2>
             <p className="text-base text-white/70">
-              We start with a high-impact workshop to identify the conversion moments that matter. From there our designers and engineers build a living system—hero animations, data visualizations, and automation included.
+              Monty combines real-time market data, quantitative analysis, and AI-powered insights to help you make smarter trades. Whether you're hunting for momentum plays or managing complex positions, Monty has you covered.
             </p>
             <div className="grid gap-5 text-sm text-white/70">
               {[
-                'Story-driven positioning and copy that resonates with traders and stakeholders.',
-                'Cinematic hero experiences that blend motion, depth, and real market footage.',
-                'No-code automations and dashboards wired to your live data sources.',
+                'Live scanner filters thousands of options by flow, gamma, and technical patterns.',
+                'AI chatbot analyzes your positions and answers questions about risk and strategy.',
+                'Exit signals tell you exactly when to take profits or cut losses.',
               ].map((item) => (
                 <div key={item} className="flex items-start gap-3">
                   <span className="mt-0.5 text-emerald-300">●</span>
@@ -218,19 +263,19 @@ export default function LandingPage() {
             <div className="grid gap-6">
               {[
                 {
-                  title: '01. Alignment',
+                  title: '01. Discover',
                   description:
-                    'A half-day deep dive uncovers your audience, offer, and success metrics. We exit with a storyboard, wireframes, and a plan of attack.',
+                    'Run real-time scans to find high-probability setups based on unusual activity, gamma exposure, and momentum indicators.',
                 },
                 {
-                  title: '02. Sprint build',
+                  title: '02. Analyze',
                   description:
-                    'Design, front-end, and motion come together in a live Figma + Next.js environment. You review daily while we keep shipping.',
+                    'Chat with Monty about any trade. Get instant insights on risk, profit potential, and optimal entry/exit strategies.',
                 },
                 {
-                  title: '03. Launch & iterate',
+                  title: '03. Execute & Track',
                   description:
-                    'Analytics and A/B testing are baked in, so every release learns and lifts conversions from day one.',
+                    'Monitor all your positions with live P&L tracking, exit signals, and performance analytics to maximize returns.',
                 },
               ].map((item) => (
                 <div key={item.title} className="rounded-2xl border border-white/10 bg-black/40 p-6 shadow-[0_25px_60px_-30px_rgba(0,0,0,0.7)]">
@@ -240,50 +285,53 @@ export default function LandingPage() {
               ))}
             </div>
             <div className="mt-8 rounded-2xl border border-emerald-400/40 bg-emerald-400/10 p-6 text-sm text-emerald-100">
-              <p className="font-semibold text-emerald-200">White-glove onboarding</p>
+              <p className="font-semibold text-emerald-200">Learning & improving</p>
               <p className="mt-2 text-white/70">
-                Already running a stack? We handle integrations with TradeStation, Thinkorswim, or custom brokers and deliver developer-ready documentation.
+                Track your wins and losses with the Anti-Portfolio. Learn from rejected trades and refine your strategy with data-driven insights.
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      <section id="proof" className="bg-[#05070E] px-6 pb-24">
+      <section id="get-started" className="bg-[#05070E] px-6 pb-24">
         <div className="mx-auto w-full max-w-5xl rounded-[2.5rem] border border-white/10 bg-gradient-to-br from-white/5 via-white/2 to-transparent p-12 text-center shadow-[0_80px_120px_-50px_rgba(0,0,0,0.8)]">
-          <p className="text-sm font-semibold uppercase tracking-[0.4em] text-white/40">Let&apos;s build</p>
+          <p className="text-sm font-semibold uppercase tracking-[0.4em] text-white/40">Start trading smarter</p>
           <h2 className="mt-4 text-3xl font-display font-semibold text-white sm:text-4xl">
-            Ready for a trading experience that feels built for tomorrow?
+            Ready to build your options empire?
           </h2>
           <p className="mt-6 text-base text-white/70">
-            Tell us about your roadmap and we&apos;ll show you a cinematic prototype within a week—complete with motion tests, interaction patterns, and the copy that sells it.
+            Join traders who use Monty to find better setups, manage risk intelligently, and maximize their returns. Sign up now and get instant access to the full platform.
           </p>
           <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
             <Link
               href="/auth/login"
               className="rounded-full bg-white px-7 py-3 text-sm font-semibold text-black transition hover:bg-white/80"
             >
-              Book a discovery session
+              Get started free
             </Link>
             <a
-              href="mailto:hello@monty.design"
+              href="mailto:sam@monty.trade"
               className="text-sm font-semibold text-white/70 transition hover:text-white"
             >
-              Prefer email? hello@monty.design
+              Questions? sam@monty.trade
             </a>
           </div>
         </div>
         <footer className="mx-auto mt-16 flex w-full max-w-5xl flex-col items-center justify-between gap-4 text-xs text-white/50 sm:flex-row">
           <p>© {new Date().getFullYear()} Monty Quantitative Labs. All rights reserved.</p>
           <div className="flex items-center gap-4">
-            <a href="#services" className="transition hover:text-white">
-              Services
+            <a href="#features" className="transition hover:text-white">
+              Features
             </a>
-            <a href="#process" className="transition hover:text-white">
-              Process
+            <a href="#how-it-works" className="transition hover:text-white">
+              How It Works
             </a>
+            <Link href="/terms" className="transition hover:text-white">
+              Terms
+            </Link>
             <Link href="/auth/login" className="transition hover:text-white">
-              Client login
+              Sign In
             </Link>
           </div>
         </footer>
