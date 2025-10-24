@@ -4,6 +4,7 @@ import { useMemo, useRef } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { motion, useInView } from 'framer-motion'
+import ContractFunnel from '@/components/contract-funnel'
 
 const featureCards = [
   {
@@ -190,6 +191,8 @@ export default function LandingPage() {
         </div>
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#05070E] to-transparent" />
       </div>
+
+      <ContractFunnel />
 
       <section
         id="features"
