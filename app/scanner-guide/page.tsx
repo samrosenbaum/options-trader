@@ -101,6 +101,67 @@ export default function ScannerGuidePage() {
             </div>
           </div>
 
+          {/* UOA Scanner */}
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6 border border-slate-200 dark:border-slate-700">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-amber-400 via-orange-500 to-red-600 flex items-center justify-center text-white font-bold">
+                U
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+                  Unusual Options Activity (UOA) Scanner
+                </h2>
+                <p className="text-sm text-slate-600 dark:text-slate-400">
+                  Catch smart money moves before the big price action
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-2">
+                  What It Does
+                </h3>
+                <p className="text-sm text-slate-600 dark:text-slate-400">
+                  Detects when smart money (institutions, insiders) is positioning BEFORE news breaks.
+                  Looks for abnormally high options volume relative to open interest - indicating
+                  someone knows something you don&apos;t... yet.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-2">
+                  Criteria
+                </h3>
+                <ul className="text-sm text-slate-600 dark:text-slate-400 space-y-1 list-disc list-inside">
+                  <li>Volume/OI ratio ≥ 2.0x (2x more volume than open interest)</li>
+                  <li>Minimum 500 contracts traded</li>
+                  <li>Focuses on nearest expiration (most liquid)</li>
+                  <li>Flags ATM strikes (highest conviction plays)</li>
+                  <li>Identifies bullish (call sweeps) vs bearish (put sweeps) bias</li>
+                </ul>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-2">
+                  When to Use
+                </h3>
+                <p className="text-sm text-slate-600 dark:text-slate-400">
+                  Perfect for catching moves BEFORE they happen. Use daily to spot unusual positioning.
+                  Great for finding plays before analyst upgrades, earnings beats, or other catalysts.
+                </p>
+              </div>
+
+              <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4">
+                <p className="text-xs text-orange-800 dark:text-orange-300">
+                  <strong>Real Example (COIN):</strong> On 10/23, COIN $345 calls had 7,249 volume
+                  vs 2,171 OI (3.3x ratio). Next day, JP Morgan upgraded COIN and it ripped +$25.
+                  The smart money bought calls the day before the upgrade was announced.
+                </p>
+              </div>
+            </div>
+          </div>
+
           {/* Top Movers Scanner */}
           <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6 border border-slate-200 dark:border-slate-700">
             <div className="flex items-center gap-3 mb-4">
