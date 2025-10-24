@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      line-height: 1.6;
+      color: #1e293b;
+      background-color: #f8fafc;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background-color: #ffffff;
+    }
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px 20px;
+      text-align: center;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 28px;
+      font-weight: 700;
+    }
+    .header p {
+      margin: 5px 0 0 0;
+      opacity: 0.9;
+      font-size: 14px;
+    }
+    .content {
+      padding: 20px;
+    }
+    .section {
+      margin-bottom: 30px;
+      border-left: 4px solid #667eea;
+      padding-left: 15px;
+    }
+    .section h2 {
+      margin: 0 0 15px 0;
+      font-size: 18px;
+      color: #0f172a;
+    }
+    .market-conditions {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 15px;
+    }
+    .market-card {
+      flex: 1;
+      background: #f1f5f9;
+      padding: 15px;
+      border-radius: 8px;
+    }
+    .market-card .symbol {
+      font-weight: 700;
+      font-size: 16px;
+      margin-bottom: 5px;
+    }
+    .market-card .price {
+      font-size: 20px;
+      font-weight: 600;
+      color: #0f172a;
+    }
+    .market-card .trend {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 5px;
+    }
+    .market-card .trend.bullish {
+      color: #10b981;
+    }
+    .market-card .trend.bearish {
+      color: #ef4444;
+    }
+    .uoa-signal {
+      background: #fef3c7;
+      border-left: 4px solid #f59e0b;
+      padding: 15px;
+      margin-bottom: 15px;
+      border-radius: 4px;
+    }
+    .uoa-signal .symbol-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .uoa-signal .symbol-name {
+      font-size: 18px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .uoa-signal .bias {
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .uoa-signal .bias.bullish {
+      background: #d1fae5;
+      color: #065f46;
+    }
+    .uoa-signal .bias.bearish {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    .uoa-signal .details {
+      font-size: 14px;
+      color: #475569;
+    }
+    .uoa-signal .strike-info {
+      background: white;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 4px;
+      font-family: 'Monaco', 'Courier New', monospace;
+      font-size: 13px;
+    }
+    .uoa-signal .strike-info .highlight {
+      color: #dc2626;
+      font-weight: 700;
+    }
+    .watchlist {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+    }
+    .watchlist-item {
+      background: #f1f5f9;
+      padding: 10px;
+      text-align: center;
+      border-radius: 6px;
+      font-weight: 600;
+      color: #0f172a;
+    }
+    .alert {
+      background: #fef2f2;
+      border-left: 4px solid #dc2626;
+      padding: 15px;
+      margin-bottom: 10px;
+      border-radius: 4px;
+    }
+    .alert .urgency {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      margin-right: 8px;
+    }
+    .alert .urgency.high {
+      background: #dc2626;
+      color: white;
+    }
+    .alert .urgency.medium {
+      background: #f59e0b;
+      color: white;
+    }
+    .footer {
+      background: #f1f5f9;
+      padding: 20px;
+      text-align: center;
+      font-size: 14px;
+      color: #64748b;
+    }
+    .footer a {
+      color: #667eea;
+      text-decoration: none;
+    }
+    .cta-button {
+      display: inline-block;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 12px 30px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: 600;
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <h1>🌅 Morning Brief</h1>
+      <p>{{timestamp}}</p>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+      <!-- Market Conditions -->
+      <div class="section">
+        <h2>📊 Market Conditions</h2>
+        <div class="market-conditions">
+          {{#each market_conditions}}
+          <div class="market-card">
+            <div class="symbol">{{@key}}</div>
+            <div class="price">${{this.price}}</div>
+            <div class="trend {{this.trend}}">{{this.trend}}</div>
+          </div>
+          {{/each}}
+        </div>
+      </div>
+
+      <!-- UOA Signals -->
+      {{#if uoa_signals}}
+      <div class="section">
+        <h2>🔥 Unusual Options Activity</h2>
+        <p style="font-size: 14px; color: #64748b; margin-bottom: 15px;">
+          Smart money positioning detected. These signals often precede big moves.
+        </p>
+
+        {{#each uoa_signals}}
+        <div class="uoa-signal">
+          <div class="symbol-header">
+            <span class="symbol-name">{{this.symbol}}</span>
+            <span class="bias {{this.bias}}">{{this.bias}}</span>
+          </div>
+
+          <div class="details">
+            Current Price: <strong>${{this.current_price}}</strong> &nbsp;|&nbsp;
+            Total Unusual Volume: <strong>{{this.total_unusual_volume}}</strong>
+          </div>
+
+          {{#if this.call_signals}}
+          <div class="strike-info">
+            🔥 Top Call: ${{this.call_signals.0.strike}} &nbsp;
+            <span class="highlight">{{this.call_signals.0.vol_oi_ratio}}x</span> vol/OI &nbsp;
+            ({{this.call_signals.0.volume}} vol / {{this.call_signals.0.oi}} OI)
+            {{#if this.call_signals.0.is_atm}}<strong>[ATM]</strong>{{/if}}
+          </div>
+          {{/if}}
+
+          {{#if this.put_signals}}
+          <div class="strike-info">
+            📉 Top Put: ${{this.put_signals.0.strike}} &nbsp;
+            <span class="highlight">{{this.put_signals.0.vol_oi_ratio}}x</span> vol/OI &nbsp;
+            ({{this.put_signals.0.volume}} vol / {{this.put_signals.0.oi}} OI)
+            {{#if this.put_signals.0.is_atm}}<strong>[ATM]</strong>{{/if}}
+          </div>
+          {{/if}}
+        </div>
+        {{/each}}
+      </div>
+      {{/if}}
+
+      <!-- Today's Watchlist -->
+      <div class="section">
+        <h2>🎯 Today's Watchlist</h2>
+        <div class="watchlist">
+          {{#each watchlist}}
+          <div class="watchlist-item">{{this}}</div>
+          {{/each}}
+        </div>
+      </div>
+
+      <!-- Portfolio Alerts -->
+      {{#if portfolio_alerts}}
+      <div class="section">
+        <h2>⚠️ Portfolio Alerts</h2>
+        {{#each portfolio_alerts}}
+        <div class="alert">
+          <span class="urgency {{this.urgency}}">{{this.urgency}}</span>
+          {{this.message}}
+        </div>
+        {{/each}}
+      </div>
+      {{/if}}
+
+      <!-- CTA -->
+      <div style="text-align: center;">
+        <a href="{{dashboard_url}}" class="cta-button">
+          View Full Dashboard →
+        </a>
+      </div>
+
+      <!-- Next Update -->
+      <div style="background: #f1f5f9; padding: 15px; border-radius: 8px; text-align: center; margin-top: 20px;">
+        <strong>⏰ Next Update:</strong> Market Open (9:35 AM ET)
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <p>
+        Generated by <strong>Monty</strong> - Your AI Options Analyst<br>
+        <a href="{{preferences_url}}">Manage Preferences</a> &nbsp;|&nbsp;
+        <a href="{{unsubscribe_url}}">Unsubscribe</a>
+      </p>
+    </div>
+  </div>
+</body>
+</html>

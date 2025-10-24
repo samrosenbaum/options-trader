@@ -176,7 +176,8 @@ def analyze_portfolio_performance(
     Returns:
         Dict with performance metrics
     """
-    cutoff_date = datetime.now() - timedelta(days=lookback_days)
+    from datetime import timezone
+    cutoff_date = datetime.now(timezone.utc) - timedelta(days=lookback_days)
 
     # Filter to this week's trades
     week_trades = [
