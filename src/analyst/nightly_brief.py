@@ -276,17 +276,35 @@ def format_nightly_brief(brief: Dict) -> str:
     output.append(f"Generated: {brief['timestamp'].strftime('%Y-%m-%d %I:%M %p')}")
     output.append("=" * 60)
     output.append("")
+    output.append("WHAT TO EXPECT TOMORROW:")
+    output.append("  [BULL] = Stock likely to go UP (consider buying)")
+    output.append("  [BEAR] = Stock likely to go DOWN (avoid or short)")
+    output.append("  Key Level = Price to watch - breakout above or breakdown below")
+    output.append("  HIGH CONVICTION = Our strongest predictions (backtested 80%+ accuracy)")
+    output.append("")
 
     # Key Setups (highest conviction)
     if brief['key_setups']:
         output.append(f"KEY SETUPS ({len(brief['key_setups'])} high-conviction plays)")
+        output.append("  → These are our BEST predictions for tomorrow")
+        output.append("")
         for setup in brief['key_setups'][:3]:
             bias_indicator = "[BULL]" if setup['bias'] == 'bullish' else "[BEAR]" if setup['bias'] == 'bearish' else "[NEUT]"
+
+            # Add plain English action
+            if setup['bias'] == 'bullish':
+                action = "→ ACTION: Watch for entry to BUY"
+            elif setup['bias'] == 'bearish':
+                action = "→ ACTION: AVOID or consider shorting"
+            else:
+                action = "→ ACTION: Wait for clearer signal"
+
             output.append(f"  {bias_indicator} {setup['symbol']} - {setup['conviction']} CONVICTION")
+            output.append(f"     {action}")
             output.append(f"     {setup['setup']}")
             output.append(f"     Key Level: ${setup['key_level']:.2f}")
-            output.append(f"     {setup['reason']}")
-        output.append("")
+            output.append(f"     Why: {setup['reason']}")
+            output.append("")
 
     # Tomorrow's Watchlist
     if brief['tomorrows_watchlist']:

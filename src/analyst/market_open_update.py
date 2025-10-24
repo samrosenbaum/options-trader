@@ -363,22 +363,37 @@ def format_market_open_update(update: Dict) -> str:
     output.append(f"Generated: {update['timestamp'].strftime('%Y-%m-%d %I:%M %p')}")
     output.append("=" * 60)
     output.append("")
+    output.append("WHAT THIS MEANS:")
+    output.append("  [HIGH] = Safe to enter - strong momentum + volume (buy now)")
+    output.append("  [MED] = Moderate setup - wait for better entry (be cautious)")
+    output.append("  [LOW] = Risky - avoid or wait for confirmation")
+    output.append("  AVOID = Too choppy/extended - do NOT chase these")
+    output.append("")
 
     # Entry Signals
     if update['entry_signals']:
         output.append(f"ENTRY OPPORTUNITIES ({len(update['entry_signals'])} stocks)")
+        output.append("  → Stocks with clean momentum - ready to trade NOW")
         output.append("")
 
         for signal in update['entry_signals'][:5]:  # Top 5
             confidence_tag = "[HIGH]" if signal['confidence'] == 'HIGH' else "[MED]" if signal['confidence'] == 'MEDIUM' else "[LOW]"
 
-            output.append(f"{confidence_tag} {signal['symbol']} - {signal['confidence']} CONFIDENCE")
-            output.append(f"   Current: ${signal['current_price']:.2f}")
-            output.append(f"   Reasons: {', '.join(signal['reasons'][:2])}")
+            # Add simple action
+            if signal['confidence'] == 'HIGH':
+                action = "→ STRONG BUY - Enter now or on dip"
+            elif signal['confidence'] == 'MEDIUM':
+                action = "→ CAUTIOUS - Wait for better entry"
+            else:
+                action = "→ RISKY - Only for experienced traders"
+
+            output.append(f"{confidence_tag} {signal['symbol']} - {action}")
+            output.append(f"   Current Price: ${signal['current_price']:.2f}")
+            output.append(f"   Why: {', '.join(signal['reasons'][:2])}")
             output.append("")
-            output.append("   ENTRY STRATEGY:")
+            output.append("   HOW TO ENTER:")
             for strategy in signal['entry_strategy']:
-                output.append(f"      {strategy}")
+                output.append(f"      • {strategy}")
             output.append("")
 
     else:
@@ -388,8 +403,10 @@ def format_market_open_update(update: Dict) -> str:
     # Avoid List
     if update['avoid_list']:
         output.append(f"AVOID ({len(update['avoid_list'])} stocks)")
+        output.append("  → DO NOT trade these - too risky/choppy right now")
+        output.append("")
         for symbol in update['avoid_list'][:3]:
-            output.append(f"   • {symbol}: Too risky to chase")
+            output.append(f"   • {symbol}: Gap already ran, low volume, or too volatile")
         output.append("")
 
     output.append("=" * 60)

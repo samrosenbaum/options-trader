@@ -441,6 +441,12 @@ def format_weekly_analysis(analysis: Dict) -> str:
     output.append(f"Week Ending: {analysis['week_ending']}")
     output.append("=" * 60)
     output.append("")
+    output.append("WHAT THIS REPORT SHOWS:")
+    output.append("  Win Rate = % of trades that made money (aim for 50%+)")
+    output.append("  P&L = Profit & Loss (how much money you made/lost)")
+    output.append("  UOA Success = How often our predictions were right")
+    output.append("  Learnings = What worked, what didn't, what to change")
+    output.append("")
 
     # Portfolio Summary
     perf = analysis['portfolio_performance']
@@ -503,16 +509,20 @@ def format_weekly_analysis(analysis: Dict) -> str:
 
     # Key Learnings
     if analysis['learnings']:
-        output.append("KEY LEARNINGS")
+        output.append("KEY LEARNINGS (What to Do Differently)")
+        output.append("  → Based on your actual results this week")
+        output.append("")
         for learning in analysis['learnings']:
             tag = "[SUCCESS]" if learning['type'] == 'success' else "[WARN]" if learning['type'] == 'warning' else "[INFO]"
             output.append(f"  {tag} {learning['category']}: {learning['insight']}")
-            output.append(f"     -> {learning['action']}")
+            output.append(f"     ACTION: {learning['action']}")
             output.append("")
 
     # Next Week Plan
     if analysis['next_week_plan']:
-        output.append("NEXT WEEK PLAN")
+        output.append("NEXT WEEK PLAN (What You Should Focus On)")
+        output.append("  → Specific actions to improve your trading")
+        output.append("")
         for item in analysis['next_week_plan']:
             output.append(f"  • {item}")
         output.append("")

@@ -247,6 +247,12 @@ def format_brief_for_display(brief: Dict) -> str:
     output.append(f"Generated: {brief['timestamp'].strftime('%Y-%m-%d %I:%M %p')}")
     output.append("=" * 60)
     output.append("")
+    output.append("HOW TO READ THIS BRIEF:")
+    output.append("  [BULL] = Smart money betting stock goes UP (buy calls or stock)")
+    output.append("  [BEAR] = Smart money betting stock goes DOWN (buy puts or avoid)")
+    output.append("  UOA = Unusual Options Activity (big bets being placed)")
+    output.append("  Vol/OI Ratio = How unusual the activity is (higher = stronger signal)")
+    output.append("")
 
     # Market Conditions
     if brief['market_conditions']:
@@ -275,9 +281,20 @@ def format_brief_for_display(brief: Dict) -> str:
     # UOA Signals
     if brief['uoa_signals']:
         output.append(f"UNUSUAL OPTIONS ACTIVITY ({len(brief['uoa_signals'])} stocks)")
+        output.append("  → These are stocks where smart money is placing big bets")
+        output.append("")
         for symbol, data in list(brief['uoa_signals'].items())[:3]:  # Top 3
             bias_indicator = "[BULL]" if data['bias'] == 'bullish' else "[BEAR]" if data['bias'] == 'bearish' else "[NEUT]"
-            output.append(f"  {bias_indicator} {symbol} ({data['bias'].upper()})")
+
+            # Add plain English explanation
+            if data['bias'] == 'bullish':
+                explanation = "→ Expect stock to go UP in next 5-10 days"
+            elif data['bias'] == 'bearish':
+                explanation = "→ Expect stock to go DOWN in next 5-10 days"
+            else:
+                explanation = "→ Mixed signals, wait for clearer direction"
+
+            output.append(f"  {bias_indicator} {symbol} - {explanation}")
 
             # Show top signal
             all_signals = data['call_signals'] + data['put_signals']
@@ -285,14 +302,18 @@ def format_brief_for_display(brief: Dict) -> str:
                 top_signal = max(all_signals, key=lambda x: x['vol_oi_ratio'])
                 atm = " ATM" if top_signal['is_atm'] else ""
                 output.append(f"     ${top_signal['strike']} {top_signal['type'].upper()}: {top_signal['volume']:,} vol / {top_signal['oi']:,} OI = {top_signal['vol_oi_ratio']:.1f}x{atm}")
-        output.append("")
+            output.append("")
 
     # Pre-market Movers
     if brief['premarket_movers']:
         output.append(f"PRE-MARKET MOVERS ({len(brief['premarket_movers'])} stocks)")
+        output.append("  → Stocks moving before market open (news, earnings, etc)")
+        output.append("")
         for symbol, data in list(brief['premarket_movers'].items())[:3]:  # Top 3
             direction_indicator = "▲" if data['gap_direction'] == 'up' else "▼"
-            output.append(f"  {direction_indicator} {symbol}: {data['gap_pct']:+.1f}% (${data['previous_close']:.2f} -> ${data['premarket_price']:.2f})")
+            move_type = "GAPPING UP" if data['gap_direction'] == 'up' else "GAPPING DOWN"
+            output.append(f"  {direction_indicator} {symbol}: {move_type} {abs(data['gap_pct']):.1f}%")
+            output.append(f"     ${data['previous_close']:.2f} → ${data['premarket_price']:.2f}")
         output.append("")
 
     # Earnings Today
