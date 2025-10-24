@@ -8,7 +8,8 @@ import Navigation from '@/components/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { TrendingUp, TrendingDown, RefreshCw, Brain, AlertTriangle } from "lucide-react"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { TrendingUp, TrendingDown, RefreshCw, Brain, AlertTriangle, Info } from "lucide-react"
 
 interface RejectedOption {
   symbol: string
@@ -597,7 +598,23 @@ export default function RejectionLearningPage() {
                       <th className="text-left p-3 text-sm font-medium text-muted-foreground">Strike</th>
                       <th className="text-left p-3 text-sm font-medium text-muted-foreground">Days Left</th>
                       <th className="text-left p-3 text-sm font-medium text-muted-foreground">You Made</th>
-                      <th className="text-left p-3 text-sm font-medium text-muted-foreground">If Held</th>
+                      <th className="text-left p-3 text-sm font-medium text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          If Held
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <Info className="h-3 w-3" />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="text-xs">Price change since you closed</p>
+                                <p className="text-xs text-muted-foreground">Green = gained value (closed early)</p>
+                                <p className="text-xs text-muted-foreground">Red = lost value (good close)</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
+                      </th>
                       <th className="text-left p-3 text-sm font-medium text-muted-foreground">Closed</th>
                     </tr>
                   </thead>

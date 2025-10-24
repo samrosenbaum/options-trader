@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
+export const dynamic = 'force-dynamic'
 
 /**
  * Update current/final performance for closed positions in anti-portfolio
@@ -55,8 +56,22 @@ export async function POST() {
 
     for (const pos of closedPositions) {
       try {
-        const expirationDate = new Date(pos.expiration)
+        console.log(`\n=== Processing ${pos.symbol} ===`)
+
+        // Calculate actual expiration date from close date + days until expiration
+        // This is more reliable than the stored expiration field which may be incorrect
+        const closedDate = new Date(pos.rejected_at)
+        const expirationDate = new Date(closedDate)
+        expirationDate.setDate(expirationDate.getDate() + (pos.days_until_expiration || 0))
+        expirationDate.setHours(23, 59, 59, 999) // End of expiration day
+
         const now = new Date()
+
+        console.log(`  Closed on: ${closedDate.toISOString()}`)
+        console.log(`  Days until expiration (at close): ${pos.days_until_expiration}`)
+        console.log(`  Calculated expiration: ${expirationDate.toISOString()}`)
+        console.log(`  Current time: ${now.toISOString()}`)
+        console.log(`  Has expired? ${now > expirationDate}`)
 
         // Check if position has expired
         if (now > expirationDate) {

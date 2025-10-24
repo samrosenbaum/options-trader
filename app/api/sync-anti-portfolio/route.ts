@@ -99,9 +99,59 @@ export async function POST() {
       }
 
       if (!rejection) {
-        // Position not in anti-portfolio, skip
-        console.log(`  ⏭️  Not in anti-portfolio, skipping`)
-        skipped++
+        // Position not in anti-portfolio - check if it should be added
+        const exitDate = new Date(pos.exit_date!)
+        const expirationDate = new Date(pos.expiration)
+        const daysUntilExpiration = Math.ceil(
+          (expirationDate.getTime() - exitDate.getTime()) / (1000 * 60 * 60 * 24)
+        )
+
+        if (daysUntilExpiration <= 0) {
+          console.log(`  ⏭️  Not in anti-portfolio, and closed after expiration, skipping`)
+          skipped++
+          continue
+        }
+
+        // Position was closed early but not in anti-portfolio - insert it
+        console.log(`  ➕ Not in anti-portfolio but closed ${daysUntilExpiration}d early - adding now`)
+
+        const entryDate = new Date(pos.entry_date)
+        const daysHeld = Math.ceil(
+          (exitDate.getTime() - entryDate.getTime()) / (1000 * 60 * 60 * 24)
+        )
+
+        const { error: insertError } = await supabase
+          .from('rejected_options')
+          .insert({
+            user_id: user.id,
+            symbol: pos.symbol,
+            strike: pos.strike,
+            expiration: pos.expiration,
+            option_type: pos.option_type,
+            stock_price: pos.current_stock_price || pos.entry_stock_price,
+            option_price: pos.exit_price || pos.entry_price,
+            volume: 0,
+            open_interest: 0,
+            rejection_reason: 'CLOSED_TOO_SOON',
+            filter_stage: 'position_closed_early',
+            rejection_source: 'user_closed_position',
+            position_id: pos.id,
+            days_until_expiration: daysUntilExpiration,
+            days_held: daysHeld,
+            realized_pl: pos.realized_pl,
+            realized_pl_percent: pos.realized_pl_percent,
+            rejected_at: pos.exit_date,
+          })
+
+        if (insertError) {
+          console.error(`  ❌ Error inserting ${pos.symbol}:`, insertError.message)
+          errors++
+          errorDetails.push({ symbol: pos.symbol, error: insertError.message })
+          continue
+        }
+
+        console.log(`  ✅ Added ${pos.symbol} to anti-portfolio (${daysUntilExpiration}d early)`)
+        updated++
         continue
       }
 
