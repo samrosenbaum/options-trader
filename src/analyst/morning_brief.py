@@ -251,7 +251,9 @@ def format_brief_for_display(brief: Dict) -> str:
     output.append("  [BULL] = Smart money betting stock goes UP (buy calls or stock)")
     output.append("  [BEAR] = Smart money betting stock goes DOWN (buy puts or avoid)")
     output.append("  UOA = Unusual Options Activity (big bets being placed)")
-    output.append("  Vol/OI Ratio = How unusual the activity is (higher = stronger signal)")
+    output.append("  Vol/OI Ratio = Volume ÷ Open Interest (shows how unusual)")
+    output.append("    • Normal = 0.5-1.5x  • Unusual = 2-5x  • Very Unusual = 5x+  • EXTREME = 20x+")
+    output.append("  Most Unusual = Highest vol/OI ratio (biggest smart money bet)")
     output.append("")
 
     # Market Conditions
@@ -303,16 +305,16 @@ def format_brief_for_display(brief: Dict) -> str:
             output.append(f"  {bias_indicator} {symbol} - {explanation}")
             output.append(f"     Call Volume: {call_volume:,} | Put Volume: {put_volume:,}")
 
-            # Show top call and put if both exist
+            # Show most unusual call and put (sorted by vol/OI ratio)
             if data['call_signals']:
                 top_call = max(data['call_signals'], key=lambda x: x['vol_oi_ratio'])
                 atm = " ATM" if top_call['is_atm'] else ""
-                output.append(f"     Top CALL: ${top_call['strike']} - {top_call['volume']:,} vol / {top_call['oi']:,} OI = {top_call['vol_oi_ratio']:.1f}x{atm}")
+                output.append(f"     Most Unusual CALL: ${top_call['strike']} - {top_call['volume']:,} vol / {top_call['oi']:,} OI = {top_call['vol_oi_ratio']:.1f}x{atm}")
 
             if data['put_signals']:
                 top_put = max(data['put_signals'], key=lambda x: x['vol_oi_ratio'])
                 atm = " ATM" if top_put['is_atm'] else ""
-                output.append(f"     Top PUT: ${top_put['strike']} - {top_put['volume']:,} vol / {top_put['oi']:,} OI = {top_put['vol_oi_ratio']:.1f}x{atm}")
+                output.append(f"     Most Unusual PUT: ${top_put['strike']} - {top_put['volume']:,} vol / {top_put['oi']:,} OI = {top_put['vol_oi_ratio']:.1f}x{atm}")
 
             output.append("")
 
