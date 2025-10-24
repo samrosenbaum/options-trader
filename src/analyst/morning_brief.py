@@ -243,22 +243,22 @@ def format_brief_for_display(brief: Dict) -> str:
 
     # Header
     output.append("=" * 60)
-    output.append("🌅 MORNING BRIEF")
+    output.append("MORNING BRIEF")
     output.append(f"Generated: {brief['timestamp'].strftime('%Y-%m-%d %I:%M %p')}")
     output.append("=" * 60)
     output.append("")
 
     # Market Conditions
     if brief['market_conditions']:
-        output.append("📊 MARKET CONDITIONS")
+        output.append("MARKET CONDITIONS")
         for index, data in brief['market_conditions'].items():
-            trend_emoji = "📈" if data['trend'] == 'bullish' else "📉"
-            output.append(f"  {trend_emoji} {index}: ${data['price']:.2f} ({data['trend']})")
+            trend_indicator = "▲" if data['trend'] == 'bullish' else "▼"
+            output.append(f"  {trend_indicator} {index}: ${data['price']:.2f} ({data['trend']})")
         output.append("")
 
     # Watchlist Summary
     if brief['watchlist']:
-        output.append(f"🎯 TODAY'S WATCHLIST ({len(brief['watchlist'])} stocks)")
+        output.append(f"TODAY'S WATCHLIST ({len(brief['watchlist'])} stocks)")
         for symbol in brief['watchlist'][:5]:  # Top 5
             reasons = []
             if symbol in brief['uoa_signals']:
@@ -274,10 +274,10 @@ def format_brief_for_display(brief: Dict) -> str:
 
     # UOA Signals
     if brief['uoa_signals']:
-        output.append(f"🔥 UNUSUAL OPTIONS ACTIVITY ({len(brief['uoa_signals'])} stocks)")
+        output.append(f"UNUSUAL OPTIONS ACTIVITY ({len(brief['uoa_signals'])} stocks)")
         for symbol, data in list(brief['uoa_signals'].items())[:3]:  # Top 3
-            bias_emoji = "🟢" if data['bias'] == 'bullish' else "🔴" if data['bias'] == 'bearish' else "⚪"
-            output.append(f"  {bias_emoji} {symbol} ({data['bias'].upper()})")
+            bias_indicator = "[BULL]" if data['bias'] == 'bullish' else "[BEAR]" if data['bias'] == 'bearish' else "[NEUT]"
+            output.append(f"  {bias_indicator} {symbol} ({data['bias'].upper()})")
 
             # Show top signal
             all_signals = data['call_signals'] + data['put_signals']
@@ -289,29 +289,29 @@ def format_brief_for_display(brief: Dict) -> str:
 
     # Pre-market Movers
     if brief['premarket_movers']:
-        output.append(f"🌅 PRE-MARKET MOVERS ({len(brief['premarket_movers'])} stocks)")
+        output.append(f"PRE-MARKET MOVERS ({len(brief['premarket_movers'])} stocks)")
         for symbol, data in list(brief['premarket_movers'].items())[:3]:  # Top 3
-            direction_emoji = "🟢" if data['gap_direction'] == 'up' else "🔴"
-            output.append(f"  {direction_emoji} {symbol}: {data['gap_pct']:+.1f}% (${data['previous_close']:.2f} → ${data['premarket_price']:.2f})")
+            direction_indicator = "▲" if data['gap_direction'] == 'up' else "▼"
+            output.append(f"  {direction_indicator} {symbol}: {data['gap_pct']:+.1f}% (${data['previous_close']:.2f} -> ${data['premarket_price']:.2f})")
         output.append("")
 
     # Earnings Today
     if brief['earnings_today']:
-        output.append(f"📅 EARNINGS TODAY ({len(brief['earnings_today'])} stocks)")
+        output.append(f"EARNINGS TODAY ({len(brief['earnings_today'])} stocks)")
         for symbol in brief['earnings_today'][:5]:
             output.append(f"  • {symbol}")
         output.append("")
 
     # Portfolio Alerts
     if brief['portfolio_alerts']:
-        output.append(f"⚠️  PORTFOLIO ALERTS ({len(brief['portfolio_alerts'])} alerts)")
+        output.append(f"PORTFOLIO ALERTS ({len(brief['portfolio_alerts'])} alerts)")
         for alert in brief['portfolio_alerts']:
-            urgency_emoji = "🔴" if alert['urgency'] == 'high' else "🟡"
-            output.append(f"  {urgency_emoji} {alert['message']}")
+            urgency_indicator = "[HIGH]" if alert['urgency'] == 'high' else "[MED]"
+            output.append(f"  {urgency_indicator} {alert['message']}")
         output.append("")
 
     output.append("=" * 60)
-    output.append("💡 Next Update: Market Open (9:35 AM)")
+    output.append("Next Update: Market Open (9:35 AM)")
     output.append("=" * 60)
 
     return "\n".join(output)

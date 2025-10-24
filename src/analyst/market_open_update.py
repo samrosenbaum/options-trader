@@ -353,47 +353,47 @@ def format_market_open_update(update: Dict) -> str:
         Formatted string
     """
     if 'error' in update:
-        return f"⚠️  {update['error']}"
+        return f"[ALERT] {update['error']}"
 
     output = []
 
     # Header
     output.append("=" * 60)
-    output.append("🔔 MARKET OPEN UPDATE (9:35 AM)")
+    output.append("MARKET OPEN UPDATE (9:35 AM)")
     output.append(f"Generated: {update['timestamp'].strftime('%Y-%m-%d %I:%M %p')}")
     output.append("=" * 60)
     output.append("")
 
     # Entry Signals
     if update['entry_signals']:
-        output.append(f"🎯 ENTRY OPPORTUNITIES ({len(update['entry_signals'])} stocks)")
+        output.append(f"ENTRY OPPORTUNITIES ({len(update['entry_signals'])} stocks)")
         output.append("")
 
         for signal in update['entry_signals'][:5]:  # Top 5
-            confidence_emoji = "🟢" if signal['confidence'] == 'HIGH' else "🟡" if signal['confidence'] == 'MEDIUM' else "⚪"
+            confidence_tag = "[HIGH]" if signal['confidence'] == 'HIGH' else "[MED]" if signal['confidence'] == 'MEDIUM' else "[LOW]"
 
-            output.append(f"{confidence_emoji} {signal['symbol']} - {signal['confidence']} CONFIDENCE")
+            output.append(f"{confidence_tag} {signal['symbol']} - {signal['confidence']} CONFIDENCE")
             output.append(f"   Current: ${signal['current_price']:.2f}")
             output.append(f"   Reasons: {', '.join(signal['reasons'][:2])}")
             output.append("")
-            output.append("   💡 ENTRY STRATEGY:")
+            output.append("   ENTRY STRATEGY:")
             for strategy in signal['entry_strategy']:
                 output.append(f"      {strategy}")
             output.append("")
 
     else:
-        output.append("⚠️  No clear entry opportunities at this time")
+        output.append("[ALERT] No clear entry opportunities at this time")
         output.append("")
 
     # Avoid List
     if update['avoid_list']:
-        output.append(f"❌ AVOID ({len(update['avoid_list'])} stocks)")
+        output.append(f"AVOID ({len(update['avoid_list'])} stocks)")
         for symbol in update['avoid_list'][:3]:
             output.append(f"   • {symbol}: Too risky to chase")
         output.append("")
 
     output.append("=" * 60)
-    output.append("⏰ Next Update: First Hour Check (10:00 AM)")
+    output.append("Next Update: First Hour Check (10:00 AM)")
     output.append("=" * 60)
 
     return "\n".join(output)

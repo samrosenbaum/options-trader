@@ -272,17 +272,17 @@ def format_nightly_brief(brief: Dict) -> str:
 
     # Header
     output.append("=" * 60)
-    output.append("🌙 NIGHTLY BRIEF - TOMORROW'S BATTLE PLAN")
+    output.append("NIGHTLY BRIEF - TOMORROW'S BATTLE PLAN")
     output.append(f"Generated: {brief['timestamp'].strftime('%Y-%m-%d %I:%M %p')}")
     output.append("=" * 60)
     output.append("")
 
     # Key Setups (highest conviction)
     if brief['key_setups']:
-        output.append(f"🎯 KEY SETUPS ({len(brief['key_setups'])} high-conviction plays)")
+        output.append(f"KEY SETUPS ({len(brief['key_setups'])} high-conviction plays)")
         for setup in brief['key_setups'][:3]:
-            bias_emoji = "🟢" if setup['bias'] == 'bullish' else "🔴" if setup['bias'] == 'bearish' else "⚪"
-            output.append(f"  {bias_emoji} {setup['symbol']} - {setup['conviction']} CONVICTION")
+            bias_indicator = "[BULL]" if setup['bias'] == 'bullish' else "[BEAR]" if setup['bias'] == 'bearish' else "[NEUT]"
+            output.append(f"  {bias_indicator} {setup['symbol']} - {setup['conviction']} CONVICTION")
             output.append(f"     {setup['setup']}")
             output.append(f"     Key Level: ${setup['key_level']:.2f}")
             output.append(f"     {setup['reason']}")
@@ -290,11 +290,11 @@ def format_nightly_brief(brief: Dict) -> str:
 
     # Tomorrow's Watchlist
     if brief['tomorrows_watchlist']:
-        output.append(f"📋 TOMORROW'S WATCHLIST ({len(brief['tomorrows_watchlist'])} stocks)")
+        output.append(f"TOMORROW'S WATCHLIST ({len(brief['tomorrows_watchlist'])} stocks)")
         for item in brief['tomorrows_watchlist'][:5]:
-            bias_emoji = "🟢" if item['bias'] == 'bullish' else "🔴" if item['bias'] == 'bearish' else "⚪"
-            output.append(f"  {bias_emoji} {item['symbol']} - {item['reason']}")
-            output.append(f"     ${item['current_price']:.2f} → {item['setup']}")
+            bias_indicator = "[BULL]" if item['bias'] == 'bullish' else "[BEAR]" if item['bias'] == 'bearish' else "[NEUT]"
+            output.append(f"  {bias_indicator} {item['symbol']} - {item['reason']}")
+            output.append(f"     ${item['current_price']:.2f} -> {item['setup']}")
 
             if item['uoa_details']:
                 uoa = item['uoa_details']
@@ -303,37 +303,37 @@ def format_nightly_brief(brief: Dict) -> str:
 
     # Earnings Tomorrow
     if brief['earnings_tomorrow']:
-        output.append(f"📅 EARNINGS TOMORROW ({len(brief['earnings_tomorrow'])} stocks)")
+        output.append(f"EARNINGS TOMORROW ({len(brief['earnings_tomorrow'])} stocks)")
         for item in brief['earnings_tomorrow']:
-            trend_emoji = "📈" if item['trend'] == 'bullish' else "📉"
-            output.append(f"  {trend_emoji} {item['symbol']}: ${item['current_price']:.2f} ({item['trend']})")
+            trend_indicator = "▲" if item['trend'] == 'bullish' else "▼"
+            output.append(f"  {trend_indicator} {item['symbol']}: ${item['current_price']:.2f} ({item['trend']})")
         output.append("")
 
     # Market Levels
     if brief['market_levels']:
-        output.append("📊 MARKET SETUP")
+        output.append("MARKET SETUP")
         for index, levels in brief['market_levels'].items():
-            trend_emoji = "📈" if levels['trend'] == 'bullish' else "📉"
-            output.append(f"  {trend_emoji} {index}: ${levels['current_price']:.2f}")
+            trend_indicator = "▲" if levels['trend'] == 'bullish' else "▼"
+            output.append(f"  {trend_indicator} {index}: ${levels['current_price']:.2f}")
             output.append(f"     Support: ${levels['support']:.2f} | Resistance: ${levels['resistance']:.2f}")
         output.append("")
 
     # Portfolio Summary
     if brief['portfolio_summary'] and brief['portfolio_summary']['total_positions'] > 0:
         summary = brief['portfolio_summary']
-        output.append("💼 PORTFOLIO CHECK")
+        output.append("PORTFOLIO CHECK")
         output.append(f"  • {summary['total_positions']} open positions")
         output.append(f"  • ${summary['total_capital_at_risk']:.0f} at risk ({summary['risk_exposure_pct']:.1f}% of capital)")
 
         if summary['expiring_soon']:
-            output.append(f"\n  ⚠️  {len(summary['expiring_soon'])} positions expiring soon:")
+            output.append(f"\n  [ALERT] {len(summary['expiring_soon'])} positions expiring soon:")
             for pos in summary['expiring_soon'][:3]:
-                pl_emoji = "🟢" if pos['current_pl_pct'] > 0 else "🔴"
-                output.append(f"     {pl_emoji} {pos['symbol']} ${pos['strike']} {pos['option_type'].upper()} - {pos['days_until_expiration']}d left ({pos['current_pl_pct']:+.1f}%)")
+                pl_indicator = "▲" if pos['current_pl_pct'] > 0 else "▼"
+                output.append(f"     {pl_indicator} {pos['symbol']} ${pos['strike']} {pos['option_type'].upper()} - {pos['days_until_expiration']}d left ({pos['current_pl_pct']:+.1f}%)")
         output.append("")
 
     output.append("=" * 60)
-    output.append("⏰ Tomorrow: Morning Brief at 7:00 AM")
+    output.append("Tomorrow: Morning Brief at 7:00 AM")
     output.append("=" * 60)
 
     return "\n".join(output)

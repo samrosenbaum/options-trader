@@ -437,7 +437,7 @@ def format_weekly_analysis(analysis: Dict) -> str:
 
     # Header
     output.append("=" * 60)
-    output.append("📊 WEEKLY PERFORMANCE ANALYSIS")
+    output.append("WEEKLY PERFORMANCE ANALYSIS")
     output.append(f"Week Ending: {analysis['week_ending']}")
     output.append("=" * 60)
     output.append("")
@@ -445,7 +445,7 @@ def format_weekly_analysis(analysis: Dict) -> str:
     # Portfolio Summary
     perf = analysis['portfolio_performance']
     if perf.get('total_trades', 0) > 0:
-        output.append("💼 PORTFOLIO PERFORMANCE")
+        output.append("PORTFOLIO PERFORMANCE")
         output.append(f"  • Total Trades: {perf['total_trades']}")
         output.append(f"  • Win Rate: {perf['win_rate']:.1f}% ({perf['winners']} wins, {perf['losers']} losses)")
         output.append(f"  • Total P&L: ${perf['total_pl']:.2f}")
@@ -455,16 +455,16 @@ def format_weekly_analysis(analysis: Dict) -> str:
         # Best/Worst Trades
         if perf.get('best_trade'):
             best = perf['best_trade']
-            output.append(f"  🏆 Best Trade: {best['symbol']} ${best['strike']} {best['option_type'].upper()} (${best.get('realized_pl', 0):.2f})")
+            output.append(f"  [WIN] Best Trade: {best['symbol']} ${best['strike']} {best['option_type'].upper()} (${best.get('realized_pl', 0):.2f})")
 
         if perf.get('worst_trade'):
             worst = perf['worst_trade']
-            output.append(f"  💔 Worst Trade: {worst['symbol']} ${worst['strike']} {worst['option_type'].upper()} (${worst.get('realized_pl', 0):.2f})")
+            output.append(f"  [LOSS] Worst Trade: {worst['symbol']} ${worst['strike']} {worst['option_type'].upper()} (${worst.get('realized_pl', 0):.2f})")
         output.append("")
 
         # Holding Period Analysis
         if perf.get('holding_period_analysis'):
-            output.append("  📅 HOLDING PERIOD BREAKDOWN")
+            output.append("  HOLDING PERIOD BREAKDOWN")
             for period, data in perf['holding_period_analysis'].items():
                 output.append(f"     {period.replace('_', ' ').title()}: {data['win_rate']:.1f}% win rate ({data['total']} trades)")
             output.append("")
@@ -472,7 +472,7 @@ def format_weekly_analysis(analysis: Dict) -> str:
         # Option Type Analysis
         if perf.get('option_type_analysis'):
             opt_analysis = perf['option_type_analysis']
-            output.append("  📈 OPTION TYPE PERFORMANCE")
+            output.append("  OPTION TYPE PERFORMANCE")
             output.append(f"     Calls: {opt_analysis['calls']['win_rate']:.1f}% win rate ({opt_analysis['calls']['total']} trades)")
             output.append(f"     Puts: {opt_analysis['puts']['win_rate']:.1f}% win rate ({opt_analysis['puts']['total']} trades)")
             output.append("")
@@ -480,22 +480,22 @@ def format_weekly_analysis(analysis: Dict) -> str:
     # UOA Scanner Performance
     uoa = analysis['uoa_performance']
     if uoa.get('total_signals', 0) > 0:
-        output.append("🔥 UOA SCANNER EFFECTIVENESS")
+        output.append("UOA SCANNER EFFECTIVENESS")
         output.append(f"  • Total Signals: {uoa['total_signals']}")
         output.append(f"  • Success Rate: {uoa['success_rate']:.1f}%")
         output.append(f"  • Avg Move: {uoa['avg_move_pct']:.1f}%")
         output.append("")
 
         if uoa.get('best_performers'):
-            output.append("  🎯 Best UOA Signals:")
+            output.append("  Best UOA Signals:")
             for performer in uoa['best_performers'][:3]:
-                bias_emoji = "🟢" if performer['bias'] == 'bullish' else "🔴"
-                output.append(f"     {bias_emoji} {performer['symbol']}: {performer['move_pct']:+.1f}% ({performer['vol_oi_ratio']:.1f}x vol/OI)")
+                bias_tag = "[BULL]" if performer['bias'] == 'bullish' else "[BEAR]"
+                output.append(f"     {bias_tag} {performer['symbol']}: {performer['move_pct']:+.1f}% ({performer['vol_oi_ratio']:.1f}x vol/OI)")
             output.append("")
 
         # Patterns
         if uoa.get('patterns'):
-            output.append("  📊 PATTERN INSIGHTS")
+            output.append("  PATTERN INSIGHTS")
             if 'high_ratio' in uoa['patterns']:
                 hr = uoa['patterns']['high_ratio']
                 output.append(f"     High Vol/OI (>3.0x): {hr['success_rate']:.1f}% success ({hr['successful']}/{hr['total']})")
@@ -503,22 +503,22 @@ def format_weekly_analysis(analysis: Dict) -> str:
 
     # Key Learnings
     if analysis['learnings']:
-        output.append("💡 KEY LEARNINGS")
+        output.append("KEY LEARNINGS")
         for learning in analysis['learnings']:
-            emoji = "✅" if learning['type'] == 'success' else "⚠️" if learning['type'] == 'warning' else "📌"
-            output.append(f"  {emoji} {learning['category']}: {learning['insight']}")
-            output.append(f"     → {learning['action']}")
+            tag = "[SUCCESS]" if learning['type'] == 'success' else "[WARN]" if learning['type'] == 'warning' else "[INFO]"
+            output.append(f"  {tag} {learning['category']}: {learning['insight']}")
+            output.append(f"     -> {learning['action']}")
             output.append("")
 
     # Next Week Plan
     if analysis['next_week_plan']:
-        output.append("🎯 NEXT WEEK PLAN")
+        output.append("NEXT WEEK PLAN")
         for item in analysis['next_week_plan']:
             output.append(f"  • {item}")
         output.append("")
 
     output.append("=" * 60)
-    output.append("Keep learning and improving! 📈")
+    output.append("Keep learning and improving!")
     output.append("=" * 60)
 
     return "\n".join(output)
