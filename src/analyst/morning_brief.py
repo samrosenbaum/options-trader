@@ -248,12 +248,14 @@ def format_brief_for_display(brief: Dict) -> str:
     output.append("=" * 60)
     output.append("")
     output.append("HOW TO READ THIS BRIEF:")
-    output.append("  [BULL] = Smart money betting stock goes UP (buy calls or stock)")
-    output.append("  [BEAR] = Smart money betting stock goes DOWN (buy puts or avoid)")
-    output.append("  UOA = Unusual Options Activity (big bets being placed)")
-    output.append("  Vol/OI Ratio = Volume ÷ Open Interest (shows how unusual)")
-    output.append("    • Normal = 0.5-1.5x  • Unusual = 2-5x  • Very Unusual = 5x+  • EXTREME = 20x+")
-    output.append("  Most Unusual = Highest vol/OI ratio (biggest smart money bet)")
+    output.append("  [BULL] = Stock expected to go UP → Look for buying opportunities")
+    output.append("  [BEAR] = Stock expected to go DOWN → Avoid or buy puts")
+    output.append("  [MIXED] = Unclear direction → Wait for better signal")
+    output.append("")
+    output.append("  Each stock shows:")
+    output.append("    • ACTION: What you should do (BUY, AVOID, or WAIT)")
+    output.append("    • Why: The data behind the prediction")
+    output.append("    • Biggest Bet: What the largest smart money trade is betting on")
     output.append("")
 
     # Market Conditions
@@ -291,30 +293,41 @@ def format_brief_for_display(brief: Dict) -> str:
             call_volume = sum(s['volume'] for s in data['call_signals'])
             put_volume = sum(s['volume'] for s in data['put_signals'])
 
-            # Determine bias indicator
+            # Determine bias and create actionable conclusion
             if call_volume > put_volume * 1.5:  # Calls dominate
                 bias_indicator = "[BULL]"
-                explanation = "→ Expect stock to go UP (heavy CALL buying)"
+                action = f"BUY calls or shares - Smart money expects {symbol} to RISE"
+                volume_analysis = f"Calls dominating: {call_volume:,} call volume vs {put_volume:,} put volume"
             elif put_volume > call_volume * 1.5:  # Puts dominate
                 bias_indicator = "[BEAR]"
-                explanation = "→ Expect stock to go DOWN (heavy PUT buying)"
+                action = f"BUY puts or AVOID - Smart money expects {symbol} to FALL"
+                volume_analysis = f"Puts dominating: {put_volume:,} put volume vs {call_volume:,} call volume"
             else:  # Mixed
                 bias_indicator = "[MIXED]"
-                explanation = "→ Mixed signals (both CALLS and PUTS active)"
+                action = f"WAIT for clearer direction - Big money betting BOTH ways on {symbol}"
+                volume_analysis = f"Mixed signals: {call_volume:,} calls vs {put_volume:,} puts (too close)"
 
-            output.append(f"  {bias_indicator} {symbol} - {explanation}")
-            output.append(f"     Call Volume: {call_volume:,} | Put Volume: {put_volume:,}")
+            output.append(f"  {bias_indicator} {symbol}")
+            output.append(f"     ACTION: {action}")
+            output.append(f"     Why: {volume_analysis}")
 
-            # Show most unusual call and put (sorted by vol/OI ratio)
-            if data['call_signals']:
-                top_call = max(data['call_signals'], key=lambda x: x['vol_oi_ratio'])
-                atm = " ATM" if top_call['is_atm'] else ""
-                output.append(f"     Most Unusual CALL: ${top_call['strike']} - {top_call['volume']:,} vol / {top_call['oi']:,} OI = {top_call['vol_oi_ratio']:.1f}x{atm}")
+            # Find and explain the biggest bet
+            all_signals = data['call_signals'] + data['put_signals']
+            if all_signals:
+                biggest_bet = max(all_signals, key=lambda x: x['vol_oi_ratio'])
+                bet_type = "CALL" if biggest_bet['type'] == 'call' else "PUT"
+                direction = "UP" if biggest_bet['type'] == 'call' else "DOWN"
+                intensity = ""
+                if biggest_bet['vol_oi_ratio'] >= 20:
+                    intensity = "MASSIVE"
+                elif biggest_bet['vol_oi_ratio'] >= 5:
+                    intensity = "BIG"
+                else:
+                    intensity = "Significant"
 
-            if data['put_signals']:
-                top_put = max(data['put_signals'], key=lambda x: x['vol_oi_ratio'])
-                atm = " ATM" if top_put['is_atm'] else ""
-                output.append(f"     Most Unusual PUT: ${top_put['strike']} - {top_put['volume']:,} vol / {top_put['oi']:,} OI = {top_put['vol_oi_ratio']:.1f}x{atm}")
+                atm_note = " at current price" if biggest_bet['is_atm'] else ""
+                output.append(f"     Biggest Bet: {intensity} {bet_type} bet at ${biggest_bet['strike']}{atm_note} ({biggest_bet['vol_oi_ratio']:.1f}x unusual)")
+                output.append(f"                  {biggest_bet['volume']:,} contracts betting {symbol} goes {direction}")
 
             output.append("")
 
