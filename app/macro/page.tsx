@@ -30,11 +30,24 @@ interface MacroData {
   timestamp: string
 }
 
+interface CalendarEvent {
+  date: string
+  time: string
+  event: string
+  impact: 'high' | 'medium' | 'low'
+  country: string
+  forecast: string | null
+  previous: string | null
+  category: 'fed' | 'jobs' | 'inflation' | 'gdp' | 'earnings' | 'other'
+}
+
 export default function MacroPage() {
   const [data, setData] = useState<MacroData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
+  const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([])
+  const [calendarLoading, setCalendarLoading] = useState(true)
 
   const fetchMacroData = async () => {
     try {
@@ -57,11 +70,33 @@ export default function MacroPage() {
     }
   }
 
+  const fetchCalendarData = async () => {
+    try {
+      setCalendarLoading(true)
+      const response = await fetch('/api/economic-calendar')
+      const result = await response.json()
+
+      if (result.success && result.events) {
+        setCalendarEvents(result.events)
+      }
+    } catch (err) {
+      console.error('Error fetching calendar data:', err)
+    } finally {
+      setCalendarLoading(false)
+    }
+  }
+
   useEffect(() => {
     fetchMacroData()
+    fetchCalendarData()
     // Auto-refresh every 5 minutes
     const interval = setInterval(fetchMacroData, 5 * 60 * 1000)
-    return () => clearInterval(interval)
+    // Refresh calendar once per hour
+    const calendarInterval = setInterval(fetchCalendarData, 60 * 60 * 1000)
+    return () => {
+      clearInterval(interval)
+      clearInterval(calendarInterval)
+    }
   }, [])
 
   const formatNumber = (num: number, decimals: number = 2) => {
@@ -89,6 +124,51 @@ export default function MacroPage() {
         return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
       default:
         return 'bg-slate-100 text-slate-800 dark:bg-slate-900/30 dark:text-slate-300'
+    }
+  }
+
+  const getImpactColor = (impact: string) => {
+    switch (impact) {
+      case 'high':
+        return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+      case 'medium':
+        return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
+      case 'low':
+        return 'bg-slate-100 text-slate-800 dark:bg-slate-900/30 dark:text-slate-300'
+      default:
+        return 'bg-slate-100 text-slate-800 dark:bg-slate-900/30 dark:text-slate-300'
+    }
+  }
+
+  const getCategoryColor = (category: string) => {
+    switch (category) {
+      case 'fed':
+        return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300'
+      case 'jobs':
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
+      case 'inflation':
+        return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'
+      case 'gdp':
+        return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300'
+      case 'earnings':
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
+      default:
+        return 'bg-slate-100 text-slate-800 dark:bg-slate-900/30 dark:text-slate-300'
+    }
+  }
+
+  const formatEventDate = (dateStr: string) => {
+    const date = new Date(dateStr)
+    const today = new Date()
+    const tomorrow = new Date(today)
+    tomorrow.setDate(tomorrow.getDate() + 1)
+
+    if (date.toDateString() === today.toDateString()) {
+      return 'Today'
+    } else if (date.toDateString() === tomorrow.toDateString()) {
+      return 'Tomorrow'
+    } else {
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
     }
   }
 
@@ -169,6 +249,72 @@ export default function MacroPage() {
                 </div>
               </div>
             )}
+
+            {/* Economic Calendar */}
+            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6 border border-slate-200 dark:border-slate-700">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">
+                Economic Calendar
+              </h2>
+              <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+                Upcoming high-impact events that may affect your options trades
+              </p>
+
+              {calendarLoading && (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600 mx-auto"></div>
+                  <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">Loading calendar...</p>
+                </div>
+              )}
+
+              {!calendarLoading && calendarEvents.length === 0 && (
+                <div className="text-center py-8 text-slate-500 dark:text-slate-400">
+                  No upcoming events found
+                </div>
+              )}
+
+              {!calendarLoading && calendarEvents.length > 0 && (
+                <div className="space-y-3">
+                  {calendarEvents.map((event, index) => (
+                    <div
+                      key={index}
+                      className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-700 transition-colors"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className={`px-2 py-1 rounded text-xs font-semibold ${getCategoryColor(event.category)}`}>
+                              {event.category.toUpperCase()}
+                            </span>
+                            <span className={`px-2 py-1 rounded text-xs font-semibold ${getImpactColor(event.impact)}`}>
+                              {event.impact.toUpperCase()}
+                            </span>
+                          </div>
+                          <div className="font-semibold text-slate-900 dark:text-white mb-1">
+                            {event.event}
+                          </div>
+                          <div className="flex items-center gap-4 text-xs text-slate-600 dark:text-slate-400">
+                            <span>{formatEventDate(event.date)} at {event.time} ET</span>
+                            {event.forecast && (
+                              <span>Forecast: {event.forecast}</span>
+                            )}
+                            {event.previous && (
+                              <span>Previous: {event.previous}</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                <p className="text-xs text-blue-800 dark:text-blue-300">
+                  <strong>Trading Tip:</strong> High-impact events like Fed meetings, jobs reports, and CPI data can cause significant volatility.
+                  Consider adjusting your positions or hedging before major announcements.
+                </p>
+              </div>
+            </div>
 
             {/* Major Indices */}
             <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6 border border-slate-200 dark:border-slate-700">
