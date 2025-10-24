@@ -1,0 +1,20 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/morning-brief",
+      "schedule": "0 11 * * 1-5"
+    },
+    {
+      "path": "/api/cron/nightly-brief",
+      "schedule": "0 0 * * 1-5"
+    },
+    {
+      "path": "/api/cron/market-open-update",
+      "schedule": "35 13 * * 1-5"
+    },
+    {
+      "path": "/api/cron/weekly-analysis",
+      "schedule": "0 20 * * 0"
+    }
+  ]
+}
