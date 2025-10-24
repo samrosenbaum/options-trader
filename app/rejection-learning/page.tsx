@@ -643,7 +643,17 @@ export default function RejectionLearningPage() {
                                 </span>
                               </div>
                             ) : (
-                              <span className="text-xs text-muted-foreground">Tracking...</span>
+                              <span className="text-xs text-muted-foreground">
+                                {(() => {
+                                  const closedDate = new Date(rej.rejected_at)
+                                  const today = new Date()
+                                  closedDate.setHours(0, 0, 0, 0)
+                                  today.setHours(0, 0, 0, 0)
+                                  return closedDate.getTime() === today.getTime()
+                                    ? 'Tracking starts tomorrow'
+                                    : 'Tracking...'
+                                })()}
+                              </span>
                             )}
                           </td>
                           <td className="p-3 text-xs text-muted-foreground">
