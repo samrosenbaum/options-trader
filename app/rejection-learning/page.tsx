@@ -595,7 +595,9 @@ export default function RejectionLearningPage() {
                             </div>
                           </td>
                           <td className="p-3">
-                            {rej.price_change_percent !== null ? (
+                            {rej.rejection_source === 'user_closed_position' ? (
+                              <span className="text-xs text-muted-foreground">N/A (Closed)</span>
+                            ) : rej.price_change_percent !== null ? (
                               <div className="flex items-center gap-1">
                                 {rej.price_change_percent > 0 ? (
                                   <TrendingUp className="h-4 w-4 text-emerald-600" />
