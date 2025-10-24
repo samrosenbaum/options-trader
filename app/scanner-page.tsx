@@ -3349,35 +3349,6 @@ export default function ScannerPage({ user }: ScannerPageProps) {
                 )}
               </div>
             )}
-            {showEnhancedStatus && (
-              <div className="w-full mt-3">
-                <div
-                  className={`flex items-start gap-3 rounded-lg border px-4 py-3 ${
-                    enhancedResponseDetected
-                      ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-100'
-                      : 'border-sky-500/30 bg-sky-500/10 text-sky-100'
-                  }`}
-                >
-                  <svg className="mt-1 h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6l7 4v4c0 3-3 5-7 8-4-3-7-5-7-8v-4l7-4z" />
-                  </svg>
-                  <div className="space-y-1">
-                    <p className="font-semibold">
-                      {enhancedResponseDetected ? 'Institutional scanner active' : 'Requesting institutional-grade analysis'}
-                    </p>
-                    <p
-                      className={`text-sm leading-relaxed ${
-                        enhancedResponseDetected ? 'text-emerald-100/80' : 'text-sky-100/80'
-                      }`}
-                    >
-                      {enhancedResponseDetected
-                        ? 'Results include enhanced probability calibration, advanced Greeks, and risk-adjusted filtering.'
-                        : 'This institutional mode runs advanced modeling and can take up to 60 seconds to complete.'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
             {activeTab === 'options' && (fallbackActive || staleCacheActive) && (
               <div className="w-full mt-3 space-y-2">
                 {fallbackActive && (

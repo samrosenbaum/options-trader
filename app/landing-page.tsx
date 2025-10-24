@@ -156,7 +156,7 @@ export default function LandingPage() {
               Your personal options quant
             </div>
             <h1 className="max-w-3xl text-4xl font-display font-semibold leading-tight text-white sm:text-5xl lg:text-6xl">
-              Build your Empire
+              Your AI-powered options trading desk
             </h1>
             <p className="max-w-2xl text-lg text-white/70">
               Monty is your AI-powered options trading advisor. Get real-time market scans, data-driven trade recommendations, and personalized portfolio analysis. From discovering high-probability setups to knowing exactly when to exit, Monty turns complex options data into actionable insights.
@@ -209,7 +209,7 @@ export default function LandingPage() {
         <div className="mx-auto flex w-full max-w-5xl flex-col items-center text-center">
           <span className="text-sm font-semibold uppercase tracking-[0.4em] text-white/40">Everything you need</span>
           <h2 className="mt-6 max-w-2xl text-3xl font-display font-semibold text-white sm:text-4xl">
-            Professional-grade tools that give you an unfair advantage
+            Options trading tools that give you an unfair advantage
           </h2>
         </div>
 
