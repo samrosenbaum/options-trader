@@ -1,10 +1,24 @@
 import { Resend } from 'resend'
 
-if (!process.env.RESEND_API_KEY) {
-  throw new Error('RESEND_API_KEY is not set in environment variables')
+// Lazy initialization - only create Resend client when needed (at runtime, not build time)
+let resendClient: Resend | null = null
+
+export function getResendClient() {
+  if (!resendClient) {
+    if (!process.env.RESEND_API_KEY) {
+      throw new Error('RESEND_API_KEY is not set in environment variables')
+    }
+    resendClient = new Resend(process.env.RESEND_API_KEY)
+  }
+  return resendClient
 }
 
-export const resend = new Resend(process.env.RESEND_API_KEY)
+// For backwards compatibility - export as 'resend' but as a getter
+export const resend = {
+  get emails() {
+    return getResendClient().emails
+  }
+}
 
 export const ANALYST_EMAIL_CONFIG = {
   from: 'Monty Analyst <onboarding@resend.dev>', // Resend's test email for development
@@ -16,6 +30,7 @@ export const ANALYST_EMAIL_CONFIG = {
  * Send morning brief email
  */
 export async function sendMorningBrief(formattedText: string) {
+  const resend = getResendClient()
   const { data, error } = await resend.emails.send({
     from: ANALYST_EMAIL_CONFIG.from,
     to: ANALYST_EMAIL_CONFIG.to,
@@ -36,6 +51,7 @@ export async function sendMorningBrief(formattedText: string) {
  * Send nightly brief email
  */
 export async function sendNightlyBrief(formattedText: string) {
+  const resend = getResendClient()
   const { data, error } = await resend.emails.send({
     from: ANALYST_EMAIL_CONFIG.from,
     to: ANALYST_EMAIL_CONFIG.to,
@@ -56,6 +72,7 @@ export async function sendNightlyBrief(formattedText: string) {
  * Send market open update email
  */
 export async function sendMarketOpenUpdate(formattedText: string) {
+  const resend = getResendClient()
   const { data, error } = await resend.emails.send({
     from: ANALYST_EMAIL_CONFIG.from,
     to: ANALYST_EMAIL_CONFIG.to,
@@ -76,6 +93,7 @@ export async function sendMarketOpenUpdate(formattedText: string) {
  * Send weekly analysis email
  */
 export async function sendWeeklyAnalysis(formattedText: string) {
+  const resend = getResendClient()
   const { data, error } = await resend.emails.send({
     from: ANALYST_EMAIL_CONFIG.from,
     to: ANALYST_EMAIL_CONFIG.to,
