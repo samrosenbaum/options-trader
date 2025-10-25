@@ -79,14 +79,14 @@ services:
         value: production
     autoDeploy: true
 
-  # Morning Brief - sends at 7:00 AM ET (11:00 UTC) on weekdays
+  # Morning Brief - sends at 7:00 AM ET (11:00 UTC) on weekdays to all subscribed users
   - type: cron
     name: morning-brief
     runtime: python
     plan: starter
     schedule: "0 11 * * 1-5"  # 7:00 AM ET (11:00 UTC) on weekdays
     buildCommand: bash build.sh
-    startCommand: curl -f -X POST "${RENDER_EXTERNAL_URL}/api/analyst/send-morning-brief" || exit 0
+    startCommand: curl -f -X POST "${RENDER_EXTERNAL_URL}/api/cron/morning-brief" || exit 0
     envVars:
       - key: NODE_VERSION
         value: 18
@@ -96,14 +96,14 @@ services:
         value: production
     autoDeploy: true
 
-  # Nightly Brief - sends at 8:00 PM ET (00:00 UTC next day) on weekdays
+  # Nightly Brief - sends at 8:00 PM ET (00:00 UTC next day) on weekdays to all subscribed users
   - type: cron
     name: nightly-brief
     runtime: python
     plan: starter
     schedule: "0 0 * * 2-6"  # 8:00 PM ET Mon-Fri (00:00 UTC Tue-Sat)
     buildCommand: bash build.sh
-    startCommand: curl -f -X POST "${RENDER_EXTERNAL_URL}/api/analyst/send-nightly-brief" || exit 0
+    startCommand: curl -f -X POST "${RENDER_EXTERNAL_URL}/api/cron/nightly-brief" || exit 0
     envVars:
       - key: NODE_VERSION
         value: 18
