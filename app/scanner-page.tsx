@@ -927,7 +927,7 @@ Liquidity: ${((opp as Record<string, unknown>).liquidityScore as number | undefi
             )}
           </div>
 
-          {/* Monty's Takeaway - Plain English */}
+          {/* Monty's Takeaway - Quant Insights */}
           {(() => {
             const bias = opp.enhancedDirectionalBias || opp.directionalBias
             const direction = bias?.direction || 'neutral'
@@ -937,18 +937,60 @@ Liquidity: ${((opp as Record<string, unknown>).liquidityScore as number | undefi
                   ? (opp.breakevenPrice - opp.stockPrice) / opp.stockPrice
                   : (opp.stockPrice - opp.breakevenPrice) / opp.stockPrice) * 100)
               : 0
-            // Premium is already the total contract cost, no need to multiply
             const premiumPerContract = opp.premium
+
+            // Quant metrics
+            const delta = opp.greeks?.delta || 0
+            const leverage = delta !== 0 ? (opp.stockPrice / (opp.premium / 100)) * Math.abs(delta) : 0
+            const profitPerDollarMove = Math.abs(delta) * 100 // Delta * 100 shares
+            const volOIRatio = opp.openInterest ? opp.volume / opp.openInterest : 0
+            const daysToExp = Math.ceil((new Date(opp.expiration).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+            const thetaDaily = opp.greeks?.theta || 0
+            const thetaCost = Math.abs(thetaDaily) * 100 // Per contract daily decay
+
+            // Generate insights
+            const insights = []
+
+            // Leverage insight
+            if (leverage > 0) {
+              insights.push(`${leverage.toFixed(1)}x leverage - you'll make ~$${profitPerDollarMove.toFixed(0)} for every $1 the stock moves ${moveDirection}`)
+            }
+
+            // Volume/positioning insight
+            if (volOIRatio >= 1) {
+              insights.push(`Heavy institutional flow today (${volOIRatio.toFixed(1)}x volume/OI ratio) - smart money is actively positioning`)
+            } else if (volOIRatio >= 0.5) {
+              insights.push(`Healthy volume suggests growing interest in this strike`)
+            } else if (volOIRatio > 0) {
+              insights.push(`Light volume - position carefully, spreads may be wide`)
+            }
+
+            // Time decay insight
+            if (thetaCost > 10 && daysToExp < 14) {
+              insights.push(`Burning $${thetaCost.toFixed(0)}/day in theta - time is expensive here`)
+            } else if (thetaCost > 5) {
+              insights.push(`Theta decay: $${thetaCost.toFixed(0)}/day`)
+            }
+
+            // IV/volatility insight (if available)
+            if (opp.impliedVolatility && opp.impliedVolatility > 0.5) {
+              insights.push(`High IV (${(opp.impliedVolatility * 100).toFixed(0)}%) - market expects big swings`)
+            } else if (opp.impliedVolatility && opp.impliedVolatility < 0.2) {
+              insights.push(`Low IV (${(opp.impliedVolatility * 100).toFixed(0)}%) - cheap premium but expecting quiet action`)
+            }
 
             return (
               <>
                 <div className="rounded-lg bg-blue-500/10 dark:bg-blue-500/5 p-3 text-sm border border-blue-500/20">
                   <p className="font-semibold text-blue-400 dark:text-blue-300 mb-1.5">Monty's takeaway</p>
-                  <p className="text-slate-200 dark:text-slate-300 leading-relaxed">
-                    Stock is at ${opp.stockPrice.toFixed(2)}. You need roughly a {Math.abs(breakevenMove).toFixed(1)}% move {moveDirection} by {opp.expiration} to break even.
-                    {premiumPerContract >= 100 && ` Each contract costs $${premiumPerContract.toFixed(0)} (controls 100 shares).`}
-                    {bias && direction !== 'neutral' && ` Market showing ${direction} bias with ${(bias.confidence <= 1 ? bias.confidence * 100 : bias.confidence).toFixed(0)}% confidence.`}
-                  </p>
+                  <ul className="text-slate-200 dark:text-slate-300 leading-relaxed space-y-1">
+                    {insights.map((insight, i) => (
+                      <li key={i} className="flex items-start gap-2">
+                        <span className="text-blue-400 dark:text-blue-300 mt-0.5">•</span>
+                        <span>{insight}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
 
                 {/* Simplified Metric Grid */}
