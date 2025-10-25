@@ -44,7 +44,7 @@ export default function Navigation({ userEmail }: { userEmail?: string }) {
   ]
 
   return (
-    <nav className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-50">
+    <nav className="sticky top-0 z-50 border-b border-slate-200 bg-white/80 backdrop-blur-xl transition-colors dark:border-slate-800 dark:bg-slate-950/70">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 gap-4">
           {/* Logo/Brand - Clickable, links to dashboard */}
@@ -60,18 +60,29 @@ export default function Navigation({ userEmail }: { userEmail?: string }) {
 
           <button
             type="button"
-            className="inline-flex items-center justify-center rounded-md p-2 text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-white dark:text-slate-300 dark:hover:text-white dark:hover:bg-slate-800 dark:focus:ring-offset-slate-900 md:hidden"
+            className={`group relative inline-flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border border-white/20 bg-white/10 text-slate-700 shadow-[0_10px_40px_rgba(16,185,129,0.15)] transition-all duration-300 ease-out hover:border-emerald-300/60 hover:shadow-[0_12px_45px_rgba(16,185,129,0.35)] focus-visible:outline-none focus-visible:ring-0 after:pointer-events-none after:absolute after:inset-[-8px] after:rounded-full after:border after:border-emerald-400/40 after:opacity-0 after:transition-all after:duration-300 after:ease-out after:content-[''] focus-visible:after:opacity-100 focus-visible:after:animate-pulse dark:border-white/10 dark:bg-slate-900/30 dark:text-slate-200 dark:hover:border-emerald-400/70 ${
+              isMenuOpen ? 'scale-95 bg-emerald-200/20 dark:bg-emerald-500/10' : ''
+            } md:hidden`}
             aria-label="Toggle navigation menu"
             aria-expanded={isMenuOpen}
             onClick={() => setIsMenuOpen((prev) => !prev)}
           >
-            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              {isMenuOpen ? (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M6 18L18 6M6 6l12 12" />
-              ) : (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 6h16M4 12h16M4 18h16" />
-              )}
-            </svg>
+            <span className="pointer-events-none absolute inset-0 bg-gradient-to-br from-emerald-400/10 via-cyan-400/5 to-transparent opacity-0 transition-opacity duration-300 ease-out group-hover:opacity-100" />
+            <span
+              className={`relative block h-0.5 w-6 -translate-y-2 rounded-full bg-current transition-all duration-300 ease-out ${
+                isMenuOpen ? 'translate-y-0 rotate-45' : ''
+              }`}
+            />
+            <span
+              className={`relative block h-0.5 w-6 rounded-full bg-current transition-all duration-300 ease-out ${
+                isMenuOpen ? 'scale-x-0 opacity-0' : 'opacity-100'
+              }`}
+            />
+            <span
+              className={`relative block h-0.5 w-6 translate-y-2 rounded-full bg-current transition-all duration-300 ease-out ${
+                isMenuOpen ? 'translate-y-0 -rotate-45' : ''
+              }`}
+            />
           </button>
 
           {/* Navigation Links */}
@@ -116,8 +127,15 @@ export default function Navigation({ userEmail }: { userEmail?: string }) {
       </div>
 
       {/* Mobile navigation */}
-      <div className={`md:hidden border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 transition-[max-height,opacity] duration-200 ease-out ${isMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}`}>
-        <div className="px-4 pt-2 pb-4 space-y-3">
+      <div
+        className={`md:hidden overflow-hidden border-t border-emerald-500/10 bg-white/80 shadow-[0_25px_70px_-20px_rgba(16,185,129,0.45)] backdrop-blur-xl transition-all duration-300 ease-out dark:border-emerald-400/10 dark:bg-slate-950/75 ${
+          isMenuOpen
+            ? 'pointer-events-auto max-h-[28rem] opacity-100 translate-y-0'
+            : 'pointer-events-none max-h-0 -translate-y-3 opacity-0'
+        }`}
+      >
+        <div className="relative px-4 pt-3 pb-5 space-y-4">
+          <span className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-400 via-cyan-400 to-blue-500 opacity-80" />
           <div className="flex flex-col">
             {navItems.map((item) => {
               const isActive = pathname === item.href
@@ -137,18 +155,21 @@ export default function Navigation({ userEmail }: { userEmail?: string }) {
             })}
           </div>
 
-          <div className="rounded-lg bg-slate-100/60 p-3 dark:bg-slate-800/60">
+          <div className="relative overflow-hidden rounded-xl border border-white/10 bg-gradient-to-br from-white/40 via-emerald-50/20 to-transparent p-4 shadow-inner backdrop-blur-lg dark:border-white/5 dark:from-slate-900/50 dark:via-emerald-500/5 dark:to-transparent">
+            <span className="pointer-events-none absolute -left-12 top-1/2 h-24 w-24 -translate-y-1/2 rounded-full bg-emerald-400/20 blur-3xl" />
+            <span className="pointer-events-none absolute -right-8 -top-8 h-20 w-20 rounded-full bg-cyan-400/20 blur-3xl" />
             {userEmail && greeting && (
               <p className="text-sm font-medium text-emerald-600 dark:text-emerald-300">{greeting}</p>
             )}
             <Link
               href="/settings"
-              className={`mt-2 inline-flex w-full items-center justify-center rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
+              className={`group relative mt-3 inline-flex w-full items-center justify-center overflow-hidden rounded-lg px-3 py-2 text-sm font-semibold transition-all duration-300 ${
                 pathname === '/settings'
-                  ? 'bg-emerald-600 text-white hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600'
-                  : 'bg-white text-slate-700 hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800'
+                  ? 'bg-gradient-to-r from-emerald-500 via-cyan-500 to-blue-500 text-white shadow-[0_10px_30px_-10px_rgba(16,185,129,0.7)]'
+                  : 'bg-white/80 text-slate-700 hover:bg-emerald-50/80 hover:text-emerald-700 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:bg-slate-800'
               }`}
             >
+              <span className="pointer-events-none absolute inset-0 bg-gradient-to-r from-emerald-400/10 via-cyan-400/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
               Account
             </Link>
           </div>
