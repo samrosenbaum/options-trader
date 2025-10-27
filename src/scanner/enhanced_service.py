@@ -1025,6 +1025,7 @@ def run_enhanced_scan(
     symbols: Optional[List[str]] = None,
     hot_scan_mode: bool = False,
     earnings_scan_mode: bool = False,
+    volume_surge_mode: bool = False,
 ) -> ScanResult:
     """Run enhanced scan with institutional-grade components.
 
@@ -1038,6 +1039,7 @@ def run_enhanced_scan(
         symbols: Optional list of specific symbols to scan (e.g., ['TSLA', 'AAPL'])
         hot_scan_mode: If True, scan only stocks with big moves (3%+) and high volume (800k+)
         earnings_scan_mode: If True, scan only stocks with earnings in next 7-14 days
+        volume_surge_mode: If True, scan only stocks with unusual volume (1.5x+ avg volume)
     """
 
     if symbols:
@@ -1055,6 +1057,7 @@ def run_enhanced_scan(
         batch_builder=batch_builder,
         hot_scan_mode=hot_scan_mode,
         earnings_scan_mode=earnings_scan_mode,
+        volume_surge_mode=volume_surge_mode,
     )
     result = scanner.scan_for_opportunities(
         force_refresh=force_refresh,
@@ -1129,6 +1132,11 @@ def cli(argv: Optional[Sequence[str]] = None) -> None:
         action="store_true",
         help="Scan Earnings Plays: Find stocks with earnings in next 7-14 days"
     )
+    parser.add_argument(
+        "--volume-surge",
+        action="store_true",
+        help="Scan Volume Surge: Find stocks with 1.5x+ average volume"
+    )
 
     args = parser.parse_args(argv)
 
@@ -1150,6 +1158,7 @@ def cli(argv: Optional[Sequence[str]] = None) -> None:
         symbols=target_symbols,
         hot_scan_mode=args.hot_scan,
         earnings_scan_mode=args.earnings_scan,
+        volume_surge_mode=args.volume_surge,
     )
     
     print(result.to_json(indent=args.json_indent))

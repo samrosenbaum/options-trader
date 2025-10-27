@@ -1558,6 +1558,7 @@ export default function ScannerPage({ user }: ScannerPageProps) {
   const [targetSymbolInput, setTargetSymbolInput] = useState('')
   const [hotScanMode, setHotScanMode] = useState(false)
   const [earningsScanMode, setEarningsScanMode] = useState(false)
+  const [volumeSurgeMode, setVolumeSurgeMode] = useState(false)
   const [layupsScanMode, setLayupsScanMode] = useState(false)
   const [uoaScanMode, setUoaScanMode] = useState(false)
   const previousTabRef = useRef<'options' | 'crypto' | null>(null)
@@ -2425,6 +2426,7 @@ export default function ScannerPage({ user }: ScannerPageProps) {
         ...(targetSymbols.length > 0 ? { symbols: targetSymbols } : {}),
         ...(hotScanMode ? { hotScan: true } : {}),
         ...(earningsScanMode ? { earningsScan: true } : {}),
+        ...(volumeSurgeMode ? { volumeSurgeMode: true } : {}),
         ...(layupsScanMode ? { layupsScan: true } : {}),
         ...(uoaScanMode ? { uoaScan: true } : {}),
       }
@@ -2494,7 +2496,7 @@ export default function ScannerPage({ user }: ScannerPageProps) {
         }, 500)
       }
     }
-  }, [attemptFallbackFetch, earningsScanMode, handleScanPayload, hasCompletedFirstScan, hotScanMode, investmentAmount, isFirstScanIntroOpen, layupsScanMode, targetSymbolInput, uoaScanMode, userPortfolioConstraints])
+  }, [attemptFallbackFetch, earningsScanMode, handleScanPayload, hasCompletedFirstScan, hotScanMode, investmentAmount, isFirstScanIntroOpen, layupsScanMode, targetSymbolInput, uoaScanMode, userPortfolioConstraints, volumeSurgeMode])
 
   const fetchCryptoAlerts = useCallback(async () => {
     try {
@@ -3564,6 +3566,16 @@ export default function ScannerPage({ user }: ScannerPageProps) {
                     }`}
                   >
                     {earningsScanMode ? 'Earnings ON' : 'Scan Earnings'}
+                  </button>
+                  <button
+                    onClick={() => setVolumeSurgeMode(!volumeSurgeMode)}
+                    className={`inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition-all duration-200 ${
+                      volumeSurgeMode
+                        ? 'bg-gradient-to-r from-green-400 via-green-500 to-green-600 text-slate-950 shadow-lg shadow-green-500/40'
+                        : 'border border-slate-700 bg-slate-800/50 text-slate-300 hover:bg-slate-700/50'
+                    }`}
+                  >
+                    {volumeSurgeMode ? 'Volume Surge ON' : 'Scan Volume Surge'}
                   </button>
                   <button
                     onClick={() => setLayupsScanMode(!layupsScanMode)}

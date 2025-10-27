@@ -758,6 +758,7 @@ const executeEnhancedScanner = async ({
   symbols,
   hotScan,
   earningsScan,
+  volumeSurgeMode,
 }: {
   constraints?: ConstraintPayload
   debugContext?: Record<string, unknown>
@@ -765,6 +766,7 @@ const executeEnhancedScanner = async ({
   symbols?: string[]
   hotScan?: boolean
   earningsScan?: boolean
+  volumeSurgeMode?: boolean
 }) => {
   const forcedPolicy = determineScannerExecutionPolicy()
   const resolvedMode: FilterMode = filterMode === "strict" ? "strict" : "relaxed"
@@ -873,6 +875,12 @@ const executeEnhancedScanner = async ({
     if (earningsScan) {
       console.log(`📅 Scanning Earnings Plays - targeting stocks with earnings in next 7-14 days`)
       args.push("--earnings-scan")
+    }
+
+    // Add volume surge mode if requested
+    if (volumeSurgeMode) {
+      console.log(`📊 Scanning Volume Surge - targeting stocks with 1.5x+ average volume`)
+      args.push("--volume-surge")
     }
 
     const python = spawn(pythonPath, args, {
@@ -1050,6 +1058,7 @@ export async function GET(request: Request) {
     const symbols = extractSymbolsFromSearchParams(url.searchParams)
     const hotScan = url.searchParams.get("hotScan") === "true" || url.searchParams.get("hot-scan") === "true"
     const earningsScan = url.searchParams.get("earningsScan") === "true" || url.searchParams.get("earnings-scan") === "true"
+    const volumeSurgeMode = url.searchParams.get("volumeSurgeMode") === "true" || url.searchParams.get("volume-surge-mode") === "true"
     return executeEnhancedScanner({
       constraints,
       debugContext: { requestedVia: "GET" },
@@ -1057,6 +1066,7 @@ export async function GET(request: Request) {
       symbols,
       hotScan,
       earningsScan,
+      volumeSurgeMode,
     })
   } catch (error) {
     console.error("Error executing enhanced scanner:", error)
@@ -1106,6 +1116,13 @@ export async function POST(request: Request) {
       : false
     const earningsScan = bodyEarningsScan || searchEarningsScan
 
+    // Extract volumeSurgeMode from search params or body
+    const searchVolumeSurgeMode = url.searchParams.get("volumeSurgeMode") === "true" || url.searchParams.get("volume-surge-mode") === "true"
+    const bodyVolumeSurgeMode = body && typeof body === "object" && body !== null
+      ? (body as Record<string, unknown>).volumeSurgeMode === true
+      : false
+    const volumeSurgeMode = bodyVolumeSurgeMode || searchVolumeSurgeMode
+
     if (fallbackOnly) {
       const reasonFromBody =
         body && typeof body === "object" && body !== null
@@ -1134,6 +1151,7 @@ export async function POST(request: Request) {
       symbols,
       hotScan,
       earningsScan,
+      volumeSurgeMode,
     })
   } catch (error) {
     console.error("Error executing enhanced scanner via POST:", error)
