@@ -881,6 +881,11 @@ const renderOpportunityCard = (
                 </div>
               )
             })()}
+            {opp.volumeRatio && opp.volumeRatio >= 2 && (
+              <div className="px-3 py-1 rounded-lg text-xs font-bold border bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 border-orange-200 dark:border-orange-800" title={`Volume is ${opp.volumeRatio.toFixed(1)}x normal - unusual options activity detected`}>
+                🔥 UOA {opp.volumeRatio.toFixed(1)}x
+              </div>
+            )}
             {normalizedRiskLabel && riskBadgeClass && (
               <span className={`px-3 py-1 rounded-lg text-xs font-semibold border ${riskBadgeClass}`}>
                 {normalizedRiskLabel}
