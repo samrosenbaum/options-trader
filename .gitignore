@@ -42,3 +42,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local database files (development only)
+data/*.db
+*.db
+
+# cache files
+options_cache_*.json
+data/scan_universe_state.json
