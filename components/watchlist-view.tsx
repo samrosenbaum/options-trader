@@ -140,7 +140,12 @@ export default function WatchlistView() {
   // Auto-fetch prices and portfolio balance when component mounts
   useEffect(() => {
     if (isReady) {
-      fetchPortfolioBalance()
+      // Fetch portfolio balance (don't await - run in background)
+      fetchPortfolioBalance().catch(err => {
+        console.warn('Portfolio balance fetch failed, continuing anyway:', err)
+      })
+
+      // Always fetch prices if we have items
       if (items.length > 0) {
         fetchPrices()
       }
@@ -251,8 +256,12 @@ export default function WatchlistView() {
               <button
                 type="button"
                 onClick={() => {
+                  // Always fetch prices (primary function)
                   fetchPrices()
-                  fetchPortfolioBalance()
+                  // Try to fetch portfolio balance (nice-to-have)
+                  fetchPortfolioBalance().catch(err => {
+                    console.warn('Portfolio balance refresh failed:', err)
+                  })
                 }}
                 disabled={loadingPrices}
                 className="flex items-center gap-2 rounded-lg bg-emerald-500/10 border border-emerald-400/30 px-4 py-2 text-sm font-semibold text-emerald-100 transition hover:bg-emerald-500/20 hover:border-emerald-400/50 disabled:opacity-50"
