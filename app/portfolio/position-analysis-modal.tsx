@@ -75,7 +75,7 @@ export default function PositionAnalysisModal({
   useEffect(() => {
     const buttonTexts = hasActiveConversation
       ? ['Send to Monty', 'Ask Away', 'Fire Away', 'Send It']
-      : ['Ask Monty', 'Get Advice', 'Consult Monty', 'Ask Away']
+      : ['Ask Monty', 'Discuss with Monty', 'Consult Monty', 'Ask Away']
 
     // Pick a random fun text on mount or when conversation state changes
     const randomText = buttonTexts[Math.floor(Math.random() * buttonTexts.length)]

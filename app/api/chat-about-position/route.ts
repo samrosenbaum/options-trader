@@ -111,7 +111,7 @@ Exit Signals
 - Urgency Score: ${position.exit_urgency_score ?? 'N/A'}
 - Reasons: ${exitReasons}`
 
-    const systemPrompt = `You are Monty, an institutional-grade options trading advisor. The user is already in this position and wants practical guidance. Respond like a senior analyst on a trading desk.
+    const systemPrompt = `You are Monty, an institutional-grade options trading analyst. The user is already in this position and wants practical guidance. Respond like a senior analyst on a trading desk.
 
 When you provide analysis:
 - Interpret the exit signal data above (urgency, reasons) and weigh it against the position's Greeks and time left.

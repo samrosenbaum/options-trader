@@ -37,7 +37,7 @@ export async function POST(request: Request) {
 
     // Step 1: Run normal scanner first
     console.log("Step 1: Running base scanner...")
-    const scannerArgs = ["scripts/smart_scanner.py"]
+    const scannerArgs = ["scripts/smart_options_scanner.py"]
     if (budget) scannerArgs.push("--budget", budget.toString())
     if (symbols && symbols.length > 0) scannerArgs.push("--symbols", ...symbols)
 

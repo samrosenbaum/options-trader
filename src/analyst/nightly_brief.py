@@ -160,11 +160,11 @@ def generate_nightly_brief(
             all_signals = data['call_signals'] + data['put_signals']
             top_signal = max(all_signals, key=lambda x: x['vol_oi_ratio']) if all_signals else None
 
-            setup_description = f"Watch for {'continuation' if data['bias'] == 'bullish' else 'breakdown'}"
+            setup_description = f"Keep an eye out for this to {'keep going up' if data['bias'] == 'bullish' else 'start dropping'}"
             if levels['current_price'] > levels['resistance'] * 0.98:
-                setup_description = "At resistance - watch for breakout"
+                setup_description = "Near top price - could push even higher if it breaks through"
             elif levels['current_price'] < levels['support'] * 1.02:
-                setup_description = "At support - watch for bounce or breakdown"
+                setup_description = "Near important price - watch for it to either bounce back up or fall through"
 
             brief['tomorrows_watchlist'].append({
                 'symbol': symbol,
@@ -279,8 +279,8 @@ def format_nightly_brief(brief: Dict) -> str:
     output.append("WHAT TO EXPECT TOMORROW:")
     output.append("  [BULL] = Stock likely to go UP (consider buying)")
     output.append("  [BEAR] = Stock likely to go DOWN (avoid or short)")
-    output.append("  Key Level = Price to watch - breakout above or breakdown below")
-    output.append("  HIGH CONVICTION = Our strongest predictions (backtested 80%+ accuracy)")
+    output.append("  Important Price = Price to watch - if it goes above or below this, big move likely")
+    output.append("  HIGH CONVICTION = Our strongest predictions (we're 80%+ confident based on past patterns)")
     output.append("")
 
     # Key Setups (highest conviction)
@@ -302,7 +302,7 @@ def format_nightly_brief(brief: Dict) -> str:
             output.append(f"  {bias_indicator} {setup['symbol']} - {setup['conviction']} CONVICTION")
             output.append(f"     {action}")
             output.append(f"     {setup['setup']}")
-            output.append(f"     Key Level: ${setup['key_level']:.2f}")
+            output.append(f"     Important Price: ${setup['key_level']:.2f}")
             output.append(f"     Why: {setup['reason']}")
             output.append("")
 
@@ -333,7 +333,7 @@ def format_nightly_brief(brief: Dict) -> str:
         for index, levels in brief['market_levels'].items():
             trend_indicator = "▲" if levels['trend'] == 'bullish' else "▼"
             output.append(f"  {trend_indicator} {index}: ${levels['current_price']:.2f}")
-            output.append(f"     Support: ${levels['support']:.2f} | Resistance: ${levels['resistance']:.2f}")
+            output.append(f"     Price floor: ${levels['support']:.2f} | Price ceiling: ${levels['resistance']:.2f}")
         output.append("")
 
     # Portfolio Summary
@@ -352,6 +352,7 @@ def format_nightly_brief(brief: Dict) -> str:
 
     output.append("=" * 60)
     output.append("Tomorrow: Morning Brief at 7:00 AM")
+    output.append("Change your brief preferences anytime in Settings")
     output.append("=" * 60)
 
     return "\n".join(output)

@@ -6,7 +6,6 @@ import Link from 'next/link'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { TickerTape } from '@/components/ticker-tape'
 import { TradingDeskBanner } from '@/components/trading-desk-banner'
-import EmailSubscriptionCard from '@/components/email-subscription-card'
 import { motion } from 'framer-motion'
 import { Trophy, TrendingDown } from 'lucide-react'
 
@@ -530,11 +529,6 @@ export default function DashboardPage() {
               )}
             </div>
           </motion.div>
-        </div>
-
-        {/* Email Subscription Section */}
-        <div className="mt-8">
-          <EmailSubscriptionCard />
         </div>
       </div>
     </div>

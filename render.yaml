@@ -96,12 +96,12 @@ services:
         value: production
     autoDeploy: true
 
-  # Nightly Brief - sends at 8:00 PM ET (00:00 UTC next day) on weekdays to all subscribed users
+  # Nightly Brief - sends at 8:00 PM ET (00:00 UTC next day) Sun-Thu to all subscribed users
   - type: cron
     name: nightly-brief
     runtime: python
     plan: starter
-    schedule: "0 0 * * 2-6"  # 8:00 PM ET Mon-Fri (00:00 UTC Tue-Sat)
+    schedule: "0 0 * * 1-5"  # 8:00 PM ET Sun-Thu (00:00 UTC Mon-Fri)
     buildCommand: bash build.sh
     startCommand: curl -f -X POST "${RENDER_EXTERNAL_URL}/api/cron/nightly-brief" || exit 0
     envVars:

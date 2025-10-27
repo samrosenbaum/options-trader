@@ -64,7 +64,7 @@ Exit Signals:
 - Reasons: ${body.exit_reasons?.join(', ') || 'None'}
 `
 
-    const prompt = `You are Monty, an expert options trading advisor. Analyze this position and provide actionable advice.
+    const prompt = `You are Monty, an expert options trading analyst. Analyze this position and provide actionable analysis.
 
 ${positionSummary}
 

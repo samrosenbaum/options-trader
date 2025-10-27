@@ -159,7 +159,7 @@ export default function LandingPage() {
               Your AI-powered options trading desk
             </h1>
             <p className="max-w-2xl text-lg text-white/70">
-              Monty is your AI-powered options trading advisor. Get real-time market scans, data-driven trade recommendations, and personalized portfolio analysis. From discovering high-probability setups to knowing exactly when to exit, Monty turns complex options data into actionable insights.
+              Monty is your AI-powered options trading analyst. Get real-time market scans, data-driven trade recommendations, and personalized portfolio analysis. From discovering high-probability setups to knowing exactly when to exit, Monty turns complex options data into actionable insights.
             </p>
             <div className="flex flex-wrap items-center gap-4">
               <Link

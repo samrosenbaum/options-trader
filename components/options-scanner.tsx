@@ -106,6 +106,14 @@ function formatExpiration(dateString: string) {
   })
 }
 
+function getDaysToExpiration(dateString: string) {
+  const now = new Date()
+  const expDate = new Date(dateString)
+  const diffTime = expDate.getTime() - now.getTime()
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+  return diffDays
+}
+
 function SimpleMetric({
   label,
   value,
@@ -168,6 +176,7 @@ function OptionIdea({ option, marketData }: { option: OptionContract; marketData
   const riskPerContract = option.maxLoss === Number.POSITIVE_INFINITY ? premiumCost : option.maxLoss
   const recommendedAccountSize = riskPerContract > 0 ? riskPerContract / 0.02 : undefined
   const expirationLabel = formatExpiration(option.expiration)
+  const daysToExpiration = getDaysToExpiration(option.expiration)
   const moveDirection = option.type === "call" ? "up" : "down"
   const confidencePercent = option.confidence * 100
   const confidenceText = getConfidenceText(option.confidence)
@@ -191,32 +200,54 @@ function OptionIdea({ option, marketData }: { option: OptionContract; marketData
             <span className="font-mono text-lg font-bold text-primary">{option.symbol.slice(0, 2)}</span>
           </div>
           <div className="flex-1 space-y-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <h4 className="font-mono text-xl font-bold text-foreground">{option.symbol}</h4>
-              <Badge
-                variant="outline"
-                className={cn(
-                  "font-mono text-xs",
-                  option.type === "call" ? "border-bull text-bull" : "border-bear text-bear",
-                )}
-              >
-                {option.type.toUpperCase()} • {option.action.toUpperCase()}
-              </Badge>
-              <Badge variant="outline" className="font-mono text-xs uppercase">
-                Expires {expirationLabel}
-              </Badge>
-              {sentimentInfo && sentiment && (
+            {/* Trade Ticket - Critical Info */}
+            <div className="space-y-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <h4 className="font-mono text-xl font-bold text-foreground">{option.symbol}</h4>
+                <span className="font-mono text-lg font-bold text-foreground">${option.strike}</span>
                 <Badge
                   variant="outline"
                   className={cn(
-                    "flex items-center gap-1 text-xs font-semibold",
-                    sentimentInfo.badgeClass,
+                    "font-mono text-xs font-bold",
+                    option.type === "call" ? "border-bull text-bull bg-bull/5" : "border-bear text-bear bg-bear/5",
                   )}
                 >
-                  <sentimentInfo.icon className="h-3.5 w-3.5" />
-                  {sentimentInfo.label}
+                  {option.type.toUpperCase()}
                 </Badge>
-              )}
+                {sentimentInfo && sentiment && (
+                  <Badge
+                    variant="outline"
+                    className={cn(
+                      "flex items-center gap-1 text-xs font-semibold",
+                      sentimentInfo.badgeClass,
+                    )}
+                  >
+                    <sentimentInfo.icon className="h-3.5 w-3.5" />
+                    {sentimentInfo.label}
+                  </Badge>
+                )}
+              </div>
+
+              <div className="flex flex-wrap items-center gap-4 text-sm">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-muted-foreground">Premium:</span>
+                  <span className="font-mono font-semibold text-foreground">
+                    ${option.premium.toFixed(2)} <span className="text-xs text-muted-foreground">({formatter.format(premiumCost)}/contract)</span>
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-muted-foreground">Expires:</span>
+                  <span className="font-semibold text-foreground">
+                    {expirationLabel} <span className="text-xs text-muted-foreground">({daysToExpiration}d)</span>
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-muted-foreground">Breakeven:</span>
+                  <span className="font-mono font-semibold text-foreground">
+                    ${option.breakeven.toFixed(2)} <span className="text-xs text-muted-foreground">({Math.abs(breakevenMove).toFixed(1)}% {moveDirection})</span>
+                  </span>
+                </div>
+              </div>
             </div>
 
             <div className="rounded-lg bg-primary/5 p-3 text-sm text-foreground">
@@ -274,31 +305,16 @@ function OptionIdea({ option, marketData }: { option: OptionContract; marketData
         </div>
       </div>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <SimpleMetric label="Current stock price" value={`$${currentPrice.toFixed(2)}`} />
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <SimpleMetric
-          label="Option premium"
-          value={`$${option.premium.toFixed(2)} (${formatter.format(premiumCost)}/contract)`}
-          helper="Up-front cost to enter one contract."
-        />
-        <SimpleMetric
-          label="Breakeven price"
-          value={`$${option.breakeven.toFixed(2)}`}
-          helper={`Needs a ${Math.abs(breakevenMove).toFixed(1)}% move ${moveDirection}.`}
+          label="Current stock price"
+          value={`$${currentPrice.toFixed(2)}`}
+          helper="Live market price."
         />
         <SimpleMetric
           label="Contract volume"
           value={`${formatCompactNumber(option.volume)} today`}
-          helper={`Open interest ${formatCompactNumber(option.openInterest)}.`}
-        />
-        <SimpleMetric
-          label="Recommended account size"
-          value={
-            recommendedAccountSize
-              ? formatter.format(Math.ceil(recommendedAccountSize))
-              : formatter.format(premiumCost)
-          }
-          helper="Keeps risk near 2% per trade."
+          helper={`Open interest: ${formatCompactNumber(option.openInterest)}`}
         />
         <SimpleMetric
           label="Risk per contract"
@@ -307,7 +323,16 @@ function OptionIdea({ option, marketData }: { option: OptionContract; marketData
               ? formatter.format(premiumCost)
               : formatter.format(option.maxLoss)
           }
-          helper="Amount you could lose if the trade fails."
+          helper="Max you can lose on this trade."
+        />
+        <SimpleMetric
+          label="Recommended account size"
+          value={
+            recommendedAccountSize
+              ? formatter.format(Math.ceil(recommendedAccountSize))
+              : formatter.format(premiumCost)
+          }
+          helper="For 2% risk management best practice."
         />
       </div>
 

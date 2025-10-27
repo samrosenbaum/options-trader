@@ -16,7 +16,7 @@ export async function POST(request: Request) {
 
     // If user_id provided, fetch their closed positions from database
     let closed_positions = body.closed_positions || []
-    let uoa_history = body.uoa_history || []
+    const uoa_history = body.uoa_history || []
 
     if (user_id && closed_positions.length === 0) {
       console.log(`📊 Fetching closed positions for user ${user_id}...`)

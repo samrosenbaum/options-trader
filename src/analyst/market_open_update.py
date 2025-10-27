@@ -190,16 +190,16 @@ def analyze_gap_momentum(
             # Suggest VWAP entry or breakout entry
             if current_price > vwap:
                 dip_target = round(vwap * 0.998, 2)  # Slight below VWAP
-                entry_strategy.append(f"Wait for dip to ${dip_target:.2f} (near VWAP)")
+                entry_strategy.append(f"Wait for price to dip to ${dip_target:.2f} for better entry")
 
             breakout_level = round(high_price * 1.002, 2)  # Slight above HOD
-            entry_strategy.append(f"OR buy breakout above ${breakout_level:.2f}")
+            entry_strategy.append(f"OR buy if it pushes above ${breakout_level:.2f}")
 
             stop_loss = round(open_price * 0.97, 2)  # 3% below open (gap fill protection)
-            entry_strategy.append(f"Stop Loss: ${stop_loss:.2f} (gap fill)")
+            entry_strategy.append(f"Sell if it drops below ${stop_loss:.2f} to protect your money")
         else:
             entry_strategy.append("WAIT - Too risky to chase")
-            entry_strategy.append(f"Only enter if reclaims ${round(high_price, 2):.2f} with volume")
+            entry_strategy.append(f"Only buy if it climbs back above ${round(high_price, 2):.2f} with strong buying")
 
         analysis = {
             'score': score,

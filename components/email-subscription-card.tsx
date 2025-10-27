@@ -55,7 +55,7 @@ export default function EmailSubscriptionCard() {
       } else {
         setMessage('Failed to save preferences')
       }
-    } catch (error) {
+    } catch {
       setMessage('Error saving preferences')
     } finally {
       setSaving(false)
@@ -87,7 +87,7 @@ export default function EmailSubscriptionCard() {
         <div>
           <h3 className="text-xl font-bold text-gray-900">Email Analyst Briefs</h3>
           <p className="text-sm text-gray-600 mt-1">
-            Get Monty's market intelligence delivered to your inbox
+            Get Monty&apos;s market intelligence delivered to your inbox
           </p>
         </div>
         <div className="text-3xl">📧</div>
@@ -106,7 +106,7 @@ export default function EmailSubscriptionCard() {
               Morning Brief (7:00 AM)
             </div>
             <div className="text-sm text-gray-600">
-              Pre-market intelligence, UOA signals, and today's watchlist
+              Pre-market intelligence, UOA signals, and today&apos;s watchlist
             </div>
           </div>
         </label>
@@ -123,7 +123,7 @@ export default function EmailSubscriptionCard() {
               Nightly Brief (8:00 PM)
             </div>
             <div className="text-sm text-gray-600">
-              Tomorrow's battle plan with high-conviction setups
+              Tomorrow&apos;s battle plan with high-conviction setups
             </div>
           </div>
         </label>
@@ -157,7 +157,7 @@ export default function EmailSubscriptionCard() {
               Weekly Analysis (Sundays)
             </div>
             <div className="text-sm text-gray-600">
-              Performance review, learnings, and next week's plan
+              Performance review, learnings, and next week&apos;s plan
             </div>
           </div>
         </label>
@@ -182,7 +182,7 @@ export default function EmailSubscriptionCard() {
       <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
         <div className="text-sm text-blue-900">
           <strong>Note:</strong> Briefs are sent based on market hours (Eastern Time).
-          You can unsubscribe anytime by unchecking all options above.
+          You can change your preferences anytime in Settings.
         </div>
       </div>
     </div>

@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Settings, Save, Loader2, LogOut } from "lucide-react"
 import Navigation from "@/components/navigation"
 import { createClient } from "@/lib/supabase/client"
+import EmailSubscriptionCard from '@/components/email-subscription-card'
 
 const brokerOptions = [
   { id: "robinhood", label: "Robinhood" },
@@ -50,7 +51,7 @@ export default function SettingsPage() {
     try {
       const response = await fetch("/api/user-settings")
       const data = await response.json()
-      
+
       if (data.settings) {
         setUserName(data.settings.user_name || "")
         setBroker(data.settings.broker || "")
@@ -226,6 +227,9 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
+        {/* Email Subscriptions */}
+        <EmailSubscriptionCard />
+
         {/* Actions */}
         <div className="flex justify-between items-center gap-4">
           <Button
@@ -264,4 +268,3 @@ export default function SettingsPage() {
     </>
   )
 }
-

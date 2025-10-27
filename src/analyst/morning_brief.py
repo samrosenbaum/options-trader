@@ -263,7 +263,8 @@ def format_brief_for_display(brief: Dict) -> str:
         output.append("MARKET CONDITIONS")
         for index, data in brief['market_conditions'].items():
             trend_indicator = "▲" if data['trend'] == 'bullish' else "▼"
-            output.append(f"  {trend_indicator} {index}: ${data['price']:.2f} ({data['trend']})")
+            trend_simple = "going up" if data['trend'] == 'bullish' else "going down"
+            output.append(f"  {trend_indicator} {index}: ${data['price']:.2f} (currently {trend_simple})")
         output.append("")
 
     # Watchlist Summary
@@ -277,8 +278,8 @@ def format_brief_for_display(brief: Dict) -> str:
             if symbol in brief['earnings_today']:
                 reasons.append("Earnings")
             if symbol in brief['premarket_movers']:
-                gap = brief['premarket_movers'][symbol]['gap_pct']
-                reasons.append(f"{gap:+.1f}% gap")
+                move = brief['premarket_movers'][symbol]['gap_pct']
+                reasons.append(f"{move:+.1f}% before open")
 
             output.append(f"  • {symbol}: {', '.join(reasons)}")
         output.append("")
@@ -311,12 +312,25 @@ def format_brief_for_display(brief: Dict) -> str:
             output.append(f"     ACTION: {action}")
             output.append(f"     Why: {volume_analysis}")
 
-            # Find and explain the biggest bet
-            all_signals = data['call_signals'] + data['put_signals']
-            if all_signals:
-                biggest_bet = max(all_signals, key=lambda x: x['vol_oi_ratio'])
-                bet_type = "CALL" if biggest_bet['type'] == 'call' else "PUT"
-                direction = "UP" if biggest_bet['type'] == 'call' else "DOWN"
+            # Find and explain the biggest bet IN THE DIRECTION OF THE BIAS (not contradictory)
+            # For BULL: show biggest CALL bet
+            # For BEAR: show biggest PUT bet
+            # For MIXED: skip this section
+            if call_volume > put_volume * 1.5 and data['call_signals']:
+                # Bullish - show biggest call
+                biggest_bet = max(data['call_signals'], key=lambda x: x['vol_oi_ratio'])
+                bet_type = "CALL"
+                direction = "UP"
+            elif put_volume > call_volume * 1.5 and data['put_signals']:
+                # Bearish - show biggest put
+                biggest_bet = max(data['put_signals'], key=lambda x: x['vol_oi_ratio'])
+                bet_type = "PUT"
+                direction = "DOWN"
+            else:
+                # Mixed - don't show biggest bet to avoid confusion
+                biggest_bet = None
+
+            if biggest_bet:
                 intensity = ""
                 if biggest_bet['vol_oi_ratio'] >= 20:
                     intensity = "MASSIVE"
@@ -338,9 +352,9 @@ def format_brief_for_display(brief: Dict) -> str:
         output.append("")
         for symbol, data in list(brief['premarket_movers'].items())[:3]:  # Top 3
             direction_indicator = "▲" if data['gap_direction'] == 'up' else "▼"
-            move_type = "GAPPING UP" if data['gap_direction'] == 'up' else "GAPPING DOWN"
-            output.append(f"  {direction_indicator} {symbol}: {move_type} {abs(data['gap_pct']):.1f}%")
-            output.append(f"     ${data['previous_close']:.2f} → ${data['premarket_price']:.2f}")
+            move_type = "JUMPING UP" if data['gap_direction'] == 'up' else "DROPPING"
+            output.append(f"  {direction_indicator} {symbol}: {move_type} {abs(data['gap_pct']):.1f}% before open")
+            output.append(f"     Was ${data['previous_close']:.2f} yesterday → Now ${data['premarket_price']:.2f}")
         output.append("")
 
     # Earnings Today
@@ -360,6 +374,7 @@ def format_brief_for_display(brief: Dict) -> str:
 
     output.append("=" * 60)
     output.append("Next Update: Market Open (9:35 AM)")
+    output.append("Change your brief preferences anytime in Settings")
     output.append("=" * 60)
 
     return "\n".join(output)

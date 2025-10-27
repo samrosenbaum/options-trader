@@ -1642,7 +1642,7 @@ export default function PortfolioClient({
                           <button
                             onClick={() => setPositionToAnalyze(position)}
                             className="w-full px-2 py-1 rounded text-[11px] font-semibold transition-colors bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 text-white"
-                            title="Ask Monty for advice"
+                            title="Discuss with Monty"
                           >
                             Ask Monty
                           </button>
