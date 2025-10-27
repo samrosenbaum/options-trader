@@ -90,6 +90,10 @@ export default function WatchlistView() {
   const fetchPortfolioBalance = async () => {
     try {
       const response = await fetch('/api/portfolio-balance')
+      if (!response.ok) {
+        console.warn('Portfolio balance API returned error:', response.status)
+        return
+      }
       const data = await response.json()
       if (data.success) {
         setNeededTypes(data.neededTypes || [])
@@ -98,6 +102,7 @@ export default function WatchlistView() {
       }
     } catch (err) {
       console.error('Error fetching portfolio balance:', err)
+      // Don't let portfolio balance errors block other functionality
     }
   }
 
