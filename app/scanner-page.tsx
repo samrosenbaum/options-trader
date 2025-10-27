@@ -3446,32 +3446,6 @@ export default function ScannerPage({ user }: ScannerPageProps) {
               </div>
 
               {activeTab === 'options' && (
-                <button
-                  onClick={() => setShowFilters(!showFilters)}
-                  className={`flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold uppercase tracking-widest transition-all duration-200 border ${
-                    showFilters
-                      ? 'bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-600 text-slate-950 shadow-lg shadow-emerald-500/40 border-emerald-400'
-                      : 'border-white/10 bg-white/5 text-emerald-100/70 hover:text-emerald-100 hover:bg-white/10'
-                  }`}
-                >
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
-                    />
-                  </svg>
-                  <span>Filters</span>
-                </button>
-              )}
-
-              {activeTab === 'options' && (
                 <div className="flex items-center gap-1 rounded-full border border-white/10 bg-white/10 p-1 backdrop-blur-sm">
                   <button
                     onClick={() => setScanMode('strict')}
@@ -3812,6 +3786,35 @@ export default function ScannerPage({ user }: ScannerPageProps) {
           }
           lastCompletedAt={lastSuccessfulUpdate}
         />
+
+        {/* Filters Button - Only show when there are results */}
+        {!isLoading && activeTab === 'options' && filteredOpportunities.length > 0 && (
+          <div className="flex justify-end mb-4">
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold uppercase tracking-widest transition-all duration-200 border ${
+                showFilters
+                  ? 'bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-600 text-slate-950 shadow-lg shadow-emerald-500/40 border-emerald-400'
+                  : 'border-slate-700 bg-slate-800/50 text-slate-300 hover:bg-slate-700/50'
+              }`}
+            >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
+                />
+              </svg>
+              <span>Filters</span>
+            </button>
+          </div>
+        )}
 
         {/* Stats Cards - Robinhood-inspired dark design (hidden while loading) */}
         {!isLoading && (
