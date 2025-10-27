@@ -20,6 +20,7 @@ interface LogRejectionParams {
   rejectionReason: string
   filterStage: string
   rejectionSource: 'user_rejected' | 'scanner_rejected'
+  userNotes?: string | null
   scores?: {
     probability_score?: number | null
     risk_adjusted_score?: number | null
@@ -314,7 +315,18 @@ export async function POST(request: Request): Promise<NextResponse> {
       try {
         const supabase = await createClient()
 
+        // Get the authenticated user
+        const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+        if (authError || !user) {
+          return NextResponse.json(
+            { success: false, error: 'Unauthorized - must be logged in to reject options' },
+            { status: 401 }
+          )
+        }
+
         const record = {
+          user_id: user.id,
           symbol: logParams.symbol,
           strike: logParams.strike,
           expiration: logParams.expiration,
@@ -329,6 +341,7 @@ export async function POST(request: Request): Promise<NextResponse> {
           open_interest: logParams.openInterest,
           implied_volatility: logParams.impliedVolatility ?? null,
           delta: logParams.delta ?? null,
+          user_notes: logParams.userNotes ?? null,
           probability_score: logParams.scores?.probability_score ?? null,
           risk_adjusted_score: logParams.scores?.risk_adjusted_score ?? null,
           quality_score: logParams.scores?.quality_score ?? null,

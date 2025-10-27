@@ -1552,6 +1552,8 @@ export default function ScannerPage({ user }: ScannerPageProps) {
   const [showNotRecommended, setShowNotRecommended] = useState(false)
   const [chatOpportunity, setChatOpportunity] = useState<Opportunity | null>(null)
   const [rejectedOpportunities, setRejectedOpportunities] = useState<Set<string>>(new Set())
+  const [rejectingOpportunity, setRejectingOpportunity] = useState<Opportunity | null>(null)
+  const [rejectionNotes, setRejectionNotes] = useState('')
   const [hasCompletedFirstScan, setHasCompletedFirstScan] = useState<boolean | null>(null)
   const [isFirstScanIntroOpen, setIsFirstScanIntroOpen] = useState(false)
   const [isWelcomeSetupOpen, setIsWelcomeSetupOpen] = useState(false)
@@ -1823,7 +1825,15 @@ export default function ScannerPage({ user }: ScannerPageProps) {
     }
   }, [])
 
-  const rejectOpportunity = useCallback(async (opp: Opportunity) => {
+  const openRejectModal = useCallback((opp: Opportunity) => {
+    setRejectingOpportunity(opp)
+    setRejectionNotes('')
+  }, [])
+
+  const confirmRejectOpportunity = useCallback(async () => {
+    if (!rejectingOpportunity) return
+
+    const opp = rejectingOpportunity
     const cardId = `${opp.symbol}-${opp.strike}-${opp.expiration}-${opp.optionType}`
 
     // Add to rejected set
@@ -1849,6 +1859,7 @@ export default function ScannerPage({ user }: ScannerPageProps) {
           rejectionReason: 'user_manual_rejection',
           filterStage: 'user_review',
           rejectionSource: 'user_rejected',
+          userNotes: rejectionNotes.trim() || null,
           scores: {
             probability_score: opp.probabilityOfProfit,
             risk_adjusted_score: opp.riskRewardRatio,
@@ -1859,7 +1870,11 @@ export default function ScannerPage({ user }: ScannerPageProps) {
     } catch (error) {
       console.error('Failed to log rejection:', error)
     }
-  }, [])
+
+    // Close modal
+    setRejectingOpportunity(null)
+    setRejectionNotes('')
+  }, [rejectingOpportunity, rejectionNotes])
 
   useEffect(() => {
     let isMounted = true
@@ -4155,7 +4170,7 @@ export default function ScannerPage({ user }: ScannerPageProps) {
                         tradeSummary: opp.tradeSummary,
                       }),
                       isOnWatchlist: isOnWatchlist(cardId),
-                      onRejectOpportunity: () => rejectOpportunity(opp),
+                      onRejectOpportunity: () => openRejectModal(opp),
                       isRejected: rejectedOpportunities.has(cardId),
                       onOpenChat: () => setChatOpportunity(opp),
                       loadingBacktest: loadingBacktests[cardId] ?? false,
@@ -4235,7 +4250,7 @@ export default function ScannerPage({ user }: ScannerPageProps) {
                           tradeSummary: opp.tradeSummary,
                         }),
                         isOnWatchlist: isOnWatchlist(cardId),
-                        onRejectOpportunity: () => rejectOpportunity(opp),
+                        onRejectOpportunity: () => openRejectModal(opp),
                         isRejected: rejectedOpportunities.has(cardId),
                         onOpenChat: () => setChatOpportunity(opp),
                         loadingBacktest: loadingBacktests[cardId] ?? false,
@@ -4432,6 +4447,49 @@ export default function ScannerPage({ user }: ScannerPageProps) {
           isOpen={chatOpportunity !== null}
           onClose={() => setChatOpportunity(null)}
         />
+      )}
+
+      {/* Rejection Notes Modal */}
+      {rejectingOpportunity && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="relative mx-4 w-full max-w-lg rounded-2xl border border-slate-700 bg-slate-900 p-6 shadow-2xl">
+            <h3 className="mb-2 text-xl font-bold text-white">
+              Reject Opportunity
+            </h3>
+            <p className="mb-4 text-sm text-slate-400">
+              {rejectingOpportunity.symbol} ${rejectingOpportunity.strike} {rejectingOpportunity.optionType.toUpperCase()}
+            </p>
+
+            <label className="mb-2 block text-sm font-medium text-slate-300">
+              Why are you rejecting this trade? (optional)
+            </label>
+            <textarea
+              value={rejectionNotes}
+              onChange={(e) => setRejectionNotes(e.target.value)}
+              placeholder="e.g., IV too high, prefer different strike, overexposed to sector..."
+              className="mb-4 w-full rounded-lg border border-slate-600 bg-slate-800 p-3 text-slate-100 placeholder-slate-500 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+              rows={4}
+            />
+
+            <div className="flex gap-3">
+              <button
+                onClick={confirmRejectOpportunity}
+                className="flex-1 rounded-lg bg-red-600 px-4 py-2.5 font-semibold text-white hover:bg-red-700 transition-colors"
+              >
+                Reject Trade
+              </button>
+              <button
+                onClick={() => {
+                  setRejectingOpportunity(null)
+                  setRejectionNotes('')
+                }}
+                className="flex-1 rounded-lg border border-slate-600 bg-slate-800 px-4 py-2.5 font-semibold text-slate-300 hover:bg-slate-700 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

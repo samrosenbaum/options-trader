@@ -90,23 +90,23 @@ export async function POST() {
     const totalValue = positionsValue + realizedPL
     const cashValue = realizedPL // Realized P&L represents cash from closed trades
 
-    // Get yesterday's snapshot to calculate daily change
-    const yesterday = new Date()
-    yesterday.setDate(yesterday.getDate() - 1)
-    const yesterdayDate = yesterday.toISOString().split('T')[0]
-
-    const { data: yesterdaySnapshot } = await supabase
+    // Get today's existing snapshot to check if we have an opening value
+    const { data: todaySnapshot } = await supabase
       .from('portfolio_snapshots')
-      .select('total_value')
+      .select('opening_value_today, total_value')
       .eq('user_id', user.id)
-      .eq('snapshot_date', yesterdayDate)
+      .eq('snapshot_date', today)
       .single()
 
-    const dailyChange = yesterdaySnapshot
-      ? totalValue - yesterdaySnapshot.total_value
-      : 0
-    const dailyChangePercent = yesterdaySnapshot && yesterdaySnapshot.total_value > 0
-      ? (dailyChange / yesterdaySnapshot.total_value) * 100
+    // Determine opening value for today
+    // If we don't have an opening value yet, use current total as opening
+    // This happens on first calculation of the day
+    let openingValueToday = todaySnapshot?.opening_value_today || totalValue
+
+    // Calculate intraday change based on opening value
+    const dailyChange = totalValue - openingValueToday
+    const dailyChangePercent = openingValueToday > 0
+      ? (dailyChange / openingValueToday) * 100
       : 0
 
     // Upsert snapshot for today
@@ -120,6 +120,7 @@ export async function POST() {
       realized_pl: realizedPL,
       daily_change: dailyChange,
       daily_change_percent: dailyChangePercent,
+      opening_value_today: openingValueToday,
       open_positions_count: openPositions?.length || 0,
       closed_positions_count: closedPositions?.length || 0,
     }

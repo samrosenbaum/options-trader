@@ -4,7 +4,9 @@ import { useMemo, useState, useEffect } from 'react'
 import Link from 'next/link'
 import { formatDistanceToNowStrict, parseISO } from 'date-fns'
 import { useWatchlist } from '@/components/watchlist-context'
-import { RefreshCw } from 'lucide-react'
+import { RefreshCw, Brain } from 'lucide-react'
+import { wouldBalancePortfolio, type PositionBiasKey, type PortfolioGap } from '@/lib/portfolio-balance'
+import WatchlistReviewModal from './watchlist-review-modal'
 
 const formatCurrency = (amount: number) =>
   new Intl.NumberFormat('en-US', {
@@ -70,6 +72,10 @@ export default function WatchlistView() {
   const { items, removeItem, isReady } = useWatchlist()
   const [priceData, setPriceData] = useState<Record<string, PriceData>>({})
   const [loadingPrices, setLoadingPrices] = useState(false)
+  const [neededTypes, setNeededTypes] = useState<PositionBiasKey[]>([])
+  const [portfolioGaps, setPortfolioGaps] = useState<PortfolioGap[]>([])
+  const [hasPortfolio, setHasPortfolio] = useState(false)
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false)
 
   const sortedItems = useMemo(
     () =>
@@ -80,6 +86,20 @@ export default function WatchlistView() {
       }),
     [items],
   )
+
+  const fetchPortfolioBalance = async () => {
+    try {
+      const response = await fetch('/api/portfolio-balance')
+      const data = await response.json()
+      if (data.success) {
+        setNeededTypes(data.neededTypes || [])
+        setPortfolioGaps(data.gaps || [])
+        setHasPortfolio(data.hasPositions || false)
+      }
+    } catch (err) {
+      console.error('Error fetching portfolio balance:', err)
+    }
+  }
 
   const fetchPrices = async () => {
     if (items.length === 0) return
@@ -112,10 +132,13 @@ export default function WatchlistView() {
     }
   }
 
-  // Auto-fetch prices when component mounts and items are loaded
+  // Auto-fetch prices and portfolio balance when component mounts
   useEffect(() => {
-    if (isReady && items.length > 0) {
-      fetchPrices()
+    if (isReady) {
+      fetchPortfolioBalance()
+      if (items.length > 0) {
+        fetchPrices()
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isReady, items.length])
@@ -162,8 +185,34 @@ export default function WatchlistView() {
     )
   }
 
+  const balancerItems = sortedItems.filter(item =>
+    hasPortfolio && wouldBalancePortfolio(item.optionType as 'call' | 'put', neededTypes)
+  )
+
   return (
     <div className="mt-8 space-y-6">
+      {/* Portfolio Balance Banner */}
+      {hasPortfolio && neededTypes.length > 0 && balancerItems.length > 0 && (
+        <div className="rounded-2xl border border-blue-300 bg-blue-50 p-6 dark:border-blue-700 dark:bg-blue-950/30">
+          <div className="flex items-start gap-4">
+            <div className="flex-shrink-0">
+              <svg className="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-200">
+                Portfolio Balance Opportunities
+              </h3>
+              <p className="mt-1 text-sm text-blue-700 dark:text-blue-300">
+                {balancerItems.length} {balancerItems.length === 1 ? 'item' : 'items'} on your watchlist would help balance your portfolio.
+                These are marked with the <span className="font-semibold">BALANCER</span> badge below.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Portfolio Totals Summary */}
       <div className="relative bg-gradient-to-br from-slate-900/80 via-emerald-900/30 to-slate-900/80 backdrop-blur-xl rounded-2xl border border-emerald-500/40 p-8 shadow-[0_8px_32px_rgba(16,185,129,0.2),0_0_0_1px_rgba(16,185,129,0.1)_inset] overflow-hidden transition-all duration-300 hover:shadow-[0_12px_48px_rgba(16,185,129,0.25),0_0_0_1px_rgba(16,185,129,0.15)_inset] hover:scale-[1.01] hover:border-emerald-500/50">
         {/* Glass reflection effect */}
@@ -185,15 +234,28 @@ export default function WatchlistView() {
                 {portfolioTotals.itemsWithPrices > 0 && ` • ${portfolioTotals.itemsWithPrices} with live prices`}
               </p>
             </div>
-            <button
-              type="button"
-              onClick={fetchPrices}
-              disabled={loadingPrices}
-              className="flex items-center gap-2 rounded-lg bg-emerald-500/10 border border-emerald-400/30 px-4 py-2 text-sm font-semibold text-emerald-100 transition hover:bg-emerald-500/20 hover:border-emerald-400/50 disabled:opacity-50"
-            >
-              <RefreshCw className={`h-4 w-4 ${loadingPrices ? 'animate-spin' : ''}`} />
-              {loadingPrices ? 'Updating...' : 'Refresh Prices'}
-            </button>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setIsReviewModalOpen(true)}
+                className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-purple-500 to-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:from-purple-600 hover:to-blue-700"
+              >
+                <Brain className="h-4 w-4" />
+                Ask Monty to Review
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  fetchPrices()
+                  fetchPortfolioBalance()
+                }}
+                disabled={loadingPrices}
+                className="flex items-center gap-2 rounded-lg bg-emerald-500/10 border border-emerald-400/30 px-4 py-2 text-sm font-semibold text-emerald-100 transition hover:bg-emerald-500/20 hover:border-emerald-400/50 disabled:opacity-50"
+              >
+                <RefreshCw className={`h-4 w-4 ${loadingPrices ? 'animate-spin' : ''}`} />
+                {loadingPrices ? 'Updating...' : 'Refresh Prices'}
+              </button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -258,6 +320,7 @@ export default function WatchlistView() {
         const addedDescription = formatAddedAt(item.addedAt)
         const riskLabel = item.riskLevel ? item.riskLevel.toUpperCase() : 'RISK'
         const prices = priceData[item.id]
+        const balancesPortfolio = hasPortfolio && wouldBalancePortfolio(item.optionType as 'call' | 'put', neededTypes)
         return (
           <div
             key={item.id}
@@ -271,6 +334,17 @@ export default function WatchlistView() {
                     {typeof item.score === 'number' && Number.isFinite(item.score) ? item.score : '—'}
                   </span>
                   <span className={`rounded-lg px-3 py-1 text-xs font-bold ${getRiskBadgeClasses(item.riskLevel)}`}>{riskLabel}</span>
+                  {balancesPortfolio && (
+                    <span
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-blue-300 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 dark:border-blue-700 dark:bg-blue-950/40 dark:text-blue-300"
+                      title="This position would help balance your portfolio"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                      </svg>
+                      BALANCER
+                    </span>
+                  )}
                 </div>
                 <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-600 dark:text-slate-300">
                   <span className="font-semibold text-slate-900 dark:text-white">
@@ -339,6 +413,14 @@ export default function WatchlistView() {
         )
       })}
       </div>
+
+      {/* Monty Watchlist Review Modal */}
+      <WatchlistReviewModal
+        isOpen={isReviewModalOpen}
+        onClose={() => setIsReviewModalOpen(false)}
+        items={sortedItems}
+        priceData={priceData}
+      />
     </div>
   )
 }
