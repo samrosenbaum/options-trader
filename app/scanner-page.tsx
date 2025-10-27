@@ -1024,8 +1024,10 @@ Liquidity: ${((opp as Record<string, unknown>).liquidityScore as number | undefi
                     <p className="mt-1 text-xs text-muted-foreground">
                       {opp.openInterest ? (() => {
                         const ratio = opp.volume / opp.openInterest
+                        const volume = opp.volume
                         if (ratio >= 1) return 'Heavy flow today'
                         if (ratio >= 0.5) return 'Healthy activity'
+                        if (volume >= 500) return 'Moderate volume'
                         return 'Light volume'
                       })() : 'Contracts traded today'}
                     </p>
