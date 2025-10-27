@@ -46,6 +46,7 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
         max_per_symbol: int = 5,
         hot_scan_mode: bool = False,
         earnings_scan_mode: bool = False,
+        volume_surge_mode: bool = False,
         **kwargs
     ):
         """
@@ -57,6 +58,7 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
             max_per_symbol: Maximum opportunities per symbol (for diversity)
             hot_scan_mode: If True, scan only stocks with big moves (3%+) and high volume (800k+)
             earnings_scan_mode: If True, scan only stocks with earnings in next 7-14 days
+            volume_surge_mode: If True, scan only stocks with unusual volume (1.5x+ avg volume)
         """
         super().__init__(max_symbols, **kwargs)
 
@@ -64,6 +66,7 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
         self.max_per_symbol = max_per_symbol
         self.hot_scan_mode = hot_scan_mode
         self.earnings_scan_mode = earnings_scan_mode
+        self.volume_surge_mode = volume_surge_mode
 
         # Initialize enhanced components with relaxed filters for hot scan mode
         data_quality_filters = {
@@ -110,6 +113,8 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
             print("🔥 SCAN TOP MOVERS MODE - targeting stocks with 3%+ moves and 800k+ volume", file=sys.stderr)
         elif self.earnings_scan_mode:
             print("📅 EARNINGS SCAN MODE - targeting stocks with earnings in next 7-14 days", file=sys.stderr)
+        elif self.volume_surge_mode:
+            print("📊 VOLUME SURGE MODE - targeting stocks with 1.5x+ unusual volume", file=sys.stderr)
         elif self.use_sentiment_prescreening:
             print("📊 Sentiment pre-screening ENABLED - will prioritize hot symbols", file=sys.stderr)
         else:
@@ -175,6 +180,29 @@ class InstitutionalOptionsScanner(SmartOptionsScanner):
 
             except Exception as e:
                 print(f"⚠️  Top movers scan failed ({e}), using standard selection", file=sys.stderr)
+                return super()._next_symbol_batch()
+
+        # Volume Surge mode takes third priority
+        if self.volume_surge_mode:
+            try:
+                # Get stocks with unusual volume surges
+                surge_symbols = self.sentiment_prescreener.get_volume_surges(
+                    universe=self.fetcher.priority_symbols,
+                    limit=min(30, self.symbol_limit or 30)
+                )
+
+                if surge_symbols:
+                    print(f"📊 Found {len(surge_symbols)} stocks with volume surges:", file=sys.stderr)
+                    for symbol in surge_symbols[:5]:  # Show top 5
+                        print(f"   {symbol}: Unusual volume activity", file=sys.stderr)
+                    self.current_batch_symbols = surge_symbols
+                    return surge_symbols
+                else:
+                    print("⚠️  No volume surges found, using standard selection", file=sys.stderr)
+                    return super()._next_symbol_batch()
+
+            except Exception as e:
+                print(f"⚠️  Volume surge scan failed ({e}), using standard selection", file=sys.stderr)
                 return super()._next_symbol_batch()
 
         # Sentiment pre-screening mode
