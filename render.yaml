@@ -103,7 +103,7 @@ services:
     plan: starter
     schedule: "0 0 * * 1-5"  # 8:00 PM ET Sun-Thu (00:00 UTC Mon-Fri)
     buildCommand: bash build.sh
-    startCommand: curl -f -X POST -H "Authorization: Bearer ${CRON_SECRET}" "${RENDER_EXTERNAL_URL}/api/cron/nightly-brief" || exit 0
+    startCommand: 'curl -f -X POST -H "Authorization: Bearer ${CRON_SECRET}" "${RENDER_EXTERNAL_URL}/api/cron/nightly-brief" || exit 0'
     envVars:
       - key: NODE_VERSION
         value: 18
