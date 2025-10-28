@@ -1,0 +1,17 @@
+name: Nightly Brief
+
+on:
+  schedule:
+    # 8:00 PM ET Sun-Thu (00:00 UTC Mon-Fri)
+    - cron: '0 0 * * 1-5'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger nightly brief
+        run: |
+          curl -f -X POST \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.RENDER_EXTERNAL_URL }}/api/cron/nightly-brief"

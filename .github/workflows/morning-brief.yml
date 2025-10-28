@@ -1,0 +1,15 @@
+name: Morning Brief
+
+on:
+  schedule:
+    # 7:00 AM ET (11:00 UTC) on weekdays
+    - cron: '0 11 * * 1-5'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger morning brief
+        run: |
+          curl -f -X POST "${{ secrets.RENDER_EXTERNAL_URL }}/api/cron/morning-brief"
