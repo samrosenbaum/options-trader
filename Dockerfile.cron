@@ -1,0 +1,11 @@
+# Minimal Docker image for cron jobs that just need to make HTTP requests
+FROM alpine:3.19
+
+# Install curl
+RUN apk add --no-cache curl
+
+# Set working directory
+WORKDIR /app
+
+# The actual command will be provided by render.yaml's dockerCommand
+CMD ["echo", "Cron job container ready"]
