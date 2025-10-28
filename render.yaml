@@ -89,8 +89,5 @@ services:
     plan: starter
     schedule: "0 0 * * 1-5"  # 8:00 PM ET Sun-Thu (00:00 UTC Mon-Fri)
     dockerfilePath: ./Dockerfile.cron
-    dockerCommand: 'curl -f -X POST -H "Authorization: Bearer ${CRON_SECRET}" "${RENDER_EXTERNAL_URL}/api/cron/nightly-brief" || exit 0'
-    envVars:
-      - key: CRON_SECRET
-        sync: false
+    dockerCommand: curl -f -X POST "${RENDER_EXTERNAL_URL}/api/cron/nightly-brief" || exit 0
     autoDeploy: true
