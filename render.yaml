@@ -9,7 +9,7 @@ services:
       - key: NODE_VERSION
         value: 18
       - key: PYTHON_VERSION
-        value: 3.12
+        value: 3.12.0
       - key: NODE_ENV
         value: production
       - key: PYTHON_EXECUTABLE
@@ -74,7 +74,7 @@ services:
       - key: NODE_VERSION
         value: 18
       - key: PYTHON_VERSION
-        value: 3.12
+        value: 3.12.0
       - key: NODE_ENV
         value: production
     autoDeploy: true
@@ -91,7 +91,7 @@ services:
       - key: NODE_VERSION
         value: 18
       - key: PYTHON_VERSION
-        value: 3.12
+        value: 3.12.0
       - key: NODE_ENV
         value: production
     autoDeploy: true
@@ -108,7 +108,7 @@ services:
       - key: NODE_VERSION
         value: 18
       - key: PYTHON_VERSION
-        value: 3.12
+        value: 3.12.0
       - key: NODE_ENV
         value: production
     autoDeploy: true
