@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { getSupabaseAdminClient } from '@/lib/supabase/admin'
 import { resend } from '@/lib/resend'
 
 export async function POST(request: Request) {
@@ -12,7 +12,14 @@ export async function POST(request: Request) {
       }
     }
 
-    const supabase = await createClient()
+    if (!process.env.RESEND_API_KEY) {
+      return NextResponse.json(
+        { error: 'RESEND_API_KEY is not configured' },
+        { status: 500 }
+      )
+    }
+
+    const supabase = getSupabaseAdminClient()
 
     // Get all users subscribed to nightly brief
     const { data: subscriptions, error } = await supabase
@@ -20,7 +27,10 @@ export async function POST(request: Request) {
       .select('email')
       .eq('nightly_brief', true)
 
-    if (error) throw error
+    if (error) {
+      console.error('Failed to load nightly brief subscribers:', error)
+      throw error
+    }
 
     if (!subscriptions || subscriptions.length === 0) {
       return NextResponse.json({
@@ -33,6 +43,12 @@ export async function POST(request: Request) {
     const apiUrl = process.env.RENDER_EXTERNAL_URL || 'http://localhost:3000'
     const briefResponse = await fetch(`${apiUrl}/api/analyst/nightly-brief`)
     if (!briefResponse.ok) {
+      const errorText = await briefResponse.text()
+      console.error(
+        'Failed to fetch nightly brief from API:',
+        briefResponse.status,
+        errorText
+      )
       throw new Error('Failed to fetch nightly brief from API')
     }
 
