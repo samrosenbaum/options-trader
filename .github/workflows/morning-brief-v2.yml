@@ -11,4 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Trigger morning brief
-        run: curl -f -X POST -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "${{ secrets.RENDER_EXTERNAL_URL }}/api/cron/morning-brief"
+        run: >
+          curl -f -X POST
+          -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
+          "${{ secrets.RENDER_EXTERNAL_URL }}/api/cron/morning-brief"
