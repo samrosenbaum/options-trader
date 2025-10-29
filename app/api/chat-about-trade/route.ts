@@ -137,7 +137,7 @@ Be constructive, educational, and specific. This trade already passed the filter
 
     // Stream response from Claude
     const stream = await anthropic.messages.create({
-      model: "claude-3-5-sonnet-20241022",
+      model: "claude-sonnet-4-5-20250929",
       max_tokens: 2048,
       messages: claudeMessages,
       stream: true,

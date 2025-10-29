@@ -277,7 +277,7 @@ async function generateAISummary(analysis: NormalizedAnalysis): Promise<string |
   try {
     const anthropic = new Anthropic({ apiKey })
     const response = await anthropic.messages.create({
-      model: "claude-3-5-sonnet-20241022",
+      model: "claude-sonnet-4-5-20250929",
       max_tokens: 300,
       temperature: 0.2,
       system: "You are an elite quant analyst specializing in post-trade reviews. Summarize findings crisply, highlighting what the risk filters missed and what adjustments might help.",

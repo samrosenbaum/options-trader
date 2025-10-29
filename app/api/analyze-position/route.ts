@@ -102,7 +102,7 @@ Be direct, specific, and actionable. If the position looks bad, say so clearly. 
 Format your response in clear markdown with headers and bullet points.`
 
     const message = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
+      model: 'claude-sonnet-4-5-20250929',
       max_tokens: 2000,
       messages: [
         {
