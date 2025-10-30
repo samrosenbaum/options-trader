@@ -159,25 +159,33 @@ def fetch_option_data(symbol: str, strike: float, expiration: Any, option_type: 
             bid = safe_float(row.get('bid'))
             ask = safe_float(row.get('ask'))
 
-            # Determine best price to use
-            if last_price is None or last_price <= 0:
-                if mark_price and mark_price > 0:
-                    last_price = mark_price
-                elif bid and ask and bid > 0 and ask > 0:
-                    last_price = (bid + ask) / 2
-                elif bid and bid > 0:
-                    last_price = bid
-                elif ask and ask > 0:
-                    last_price = ask
-                else:
-                    print(f"Warning: No usable price for {symbol} ${strike} {option_type} {exp_date}", file=sys.stderr)
-                    return None
+            # Determine best price to use - prefer mark/midpoint over lastPrice
+            # lastPrice can be stale (hours old), mark is current bid/ask midpoint
+            current_price = None
+
+            # 1. Try mark price (if yfinance provides it)
+            if mark_price and mark_price > 0:
+                current_price = mark_price
+            # 2. Calculate mark from bid/ask
+            elif bid and ask and bid > 0 and ask > 0:
+                current_price = (bid + ask) / 2
+            # 3. Fall back to last traded price
+            elif last_price and last_price > 0:
+                current_price = last_price
+            # 4. Use bid or ask alone if nothing else
+            elif bid and bid > 0:
+                current_price = bid
+            elif ask and ask > 0:
+                current_price = ask
+            else:
+                print(f"Warning: No usable price for {symbol} ${strike} {option_type} {exp_date}", file=sys.stderr)
+                return None
 
             # Fill in missing bid/ask
             if not bid or bid <= 0:
-                bid = last_price * 0.95
+                bid = current_price * 0.95
             if not ask or ask <= 0:
-                ask = last_price * 1.05
+                ask = current_price * 1.05
 
             volume = safe_int(row.get('volume'))
             open_interest = safe_int(row.get('openInterest'))
@@ -198,7 +206,7 @@ def fetch_option_data(symbol: str, strike: float, expiration: Any, option_type: 
             )
 
             return {
-                'current_price': last_price,
+                'current_price': current_price,
                 'bid': bid,
                 'ask': ask,
                 'volume': volume,
