@@ -5,15 +5,83 @@ Update current prices and Greeks for open options positions.
 
 import sys
 import json
-from datetime import datetime, date
+import time
+from datetime import datetime, date, timezone
 from typing import Dict, Any, List, Optional
-import yfinance as yf
-import pandas as pd
+
+import requests
 
 from src.math.greeks import GreeksCalculator
 
 
 CONTRACT_MULTIPLIER = 100
+YF_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+    "Accept": "application/json",
+}
+
+
+def safe_float(value: Any) -> Optional[float]:
+    try:
+        if value is None:
+            return None
+        result = float(value)
+        if result != result:  # NaN check
+            return None
+        return result
+    except (TypeError, ValueError):
+        return None
+
+
+def safe_int(value: Any) -> int:
+    try:
+        if value in (None, "", False):
+            return 0
+        return int(float(value))
+    except (TypeError, ValueError):
+        return 0
+
+
+def fetch_json(url: str, *, params: Optional[Dict[str, Any]] = None, retries: int = 3) -> Optional[Dict[str, Any]]:
+    last_error: Optional[Exception] = None
+
+    for attempt in range(retries):
+        try:
+            response = requests.get(url, params=params, headers=YF_HEADERS, timeout=10)
+            if response.status_code == 404:
+                return None
+            response.raise_for_status()
+            return response.json()
+        except Exception as exc:
+            last_error = exc if isinstance(exc, Exception) else Exception(str(exc))
+            wait_seconds = 1 + attempt
+            time.sleep(wait_seconds)
+
+    if last_error:
+        print(f"Warning: request to {url} failed after retries: {last_error}", file=sys.stderr)
+
+    return None
+
+
+def fetch_stock_price(symbol: str) -> Optional[float]:
+    data = fetch_json(
+        "https://query1.finance.yahoo.com/v7/finance/quote",
+        params={"symbols": symbol},
+    )
+
+    if not data:
+        return None
+
+    result = data.get("quoteResponse", {}).get("result", [])
+    if not result:
+        return None
+
+    price = safe_float(result[0].get("regularMarketPrice"))
+    if price is None:
+        price = safe_float(result[0].get("regularMarketDayHigh"))
+
+    return price
 
 
 def parse_expiration_date(expiration: Any) -> date:
@@ -67,53 +135,75 @@ def fetch_option_data(symbol: str, strike: float, expiration: Any, option_type: 
     Returns:
         Dictionary with current price, Greeks, and stock price
     """
+
     try:
-        ticker = yf.Ticker(symbol)
-
-        # Get current stock price
-        stock_info = ticker.history(period='1d')
-        if stock_info.empty:
-            print(f"Warning: No stock data for {symbol}", file=sys.stderr)
-            return None
-
-        stock_price = float(stock_info['Close'].iloc[-1])
-
-        # Convert expiration date to yfinance format (YYYY-MM-DD)
-        exp_date = parse_expiration_date(expiration)
-
-        # Get options chain for expiration date
         try:
-            options = ticker.option_chain(exp_date.strftime('%Y-%m-%d'))
-        except Exception as e:
-            print(f"Warning: Could not get options chain for {symbol} {exp_date}: {e}", file=sys.stderr)
+            exp_date = parse_expiration_date(expiration)
+        except ValueError as error:
+            print(f"Warning: invalid expiration for {symbol}: {error}", file=sys.stderr)
             return None
 
-        # Get the right chain (calls or puts)
-        chain = options.calls if option_type.lower() == 'call' else options.puts
-
-        # Find the specific contract
-        contract = chain[chain['strike'] == strike]
-
-        if contract.empty:
-            print(f"Warning: Contract not found for {symbol} ${strike} {option_type} {exp_date}", file=sys.stderr)
+        stock_price = fetch_stock_price(symbol)
+        if stock_price is None:
+            print(f"Warning: unable to fetch stock price for {symbol}", file=sys.stderr)
             return None
 
-        # Get contract data
-        row = contract.iloc[0]
+        expiration_dt = datetime(exp_date.year, exp_date.month, exp_date.day, tzinfo=timezone.utc)
+        expiration_ts = int(expiration_dt.timestamp())
 
-        last_price = float(row['lastPrice']) if pd.notna(row['lastPrice']) else float('nan')
-        mark_price = float(row['mark']) if 'mark' in row and pd.notna(row['mark']) else float('nan')
-        bid = float(row['bid']) if 'bid' in row and pd.notna(row['bid']) else float('nan')
-        ask = float(row['ask']) if 'ask' in row and pd.notna(row['ask']) else float('nan')
+        options_data = fetch_json(
+            f"https://query2.finance.yahoo.com/v7/finance/options/{symbol}",
+            params={"date": expiration_ts},
+        )
 
-        if not pd.notna(last_price) or last_price <= 0:
-            if pd.notna(mark_price) and mark_price > 0:
+        if not options_data:
+            print(f"Warning: no option chain data for {symbol} on {exp_date}", file=sys.stderr)
+            return None
+
+        chain_results = options_data.get("optionChain", {}).get("result", [])
+        if not chain_results:
+            print(f"Warning: empty option chain result for {symbol} on {exp_date}", file=sys.stderr)
+            return None
+
+        chain_options = chain_results[0].get("options", [])
+        if not chain_options:
+            print(f"Warning: missing options list for {symbol} on {exp_date}", file=sys.stderr)
+            return None
+
+        option_entry = chain_options[0]
+        contracts = option_entry.get("calls" if option_type.lower() == "call" else "puts", [])
+
+        target_contract: Optional[Dict[str, Any]] = None
+        closest_diff: Optional[float] = None
+        for contract in contracts:
+            contract_strike = safe_float(contract.get("strike"))
+            if contract_strike is None:
+                continue
+            diff = abs(contract_strike - float(strike))
+            if closest_diff is None or diff < closest_diff:
+                closest_diff = diff
+                target_contract = contract
+
+        if target_contract is None or (closest_diff is not None and closest_diff > max(0.05, strike * 0.001)):
+            print(
+                f"Warning: Contract not found for {symbol} ${strike} {option_type} {exp_date} (closest diff {closest_diff})",
+                file=sys.stderr,
+            )
+            return None
+
+        last_price = safe_float(target_contract.get("lastPrice"))
+        mark_price = safe_float(target_contract.get("mark"))
+        bid = safe_float(target_contract.get("bid"))
+        ask = safe_float(target_contract.get("ask"))
+
+        if last_price is None or last_price <= 0:
+            if mark_price and mark_price > 0:
                 last_price = mark_price
-            elif pd.notna(bid) and pd.notna(ask) and bid > 0 and ask > 0:
+            elif bid and ask and bid > 0 and ask > 0:
                 last_price = (bid + ask) / 2
-            elif pd.notna(bid) and bid > 0:
+            elif bid and bid > 0:
                 last_price = bid
-            elif pd.notna(ask) and ask > 0:
+            elif ask and ask > 0:
                 last_price = ask
             else:
                 print(
@@ -122,13 +212,15 @@ def fetch_option_data(symbol: str, strike: float, expiration: Any, option_type: 
                 )
                 return None
 
-        bid = bid if pd.notna(bid) and bid > 0 else last_price * 0.95
-        ask = ask if pd.notna(ask) and ask > 0 else last_price * 1.05
-        volume = int(row['volume']) if 'volume' in row and pd.notna(row['volume']) else 0
-        open_interest = int(row['openInterest']) if 'openInterest' in row and pd.notna(row['openInterest']) else 0
-        implied_volatility = float(row['impliedVolatility']) if 'impliedVolatility' in row and pd.notna(row['impliedVolatility']) else 0.5
+        if not bid or bid <= 0:
+            bid = last_price * 0.95
+        if not ask or ask <= 0:
+            ask = last_price * 1.05
 
-        # Calculate Greeks using our calculator
+        volume = safe_int(target_contract.get("volume"))
+        open_interest = safe_int(target_contract.get("openInterest"))
+        implied_volatility = safe_float(target_contract.get("impliedVolatility")) or 0.5
+
         calculator = GreeksCalculator(risk_free_rate=0.045)
 
         days_to_expiry = (exp_date - date.today()).days
@@ -143,22 +235,22 @@ def fetch_option_data(symbol: str, strike: float, expiration: Any, option_type: 
         )
 
         return {
-            'current_price': last_price,
-            'bid': bid,
-            'ask': ask,
-            'volume': volume,
-            'open_interest': open_interest,
-            'implied_volatility': implied_volatility,
-            'stock_price': stock_price,
-            'delta': greeks.delta,
-            'theta': greeks.theta,
-            'gamma': greeks.gamma,
-            'vega': greeks.vega,
+            "current_price": last_price,
+            "bid": bid,
+            "ask": ask,
+            "volume": volume,
+            "open_interest": open_interest,
+            "implied_volatility": implied_volatility,
+            "stock_price": stock_price,
+            "delta": greeks.delta,
+            "theta": greeks.theta,
+            "gamma": greeks.gamma,
+            "vega": greeks.vega,
         }
-
-    except Exception as e:
-        print(f"Error fetching option data for {symbol}: {e}", file=sys.stderr)
+    except Exception as error:
+        print(f"Error fetching option data for {symbol}: {error}", file=sys.stderr)
         return None
+
 
 
 def calculate_pl(entry_price: float, current_price: float, contracts: int) -> Dict[str, float]:
