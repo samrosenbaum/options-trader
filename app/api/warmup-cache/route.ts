@@ -14,7 +14,8 @@ export async function GET() {
     console.log('[Cache Warmup] Starting cache warmup at', new Date().toISOString())
 
     // Call the scanner to refresh the cache
-    const scanResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/scan-python?mode=standard&max_symbols=50`, {
+    const baseUrl = process.env.RENDER_EXTERNAL_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    const scanResponse = await fetch(`${baseUrl}/api/scan-python?mode=standard&max_symbols=50`, {
       method: 'GET',
       headers: {
         'X-Cron-Job': 'cache-warmup',
