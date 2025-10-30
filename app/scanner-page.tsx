@@ -4430,6 +4430,7 @@ export default function ScannerPage({ user }: ScannerPageProps) {
       <WelcomeSetup
         open={isWelcomeSetupOpen && settingsLoaded}
         onComplete={handleWelcomeComplete}
+        onSkip={() => setIsWelcomeSetupOpen(false)}
       />
 
       {/* First Scan Intro Modal */}

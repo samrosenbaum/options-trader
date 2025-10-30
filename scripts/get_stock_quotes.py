@@ -2,17 +2,11 @@ import json
 import time
 from itertools import islice
 from typing import Iterable, List
-
-import requests
-
-YF_HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
-    "Accept": "application/json",
-}
+import yfinance as yf
 
 
 def chunked(iterable: Iterable[str], size: int) -> Iterable[List[str]]:
+    """Split an iterable into chunks of specified size."""
     iterator = iter(iterable)
     while True:
         chunk = list(islice(iterator, size))
@@ -22,58 +16,52 @@ def chunked(iterable: Iterable[str], size: int) -> Iterable[List[str]]:
 
 
 def fetch_quote_batch(symbols: List[str]) -> List[dict]:
-    """Fetch a batch of quotes from Yahoo Finance's public quote endpoint."""
-
-    url = "https://query1.finance.yahoo.com/v7/finance/quote"
-    params = {"symbols": ",".join(symbols)}
-
-    response = requests.get(url, params=params, headers=YF_HEADERS, timeout=10)
-    response.raise_for_status()
-
-    payload = response.json()
-    results = payload.get("quoteResponse", {}).get("result", [])
+    """Fetch a batch of quotes using yfinance with better error handling."""
 
     quotes: List[dict] = []
-    for raw in results:
-        price = raw.get("regularMarketPrice")
-        prev_close = (
-            raw.get("regularMarketPreviousClose")
-            or raw.get("previousClose")
-            or raw.get("chartPreviousClose")
-        )
 
-        if price is None and raw.get("regularMarketDayHigh") is not None:
-            price = raw.get("regularMarketDayHigh")
+    # Use yfinance's download method for batch fetching
+    try:
+        # Fetch all symbols at once
+        tickers = yf.Tickers(" ".join(symbols))
 
-        if price is None:
-            continue
-
-        change = raw.get("regularMarketChange")
-        change_percent = raw.get("regularMarketChangePercent")
-
-        if change is None and prev_close not in (None, 0):
-            change = float(price) - float(prev_close)
-
-        if change_percent is None and prev_close:
+        for symbol in symbols:
             try:
-                change_percent = (float(change) / float(prev_close)) * 100 if prev_close else 0
-            except Exception:
-                change_percent = None
+                ticker = tickers.tickers.get(symbol) or yf.Ticker(symbol)
+                info = ticker.info
 
-        quote = {
-            "symbol": raw.get("symbol", symbols[0]),
-            "price": round(float(price), 2),
-            "change": round(float(change), 2) if change is not None else 0.0,
-            "changePercent": round(float(change_percent), 2) if change_percent is not None else 0.0,
-            "volume": raw.get("regularMarketVolume"),
-            "high": raw.get("regularMarketDayHigh"),
-            "low": raw.get("regularMarketDayLow"),
-            "open": raw.get("regularMarketOpen"),
-            "previousClose": prev_close,
-            "marketCap": raw.get("marketCap"),
-            "avgVolume": raw.get("averageDailyVolume3Month"),
-        }
-        quotes.append(quote)
+                # Get current price with multiple fallbacks
+                price = info.get('currentPrice') or info.get('regularMarketPrice') or info.get('previousClose')
+                if price is None or price == 0:
+                    continue
+
+                prev_close = info.get('previousClose') or info.get('regularMarketPreviousClose') or price
+
+                # Calculate change values
+                change = price - prev_close
+                change_percent = (change / prev_close * 100) if prev_close and prev_close != 0 else 0
+
+                quote = {
+                    "symbol": symbol,
+                    "price": round(float(price), 2),
+                    "change": round(float(change), 2),
+                    "changePercent": round(float(change_percent), 2),
+                    "volume": info.get('volume') or info.get('regularMarketVolume') or 0,
+                    "high": info.get('dayHigh') or info.get('regularMarketDayHigh'),
+                    "low": info.get('dayLow') or info.get('regularMarketDayLow'),
+                    "open": info.get('open') or info.get('regularMarketOpen'),
+                    "previousClose": prev_close,
+                    "marketCap": info.get('marketCap'),
+                    "avgVolume": info.get('averageVolume') or info.get('averageDailyVolume3Month'),
+                }
+                quotes.append(quote)
+
+            except Exception as error:
+                print(f"Error fetching {symbol}: {error}")
+                continue
+
+    except Exception as error:
+        print(f"Error fetching batch {symbols}: {error}")
 
     return quotes
 
@@ -82,17 +70,24 @@ def get_quotes(symbols: Iterable[str]) -> List[dict]:
     """Fetch real-time quotes for multiple symbols with retries and batching."""
 
     collected: List[dict] = []
+
+    # Process in batches of 10 to avoid overwhelming the API
     for batch in chunked([symbol.strip() for symbol in symbols if symbol.strip()], 10):
         retries = 3
         for attempt in range(retries):
             try:
-                collected.extend(fetch_quote_batch(batch))
+                quotes = fetch_quote_batch(batch)
+                collected.extend(quotes)
                 break
             except Exception as error:
                 if attempt == retries - 1:
                     print(f"Error fetching quotes for {batch}: {error}")
                 else:
+                    # Exponential backoff: 1s, 2s, 3s
                     time.sleep(1 + attempt)
+
+        # Add rate limiting between batches to avoid hitting API limits
+        time.sleep(0.2)
 
     return collected
 

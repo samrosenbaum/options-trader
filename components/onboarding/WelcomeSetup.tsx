@@ -9,9 +9,10 @@ export interface WelcomeSetupProps {
     portfolioSize: number
     dailyBudget: number
   }) => void
+  onSkip?: () => void
 }
 
-export default function WelcomeSetup({ open, onComplete }: WelcomeSetupProps) {
+export default function WelcomeSetup({ open, onComplete, onSkip }: WelcomeSetupProps) {
   const [userName, setUserName] = useState('')
   const [portfolioSize, setPortfolioSize] = useState('')
   const [dailyBudget, setDailyBudget] = useState('')
@@ -22,6 +23,19 @@ export default function WelcomeSetup({ open, onComplete }: WelcomeSetupProps) {
     const normalized = value.replace(/[$,\s]/g, '')
     const parsed = Number.parseFloat(normalized)
     return Number.isFinite(parsed) ? parsed : Number.NaN
+  }
+
+  const handleSkip = () => {
+    if (onSkip) {
+      onSkip()
+    }
+  }
+
+  const handleBackdropClick = (e: React.MouseEvent) => {
+    // Only trigger skip if clicking the backdrop itself (not the modal content)
+    if (e.target === e.currentTarget && onSkip) {
+      handleSkip()
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -68,12 +82,13 @@ export default function WelcomeSetup({ open, onComplete }: WelcomeSetupProps) {
 
   return (
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-300 pointer-events-none"
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-300"
       role="dialog"
       aria-modal="true"
       aria-labelledby="welcome-setup-heading"
+      onClick={handleBackdropClick}
     >
-      <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-md" />
+      <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-md pointer-events-none" />
       <div className="relative z-10 w-full max-w-md overflow-hidden rounded-3xl border border-emerald-400/20 bg-slate-950/95 p-8 text-slate-100 shadow-[0_40px_120px_rgba(16,185,129,0.4)] first-scan-aurora animate-in zoom-in-95 duration-300 pointer-events-auto cursor-auto">
         <div className="relative">
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-200">
@@ -182,6 +197,17 @@ export default function WelcomeSetup({ open, onComplete }: WelcomeSetupProps) {
               {isSubmitting ? 'Setting up...' : 'Enter your trading desk'}
             </button>
           </form>
+
+          {onSkip && (
+            <button
+              type="button"
+              onClick={handleSkip}
+              disabled={isSubmitting}
+              className="mt-4 w-full rounded-full border border-slate-600/50 bg-transparent px-6 py-2.5 text-sm font-medium text-slate-400 transition hover:border-slate-500 hover:text-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Skip for now
+            </button>
+          )}
 
           <p className="mt-6 text-center text-xs text-slate-500">
             You can change these settings anytime
