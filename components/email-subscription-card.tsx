@@ -62,8 +62,34 @@ export default function EmailSubscriptionCard() {
     }
   }
 
-  function togglePreference(key: keyof SubscriptionPreferences) {
-    setPreferences(prev => ({ ...prev, [key]: !prev[key] }))
+  async function togglePreference(key: keyof SubscriptionPreferences) {
+    const newPreferences = { ...preferences, [key]: !preferences[key] }
+    setPreferences(newPreferences)
+
+    // Auto-save on toggle
+    setSaving(true)
+    try {
+      const response = await fetch('/api/subscriptions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newPreferences)
+      })
+
+      if (response.ok) {
+        setMessage('✓ Saved')
+        setTimeout(() => setMessage(''), 2000)
+      } else {
+        setMessage('Failed to save')
+        // Revert on failure
+        setPreferences(preferences)
+      }
+    } catch {
+      setMessage('Error saving')
+      // Revert on failure
+      setPreferences(preferences)
+    } finally {
+      setSaving(false)
+    }
   }
 
   if (loading) {
@@ -163,26 +189,18 @@ export default function EmailSubscriptionCard() {
         </label>
       </div>
 
-      <div className="mt-6 flex items-center justify-between">
-        <button
-          onClick={savePreferences}
-          disabled={saving}
-          className="px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
-          {saving ? 'Saving...' : 'Save Preferences'}
-        </button>
-
-        {message && (
-          <div className={`text-sm font-medium ${message.includes('success') ? 'text-green-600' : 'text-red-600'}`}>
+      {message && (
+        <div className="mt-4 text-center">
+          <div className={`text-sm font-medium ${message.includes('✓') ? 'text-green-600' : 'text-red-600'}`}>
             {message}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
         <div className="text-sm text-blue-900">
           <strong>Note:</strong> Briefs are sent based on market hours (Eastern Time).
-          You can change your preferences anytime in Settings.
+          Your preferences are saved automatically.
         </div>
       </div>
     </div>
