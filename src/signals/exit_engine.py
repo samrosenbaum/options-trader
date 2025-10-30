@@ -34,6 +34,12 @@ class ExitSignal:
     volume_ratio: Optional[float] = None
     iv_change_pct: Optional[float] = None
 
+    # Risk context
+    risk_score: Optional[float] = None
+    recovery_score: Optional[float] = None
+    probability_of_profit: Optional[float] = None
+    unusual_activity_bias: Optional[str] = None
+
 
 class ExitSignalEngine:
     """Generate exit signals for open positions."""
@@ -68,6 +74,14 @@ class ExitSignalEngine:
         current_directional_confidence: Optional[float] = None,  # Current confidence
         fundamental_health_score: Optional[float] = None,  # 0.0-1.0
         earnings_in_days: Optional[int] = None,  # Days to earnings
+        entry_greeks: Optional[Dict[str, float]] = None,
+        current_greeks: Optional[Dict[str, float]] = None,
+        entry_iv: Optional[float] = None,
+        current_iv: Optional[float] = None,
+        probability_of_profit: Optional[float] = None,
+        expected_move_pct: Optional[float] = None,
+        sentiment_score: Optional[float] = None,
+        unusual_activity: Optional[Dict[str, Any]] = None,
     ) -> ExitSignal:
         """
         Analyze a position and generate exit signal.
@@ -98,11 +112,32 @@ class ExitSignalEngine:
             option_type,
             entry_stock_price,
             current_stock_price,
-            play_type
+            play_type,
+            strike,
+            expiration,
+            entry_iv,
+            current_iv
         )
 
-        # Build reasoning
-        reasoning = []
+        # Evaluate risk context (Greeks, IV, unusual flow, sentiment)
+        risk_context = self._evaluate_risk_context(
+            option_type=option_type,
+            profit_pct=profit_pct,
+            base_stop=stop_loss_pct,
+            dte=dte,
+            momentum=momentum,
+            entry_greeks=entry_greeks,
+            current_greeks=current_greeks,
+            entry_iv=entry_iv,
+            current_iv=current_iv,
+            probability_of_profit=probability_of_profit,
+            expected_move_pct=expected_move_pct,
+            sentiment_score=sentiment_score,
+            unusual_activity=unusual_activity
+        )
+
+        # Build reasoning seeded with macro risk notes
+        reasoning = list(risk_context.get("pre_reasoning", []))
 
         # NEW DIRECTIONAL SIGNAL CHECKS (apply before other rules)
 
@@ -196,84 +231,445 @@ class ExitSignalEngine:
 
         # UNIVERSAL RULES (apply to all play types)
 
-        # Rule 1: Stop loss
-        if profit_pct <= stop_loss_pct:
-            reasoning.append(f"🛑 Stop loss hit ({profit_pct:.1f}% loss)")
-            reasoning.append("Cut loser and preserve capital for next trade")
-            return ExitSignal(
-                signal="CUT_LOSS",
-                confidence=100,
-                reasoning=reasoning,
-                suggested_action=f"Exit now - down {abs(profit_pct):.1f}%",
-                momentum_strength=momentum['strength'],
-                volume_ratio=momentum['volume_ratio'],
-                iv_change_pct=momentum.get('iv_change_pct')
+        dynamic_stop = risk_context.get("dynamic_stop", stop_loss_pct)
+
+        # Rule 1: Stop loss (dynamic based on Greeks/IV/flow)
+        if profit_pct <= dynamic_stop:
+            reasoning.append(
+                f"🛑 Dynamic stop triggered ({profit_pct:.1f}% vs {dynamic_stop:.0f}% threshold)"
+            )
+            reasoning.extend(risk_context.get("stop_reasoning", []))
+            return self._finalize_signal(
+                ExitSignal(
+                    signal="CUT_LOSS",
+                    confidence=100,
+                    reasoning=reasoning,
+                    suggested_action=f"Exit now - down {abs(profit_pct):.1f}%",
+                    momentum_strength=momentum['strength'],
+                    volume_ratio=momentum['volume_ratio'],
+                    iv_change_pct=momentum.get('iv_change_pct')
+                ),
+                momentum,
+                risk_context
             )
 
         # Rule 2: Theta danger (0-1 DTE)
         if dte <= 1:
             reasoning.append(f"⏰ Only {dte} day{'s' if dte != 1 else ''} left - theta burn extreme")
+            reasoning.extend(risk_context.get("theta_reasoning", []))
+            roll_note = risk_context.get("roll_recommendation")
+            if roll_note:
+                reasoning.append(roll_note)
+
             if profit_pct > 0:
+                if (
+                    risk_context.get("recovery_score", 0) >= 65
+                    and momentum['strength'] in {"STRONG", "MODERATE"}
+                ):
+                    reasoning.append(
+                        f"Trim profits (+{profit_pct:.1f}%) and roll to maintain exposure with fresh time"
+                    )
+                    return self._finalize_signal(
+                        ExitSignal(
+                            signal="SELL_PARTIAL",
+                            confidence=92,
+                            reasoning=reasoning,
+                            suggested_action="Scale out 50% and roll remainder to later expiry",
+                            momentum_strength=momentum['strength'],
+                            volume_ratio=momentum['volume_ratio']
+                        ),
+                        momentum,
+                        risk_context
+                    )
+
                 reasoning.append(f"Lock in {profit_pct:.1f}% gain before decay")
-                return ExitSignal(
-                    signal="SELL_ALL",
-                    confidence=95,
-                    reasoning=reasoning,
-                    suggested_action=f"Exit now - secure +{profit_pct:.1f}%",
-                    momentum_strength=momentum['strength'],
-                    volume_ratio=momentum['volume_ratio']
+                return self._finalize_signal(
+                    ExitSignal(
+                        signal="SELL_ALL",
+                        confidence=95,
+                        reasoning=reasoning,
+                        suggested_action=f"Exit now - secure +{profit_pct:.1f}%",
+                        momentum_strength=momentum['strength'],
+                        volume_ratio=momentum['volume_ratio']
+                    ),
+                    momentum,
+                    risk_context
                 )
             else:
                 reasoning.append("Minimize further losses from theta decay")
-                return ExitSignal(
-                    signal="SELL_ALL",
-                    confidence=90,
-                    reasoning=reasoning,
-                    suggested_action="Exit to stop bleeding",
-                    momentum_strength=momentum['strength']
+                return self._finalize_signal(
+                    ExitSignal(
+                        signal="SELL_ALL",
+                        confidence=90,
+                        reasoning=reasoning,
+                        suggested_action="Exit to stop bleeding",
+                        momentum_strength=momentum['strength']
+                    ),
+                    momentum,
+                    risk_context
                 )
 
         # Rule 3: Trailing stop hit (protecting gains)
         if profit_pct > 25 and current_option_price < trailing_stop:
             reasoning.append(f"📉 Trailing stop triggered (peak ${peak_price:.2f} → ${current_option_price:.2f})")
             reasoning.append(f"Locked in {profit_pct:.1f}% gain before bigger reversal")
-            return ExitSignal(
-                signal="SELL_ALL",
-                confidence=85,
-                reasoning=reasoning,
-                trailing_stop_price=trailing_stop,
-                suggested_action=f"Exit - trailing stop hit (+{profit_pct:.1f}%)",
-                momentum_strength=momentum['strength']
+            return self._finalize_signal(
+                ExitSignal(
+                    signal="SELL_ALL",
+                    confidence=85,
+                    reasoning=reasoning,
+                    trailing_stop_price=trailing_stop,
+                    suggested_action=f"Exit - trailing stop hit (+{profit_pct:.1f}%)",
+                    momentum_strength=momentum['strength']
+                ),
+                momentum,
+                risk_context
+            )
+
+        # High-conviction hold / scale-in opportunity
+        if (
+            risk_context.get("double_down")
+            and profit_pct > dynamic_stop + 5
+            and profit_pct < target_profit_pct
+            and dte > 1
+        ):
+            dd_reasoning = reasoning.copy()
+            dd_reasoning.extend(risk_context.get("flow_commentary", []))
+            dd_reasoning.append(
+                f"Risk/Reward skew: recovery score {risk_context.get('recovery_score', 0):.0f} vs risk {risk_context.get('risk_score', 0):.0f}"
+            )
+            expected_move = risk_context.get("expected_move_pct")
+            if expected_move is not None:
+                dd_reasoning.append(
+                    f"Market pricing ±{expected_move:.1f}% move → still room toward target"
+                )
+
+            return self._finalize_signal(
+                ExitSignal(
+                    signal="HOLD",
+                    confidence=75,
+                    reasoning=dd_reasoning,
+                    trailing_stop_price=trailing_stop if profit_pct > 15 else None,
+                    suggested_action="Conviction hold - consider adding within risk plan",
+                    momentum_strength=momentum['strength'],
+                    volume_ratio=momentum['volume_ratio']
+                ),
+                momentum,
+                risk_context
             )
 
         # PLAY-SPECIFIC RULES
 
         if play_type == "PULLBACK":
-            return self._analyze_pullback(
+            signal = self._analyze_pullback(
                 profit_pct, dte, momentum, entry_stock_price,
                 current_stock_price, option_type, reasoning,
-                target_profit_pct, trailing_stop, peak_price
+                target_profit_pct, trailing_stop, peak_price,
+                risk_context
             )
 
         elif play_type == "BREAKOUT":
-            return self._analyze_breakout(
+            signal = self._analyze_breakout(
                 profit_pct, dte, momentum, reasoning,
-                target_profit_pct, trailing_stop, peak_price
+                target_profit_pct, trailing_stop, peak_price,
+                risk_context
             )
 
         elif play_type == "BOUNCE":
-            return self._analyze_bounce(
+            signal = self._analyze_bounce(
                 profit_pct, dte, momentum, entry_stock_price,
                 current_stock_price, option_type, reasoning,
-                target_profit_pct, trailing_stop, peak_price
+                target_profit_pct, trailing_stop, peak_price,
+                risk_context
             )
 
         else:
             # Default conservative exit
-            return self._default_exit_logic(
+            signal = self._default_exit_logic(
                 profit_pct, dte, momentum, reasoning,
-                target_profit_pct, trailing_stop, peak_price
+                target_profit_pct, trailing_stop, peak_price,
+                risk_context
             )
+
+        return self._finalize_signal(signal, momentum, risk_context)
+
+    def _finalize_signal(
+        self,
+        signal: ExitSignal,
+        momentum: Dict[str, Any],
+        risk_context: Dict[str, Any]
+    ) -> ExitSignal:
+        """Attach contextual analytics to the outgoing signal."""
+
+        if not signal.momentum_strength or signal.momentum_strength == "UNKNOWN":
+            signal.momentum_strength = momentum.get("strength", signal.momentum_strength)
+
+        if signal.volume_ratio is None:
+            signal.volume_ratio = momentum.get("volume_ratio")
+
+        if signal.iv_change_pct is None:
+            signal.iv_change_pct = risk_context.get(
+                "iv_change_pct",
+                momentum.get("iv_change_pct")
+            )
+
+        signal.risk_score = risk_context.get("risk_score")
+        signal.recovery_score = risk_context.get("recovery_score")
+        signal.probability_of_profit = risk_context.get("probability_of_profit")
+        signal.unusual_activity_bias = risk_context.get("flow_bias")
+
+        supplemental = risk_context.get("supplemental_reasoning") or []
+        for note in supplemental:
+            if note not in signal.reasoning:
+                signal.reasoning.append(note)
+
+        if signal.signal == "HOLD":
+            for note in risk_context.get("flow_commentary", []) or []:
+                if note not in signal.reasoning:
+                    signal.reasoning.append(note)
+
+        expected_move = risk_context.get("expected_move_pct")
+        if expected_move is not None and signal.signal in {"HOLD", "SELL_PARTIAL"}:
+            note = f"Options market pricing ±{expected_move:.1f}% move ahead"
+            if note not in signal.reasoning:
+                signal.reasoning.append(note)
+
+        return signal
+
+    def _evaluate_risk_context(
+        self,
+        *,
+        option_type: str,
+        profit_pct: float,
+        base_stop: float,
+        dte: int,
+        momentum: Dict[str, Any],
+        entry_greeks: Optional[Dict[str, float]] = None,
+        current_greeks: Optional[Dict[str, float]] = None,
+        entry_iv: Optional[float] = None,
+        current_iv: Optional[float] = None,
+        probability_of_profit: Optional[float] = None,
+        expected_move_pct: Optional[float] = None,
+        sentiment_score: Optional[float] = None,
+        unusual_activity: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """Synthesize Greeks, IV and flow into a risk profile."""
+
+        entry_greeks = entry_greeks or {}
+        current_greeks = current_greeks or {}
+        momentum = momentum or {}
+
+        def _get_greek(name: str) -> Optional[float]:
+            value = current_greeks.get(name)
+            if value is None:
+                value = entry_greeks.get(name)
+            return value
+
+        delta = _get_greek("delta")
+        gamma = _get_greek("gamma")
+        theta = _get_greek("theta")
+        vega = _get_greek("vega")
+
+        dynamic_stop = float(base_stop)
+        stop_reasoning: List[str] = []
+        pre_reasoning: List[str] = []
+        theta_reasoning: List[str] = []
+        supplemental_reasoning: List[str] = []
+        flow_commentary: List[str] = []
+
+        risk_score = 50.0
+        recovery_score = 50.0
+
+        probability = None
+        if probability_of_profit is not None:
+            probability = max(0.0, min(1.0, probability_of_profit))
+            recovery_score = probability * 100
+
+        current_iv = current_iv if current_iv is not None else momentum.get("current_iv")
+        expected_move = expected_move_pct
+        if expected_move is None and current_iv is not None and dte > 0:
+            expected_move = (current_iv or 0) * (dte / 365) ** 0.5 * 100
+
+        iv_change_pct = None
+        iv_crush_risk = False
+        iv_expansion = False
+        if current_iv is not None and entry_iv:
+            if entry_iv != 0:
+                iv_change_pct = ((current_iv - entry_iv) / abs(entry_iv)) * 100
+                if iv_change_pct <= -20:
+                    iv_crush_risk = True
+                elif iv_change_pct >= 20:
+                    iv_expansion = True
+
+        strength = momentum.get("strength")
+        volume_ratio = momentum.get("volume_ratio") or 1.0
+
+        if strength == "STRONG":
+            pre_reasoning.append("Momentum remains strong in your favor")
+            recovery_score += 10
+        elif strength in {"MODERATE"}:
+            recovery_score += 5
+        elif strength in {"WEAKENING", "REVERSING"}:
+            risk_score += 10
+            stop_reasoning.append("Momentum is deteriorating - tighten risk")
+        elif strength == "DEAD":
+            risk_score += 12
+            stop_reasoning.append("Momentum stalled - consider redeploying capital")
+
+        if volume_ratio and volume_ratio >= 1.5:
+            pre_reasoning.append(f"Volume {volume_ratio:.1f}x average - conviction flow")
+            recovery_score += 6
+        elif volume_ratio and volume_ratio < 0.8:
+            risk_score += 4
+            supplemental_reasoning.append("Volume drying up - move lacks sponsorship")
+
+        if delta is not None:
+            abs_delta = abs(delta)
+            if abs_delta >= 0.7:
+                dynamic_stop = max(dynamic_stop, -40)
+                stop_reasoning.append("High delta contract - tighter leash warranted")
+                risk_score += 7
+            elif abs_delta <= 0.3 and dte > 7:
+                dynamic_stop = min(dynamic_stop, -65)
+                supplemental_reasoning.append("Low delta lotto - allow wider swings for a rebound")
+                recovery_score += 5
+
+        if theta is not None:
+            theta_pressure = abs(theta)
+            if theta_pressure >= 0.15:
+                theta_reasoning.append(f"Theta bleeding {theta:.2f}/day - extreme")
+                dynamic_stop = max(dynamic_stop, -40)
+                risk_score += 12
+            elif theta_pressure >= 0.08:
+                theta_reasoning.append(f"Theta heavy at {theta:.2f}/day")
+                dynamic_stop = max(dynamic_stop, -45)
+                risk_score += 8
+            elif theta_pressure >= 0.04:
+                theta_reasoning.append(f"Theta noticeable at {theta:.2f}/day")
+                risk_score += 4
+        else:
+            theta_pressure = 0.0
+
+        if gamma is not None:
+            gamma_pressure = abs(gamma)
+            if gamma_pressure >= 0.05:
+                stop_reasoning.append("High gamma - expect fast swings")
+                if dte <= 7:
+                    dynamic_stop = max(dynamic_stop, -45)
+                    risk_score += 6
+                else:
+                    dynamic_stop = min(dynamic_stop, -60)
+                    recovery_score += 4
+
+        if vega is not None and iv_change_pct is not None:
+            if iv_crush_risk:
+                stop_reasoning.append("IV crushed >20% from entry - premium bleeding")
+                dynamic_stop = max(dynamic_stop, -45)
+                risk_score += 8
+            elif iv_expansion:
+                supplemental_reasoning.append(f"IV expanding +{iv_change_pct:.1f}% - tailwind if move continues")
+                recovery_score += 5
+
+        if probability is not None:
+            if probability < 0.35:
+                stop_reasoning.append("Low probability of finishing ITM (<35%)")
+                dynamic_stop = max(dynamic_stop, -42)
+                risk_score += 8
+            elif probability > 0.65 and dte > 3:
+                supplemental_reasoning.append("High probability setup (>65%) - can give trade breathing room")
+                dynamic_stop = min(dynamic_stop, -60)
+                recovery_score += 8
+
+        if sentiment_score is not None:
+            sentiment_pct = sentiment_score * 100
+            if sentiment_score > 0.2:
+                pre_reasoning.append(f"Directional models still bullish ({sentiment_pct:.0f}% confidence)")
+                recovery_score += min(8, sentiment_pct / 12)
+            elif sentiment_score < -0.2:
+                stop_reasoning.append(f"Directional bias bearish ({sentiment_pct:.0f}% confidence)")
+                risk_score += min(10, abs(sentiment_pct) / 10)
+
+        flow_bias = None
+        if unusual_activity:
+            flow_bias = unusual_activity.get("bias")
+            total_flow = unusual_activity.get("total_volume")
+            dominant_vol = unusual_activity.get("dominant_volume")
+            vol_ratio = unusual_activity.get("vol_oi_ratio")
+
+            if total_flow:
+                flow_commentary.append(f"Unusual flow {total_flow:,} contracts detected")
+            if vol_ratio:
+                flow_commentary.append(f"Flow running {vol_ratio:.1f}x vs open interest")
+            if dominant_vol:
+                flow_commentary.append(f"Largest block: {dominant_vol:,} contracts")
+
+            side = option_type.lower()
+            supportive_flow = (
+                (side == "call" and flow_bias == "bullish")
+                or (side == "put" and flow_bias == "bearish")
+            )
+
+            if supportive_flow:
+                supplemental_reasoning.append("Smart money flow backing this position")
+                recovery_score += 12
+                dynamic_stop = min(dynamic_stop, base_stop - 10)
+                risk_score = max(0.0, risk_score - 8)
+            elif flow_bias:
+                stop_reasoning.append(f"Unusual flow leaning {flow_bias} against position")
+                risk_score += 10
+                dynamic_stop = max(dynamic_stop, -40)
+
+        risk_score = max(0.0, min(100.0, risk_score))
+        recovery_score = max(0.0, min(100.0, recovery_score))
+
+        theta_pressure_level = "LOW"
+        if theta is not None:
+            theta_abs = abs(theta)
+            if theta_abs >= 0.15:
+                theta_pressure_level = "EXTREME"
+            elif theta_abs >= 0.08:
+                theta_pressure_level = "HIGH"
+            elif theta_abs >= 0.04:
+                theta_pressure_level = "MODERATE"
+
+        roll_recommendation = None
+        if dte <= 3 and recovery_score >= 60:
+            roll_recommendation = "Consider rolling to extend time while conviction remains"
+
+        double_down = False
+        supportive_flow = (
+            (option_type.lower() == "call" and flow_bias == "bullish")
+            or (option_type.lower() == "put" and flow_bias == "bearish")
+        )
+        if (
+            supportive_flow
+            and recovery_score >= 65
+            and risk_score <= 45
+            and momentum.get("strength") in {"STRONG", "MODERATE"}
+            and profit_pct > base_stop
+        ):
+            double_down = True
+
+        return {
+            "dynamic_stop": float(dynamic_stop),
+            "stop_reasoning": stop_reasoning,
+            "theta_reasoning": theta_reasoning,
+            "theta_pressure": theta_pressure_level,
+            "roll_recommendation": roll_recommendation,
+            "pre_reasoning": pre_reasoning,
+            "supplemental_reasoning": supplemental_reasoning,
+            "flow_commentary": flow_commentary,
+            "flow_bias": flow_bias,
+            "risk_score": float(risk_score),
+            "recovery_score": float(recovery_score),
+            "probability_of_profit": probability,
+            "iv_change_pct": iv_change_pct,
+            "iv_crush_risk": iv_crush_risk,
+            "iv_expansion": iv_expansion,
+            "expected_move_pct": expected_move,
+            "double_down": double_down,
+            "current_iv": current_iv,
+        }
 
     def _analyze_pullback(
         self,
@@ -286,7 +682,8 @@ class ExitSignalEngine:
         reasoning: List[str],
         target_profit_pct: float,
         trailing_stop: float,
-        peak_price: float
+        peak_price: float,
+        risk_context: Dict[str, Any]
     ) -> ExitSignal:
         """
         PULLBACK play: Stock ripped up, bought puts for pullback.
@@ -362,7 +759,11 @@ class ExitSignalEngine:
         # HOLD signals
 
         # Still room to run
-        if pullback_amount < 3 and momentum['strength'] in ["STRONG", "MODERATE"]:
+        if (
+            pullback_amount < 3
+            and momentum['strength'] in ["STRONG", "MODERATE"]
+            and risk_context.get("risk_score", 50) <= 65
+        ):
             reasoning.append(f"✋ Stock only pulled back {pullback_amount:.1f}% so far")
             reasoning.append(f"Current profit: {profit_pct:.1f}% (target: {target_profit_pct}%)")
             reasoning.append("Momentum still down - hold for more pullback")
@@ -378,6 +779,8 @@ class ExitSignalEngine:
 
         # Default: Conservative hold
         reasoning.append(f"📊 Watching for {target_profit_pct}% profit or {pullback_amount+1:.0f}% pullback")
+        if risk_context.get("risk_score", 50) >= 70:
+            reasoning.append("Risk score elevated - tighten alerts on reversal")
         return ExitSignal(
             signal="HOLD",
             confidence=60,
@@ -394,7 +797,8 @@ class ExitSignalEngine:
         reasoning: List[str],
         target_profit_pct: float,
         trailing_stop: float,
-        peak_price: float
+        peak_price: float,
+        risk_context: Dict[str, Any]
     ) -> ExitSignal:
         """
         BREAKOUT play: Ride momentum.
@@ -423,7 +827,11 @@ class ExitSignalEngine:
             )
 
         # Momentum still strong at 50%+
-        if 40 <= profit_pct < 90 and momentum['strength'] == "STRONG":
+        if (
+            40 <= profit_pct < 90
+            and momentum['strength'] == "STRONG"
+            and risk_context.get("risk_score", 50) <= 60
+        ):
             reasoning.append(f"🚀 At {profit_pct:.1f}% profit")
             reasoning.append("📈 Momentum still STRONG - let it run")
             reasoning.append(f"Volume {momentum['volume_ratio']:.1f}x average - confirmed strength")
@@ -467,7 +875,7 @@ class ExitSignalEngine:
                 )
 
         # Early stage - just hold
-        if profit_pct < 40:
+        if profit_pct < 40 and risk_context.get("risk_score", 50) <= 65:
             reasoning.append(f"📊 Current profit: {profit_pct:.1f}% (target: 50%+)")
             reasoning.append(f"Momentum: {momentum['strength']}")
             reasoning.append("Hold for more upside")
@@ -480,7 +888,7 @@ class ExitSignalEngine:
             )
 
         # Default
-        return self._default_exit_logic(profit_pct, dte, momentum, reasoning, target_profit_pct, trailing_stop, peak_price)
+        return self._default_exit_logic(profit_pct, dte, momentum, reasoning, target_profit_pct, trailing_stop, peak_price, risk_context)
 
     def _analyze_bounce(
         self,
@@ -493,7 +901,8 @@ class ExitSignalEngine:
         reasoning: List[str],
         target_profit_pct: float,
         trailing_stop: float,
-        peak_price: float
+        peak_price: float,
+        risk_context: Dict[str, Any]
     ) -> ExitSignal:
         """
         BOUNCE play: Oversold bounce - quick scalp mentality.
@@ -551,7 +960,11 @@ class ExitSignalEngine:
         # HOLD signals
 
         # Bounce strengthening
-        if momentum['strength'] == "STRONG" and abs(stock_move_pct) < 3:
+        if (
+            momentum['strength'] == "STRONG"
+            and abs(stock_move_pct) < 3
+            and risk_context.get("risk_score", 50) <= 65
+        ):
             reasoning.append(f"📈 Bounce gaining momentum")
             reasoning.append(f"Current bounce: {abs(stock_move_pct):.1f}% (target: 3%)")
             reasoning.append(f"Profit: {profit_pct:.1f}% (target: 25-30%)")
@@ -568,6 +981,8 @@ class ExitSignalEngine:
         # Default
         reasoning.append(f"📊 Watching for 25% gain or 3% bounce")
         reasoning.append(f"Current: {profit_pct:.1f}% profit, {abs(stock_move_pct):.1f}% move")
+        if risk_context.get("risk_score", 50) >= 70:
+            reasoning.append("Risk score elevated - keep stops tight on bounce fade")
         return ExitSignal(
             signal="HOLD",
             confidence=60,
@@ -584,7 +999,8 @@ class ExitSignalEngine:
         reasoning: List[str],
         target_profit_pct: float,
         trailing_stop: float,
-        peak_price: float
+        peak_price: float,
+        risk_context: Dict[str, Any]
     ) -> ExitSignal:
         """Conservative default logic for undefined play types."""
 
@@ -616,6 +1032,8 @@ class ExitSignalEngine:
         # Hold with trailing stop
         reasoning.append(f"📊 Current profit: {profit_pct:.1f}% (target: {target_profit_pct}%)")
         reasoning.append(f"Momentum: {momentum['strength']}")
+        if risk_context.get("risk_score", 50) >= 70:
+            reasoning.append("Risk score elevated - favor tight stops or partials")
         if profit_pct > 20:
             reasoning.append(f"Trailing stop: ${trailing_stop:.2f}")
         return ExitSignal(
@@ -633,18 +1051,20 @@ class ExitSignalEngine:
         option_type: str,
         entry_stock_price: float,
         current_stock_price: float,
-        play_type: str
+        play_type: str,
+        strike: float,
+        expiration: str,
+        entry_iv: Optional[float],
+        current_iv_hint: Optional[float]
     ) -> Dict[str, Any]:
-        """
-        Check momentum indicators.
-
-        Returns:
-            Dict with strength, volume_ratio, direction, etc.
-        """
+        """Check price, volume and IV momentum."""
 
         try:
             stock = yf.Ticker(symbol)
-            hist = stock.history(period="5d")
+            hist = stock.history(period="1mo", interval="1d")
+
+            if hist.empty or len(hist) < 3:
+                hist = stock.history(period="5d", interval="1d")
 
             if len(hist) < 2:
                 return {
@@ -653,46 +1073,90 @@ class ExitSignalEngine:
                     'direction': 'UNKNOWN'
                 }
 
-            # Volume analysis
-            avg_volume = hist['Volume'][:-1].mean()  # Exclude today
-            current_volume = hist['Volume'].iloc[-1]
-            volume_ratio = current_volume / avg_volume if avg_volume > 0 else 1.0
+            current_close = hist['Close'].iloc[-1]
+            prev_close = hist['Close'].iloc[-2]
+            recent_changes = hist['Close'].pct_change().tail(5).dropna() * 100
 
-            # Price momentum (last 3 days)
-            recent_changes = hist['Close'].pct_change().tail(3) * 100
-
-            # For PULLBACK puts: Want stock going DOWN
-            # For BREAKOUT calls: Want stock going UP
-            # For BOUNCE calls: Want stock going UP
-
-            if play_type == "PULLBACK" and option_type.lower() == "put":
-                # Want negative momentum (stock falling)
-                down_days = (recent_changes < 0).sum()
-                if down_days >= 2 and volume_ratio >= 1.5:
-                    strength = "STRONG"
-                elif down_days >= 1:
-                    strength = "MODERATE"
-                elif down_days == 0:
-                    strength = "REVERSING"  # Uh oh, stock going back up
-                else:
-                    strength = "WEAKENING"
+            # Volume analysis (10-day average)
+            if len(hist) > 10:
+                avg_volume = hist['Volume'].iloc[:-1].rolling(10).mean().iloc[-1]
             else:
-                # Want positive momentum (stock rising)
-                up_days = (recent_changes > 0).sum()
-                if up_days >= 2 and volume_ratio >= 1.5:
-                    strength = "STRONG"
-                elif up_days >= 1:
-                    strength = "MODERATE"
-                elif up_days == 0:
-                    strength = "DEAD"
-                else:
-                    strength = "WEAKENING"
+                avg_volume = hist['Volume'].iloc[:-1].mean() if len(hist) > 1 else hist['Volume'].mean()
+            current_volume = hist['Volume'].iloc[-1]
+            volume_ratio = current_volume / avg_volume if avg_volume and avg_volume > 0 else None
+
+            lookback = 5 if len(hist) >= 6 else len(hist) - 1
+            price_trend_pct = 0.0
+            if lookback > 0:
+                price_trend_pct = ((current_close / hist['Close'].iloc[-lookback-1]) - 1) * 100
+
+            short_ma = hist['Close'].rolling(window=min(5, len(hist))).mean().iloc[-1]
+            long_window = 21 if len(hist) >= 21 else len(hist)
+            long_ma = hist['Close'].rolling(window=long_window).mean().iloc[-1]
+            slope_pct = ((short_ma - long_ma) / long_ma * 100) if long_ma else 0.0
+
+            # ATR-based volatility context
+            high_low = hist['High'] - hist['Low']
+            high_close = (hist['High'] - hist['Close'].shift()).abs()
+            low_close = (hist['Low'] - hist['Close'].shift()).abs()
+            tr = pd.concat([high_low, high_close, low_close], axis=1).max(axis=1)
+            if len(tr) >= 14:
+                atr = tr.rolling(14).mean().iloc[-1]
+            else:
+                atr = tr.mean()
+            atr_pct = (atr / current_close) * 100 if atr and current_close else None
+
+            desired_direction = 1
+            if play_type == "PULLBACK" and option_type.lower() == "put":
+                desired_direction = -1
+
+            directional_metric = desired_direction * price_trend_pct
+
+            if directional_metric > 3 and (volume_ratio or 0) >= 1.3:
+                strength = "STRONG"
+            elif directional_metric > 1:
+                strength = "MODERATE"
+            elif directional_metric < -2:
+                strength = "REVERSING"
+            elif directional_metric < 0:
+                strength = "WEAKENING"
+            else:
+                strength = "DEAD" if abs(price_trend_pct) < 0.5 else "MODERATE"
+
+            # Attempt to capture current IV from option chain when not provided
+            current_iv = current_iv_hint
+            if current_iv is None and expiration:
+                try:
+                    chain = stock.option_chain(expiration)
+                    chain_df = chain.calls if option_type.lower() == "call" else chain.puts
+                    match = chain_df.loc[(chain_df['strike'] - strike).abs() <= 0.01]
+                    if not match.empty and 'impliedVolatility' in match:
+                        current_iv = float(match['impliedVolatility'].iloc[0])
+                except Exception:
+                    current_iv = current_iv_hint
+
+            iv_change_pct = None
+            if current_iv is not None and entry_iv:
+                if entry_iv != 0:
+                    iv_change_pct = ((current_iv - entry_iv) / abs(entry_iv)) * 100
+
+            momentum_score = directional_metric * 3
+            if volume_ratio is not None:
+                momentum_score += (volume_ratio - 1) * 10
+            if not recent_changes.empty:
+                momentum_score += recent_changes.iloc[-1]
 
             return {
                 'strength': strength,
                 'volume_ratio': volume_ratio,
                 'direction': 'UP' if current_stock_price > entry_stock_price else 'DOWN',
-                'recent_changes': recent_changes.tolist()
+                'recent_changes': recent_changes.tolist(),
+                'price_trend_pct': price_trend_pct,
+                'slope_pct': slope_pct,
+                'atr_pct': atr_pct,
+                'momentum_score': momentum_score,
+                'iv_change_pct': iv_change_pct,
+                'current_iv': current_iv
             }
 
         except Exception as e:
