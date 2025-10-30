@@ -539,6 +539,17 @@ export default function PortfolioClient({
           currentDirectionalConfidence: bias?.confidence,
           fundamentalHealthScore: bias?.fundamentalHealth?.health_score,
           earningsInDays: bias?.earningsInDays,
+          entryGreeks: {
+            delta: p.entry_delta ?? undefined,
+            gamma: p.entry_gamma ?? undefined,
+            theta: p.entry_theta ?? undefined,
+            vega: p.entry_vega ?? undefined,
+          },
+          currentGreeks: {
+            delta: p.current_delta ?? undefined,
+            theta: p.current_theta ?? undefined,
+          },
+          entryIv: p.entry_iv ?? undefined,
         }
       })
 

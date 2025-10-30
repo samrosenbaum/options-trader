@@ -22,6 +22,11 @@ interface ExitSignalRequest {
     currentDirectionalConfidence?: number  // Current confidence
     fundamentalHealthScore?: number  // 0.0-1.0
     earningsInDays?: number  // Days to earnings
+    entryGreeks?: Record<string, number | undefined>
+    currentGreeks?: Record<string, number | undefined>
+    entryIv?: number
+    currentIv?: number
+    probabilityOfProfit?: number
   }>
 }
 
@@ -33,6 +38,11 @@ interface ExitSignal {
   suggestedAction: string
   momentumStrength: string
   volumeRatio: number | null
+  ivChangePct?: number | null
+  riskScore?: number | null
+  recoveryScore?: number | null
+  probabilityOfProfit?: number | null
+  unusualActivityBias?: string | null
   profitPct: number
 }
 
@@ -57,9 +67,17 @@ export async function POST(request: Request) {
           `
 import json
 import sys
+from datetime import datetime
+from math import erf, sqrt
+
 sys.path.insert(0, '.')
 from src.signals.exit_engine import ExitSignalEngine
 import yfinance as yf
+
+try:
+    from src.scanner.unusual_activity import detect_unusual_options_activity
+except Exception:
+    detect_unusual_options_activity = None
 
 # Parse input
 data = json.loads('''${JSON.stringify({ positions })}''')
@@ -68,38 +86,114 @@ positions = data['positions']
 engine = ExitSignalEngine()
 signals = {}
 
+symbols = sorted({pos['symbol'] for pos in positions if 'symbol' in pos})
+uoa_map = {}
+if detect_unusual_options_activity and symbols:
+    try:
+        uoa_map = detect_unusual_options_activity(symbols, min_vol_oi_ratio=2.0, min_volume=200)
+    except Exception as exc:
+        print(f"UOA lookup failed: {exc}", file=sys.stderr)
+        uoa_map = {}
+
+ticker_cache = {}
+option_chain_cache = {}
+
 for pos in positions:
     try:
-        # Get current stock price and option price
         symbol = pos['symbol']
-        stock = yf.Ticker(symbol)
+        ticker = ticker_cache.get(symbol)
+        if ticker is None:
+            ticker = yf.Ticker(symbol)
+            ticker_cache[symbol] = ticker
 
-        # Get current stock price
-        hist = stock.history(period='1d')
+        hist = ticker.history(period='1d')
         if len(hist) == 0:
             print(f"No data for {symbol}", file=sys.stderr)
             continue
 
-        current_stock_price = hist['Close'].iloc[-1]
+        current_stock_price = float(hist['Close'].iloc[-1])
 
-        # Get entry stock price from entry date
-        entry_hist = stock.history(start=pos['entryDate'], end=pos['entryDate'])
+        entry_hist = ticker.history(start=pos['entryDate'], end=pos['entryDate'])
         if len(entry_hist) > 0:
-            entry_stock_price = entry_hist['Close'].iloc[0]
+            entry_stock_price = float(entry_hist['Close'].iloc[0])
         else:
-            # Fallback: estimate from current price and option price
-            entry_stock_price = current_stock_price
+            entry_stock_price = float(current_stock_price)
 
-        # Get current option price if not provided
         current_option_price = pos.get('currentPrice')
         if not current_option_price:
-            # Estimate based on intrinsic value + time value decay
-            # This is a rough estimate - real price would come from broker
-            intrinsic = max(0, current_stock_price - pos['strike']) if pos['optionType'].lower() == 'call' else max(0, pos['strike'] - current_stock_price)
-            time_value_estimate = pos['entryPrice'] * 0.3  # Rough estimate
+            intrinsic = max(0.0, current_stock_price - pos['strike']) if pos['optionType'].lower() == 'call' else max(0.0, pos['strike'] - current_stock_price)
+            time_value_estimate = pos['entryPrice'] * 0.3
             current_option_price = intrinsic + time_value_estimate
 
-        # Analyze position
+        entry_greeks = {k: float(v) for k, v in (pos.get('entryGreeks') or {}).items() if v is not None}
+        current_greeks = {k: float(v) for k, v in (pos.get('currentGreeks') or {}).items() if v is not None}
+        entry_iv = pos.get('entryIv')
+        current_iv = pos.get('currentIv')
+
+        chain_key = (symbol, pos['expiration'])
+        chain = option_chain_cache.get(chain_key)
+        if chain is None:
+            try:
+                chain = ticker.option_chain(pos['expiration'])
+            except Exception:
+                chain = None
+            option_chain_cache[chain_key] = chain
+
+        if chain is not None:
+            side_df = chain.calls if pos['optionType'].lower() == 'call' else chain.puts
+            match = side_df.loc[(side_df['strike'] - pos['strike']).abs() <= 0.01]
+            if not match.empty and 'impliedVolatility' in match:
+                current_iv = float(match['impliedVolatility'].iloc[0])
+
+        exp_date = datetime.strptime(pos['expiration'], "%Y-%m-%d")
+        dte = max((exp_date - datetime.utcnow()).days, 0)
+
+        expected_move_pct = None
+        if current_iv is not None and dte > 0:
+            expected_move_pct = float(current_iv) * (dte / 365) ** 0.5 * 100
+
+        probability_of_profit = pos.get('probabilityOfProfit')
+        if probability_of_profit is None and current_iv and current_stock_price > 0 and dte > 0:
+            sigma = float(current_iv) * (dte / 365) ** 0.5
+            if sigma > 0:
+                if pos['optionType'].lower() == 'call':
+                    z = (pos['strike'] - current_stock_price) / (current_stock_price * sigma)
+                    cdf = 0.5 * (1 + erf(z / sqrt(2)))
+                    probability_of_profit = float(max(0.0, min(1.0, 1 - cdf)))
+                else:
+                    z = (current_stock_price - pos['strike']) / (current_stock_price * sigma)
+                    probability_of_profit = float(max(0.0, min(1.0, 0.5 * (1 + erf(z / sqrt(2))))))
+
+        sentiment_score = None
+        bias = pos.get('currentDirectionalBias')
+        confidence = pos.get('currentDirectionalConfidence')
+        if bias and confidence is not None:
+            normalized_conf = float(confidence) / 100.0
+            if bias.upper() == 'BULLISH':
+                sentiment_score = normalized_conf
+            elif bias.upper() == 'BEARISH':
+                sentiment_score = -normalized_conf
+            else:
+                sentiment_score = 0.0
+
+        unusual_raw = uoa_map.get(symbol) or {}
+        if unusual_raw:
+            call_volume = sum(sig.get('volume', 0) for sig in unusual_raw.get('call_signals', []))
+            put_volume = sum(sig.get('volume', 0) for sig in unusual_raw.get('put_signals', []))
+            combined = unusual_raw.get('call_signals', []) + unusual_raw.get('put_signals', [])
+            top_ratio = max((sig.get('vol_oi_ratio', 0) for sig in combined), default=None)
+            dominant_vol = max((sig.get('volume', 0) for sig in combined), default=0)
+            unusual_context = {
+                'bias': unusual_raw.get('bias'),
+                'total_volume': unusual_raw.get('total_unusual_volume'),
+                'call_volume': call_volume,
+                'put_volume': put_volume,
+                'vol_oi_ratio': top_ratio,
+                'dominant_volume': dominant_vol,
+            }
+        else:
+            unusual_context = None
+
         signal = engine.analyze_position(
             symbol=symbol,
             option_type=pos['optionType'],
@@ -113,18 +207,23 @@ for pos in positions:
             current_stock_price=current_stock_price,
             stop_loss_pct=pos.get('stopLossPct', -50),
             target_profit_pct=pos.get('targetProfitPct', 50),
-            # NEW: Pass directional signal data
             entry_directional_bias=pos.get('entryDirectionalBias'),
             current_directional_bias=pos.get('currentDirectionalBias'),
             current_directional_confidence=pos.get('currentDirectionalConfidence'),
             fundamental_health_score=pos.get('fundamentalHealthScore'),
-            earnings_in_days=pos.get('earningsInDays')
+            earnings_in_days=pos.get('earningsInDays'),
+            entry_greeks=entry_greeks or None,
+            current_greeks=current_greeks or None,
+            entry_iv=entry_iv,
+            current_iv=current_iv,
+            probability_of_profit=probability_of_profit,
+            expected_move_pct=expected_move_pct,
+            sentiment_score=sentiment_score,
+            unusual_activity=unusual_context,
         )
 
-        # Calculate profit
         profit_pct = ((current_option_price - pos['entryPrice']) / pos['entryPrice']) * 100
 
-        # Build signal dict
         signal_dict = {
             'signal': signal.signal,
             'confidence': signal.confidence,
@@ -133,10 +232,14 @@ for pos in positions:
             'suggestedAction': signal.suggested_action,
             'momentumStrength': signal.momentum_strength,
             'volumeRatio': signal.volume_ratio,
+            'ivChangePct': signal.iv_change_pct,
+            'riskScore': signal.risk_score,
+            'recoveryScore': signal.recovery_score,
+            'probabilityOfProfit': signal.probability_of_profit,
+            'unusualActivityBias': signal.unusual_activity_bias,
             'profitPct': profit_pct
         }
 
-        # Key by position identifier
         pos_key = f"{symbol}_{pos['strike']}_{pos['expiration']}_{pos['optionType']}"
         signals[pos_key] = signal_dict
 
