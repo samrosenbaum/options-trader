@@ -55,13 +55,32 @@ export async function POST(request: Request) {
     const briefData = await briefResponse.json()
     const formattedText = briefData.formatted_text
 
+    // Format dates for Eastern Time
+    const today = new Date().toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      timeZone: 'America/New_York'
+    })
+
+    const tomorrow = new Date()
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    const tomorrowFormatted = tomorrow.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      timeZone: 'America/New_York'
+    })
+
     // Send email to all subscribers
     const emailPromises = subscriptions.map(sub =>
       resend.emails.send({
         from: 'Monty Analyst <onboarding@resend.dev>',
         to: sub.email,
-        subject: `Nightly Brief - Tomorrow's Battle Plan`,
-        text: formattedText
+        subject: `🌙 Nightly Brief - Battle Plan for ${tomorrowFormatted}`,
+        text: `📈 YOUR NIGHTLY BRIEF FROM ${today.toUpperCase()}\nTOMORROW'S BATTLE PLAN: ${tomorrowFormatted.toUpperCase()}\n${'='.repeat(60)}\n\n${formattedText}`
       })
     )
 
