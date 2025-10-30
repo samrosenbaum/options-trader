@@ -82,8 +82,9 @@ export default function SettingsPage() {
       })
 
       if (response.ok) {
-        // Show success message or redirect
-        router.push("/ai-strategy-hub")
+        // Show success message and redirect to dashboard
+        alert("Settings saved successfully!")
+        router.push("/")
       } else {
         alert("Failed to save settings")
       }
