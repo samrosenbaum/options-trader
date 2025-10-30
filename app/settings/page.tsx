@@ -135,10 +135,10 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="userName">Name</Label>
+              <Label htmlFor="userName">What should we call you?</Label>
               <Input
                 id="userName"
-                placeholder="Enter your name"
+                placeholder="Your name"
                 value={userName}
                 onChange={(e) => setUserName(e.target.value)}
               />
