@@ -233,7 +233,40 @@ def fetch_option_data(
 
     for attempt in range(retry_count):
         try:
-            stock_price = _get_stock_price(symbol, ticker)
+            # Parse expiration date
+            try:
+                exp_date = parse_expiration_date(expiration)
+            except ValueError as error:
+                print(f"Warning: invalid expiration for {symbol}: {error}", file=sys.stderr)
+                return None
+
+            # Create ticker object
+            ticker = yf.Ticker(symbol)
+
+            # Get current stock price
+            stock_info = ticker.history(period='1d')
+            if stock_info.empty:
+                # Try alternative method
+                info = ticker.info
+                stock_price = safe_float(info.get('currentPrice') or info.get('regularMarketPrice') or info.get('previousClose'))
+                if stock_price is None:
+                    print(f"Warning: No stock data for {symbol}", file=sys.stderr)
+                    return None
+            else:
+                stock_price = float(stock_info['Close'].iloc[-1])
+
+            # Get options chain for expiration date
+            try:
+                options = ticker.option_chain(exp_date.strftime('%Y-%m-%d'))
+            except Exception as e:
+                if attempt < retry_count - 1:
+                    # Longer delays for rate limit errors (2s, 4s, 6s)
+                    wait_time = 2 * (attempt + 1)
+                    print(f"Retry {attempt + 1}/{retry_count} for {symbol} after error: {e}", file=sys.stderr)
+                    time.sleep(wait_time)
+                    continue
+                print(f"Warning: Could not get options chain for {symbol} {exp_date}: {e}", file=sys.stderr)
+                return None
 
             options = _load_option_chain(symbol, expiration_key, ticker)
             chain = options.calls if option_type_normalized == 'call' else options.puts
@@ -335,10 +368,10 @@ def fetch_option_data(
                 return dict(stale_contract.value)
 
             if attempt < retry_count - 1:
-                if is_rate_limited:
-                    _rate_limit_wait(attempt)
-                else:
-                    time.sleep(0.5 + attempt * 0.5)
+                # Longer delays for rate limit errors (2s, 4s, 6s)
+                wait_time = 2 * (attempt + 1)
+                print(f"Retry {attempt + 1}/{retry_count} for {symbol} after error: {error}", file=sys.stderr)
+                time.sleep(wait_time)
                 continue
 
             print(f"Error fetching option data for {symbol}: {error}", file=sys.stderr)
@@ -517,10 +550,9 @@ def update_positions(positions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 
         updated_positions.append(position)
 
-        # Add small delay between positions to avoid rate limiting
-        if REQUEST_THROTTLE_SECONDS > 0:
-            jitter = REQUEST_THROTTLE_JITTER if REQUEST_THROTTLE_JITTER > 0 else 0.0
-            time.sleep(REQUEST_THROTTLE_SECONDS + random.uniform(0, jitter))
+        # Add delay between positions to avoid Yahoo Finance rate limiting
+        # Yahoo heavily rate-limits option chain requests, so we need longer delays
+        time.sleep(2.0)
 
     return updated_positions
 
