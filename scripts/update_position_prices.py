@@ -126,7 +126,10 @@ def fetch_option_data(symbol: str, strike: float, expiration: Any, option_type: 
                 options = ticker.option_chain(exp_date.strftime('%Y-%m-%d'))
             except Exception as e:
                 if attempt < retry_count - 1:
-                    time.sleep(1 + attempt)
+                    # Longer delays for rate limit errors (2s, 4s, 6s)
+                    wait_time = 2 * (attempt + 1)
+                    print(f"Retry {attempt + 1}/{retry_count} for {symbol} after error: {e}", file=sys.stderr)
+                    time.sleep(wait_time)
                     continue
                 print(f"Warning: Could not get options chain for {symbol} {exp_date}: {e}", file=sys.stderr)
                 return None
@@ -210,8 +213,10 @@ def fetch_option_data(symbol: str, strike: float, expiration: Any, option_type: 
 
         except Exception as error:
             if attempt < retry_count - 1:
+                # Longer delays for rate limit errors (2s, 4s, 6s)
+                wait_time = 2 * (attempt + 1)
                 print(f"Retry {attempt + 1}/{retry_count} for {symbol} after error: {error}", file=sys.stderr)
-                time.sleep(1 + attempt)
+                time.sleep(wait_time)
                 continue
             print(f"Error fetching option data for {symbol}: {error}", file=sys.stderr)
             return None
@@ -389,8 +394,9 @@ def update_positions(positions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 
         updated_positions.append(position)
 
-        # Add small delay between positions to avoid rate limiting
-        time.sleep(0.1)
+        # Add delay between positions to avoid Yahoo Finance rate limiting
+        # Yahoo heavily rate-limits option chain requests, so we need longer delays
+        time.sleep(2.0)
 
     return updated_positions
 
