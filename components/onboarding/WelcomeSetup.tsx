@@ -16,25 +16,49 @@ export default function WelcomeSetup({ open, onComplete }: WelcomeSetupProps) {
   const [portfolioSize, setPortfolioSize] = useState('')
   const [dailyBudget, setDailyBudget] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const parseCurrencyValue = (value: string) => {
+    const normalized = value.replace(/[$,\s]/g, '')
+    const parsed = Number.parseFloat(normalized)
+    return Number.isFinite(parsed) ? parsed : Number.NaN
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!userName.trim() || !portfolioSize || !dailyBudget) {
+    if (isSubmitting) {
+      return
+    }
+
+    if (!userName.trim() || !portfolioSize.trim() || !dailyBudget.trim()) {
+      setError('Please complete all fields before continuing.')
       return
     }
 
     setIsSubmitting(true)
+    setError(null)
 
-    const parsedPortfolio = parseFloat(portfolioSize)
-    const parsedBudget = parseFloat(dailyBudget)
+    const parsedPortfolio = parseCurrencyValue(portfolioSize)
+    const parsedBudget = parseCurrencyValue(dailyBudget)
 
-    if (!isNaN(parsedPortfolio) && !isNaN(parsedBudget)) {
-      onComplete({
+    if (Number.isNaN(parsedPortfolio) || Number.isNaN(parsedBudget)) {
+      setIsSubmitting(false)
+      setError('Enter valid numbers for your portfolio size and daily budget.')
+      return
+    }
+
+    try {
+      await onComplete({
         userName: userName.trim(),
         portfolioSize: parsedPortfolio,
         dailyBudget: parsedBudget,
       })
+    } catch (submissionError) {
+      console.error('Failed to complete welcome setup', submissionError)
+      setError('Something went wrong while saving your info. Please try again.')
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -76,7 +100,10 @@ export default function WelcomeSetup({ open, onComplete }: WelcomeSetupProps) {
                 id="userName"
                 type="text"
                 value={userName}
-                onChange={(e) => setUserName(e.target.value)}
+                onChange={(e) => {
+                  setUserName(e.target.value)
+                  setError(null)
+                }}
                 placeholder="Your name"
                 required
                 autoFocus
@@ -94,7 +121,10 @@ export default function WelcomeSetup({ open, onComplete }: WelcomeSetupProps) {
                   id="portfolioSize"
                   type="number"
                   value={portfolioSize}
-                  onChange={(e) => setPortfolioSize(e.target.value)}
+                  onChange={(e) => {
+                    setPortfolioSize(e.target.value)
+                    setError(null)
+                  }}
                   placeholder="10000"
                   required
                   min="0"
@@ -117,7 +147,10 @@ export default function WelcomeSetup({ open, onComplete }: WelcomeSetupProps) {
                   id="dailyBudget"
                   type="number"
                   value={dailyBudget}
-                  onChange={(e) => setDailyBudget(e.target.value)}
+                  onChange={(e) => {
+                    setDailyBudget(e.target.value)
+                    setError(null)
+                  }}
                   placeholder="500"
                   required
                   min="0"
@@ -130,9 +163,20 @@ export default function WelcomeSetup({ open, onComplete }: WelcomeSetupProps) {
               </p>
             </div>
 
+            {error && (
+              <p className="text-sm text-red-400" role="alert">
+                {error}
+              </p>
+            )}
+
             <button
               type="submit"
-              disabled={isSubmitting || !userName.trim() || !portfolioSize || !dailyBudget}
+              disabled={
+                isSubmitting ||
+                !userName.trim() ||
+                !portfolioSize.trim() ||
+                !dailyBudget.trim()
+              }
               className="mt-8 w-full rounded-full bg-gradient-to-r from-emerald-400 via-emerald-300 to-emerald-500 px-6 py-3.5 text-base font-semibold text-emerald-950 shadow-[0_10px_40px_rgba(16,185,129,0.45)] transition hover:shadow-[0_12px_45px_rgba(16,185,129,0.55)] focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 disabled:opacity-50 disabled:cursor-not-allowed relative z-50 pointer-events-auto"
             >
               {isSubmitting ? 'Setting up...' : 'Enter your trading desk'}
