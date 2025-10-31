@@ -131,6 +131,14 @@ export async function POST() {
             exit_urgency_score: position.exit_urgency_score,
             exit_reasons: position.exit_reasons,
             last_signal_check: position.last_signal_check,
+            peak_unrealized_pl: position.peak_unrealized_pl,
+            peak_unrealized_pl_percent: position.peak_unrealized_pl_percent,
+            peak_option_price: position.peak_option_price,
+            last_catalyst_review: position.last_catalyst_review,
+            contextual_insights: position.contextual_insights,
+            pending_alerts: position.pending_alerts,
+            last_profit_alert_threshold: position.last_profit_alert_threshold,
+            last_profit_alert_at: position.last_profit_alert_at,
             updated_at: new Date().toISOString(),
           })
           .eq('id', position.id)
