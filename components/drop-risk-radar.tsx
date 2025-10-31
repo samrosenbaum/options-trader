@@ -79,7 +79,14 @@ const fetchDropSignals = async (limit: number, minScore?: number): Promise<ApiRe
   return response.json()
 }
 
-export function DropRiskRadar({ limit = 5, minScore = 45 }: { limit?: number; minScore?: number }) {
+interface DropRiskRadarProps {
+  limit?: number
+  minScore?: number
+  filterSymbols?: string[]
+  symbolTags?: Record<string, 'portfolio' | 'watchlist'>
+}
+
+export function DropRiskRadar({ limit = 5, minScore = 45, filterSymbols, symbolTags }: DropRiskRadarProps) {
   const [signals, setSignals] = useState<DropRiskSignal[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -89,13 +96,21 @@ export function DropRiskRadar({ limit = 5, minScore = 45 }: { limit?: number; mi
 
   const applyPayload = useCallback((payload: ApiResponse) => {
     if (payload.success && payload.data) {
-      setSignals(payload.data)
+      let filteredData = payload.data
+
+      // Filter to only symbols in portfolio/watchlist if provided
+      if (filterSymbols && filterSymbols.length > 0) {
+        const symbolSet = new Set(filterSymbols.map(s => s.toUpperCase()))
+        filteredData = payload.data.filter(signal => symbolSet.has(signal.symbol.toUpperCase()))
+      }
+
+      setSignals(filteredData)
       setLastUpdated(payload.generatedAt ?? new Date().toISOString())
       setError(null)
     } else {
       setError(payload.error ?? 'Unable to load drop risk signals')
     }
-  }, [])
+  }, [filterSymbols])
 
   const refreshSignals = useCallback(async () => {
     setLoading(true)
@@ -203,16 +218,27 @@ export function DropRiskRadar({ limit = 5, minScore = 45 }: { limit?: number; mi
           const scoreBadge = scoreColor(signal.score)
           const scoreChange = formatScoreChange(signal.scoreChange)
           const priceMove = formatPercent(signal.priceChangePct, 2)
+          const tag = symbolTags?.[signal.symbol.toUpperCase()]
+          const isPortfolio = tag === 'portfolio'
 
           return (
             <div
               key={signal.id}
-              className={`relative overflow-hidden rounded-2xl border ${styles.border} ${styles.glow} bg-slate-900/60 p-5 transition-all duration-300 hover:border-white/20 hover:shadow-[0_25px_70px_-30px_rgba(248,113,113,0.45)]`}
+              className={`relative overflow-hidden rounded-2xl border ${isPortfolio ? 'border-orange-500/60 shadow-[0_0_20px_rgba(249,115,22,0.3)]' : styles.border} ${styles.glow} bg-slate-900/60 p-5 transition-all duration-300 hover:border-white/20 hover:shadow-[0_25px_70px_-30px_rgba(248,113,113,0.45)]`}
             >
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-lg font-semibold text-white">{signal.symbol}</span>
+                    {tag && (
+                      <span className={`rounded-full border px-2 py-0.5 text-xs font-semibold uppercase tracking-wider ${
+                        isPortfolio
+                          ? 'bg-orange-500/20 text-orange-200 border-orange-400/50'
+                          : 'bg-blue-500/20 text-blue-200 border-blue-400/50'
+                      }`}>
+                        {tag}
+                      </span>
+                    )}
                     <span className={`rounded-full border px-3 py-1 text-xs font-medium uppercase tracking-[0.2em] ${styles.badge}`}>
                       {signal.alertLevel}
                     </span>

@@ -165,6 +165,7 @@ export default function PortfolioClient({
   user: User
 }) {
   const [positions, setPositions] = useState<Position[]>(initialPositions)
+  const [watchlistSymbols, setWatchlistSymbols] = useState<string[]>([])
   const [showAddModal, setShowAddModal] = useState(false)
   const [showImportModal, setShowImportModal] = useState(false)
   const [positionToClose, setPositionToClose] = useState<Position | null>(null)
@@ -198,6 +199,25 @@ export default function PortfolioClient({
       }
     }
   }, [])
+
+  // Fetch watchlist symbols
+  useEffect(() => {
+    async function fetchWatchlist() {
+      try {
+        const { data } = await supabase
+          .from('watchlist')
+          .select('symbol')
+          .eq('user_id', user.id)
+
+        if (data) {
+          setWatchlistSymbols(data.map(item => item.symbol))
+        }
+      } catch (error) {
+        console.error('Failed to fetch watchlist:', error)
+      }
+    }
+    fetchWatchlist()
+  }, [supabase, user.id])
 
   // Helper to check if market is currently open (9:30 AM - 4:00 PM ET, Mon-Fri)
   const isMarketHours = useCallback(() => {
@@ -1521,7 +1541,15 @@ export default function PortfolioClient({
 
         {/* Drop Risk Monitor - Stocks showing bearish signals */}
         <div className="mb-8">
-          <DropRiskRadar limit={5} minScore={50} />
+          <DropRiskRadar
+            limit={20}
+            minScore={50}
+            filterSymbols={[...new Set([...openPositions.map(p => p.symbol), ...watchlistSymbols])]}
+            symbolTags={Object.fromEntries([
+              ...openPositions.map(p => [p.symbol.toUpperCase(), 'portfolio' as const]),
+              ...watchlistSymbols.map(s => [s.toUpperCase(), 'watchlist' as const])
+            ])}
+          />
         </div>
 
         {/* Open Positions */}
