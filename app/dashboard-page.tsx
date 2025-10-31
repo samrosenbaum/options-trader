@@ -6,7 +6,6 @@ import Link from 'next/link'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { TickerTape } from '@/components/ticker-tape'
 import { TradingDeskBanner } from '@/components/trading-desk-banner'
-import DropRiskRadar from '@/components/drop-risk-radar'
 import { motion } from 'framer-motion'
 import { Trophy, TrendingDown } from 'lucide-react'
 
@@ -302,11 +301,6 @@ export default function DashboardPage() {
             </div>
           )}
           </div>
-        </div>
-
-        {/* Bearish Risk Radar - Find Put Opportunities */}
-        <div className="mb-8">
-          <DropRiskRadar limit={5} minScore={45} />
         </div>
 
         {/* Top Positions & Quick Actions */}

@@ -15,6 +15,7 @@ import ClosePositionModal from './close-position-modal'
 import PositionAnalysisModal from './position-analysis-modal'
 import CashRain from './cash-rain'
 import CSVImportModal from '@/components/csv-import-modal'
+import DropRiskRadar from '@/components/drop-risk-radar'
 import {
   Bar,
   BarChart,
@@ -1516,6 +1517,11 @@ export default function PortfolioClient({
               </div>
             )}
           </div>
+        </div>
+
+        {/* Drop Risk Monitor - Stocks showing bearish signals */}
+        <div className="mb-8">
+          <DropRiskRadar limit={5} minScore={50} />
         </div>
 
         {/* Open Positions */}
