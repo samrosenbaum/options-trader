@@ -41,6 +41,14 @@ export interface Database {
           unrealized_pl_percent: number | null
           realized_pl: number | null
           realized_pl_percent: number | null
+          peak_unrealized_pl: number | null
+          peak_unrealized_pl_percent: number | null
+          peak_option_price: number | null
+          last_catalyst_review: string | null
+          contextual_insights: Json | null
+          pending_alerts: Json | null
+          last_profit_alert_threshold: number | null
+          last_profit_alert_at: string | null
           // Exit signals
           exit_signal: 'hold' | 'consider' | 'exit_now'
           exit_urgency_score: number
@@ -79,6 +87,14 @@ export interface Database {
           unrealized_pl_percent?: number | null
           realized_pl?: number | null
           realized_pl_percent?: number | null
+          peak_unrealized_pl?: number | null
+          peak_unrealized_pl_percent?: number | null
+          peak_option_price?: number | null
+          last_catalyst_review?: string | null
+          contextual_insights?: Json | null
+          pending_alerts?: Json | null
+          last_profit_alert_threshold?: number | null
+          last_profit_alert_at?: string | null
           exit_signal?: 'hold' | 'consider' | 'exit_now'
           exit_urgency_score?: number
           exit_reasons?: Json
@@ -115,6 +131,14 @@ export interface Database {
           unrealized_pl_percent?: number | null
           realized_pl?: number | null
           realized_pl_percent?: number | null
+          peak_unrealized_pl?: number | null
+          peak_unrealized_pl_percent?: number | null
+          peak_option_price?: number | null
+          last_catalyst_review?: string | null
+          contextual_insights?: Json | null
+          pending_alerts?: Json | null
+          last_profit_alert_threshold?: number | null
+          last_profit_alert_at?: string | null
           exit_signal?: 'hold' | 'consider' | 'exit_now'
           exit_urgency_score?: number
           exit_reasons?: Json
