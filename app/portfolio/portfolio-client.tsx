@@ -16,6 +16,8 @@ import PositionAnalysisModal from './position-analysis-modal'
 import CashRain from './cash-rain'
 import CSVImportModal from '@/components/csv-import-modal'
 import DropRiskRadar from '@/components/drop-risk-radar'
+import { PositionAlerts } from '@/components/position-alerts'
+import { ContextualInsights } from '@/components/contextual-insights'
 import {
   Bar,
   BarChart,
@@ -725,6 +727,22 @@ export default function PortfolioClient({
       clearTimeout(initialTimeout)
     }
   }, [openPositions.length, isMarketHours, handleCheckExitSignals])
+
+  const handleDismissAlert = useCallback(async (positionId: string, alertId: string) => {
+    // Optimistically update UI
+    setPositions(prevPositions =>
+      prevPositions.map(p =>
+        p.id === positionId
+          ? {
+              ...p,
+              pending_alerts: Array.isArray(p.pending_alerts)
+                ? p.pending_alerts.filter((alert: any) => alert.id !== alertId)
+                : [],
+            }
+          : p
+      )
+    )
+  }, [])
 
   const totalUnrealizedPL = openPositions.reduce(
     (sum, p) => sum + (p.unrealized_pl || 0),
@@ -1552,6 +1570,63 @@ export default function PortfolioClient({
           />
         </div>
 
+        {/* Active Alerts - Show positions with pending alerts */}
+        {openPositions.some(p => p.pending_alerts && Array.isArray(p.pending_alerts) && p.pending_alerts.length > 0) && (
+          <div className="mb-8">
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">
+              Active Alerts
+            </h2>
+            <div className="space-y-4">
+              {openPositions
+                .filter(p => p.pending_alerts && Array.isArray(p.pending_alerts) && p.pending_alerts.length > 0)
+                .map(position => (
+                  <div key={position.id} className="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-sm font-bold text-slate-900 dark:text-white">
+                        {position.symbol} ${position.strike} {position.option_type.toUpperCase()}
+                      </span>
+                      <span className="text-xs text-slate-500 dark:text-slate-400">
+                        Exp: {formatDateLocal(position.expiration)}
+                      </span>
+                    </div>
+                    <PositionAlerts
+                      positionId={position.id}
+                      symbol={position.symbol}
+                      alerts={position.pending_alerts as any[]}
+                      onDismiss={(alertId) => handleDismissAlert(position.id, alertId)}
+                    />
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
+
+        {/* Contextual Insights - Show positions with insights */}
+        {openPositions.some(p => p.contextual_insights && Array.isArray(p.contextual_insights) && p.contextual_insights.length > 0) && (
+          <div className="mb-8">
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">
+              Position Insights
+            </h2>
+            <div className="space-y-4">
+              {openPositions
+                .filter(p => p.contextual_insights && Array.isArray(p.contextual_insights) && p.contextual_insights.length > 0)
+                .map(position => (
+                  <div key={position.id} className="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-sm font-bold text-slate-900 dark:text-white">
+                        {position.symbol} ${position.strike} {position.option_type.toUpperCase()}
+                      </span>
+                      <span className="text-xs text-slate-500 dark:text-slate-400">
+                        Exp: {formatDateLocal(position.expiration)}
+                      </span>
+                    </div>
+                    <ContextualInsights insights={position.contextual_insights as any[]} />
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
+
         {/* Open Positions */}
         {openPositions.length > 0 && (
           <div className="mb-8">
@@ -1640,6 +1715,11 @@ export default function PortfolioClient({
                         {position.unrealized_pl_percent && (
                           <div className="text-xs text-slate-500">
                             ({position.unrealized_pl_percent.toFixed(1)}%)
+                          </div>
+                        )}
+                        {position.peak_unrealized_pl && position.peak_unrealized_pl > 0 && (
+                          <div className="text-xs text-slate-400 mt-1">
+                            Peak: ${position.peak_unrealized_pl.toFixed(2)} ({position.peak_unrealized_pl_percent?.toFixed(1)}%)
                           </div>
                         )}
                       </td>
