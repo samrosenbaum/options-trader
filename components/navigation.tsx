@@ -38,6 +38,7 @@ export default function Navigation({ userEmail }: { userEmail?: string }) {
     { href: '/scanner', label: 'Scanner' },
     { href: '/macro', label: 'Macro' },
     { href: '/market-info', label: 'Market Info' },
+    { href: '/sentiments', label: 'Sentiments' },
     { href: '/rejection-learning', label: 'Anti-Portfolio' },
     { href: '/watchlist', label: 'Watchlist' },
     { href: '/portfolio', label: 'Portfolio' },
