@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Settings, Save, Loader2, LogOut } from "lucide-react"
+import { Save, Loader2, LogOut } from "lucide-react"
 import Navigation from "@/components/navigation"
 import { createClient } from "@/lib/supabase/client"
 import EmailSubscriptionCard from '@/components/email-subscription-card'
@@ -118,8 +118,7 @@ export default function SettingsPage() {
       <Navigation />
       <div className="container max-w-4xl mx-auto py-8 px-4">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Settings className="h-8 w-8" />
+          <h1 className="text-3xl font-bold">
             User Settings
           </h1>
           <p className="text-muted-foreground mt-2">

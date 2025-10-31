@@ -109,14 +109,11 @@ export default function EmailSubscriptionCard() {
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h3 className="text-xl font-bold text-gray-900">Email Analyst Briefs</h3>
-          <p className="text-sm text-gray-600 mt-1">
-            Get Monty&apos;s market intelligence delivered to your inbox
-          </p>
-        </div>
-        <div className="text-3xl">📧</div>
+      <div className="mb-6">
+        <h3 className="text-xl font-bold text-gray-900">Email Analyst Briefs</h3>
+        <p className="text-sm text-gray-600 mt-1">
+          Get Monty&apos;s market intelligence delivered to your inbox
+        </p>
       </div>
 
       <div className="space-y-4">
