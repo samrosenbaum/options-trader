@@ -32,6 +32,7 @@ interface RejectedOption {
   days_held?: number | null
   realized_pl?: number | null
   realized_pl_percent?: number | null
+  user_notes?: string | null
 }
 
 interface RejectionStats {
