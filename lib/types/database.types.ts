@@ -211,6 +211,7 @@ export interface Database {
           portfolio_size: number | null
           daily_contract_budget: number | null
           user_name: string | null
+          trading_desk_name: string | null
           broker: string | null
           trading_strategy: string | null
           has_completed_first_scan: boolean | null
@@ -222,6 +223,7 @@ export interface Database {
           portfolio_size?: number | null
           daily_contract_budget?: number | null
           user_name?: string | null
+          trading_desk_name?: string | null
           broker?: string | null
           trading_strategy?: string | null
           has_completed_first_scan?: boolean | null
@@ -233,6 +235,7 @@ export interface Database {
           portfolio_size?: number | null
           daily_contract_budget?: number | null
           user_name?: string | null
+          trading_desk_name?: string | null
           broker?: string | null
           trading_strategy?: string | null
           has_completed_first_scan?: boolean | null

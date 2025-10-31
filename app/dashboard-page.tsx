@@ -50,6 +50,7 @@ export default function DashboardPage() {
   const [topPositions, setTopPositions] = useState<Position[]>([])
   const [biggestWinners, setBiggestWinners] = useState<ClosedPosition[]>([])
   const [biggestLosers, setBiggestLosers] = useState<ClosedPosition[]>([])
+  const [tradingDeskName, setTradingDeskName] = useState<string>('')
   const supabase = createClient()
 
   useEffect(() => {
@@ -58,7 +59,7 @@ export default function DashboardPage() {
         setLoading(true)
 
         // Run all queries in parallel for much faster loading
-        const [snapshotsData, positionsResult, winnersResult, losersResult] = await Promise.all([
+        const [snapshotsData, positionsResult, winnersResult, losersResult, settingsResponse] = await Promise.all([
           // Create snapshot and fetch historical data
           fetch('/api/portfolio-snapshot', { method: 'POST' })
             .then(() => fetch('/api/portfolio-snapshot?days=30'))
@@ -88,7 +89,10 @@ export default function DashboardPage() {
             .eq('status', 'closed')
             .lt('realized_pl', 0)
             .order('realized_pl', { ascending: true })
-            .limit(3)
+            .limit(3),
+
+          // Fetch user settings for trading desk name
+          fetch('/api/user-settings').then(res => res.json())
         ])
 
         // Update state with results
@@ -109,6 +113,10 @@ export default function DashboardPage() {
 
         if (losersResult.data) {
           setBiggestLosers(losersResult.data)
+        }
+
+        if (settingsResponse.settings) {
+          setTradingDeskName(settingsResponse.settings.trading_desk_name || settingsResponse.settings.user_name || 'Trading Desk')
         }
       } catch (err) {
         console.error('Error fetching dashboard data:', err)
@@ -162,7 +170,7 @@ export default function DashboardPage() {
       <TickerTape />
 
       {/* Trading Desk Banner */}
-      <TradingDeskBanner deskName="Samski Tendies Capital" />
+      <TradingDeskBanner deskName={tradingDeskName || 'Trading Desk'} />
 
       {/* Background */}
       <div className="pointer-events-none absolute inset-0 -z-10">

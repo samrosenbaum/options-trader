@@ -62,6 +62,7 @@ export async function POST(request: Request) {
     const body = await request.json()
     const {
       user_name,
+      trading_desk_name,
       broker,
       trading_strategy,
       portfolio_size,
@@ -72,6 +73,7 @@ export async function POST(request: Request) {
     const payload: Database['public']['Tables']['user_settings']['Insert'] = {
       user_id: user.id,
       user_name,
+      trading_desk_name,
       broker,
       trading_strategy,
       portfolio_size,

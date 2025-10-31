@@ -38,6 +38,7 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [userName, setUserName] = useState("")
+  const [tradingDeskName, setTradingDeskName] = useState("")
   const [broker, setBroker] = useState("")
   const [tradingStrategy, setTradingStrategy] = useState("")
   const [portfolioSize, setPortfolioSize] = useState("")
@@ -54,6 +55,7 @@ export default function SettingsPage() {
 
       if (data.settings) {
         setUserName(data.settings.user_name || "")
+        setTradingDeskName(data.settings.trading_desk_name || "")
         setBroker(data.settings.broker || "")
         setTradingStrategy(data.settings.trading_strategy || "")
         setPortfolioSize(data.settings.portfolio_size || "")
@@ -74,6 +76,7 @@ export default function SettingsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           user_name: userName,
+          trading_desk_name: tradingDeskName,
           broker,
           trading_strategy: tradingStrategy,
           portfolio_size: portfolioSize ? parseFloat(portfolioSize) : null,
@@ -142,6 +145,18 @@ export default function SettingsPage() {
                 value={userName}
                 onChange={(e) => setUserName(e.target.value)}
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="tradingDeskName">Trading Desk Name</Label>
+              <Input
+                id="tradingDeskName"
+                placeholder="e.g., Samski Tendies Capital"
+                value={tradingDeskName}
+                onChange={(e) => setTradingDeskName(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Give your trading operation a name (shown on your dashboard)
+              </p>
             </div>
           </CardContent>
         </Card>
