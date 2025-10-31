@@ -15,6 +15,7 @@ import {
   LucideIcon,
 } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
+import Navigation from "@/components/navigation"
 
 const heroStats = [
   {
@@ -362,7 +363,9 @@ function SentimentCard({
 
 export default function SentimentsPage() {
   return (
-    <div className="relative isolate min-h-screen overflow-hidden bg-slate-50 pb-24 pt-16 dark:bg-slate-950">
+    <>
+      <Navigation />
+      <div className="relative isolate min-h-screen overflow-hidden bg-slate-50 pb-24 pt-16 dark:bg-slate-950">
       <div className="pointer-events-none absolute inset-0 -z-10">
         <div className="absolute -left-32 top-10 h-64 w-64 rounded-full bg-emerald-400/30 blur-3xl" />
         <div className="absolute left-1/2 top-0 h-72 w-72 -translate-x-1/2 rounded-full bg-cyan-400/20 blur-3xl" />
@@ -529,5 +532,6 @@ export default function SentimentsPage() {
         </section>
       </div>
     </div>
+    </>
   )
 }
