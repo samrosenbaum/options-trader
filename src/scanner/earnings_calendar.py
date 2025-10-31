@@ -49,7 +49,7 @@ def prioritize_by_earnings(
     symbols: List[str],
     earnings_window_days: int = 3,
     post_earnings_window_days: int = 2
-) -> tuple[List[str], Dict[str, int]]:
+) -> tuple[List[str], Dict[str, int], Dict[str, Optional[datetime]]]:
     """
     Prioritize symbols by earnings proximity.
 
@@ -104,4 +104,4 @@ def prioritize_by_earnings(
     high_priority_count = sum(1 for p in priority_map.values() if p >= 50)
     print(f"✅ Found {high_priority_count} stocks with earnings in next {earnings_window_days} days")
 
-    return prioritized, priority_map
+    return prioritized, priority_map, earnings_dates

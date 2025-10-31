@@ -1,10 +1,52 @@
-"""
-Unusual Options Activity (UOA) detector
-Catches smart money moves BEFORE the big price action
+"""Unusual Options Activity (UOA) detector.
+
+Adds context about when the flow occurred so downstream brief generators can
+decay confidence once catalysts have played out overnight.
 """
 import yfinance as yf
 from typing import Dict, List, Tuple
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
+
+import pytz
+
+
+ET_TZ = pytz.timezone("US/Eastern")
+
+
+def _get_last_session_close(now_et: datetime) -> datetime:
+    """Return the timestamp for the most recent regular-session close."""
+
+    market_close_today = now_et.replace(hour=16, minute=0, second=0, microsecond=0)
+    market_open_today = now_et.replace(hour=9, minute=30, second=0, microsecond=0)
+
+    if now_et >= market_close_today:
+        return market_close_today
+
+    if now_et >= market_open_today:
+        # During regular hours we treat the flow as "fresh" from today.
+        return market_close_today
+
+    # Pre-market: fall back to previous trading day's close (skip weekends).
+    previous_day = now_et.date() - timedelta(days=1)
+    while previous_day.weekday() >= 5:  # Saturday/Sunday
+        previous_day -= timedelta(days=1)
+
+    return ET_TZ.localize(datetime.combine(previous_day, time(16, 0)))
+
+
+def _calculate_flow_age(now_et: datetime, session_close: datetime) -> float:
+    """Return the age of the flow in hours (never negative)."""
+
+    age_seconds = (now_et - session_close).total_seconds()
+    return max(age_seconds / 3600, 0)
+
+
+def _initial_confidence(age_hours: float) -> str:
+    if age_hours <= 4:
+        return "high"
+    if age_hours <= 12:
+        return "medium"
+    return "low"
 
 
 def detect_unusual_options_activity(
@@ -31,6 +73,13 @@ def detect_unusual_options_activity(
     print(f"\n🎯 Scanning for unusual options activity (Vol/OI ≥ {min_vol_oi_ratio}x)...")
 
     unusual_activity = {}
+
+    now_et = datetime.now(ET_TZ)
+    session_close = _get_last_session_close(now_et)
+    flow_age_hours = _calculate_flow_age(now_et, session_close)
+    base_confidence = _initial_confidence(flow_age_hours)
+
+    session_label = session_close.strftime("%a %b %d @ %I:%M %p ET")
 
     for symbol in symbols:
         try:
@@ -118,7 +167,12 @@ def detect_unusual_options_activity(
                     'call_signals': call_signals,
                     'put_signals': put_signals,
                     'bias': bias,
-                    'total_unusual_volume': call_volume + put_volume
+                    'total_unusual_volume': call_volume + put_volume,
+                    'data_timestamp': session_close.isoformat(),
+                    'flow_session': session_label,
+                    'age_hours': flow_age_hours,
+                    'confidence': base_confidence,
+                    'warnings': []
                 }
 
                 # Print top signal

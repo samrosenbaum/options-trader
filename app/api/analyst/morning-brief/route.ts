@@ -49,7 +49,11 @@ try:
         'premarket_movers': brief['premarket_movers'],
         'watchlist': brief['watchlist'],
         'portfolio_alerts': brief['portfolio_alerts'],
-        'market_conditions': brief['market_conditions']
+        'market_conditions': brief['market_conditions'],
+        'market_snapshots': brief.get('market_snapshots', {}),
+        'symbol_summaries': brief.get('symbol_summaries', {}),
+        'market_regime': brief.get('market_regime', {}),
+        'meta': brief.get('meta', {})
     }
 
     # Also generate formatted text version
