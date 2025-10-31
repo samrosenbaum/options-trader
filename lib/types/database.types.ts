@@ -123,6 +123,56 @@ export interface Database {
           tags?: string[] | null
         }
       }
+      drop_risk_signals: {
+        Row: {
+          id: string
+          symbol: string
+          drop_risk_score: number
+          bias_score: number
+          confidence: number
+          stock_price: number | null
+          price_change_pct: number | null
+          alert_level: string
+          drivers: Json
+          signal_details: Json
+          score_change: number | null
+          generated_at: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          symbol: string
+          drop_risk_score: number
+          bias_score: number
+          confidence: number
+          stock_price?: number | null
+          price_change_pct?: number | null
+          alert_level?: string
+          drivers?: Json
+          signal_details: Json
+          score_change?: number | null
+          generated_at?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          symbol?: string
+          drop_risk_score?: number
+          bias_score?: number
+          confidence?: number
+          stock_price?: number | null
+          price_change_pct?: number | null
+          alert_level?: string
+          drivers?: Json
+          signal_details?: Json
+          score_change?: number | null
+          generated_at?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
       alerts: {
         Row: {
           id: string
