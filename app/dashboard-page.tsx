@@ -184,10 +184,6 @@ export default function DashboardPage() {
           <p className="text-emerald-100/70">Here&apos;s your portfolio at a glance</p>
         </div>
 
-        <div className="mb-8">
-          <DropRiskRadar limit={5} minScore={45} />
-        </div>
-
         {/* Portfolio Value Card */}
         <div className="relative bg-gradient-to-br from-slate-900/80 via-emerald-900/30 to-slate-900/80 backdrop-blur-xl rounded-2xl border border-emerald-500/40 p-8 shadow-[0_8px_32px_rgba(16,185,129,0.2),0_0_0_1px_rgba(16,185,129,0.1)_inset] mb-6 overflow-hidden transition-all duration-300 hover:shadow-[0_12px_48px_rgba(16,185,129,0.25),0_0_0_1px_rgba(16,185,129,0.15)_inset] hover:scale-[1.01] hover:border-emerald-500/50">
           {/* Vintage trading desk background */}
@@ -306,6 +302,11 @@ export default function DashboardPage() {
             </div>
           )}
           </div>
+        </div>
+
+        {/* Bearish Risk Radar - Find Put Opportunities */}
+        <div className="mb-8">
+          <DropRiskRadar limit={5} minScore={45} />
         </div>
 
         {/* Top Positions & Quick Actions */}
