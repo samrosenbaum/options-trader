@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { TickerTape } from '@/components/ticker-tape'
 import { TradingDeskBanner } from '@/components/trading-desk-banner'
+import DropRiskRadar from '@/components/drop-risk-radar'
 import { motion } from 'framer-motion'
 import { Trophy, TrendingDown } from 'lucide-react'
 
@@ -181,6 +182,10 @@ export default function DashboardPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">Welcome back to the trade desk</h1>
           <p className="text-emerald-100/70">Here&apos;s your portfolio at a glance</p>
+        </div>
+
+        <div className="mb-8">
+          <DropRiskRadar limit={5} minScore={45} />
         </div>
 
         {/* Portfolio Value Card */}

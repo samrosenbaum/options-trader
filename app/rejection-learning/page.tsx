@@ -71,6 +71,9 @@ interface AnalysisResult {
   raw: unknown
 }
 
+const USER_LOOKBACK_DAYS = 90
+const CLOSED_HISTORY_DAYS = 30
+
 export default function RejectionLearningPage() {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
@@ -86,6 +89,55 @@ export default function RejectionLearningPage() {
   const [performanceResult, setPerformanceResult] = useState<{updated: number, skipped: number, errors: number, errorDetails?: Array<{symbol: string, error: string}>} | null>(null)
   const router = useRouter()
   const supabase = useMemo(() => createClient(), [])
+
+  const closedPositionRejections = useMemo(
+    () => rejections.filter(r => r.rejection_source === 'user_closed_position'),
+    [rejections]
+  )
+
+  const { activeClosedPositions, historicalClosedPositions } = useMemo(() => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    const historyCutoff = new Date(today)
+    historyCutoff.setDate(historyCutoff.getDate() - CLOSED_HISTORY_DAYS)
+
+    const active: RejectedOption[] = []
+    const history: RejectedOption[] = []
+
+    for (const rejection of closedPositionRejections) {
+      const expirationDate = rejection.expiration ? new Date(rejection.expiration) : null
+      const closedDate = rejection.rejected_at ? new Date(rejection.rejected_at) : null
+
+      if (expirationDate) {
+        expirationDate.setHours(0, 0, 0, 0)
+      }
+      if (closedDate) {
+        closedDate.setHours(0, 0, 0, 0)
+      }
+
+      const hasExpired = expirationDate ? expirationDate < today : false
+
+      if (!hasExpired) {
+        active.push(rejection)
+        continue
+      }
+
+      if (closedDate && closedDate >= historyCutoff) {
+        history.push(rejection)
+      }
+    }
+
+    return {
+      activeClosedPositions: active,
+      historicalClosedPositions: history,
+    }
+  }, [closedPositionRejections])
+
+  const manualRejections = useMemo(
+    () => rejections.filter(r => r.rejection_source === 'user_rejected'),
+    [rejections]
+  )
 
   useEffect(() => {
     let isActive = true
@@ -128,7 +180,7 @@ export default function RejectionLearningPage() {
   const fetchRejections = async () => {
     try {
       setIsLoading(true)
-      const response = await fetch("/api/rejection-analysis?source=user")
+      const response = await fetch(`/api/rejection-analysis?source=user&days=${USER_LOOKBACK_DAYS}`)
       const data = await response.json()
       setRejections(data.rejections || [])
     } catch (err) {
@@ -578,17 +630,21 @@ export default function RejectionLearningPage() {
         )}
 
         {/* Closed Positions Section */}
-        {rejections.filter(r => r.rejection_source === 'user_closed_position').length > 0 && (
-          <Card className="modern-card border-amber-200 dark:border-amber-800 mb-6">
-            <CardHeader>
-              <CardTitle>
-                Closed Too Soon
-              </CardTitle>
-              <CardDescription>
-                Positions you closed before expiration - track what you missed
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
+        <Card className="modern-card border-amber-200 dark:border-amber-800 mb-6">
+          <CardHeader>
+            <CardTitle>
+              Closed Too Soon
+            </CardTitle>
+            <CardDescription>
+              Positions you closed before expiration - track what you missed
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {activeClosedPositions.length === 0 ? (
+              <div className="py-10 text-center text-sm text-muted-foreground">
+                No early exits currently being tracked. Once a contract expires it moves into history for {CLOSED_HISTORY_DAYS} days so you can still review the outcome.
+              </div>
+            ) : (
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
@@ -619,8 +675,7 @@ export default function RejectionLearningPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {rejections
-                      .filter(r => r.rejection_source === 'user_closed_position')
+                    {activeClosedPositions
                       .slice(0, 20)
                       .map((rej, idx) => (
                         <tr key={idx} className="border-b hover:bg-muted/50">
@@ -681,9 +736,80 @@ export default function RejectionLearningPage() {
                   </tbody>
                 </table>
               </div>
-            </CardContent>
-          </Card>
-        )}
+            )}
+
+            {historicalClosedPositions.length > 0 && (
+              <div className="mt-8">
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                  Recent History (last {CLOSED_HISTORY_DAYS} days)
+                </h3>
+                <div className="overflow-x-auto mt-3">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left p-3 text-xs font-medium text-muted-foreground">Symbol</th>
+                        <th className="text-left p-3 text-xs font-medium text-muted-foreground">Type</th>
+                        <th className="text-left p-3 text-xs font-medium text-muted-foreground">Strike</th>
+                        <th className="text-left p-3 text-xs font-medium text-muted-foreground">You Made</th>
+                        <th className="text-left p-3 text-xs font-medium text-muted-foreground">If Held</th>
+                        <th className="text-left p-3 text-xs font-medium text-muted-foreground">Closed</th>
+                        <th className="text-left p-3 text-xs font-medium text-muted-foreground">Expired</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {historicalClosedPositions
+                        .slice(0, 30)
+                        .map((rej, idx) => (
+                          <tr key={`history-${idx}`} className="border-b hover:bg-muted/50">
+                            <td className="p-3">
+                              <span className="font-mono font-semibold">{rej.symbol}</span>
+                            </td>
+                            <td className="p-3">
+                              <Badge variant={rej.option_type === "call" ? "default" : "secondary"}>
+                                {rej.option_type.toUpperCase()}
+                              </Badge>
+                            </td>
+                            <td className="p-3 font-mono">${rej.strike.toFixed(2)}</td>
+                            <td className="p-3">
+                              <div className={`font-mono text-sm ${(rej.realized_pl || 0) >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                                ${(rej.realized_pl || 0).toFixed(0)}
+                                <span className="text-xs ml-1">
+                                  ({(rej.realized_pl_percent || 0) > 0 ? '+' : ''}{(rej.realized_pl_percent || 0).toFixed(0)}%)
+                                </span>
+                              </div>
+                            </td>
+                            <td className="p-3">
+                              {rej.price_change_percent !== null ? (
+                                <div className="flex items-center gap-1">
+                                  {rej.price_change_percent > 0 ? (
+                                    <TrendingUp className="h-4 w-4 text-emerald-600" />
+                                  ) : (
+                                    <TrendingDown className="h-4 w-4 text-red-600" />
+                                  )}
+                                  <span className={`font-mono text-sm ${rej.price_change_percent > 0 ? "text-emerald-600" : "text-red-600"}`}>
+                                    {rej.price_change_percent > 0 ? "+" : ""}
+                                    {rej.price_change_percent.toFixed(1)}%
+                                  </span>
+                                </div>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">n/a</span>
+                              )}
+                            </td>
+                            <td className="p-3 text-xs text-muted-foreground">
+                              {new Date(rej.rejected_at).toLocaleDateString()}
+                            </td>
+                            <td className="p-3 text-xs text-muted-foreground">
+                              {new Date(rej.expiration).toLocaleDateString()}
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         <Card className="modern-card">
           <CardHeader>
@@ -691,11 +817,11 @@ export default function RejectionLearningPage() {
               Rejected Opportunities
             </CardTitle>
             <CardDescription>
-              {rejections.filter(r => r.rejection_source === 'user_rejected').length} opportunities you manually rejected in the scanner - track if you made the right call
+              {manualRejections.length} opportunities you manually rejected in the scanner - track if you made the right call
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {rejections.filter(r => r.rejection_source === 'user_rejected').length === 0 ? (
+            {manualRejections.length === 0 ? (
               <div className="text-center py-12">
                 <AlertTriangle className="mx-auto h-12 w-12 text-muted-foreground" />
                 <p className="mt-4 text-muted-foreground">No manually rejected options found</p>
@@ -717,8 +843,7 @@ export default function RejectionLearningPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {rejections
-                      .filter(r => r.rejection_source === 'user_rejected')
+                    {manualRejections
                       .slice(0, 50)
                       .map((rej, idx) => (
                       <tr key={idx} className="border-b hover:bg-muted/50">
@@ -731,8 +856,15 @@ export default function RejectionLearningPage() {
                           </Badge>
                         </td>
                         <td className="p-3 font-mono">${rej.strike.toFixed(2)}</td>
-                        <td className="p-3 text-sm text-muted-foreground truncate max-w-xs">
-                          {rej.rejection_reason}
+                        <td className="p-3 text-sm text-muted-foreground align-top max-w-xs">
+                          <div className="font-medium text-foreground">
+                            {rej.rejection_reason}
+                          </div>
+                          {rej.user_notes && (
+                            <p className="mt-1 text-xs italic text-muted-foreground">
+                              “{rej.user_notes}”
+                            </p>
+                          )}
                         </td>
                         <td className="p-3">
                           {rej.price_change_percent !== null ? (
