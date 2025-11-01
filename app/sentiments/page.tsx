@@ -259,13 +259,13 @@ export default async function SentimentsPage() {
           </div>
 
           <section className="space-y-8">
-            <div className="grid gap-6 sm:grid-cols-2">
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
               {secondaryInsights.map((stat) => (
                 <SentimentStat key={stat.label} stat={stat} />
               ))}
             </div>
 
-            <div className="grid gap-8 lg:grid-cols-2">
+            <div className="grid gap-8 xl:grid-cols-2">
               {(Object.keys(sentimentBuckets) as Array<"bullish" | "bearish">).map((key) => (
                 <div key={key} className="space-y-6">
                   <div className="flex items-center justify-between">
