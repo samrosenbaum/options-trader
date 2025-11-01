@@ -1,7 +1,5 @@
 import { Metadata } from "next"
 import {
-  ArrowUpRight,
-  ArrowDownRight,
   BarChart3,
   Flame,
   LayoutGrid,
@@ -158,20 +156,11 @@ function SentimentCard({ sentiment, type }: { sentiment: SentimentNarrative; typ
         </ul>
 
         <footer className="flex flex-wrap items-center gap-4 text-sm text-slate-500">
-          <div className="flex items-center gap-2">
-            <div
-              className={`flex h-10 w-10 items-center justify-center rounded-full border border-white/60 bg-white/80 text-slate-900 shadow-md ${
-                type === "bullish" ? "ring-2 ring-emerald-200/60" : "ring-2 ring-rose-200/60"
-              }`}
-            >
-              {type === "bullish" ? <ArrowUpRight className="h-5 w-5" /> : <ArrowDownRight className="h-5 w-5" />}
-            </div>
-            <span className="font-medium text-slate-600">
-              {updatedDate
-                ? `Updated ${formatDistanceToNow(updatedDate, { addSuffix: true })}`
-                : "Waiting on fresh data"}
-            </span>
-          </div>
+          <span className="font-medium text-slate-600 dark:text-slate-400">
+            {updatedDate
+              ? `Updated ${formatDistanceToNow(updatedDate, { addSuffix: true })}`
+              : "Waiting on fresh data"}
+          </span>
         </footer>
       </div>
     </article>
