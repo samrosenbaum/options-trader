@@ -5,11 +5,8 @@ import {
   BarChart3,
   Flame,
   LayoutGrid,
-  Layers,
-  Sparkles,
   TrendingUp,
   TrendingDown,
-  Zap,
   ShieldCheck,
   Gauge,
   LucideIcon,
@@ -20,7 +17,6 @@ import Navigation from "@/components/navigation"
 import {
   fetchSentimentInsights,
   SentimentNarrative,
-  SentimentSignal,
 } from "@/lib/sentiments/intelligence"
 
 export const metadata: Metadata = {
@@ -187,42 +183,6 @@ export const revalidate = 300
 export default async function SentimentsPage() {
   const insights = await fetchSentimentInsights()
 
-  const positiveShare = Math.round(insights.hero.flowAlignment.positiveShare * 100)
-  const negativeShare = Math.round(insights.hero.flowAlignment.negativeShare * 100)
-
-  const heroStats: SummaryItem[] = [
-    {
-      icon: TrendingUp,
-      label: "Bullish conviction",
-      value: `${insights.hero.bullishConviction.percentage}%`,
-      change:
-        insights.hero.bullishConviction.totalTracked === 0
-          ? "No active narratives"
-          : `${insights.hero.bullishConviction.narrativeCount} of ${insights.hero.bullishConviction.totalTracked} tracked symbols skew positive (avg ${insights.hero.bullishConviction.avgScore.toFixed(2)})`,
-      tone: "bullish",
-    },
-    {
-      icon: TrendingDown,
-      label: "Bearish conviction",
-      value: `${insights.hero.bearishConviction.percentage}%`,
-      change:
-        insights.hero.bearishConviction.totalTracked === 0
-          ? "No active narratives"
-          : `${insights.hero.bearishConviction.narrativeCount} of ${insights.hero.bearishConviction.totalTracked} tracked symbols lean defensive (avg -${Math.abs(insights.hero.bearishConviction.avgScore).toFixed(2)})`,
-      tone: "bearish",
-    },
-    {
-      icon: Layers,
-      label: "Flow alignment",
-      value: `${positiveShare}%`,
-      change:
-        insights.hero.bullishConviction.totalTracked === 0
-          ? "Signals will appear once headlines stream in"
-          : `${positiveShare}% bullish vs ${negativeShare}% bearish coverage`,
-      tone: insights.hero.flowAlignment.tone,
-    },
-  ]
-
   const secondaryInsights: SummaryItem[] = [
     {
       icon: BarChart3,
@@ -275,8 +235,6 @@ export default async function SentimentsPage() {
     bearish: insights.narratives.bearish,
   }
 
-  const recentSignals: SentimentSignal[] = insights.recentSignals
-
   return (
     <>
       <Navigation />
@@ -288,59 +246,17 @@ export default async function SentimentsPage() {
         </div>
 
         <div className="mx-auto flex w-full max-w-7xl flex-col gap-12 px-4 sm:px-6 lg:px-8">
-          <section className="relative overflow-hidden rounded-[3rem] border border-white/20 bg-white/70 p-10 shadow-xl backdrop-blur-2xl dark:border-white/10 dark:bg-slate-900/70">
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-emerald-300/20 via-transparent to-cyan-300/20" />
-            <div className="relative grid gap-10 lg:grid-cols-[1.6fr_1fr]">
-              <div className="space-y-6">
-                <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/50 bg-emerald-100/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-emerald-700">
-                  <Sparkles className="h-4 w-4" />
-                  Sentiment intelligence
-                </div>
-                <h1 className="text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl">
-                  See the market's pulse through a design-led sentiment lens.
-                </h1>
-                <p className="max-w-2xl text-lg text-slate-600">
-                  Explore the strongest bullish and bearish narratives distilled from options flow, macro shifts, and real-time news tone. Every card blends conviction scoring with the context you need to trade with confidence.
-                </p>
-                <div className="flex flex-wrap items-center gap-3 text-sm text-slate-500">
-                  <div className="flex items-center gap-2 rounded-full border border-white/40 bg-white/80 px-4 py-2 shadow-sm">
-                    <Flame className="h-4 w-4 text-emerald-500" />
-                    Updated continuously
-                  </div>
-                  <div className="flex items-center gap-2 rounded-full border border-white/40 bg-white/80 px-4 py-2 shadow-sm">
-                    <Zap className="h-4 w-4 text-cyan-500" />
-                    Multi-source signal fusion
-                  </div>
-                  <div className="flex items-center gap-2 rounded-full border border-white/40 bg-white/80 px-4 py-2 shadow-sm">
-                    <ShieldCheck className="h-4 w-4 text-slate-900" />
-                    Explainable rationale
-                  </div>
-                </div>
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                {heroStats.map((stat) => {
-                  const Icon = stat.icon
-                  return (
-                    <div
-                      key={stat.label}
-                      className={`relative overflow-hidden rounded-3xl border border-white/30 bg-white/80 p-6 shadow-lg backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/60 ${
-                        gradientByTone[stat.tone]
-                      }`}
-                    >
-                      <div className="relative flex flex-col gap-4">
-                        <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white/80 text-slate-900 shadow-lg">
-                          <Icon className="h-6 w-6" />
-                        </div>
-                        <p className="text-sm font-medium uppercase tracking-[0.3em] text-slate-500">{stat.label}</p>
-                        <p className="text-3xl font-semibold text-slate-900">{stat.value}</p>
-                        <p className="text-sm text-slate-600">{stat.change}</p>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
+          {/* Page Header */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">
+                Sentiment Intelligence
+              </h1>
+              <p className="text-slate-600 dark:text-slate-400">
+                Bullish and bearish narratives from market news and sentiment analysis
+              </p>
             </div>
-          </section>
+          </div>
 
           <section className="space-y-8">
             <div className="grid gap-6 sm:grid-cols-2">
