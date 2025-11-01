@@ -211,31 +211,31 @@ export default function PositionAnalysisModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 px-4 py-8 backdrop-blur-xl"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 px-4 py-8 backdrop-blur-2xl"
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-4xl overflow-hidden rounded-[32px] border border-white/10 bg-gradient-to-br from-white/30 via-white/12 to-white/5 shadow-[0_28px_90px_rgba(15,23,42,0.65)] backdrop-blur-2xl dark:border-white/10 dark:from-slate-900/70 dark:via-slate-900/50 dark:to-slate-900/25"
+        className="relative w-full max-w-4xl overflow-hidden rounded-[32px] border border-white/25 bg-gradient-to-br from-white/85 via-white/60 to-white/30 text-slate-900 shadow-[0_28px_90px_rgba(15,23,42,0.35)] backdrop-blur-3xl dark:border-white/20 dark:from-slate-900/80 dark:via-slate-900/65 dark:to-slate-900/50 dark:text-white"
         onClick={(event) => event.stopPropagation()}
       >
         <div
-          className="pointer-events-none absolute -left-24 top-10 h-80 w-80 rounded-full bg-blue-500/35 blur-3xl"
+          className="pointer-events-none absolute -left-24 top-10 h-80 w-80 rounded-full bg-blue-500/25 blur-3xl"
           aria-hidden="true"
         />
         <div
-          className="pointer-events-none absolute -right-12 bottom-0 h-72 w-72 rounded-full bg-purple-500/25 blur-[120px]"
+          className="pointer-events-none absolute -right-12 bottom-0 h-72 w-72 rounded-full bg-purple-500/20 blur-[120px]"
           aria-hidden="true"
         />
 
         <div className="relative z-10 flex max-h-[90vh] flex-col overflow-hidden">
           <div className="flex-1 overflow-y-auto px-8 py-8">
-            <div className="mb-8 flex items-center justify-between rounded-2xl border border-white/10 bg-white/10 px-6 py-5 backdrop-blur-lg dark:border-white/10 dark:bg-slate-900/40">
+            <div className="mb-8 flex items-center justify-between rounded-2xl border border-white/40 bg-white/75 px-6 py-5 backdrop-blur-xl dark:border-white/15 dark:bg-slate-900/70">
               <h2 className="text-2xl font-semibold text-slate-900 drop-shadow-sm dark:text-white">
                 Ask Monty: Position Analysis
               </h2>
               <button
                 onClick={onClose}
-                className="rounded-full border border-white/20 bg-white/20 p-2 text-slate-500 transition hover:bg-white/30 hover:text-slate-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10"
+                className="rounded-full border border-white/50 bg-white/70 p-2 text-slate-700 transition hover:bg-white/80 hover:text-slate-900 dark:border-white/20 dark:bg-slate-800/70 dark:text-slate-200 dark:hover:bg-slate-800"
               >
                 <svg
                   className="h-5 w-5"
@@ -254,10 +254,10 @@ export default function PositionAnalysisModal({
             </div>
 
             {/* Position Summary */}
-            <div className="mb-8 rounded-2xl border border-white/10 bg-white/10 p-6 shadow-lg backdrop-blur dark:border-white/10 dark:bg-slate-900/40">
+            <div className="mb-8 rounded-2xl border border-white/30 bg-white/70 p-6 text-slate-900 shadow-lg backdrop-blur-xl dark:border-white/15 dark:bg-slate-900/70 dark:text-white">
               <div className="grid grid-cols-2 gap-5 text-sm">
                 <div>
-                  <div className="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-300">
+                  <div className="text-xs uppercase tracking-wider text-slate-600 dark:text-slate-300">
                     Symbol
                   </div>
                   <div className="text-lg font-semibold text-slate-900 dark:text-white">
@@ -265,7 +265,7 @@ export default function PositionAnalysisModal({
                   </div>
                 </div>
                 <div>
-                  <div className="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-300">
+                  <div className="text-xs uppercase tracking-wider text-slate-600 dark:text-slate-300">
                     Position
                   </div>
                   <div className="font-semibold text-slate-900 dark:text-white">
@@ -273,7 +273,7 @@ export default function PositionAnalysisModal({
                   </div>
                 </div>
                 <div>
-                  <div className="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-300">
+                  <div className="text-xs uppercase tracking-wider text-slate-600 dark:text-slate-300">
                     P&amp;L
                   </div>
                   <div
@@ -288,7 +288,7 @@ export default function PositionAnalysisModal({
                   </div>
                 </div>
                 <div>
-                  <div className="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-300">
+                  <div className="text-xs uppercase tracking-wider text-slate-600 dark:text-slate-300">
                     Exit Signal
                   </div>
                   <div
@@ -311,7 +311,7 @@ export default function PositionAnalysisModal({
             </div>
 
             <div className="mb-8">
-              <p className="mb-3 text-sm font-semibold uppercase tracking-[0.3em] text-slate-500 dark:text-slate-300">
+              <p className="mb-3 text-sm font-semibold uppercase tracking-[0.3em] text-slate-600 dark:text-slate-300">
                 Quick Questions
               </p>
               <div className="flex flex-wrap gap-3">
@@ -320,7 +320,7 @@ export default function PositionAnalysisModal({
                     key={prompt}
                     onClick={() => sendMessage(prompt)}
                     disabled={isStreaming}
-                    className="group rounded-full border border-white/20 bg-white/20 px-4 py-2.5 text-sm font-medium text-slate-700 shadow-[0_10px_30px_rgba(148,163,184,0.25)] backdrop-blur transition-all hover:scale-105 hover:shadow-[0_18px_38px_rgba(79,70,229,0.35)] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100 dark:border-white/10 dark:bg-slate-900/40 dark:text-slate-200"
+                    className="group rounded-full border border-white/40 bg-white/75 px-4 py-2.5 text-sm font-medium text-slate-800 shadow-[0_10px_30px_rgba(148,163,184,0.25)] backdrop-blur transition-all hover:scale-105 hover:shadow-[0_18px_38px_rgba(79,70,229,0.35)] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100 dark:border-white/15 dark:bg-slate-900/70 dark:text-slate-100"
                   >
                     {prompt}
                   </button>
@@ -328,7 +328,7 @@ export default function PositionAnalysisModal({
               </div>
             </div>
 
-            <div className="flex h-[420px] flex-col rounded-3xl border border-white/10 bg-white/10 p-6 shadow-xl backdrop-blur dark:border-white/10 dark:bg-slate-900/40">
+            <div className="flex h-[420px] flex-col rounded-3xl border border-white/30 bg-white/75 p-6 text-slate-900 shadow-xl backdrop-blur-2xl dark:border-white/15 dark:bg-slate-900/70 dark:text-white">
               <div className="flex-1 space-y-4 overflow-y-auto pr-3">
                 {messages.map((message, index) => (
                   <div
@@ -340,10 +340,10 @@ export default function PositionAnalysisModal({
                     <div
                       className={`max-w-[80%] rounded-3xl px-5 py-4 text-sm leading-relaxed shadow-lg backdrop-blur ${
                         message.isSystem
-                          ? "border border-white/20 bg-gradient-to-r from-blue-500/20 via-sky-400/20 to-purple-500/20 text-slate-800 dark:border-white/10 dark:text-slate-100"
+                          ? "border border-white/40 bg-white/85 text-slate-900 dark:border-white/15 dark:bg-slate-900/70 dark:text-white"
                           : message.role === "user"
-                            ? "border border-white/30 bg-gradient-to-r from-blue-500/80 via-indigo-500/80 to-purple-500/80 text-white"
-                            : "border border-white/15 bg-white/15 text-slate-800 dark:border-white/10 dark:bg-slate-900/60 dark:text-slate-100"
+                            ? "border border-white/40 bg-gradient-to-r from-blue-500/85 via-indigo-500/85 to-purple-500/85 text-white"
+                            : "border border-white/30 bg-white/80 text-slate-900 dark:border-white/15 dark:bg-slate-900/70 dark:text-white"
                       }`}
                     >
                       {message.role === "assistant" && !message.isSystem ? (
@@ -362,7 +362,7 @@ export default function PositionAnalysisModal({
                 ))}
                 {isStreaming && (
                   <div className="flex justify-start">
-                    <div className="rounded-3xl border border-white/15 bg-white/15 px-5 py-4 text-sm text-slate-700 shadow-lg backdrop-blur dark:border-white/10 dark:bg-slate-900/50 dark:text-slate-200">
+                    <div className="rounded-3xl border border-white/30 bg-white/80 px-5 py-4 text-sm text-slate-800 shadow-lg backdrop-blur dark:border-white/15 dark:bg-slate-900/70 dark:text-slate-100">
                       <div className="flex items-center gap-3">
                         <div className="flex gap-1.5">
                           <div
@@ -405,7 +405,7 @@ export default function PositionAnalysisModal({
                       : "Ask Monty for a game plan (press Enter to send, Shift+Enter for a new line)"
                   }
                   disabled={isStreaming}
-                  className="w-full rounded-2xl border border-white/15 bg-white/15 px-4 py-3 text-sm text-slate-900 shadow-inner backdrop-blur transition focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-200/70 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:bg-slate-900/50 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/40"
+                  className="w-full rounded-2xl border border-white/30 bg-white/80 px-4 py-3 text-sm text-slate-900 shadow-inner backdrop-blur transition focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-200/70 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/15 dark:bg-slate-900/70 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-500/40"
                 />
                 <div className="mt-4 flex items-center justify-between gap-3">
                   {error && <p className="text-sm text-rose-400">{error}</p>}
@@ -428,10 +428,10 @@ export default function PositionAnalysisModal({
               </div>
             </div>
 
-            <div className="mt-8 flex justify-end gap-3 border-t border-white/10 pt-6">
+            <div className="mt-8 flex justify-end gap-3 border-t border-white/20 pt-6">
               <button
                 onClick={onClose}
-                className="rounded-xl border border-white/20 bg-white/10 px-6 py-3 text-sm font-medium text-slate-700 shadow-md backdrop-blur transition hover:bg-white/20 dark:border-white/10 dark:bg-slate-900/40 dark:text-slate-100"
+                className="rounded-xl border border-white/40 bg-white/75 px-6 py-3 text-sm font-medium text-slate-800 shadow-md backdrop-blur transition hover:bg-white/80 dark:border-white/15 dark:bg-slate-900/70 dark:text-white"
               >
                 Close
               </button>
