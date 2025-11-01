@@ -200,12 +200,12 @@ export default function LiveTicker() {
               >
                 <div className="flex flex-col">
                   <div className="flex items-center gap-2">
-                    <span className={`text-lg ${item.type === 'crypto' ? 'text-orange-400' : 'text-sky-400'}`}>
+                    <span className={`text-lg ${item.type === 'crypto' ? 'text-orange-300' : 'text-sky-300'}`}>
                       {item.type === 'crypto' ? '₿' : '📊'}
                     </span>
                     <div>
                       <div className="font-semibold text-white">{item.symbol}</div>
-                      <div className="text-xs text-emerald-100/60 truncate">{item.name}</div>
+                      <div className="text-xs text-slate-300 truncate">{item.name}</div>
                     </div>
                   </div>
                 </div>
@@ -213,8 +213,8 @@ export default function LiveTicker() {
                 <div className="flex flex-col items-end">
                   <div className="font-bold text-white">${item.price.toLocaleString()}</div>
                   <div
-                    className={`text-sm font-medium ${
-                      item.change >= 0 ? 'text-green-400' : 'text-red-400'
+                    className={`text-sm font-semibold ${
+                      item.change >= 0 ? 'text-emerald-300' : 'text-red-300'
                     }`}
                   >
                     {item.change >= 0 ? '+' : ''}
@@ -222,10 +222,10 @@ export default function LiveTicker() {
                     {item.changePercent.toFixed(2)}%)
                   </div>
                   {volumeLabel && (
-                    <div className="text-xs text-emerald-100/60">Vol: {volumeLabel}</div>
+                    <div className="text-xs text-slate-300">Vol: {volumeLabel}</div>
                   )}
                   {marketCapLabel && (
-                    <div className="text-xs text-emerald-100/60">MC: {marketCapLabel}</div>
+                    <div className="text-xs text-slate-300">MC: {marketCapLabel}</div>
                   )}
                 </div>
               </div>
@@ -237,16 +237,16 @@ export default function LiveTicker() {
       <div className="mt-4 flex items-center justify-between text-sm">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-green-500 rounded-full" />
-            <span className="text-emerald-100/70">Market Open</span>
+            <div className="w-2 h-2 bg-green-400 rounded-full" />
+            <span className="text-slate-200">Market Open</span>
           </div>
-          <div className="text-emerald-100/70">
+          <div className="text-slate-300">
             Last updated: {lastUpdated ? lastUpdated.toLocaleTimeString() : '—'}
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-xs text-emerald-100/60">📊 Stocks</span>
-          <span className="text-xs text-emerald-100/60">₿ Crypto</span>
+          <span className="text-xs text-slate-300">📊 Stocks</span>
+          <span className="text-xs text-slate-300">₿ Crypto</span>
         </div>
       </div>
     </div>

@@ -1,7 +1,14 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { User } from '@supabase/supabase-js'
+import { createClient } from '@/lib/supabase/client'
+import { useRouter } from 'next/navigation'
 import Navigation from '@/components/navigation'
+import LiveTicker from '@/components/live-ticker'
+import { PoliticianTradesFeed } from '@/components/politician-trades-feed'
+import { LiveNewsFeed } from '@/components/live-news-feed'
+import { WSBTrending } from '@/components/wsb-trending'
 
 interface MacroData {
   indices: Record<string, {
@@ -42,6 +49,11 @@ interface CalendarEvent {
 }
 
 export default function MacroPage() {
+  const [user, setUser] = useState<User | null>(null)
+  const [authLoading, setAuthLoading] = useState(true)
+  const router = useRouter()
+  const supabase = createClient()
+
   const [data, setData] = useState<MacroData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -87,17 +99,35 @@ export default function MacroPage() {
   }
 
   useEffect(() => {
-    fetchMacroData()
-    fetchCalendarData()
-    // Auto-refresh every 5 minutes
-    const interval = setInterval(fetchMacroData, 5 * 60 * 1000)
-    // Refresh calendar once per hour
-    const calendarInterval = setInterval(fetchCalendarData, 60 * 60 * 1000)
-    return () => {
-      clearInterval(interval)
-      clearInterval(calendarInterval)
+    const checkUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+
+      if (!user) {
+        router.push('/auth/login')
+        return
+      }
+
+      setUser(user)
+      setAuthLoading(false)
     }
-  }, [])
+
+    checkUser()
+  }, [router, supabase.auth])
+
+  useEffect(() => {
+    if (user) {
+      fetchMacroData()
+      fetchCalendarData()
+      // Auto-refresh every 5 minutes
+      const interval = setInterval(fetchMacroData, 5 * 60 * 1000)
+      // Refresh calendar once per hour
+      const calendarInterval = setInterval(fetchCalendarData, 60 * 60 * 1000)
+      return () => {
+        clearInterval(interval)
+        clearInterval(calendarInterval)
+      }
+    }
+  }, [user])
 
   const formatNumber = (num: number, decimals: number = 2) => {
     return num.toLocaleString('en-US', {
@@ -172,19 +202,34 @@ export default function MacroPage() {
     }
   }
 
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-600 dark:text-slate-400">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return null
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
-      <Navigation />
+      <Navigation userEmail={user.email} />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">
-              Macro Indicators
+              Macro Overview
             </h1>
             <p className="text-slate-600 dark:text-slate-400">
-              Real-time economic data and market sentiment
+              Real-time market data, economic indicators, and sentiment analysis
             </p>
           </div>
           <div className="text-right">
@@ -203,6 +248,11 @@ export default function MacroPage() {
           </div>
         </div>
 
+        {/* Live Market Ticker */}
+        <div className="mb-8">
+          <LiveTicker />
+        </div>
+
         {error && (
           <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
             <p className="text-red-800 dark:text-red-300">{error}</p>
@@ -217,26 +267,27 @@ export default function MacroPage() {
         )}
 
         {data && (
-          <div className="space-y-6">
-            {/* Market Sentiment Card */}
-            {data.sentiment && (
-              <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6 border border-slate-200 dark:border-slate-700">
-                <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">
-                  Market Sentiment
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-slate-600 dark:text-slate-400">VIX (Volatility Index)</span>
-                      <span className="text-2xl font-bold text-slate-900 dark:text-white">
-                        {formatNumber(data.sentiment.vix, 2)}
-                      </span>
+          <div className="space-y-8">
+            {/* Top Row: Market Sentiment + WSB Trending */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Market Sentiment Card */}
+              {data.sentiment && (
+                <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6 border border-slate-200 dark:border-slate-700">
+                  <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">
+                    Market Sentiment
+                  </h2>
+                  <div className="space-y-4">
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm text-slate-600 dark:text-slate-400">VIX (Volatility Index)</span>
+                        <span className="text-2xl font-bold text-slate-900 dark:text-white">
+                          {formatNumber(data.sentiment.vix, 2)}
+                        </span>
+                      </div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400">
+                        30-day avg: {formatNumber(data.sentiment.vix_avg_30d, 2)}
+                      </div>
                     </div>
-                    <div className="text-xs text-slate-500 dark:text-slate-400">
-                      30-day avg: {formatNumber(data.sentiment.vix_avg_30d, 2)}
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between">
                     <div>
                       <div className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${getSentimentColor(data.sentiment.sentiment)}`}>
                         {data.sentiment.sentiment}
@@ -247,8 +298,13 @@ export default function MacroPage() {
                     </div>
                   </div>
                 </div>
+              )}
+
+              {/* WSB Trending */}
+              <div className="lg:col-span-1">
+                <WSBTrending />
               </div>
-            )}
+            </div>
 
             {/* Economic Calendar */}
             <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6 border border-slate-200 dark:border-slate-700">
@@ -313,6 +369,17 @@ export default function MacroPage() {
                   <strong>Trading Tip:</strong> High-impact events like Fed meetings, jobs reports, and CPI data can cause significant volatility.
                   Consider adjusting your positions or hedging before major announcements.
                 </p>
+              </div>
+            </div>
+
+            {/* Market Intelligence Feeds */}
+            <div>
+              <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">
+                Market Intelligence
+              </h2>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <PoliticianTradesFeed />
+                <LiveNewsFeed />
               </div>
             </div>
 

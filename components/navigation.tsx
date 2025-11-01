@@ -49,7 +49,6 @@ export default function Navigation({ userEmail }: { userEmail?: string }) {
       label: 'Market Movers',
       dropdownItems: [
         { href: '/macro', label: 'Macro' },
-        { href: '/market-info', label: 'Market Info' },
         { href: '/sentiments', label: 'Sentiments' },
       ],
     },
@@ -123,25 +122,27 @@ export default function Navigation({ userEmail }: { userEmail?: string }) {
                       {item.label}
                       <ChevronDown className="h-4 w-4 transition-transform group-hover:rotate-180" />
                     </button>
-                    {/* Dropdown menu */}
-                    <div className="absolute left-0 top-full mt-1 hidden w-48 rounded-lg border border-slate-200 bg-white shadow-lg group-hover:block dark:border-slate-700 dark:bg-slate-900">
-                      <div className="py-2">
-                        {item.dropdownItems.map((dropItem) => {
-                          const isDropActive = pathname === dropItem.href
-                          return (
-                            <Link
-                              key={dropItem.href}
-                              href={dropItem.href}
-                              className={`block px-4 py-2 text-sm transition-colors ${
-                                isDropActive
-                                  ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400'
-                                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'
-                              }`}
-                            >
-                              {dropItem.label}
-                            </Link>
-                          )
-                        })}
+                    {/* Dropdown menu - with padding bridge to prevent gap */}
+                    <div className="absolute left-0 top-full pt-2 hidden group-hover:block">
+                      <div className="w-48 rounded-lg border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900">
+                        <div className="py-2">
+                          {item.dropdownItems.map((dropItem) => {
+                            const isDropActive = pathname === dropItem.href
+                            return (
+                              <Link
+                                key={dropItem.href}
+                                href={dropItem.href}
+                                className={`block px-4 py-2 text-sm transition-colors ${
+                                  isDropActive
+                                    ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400'
+                                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'
+                                }`}
+                              >
+                                {dropItem.label}
+                              </Link>
+                            )
+                          })}
+                        </div>
                       </div>
                     </div>
                   </div>
