@@ -374,7 +374,7 @@ export default function SentimentsPage() {
                 Sentiment intelligence
               </div>
               <h1 className="text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl">
-                See the market’s pulse through a design-led sentiment lens.
+                Your market-pulse headquarters.
               </h1>
               <p className="max-w-2xl text-lg text-slate-600">
                 Explore the strongest bullish and bearish narratives distilled from options flow, macro shifts, and real-time news tone. Every card blends conviction scoring with the context you need to trade with confidence.
