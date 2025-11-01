@@ -265,39 +265,61 @@ export default async function SentimentsPage() {
               ))}
             </div>
 
-            <div className="grid gap-8 md:grid-cols-2">
-              {(Object.keys(sentimentBuckets) as Array<"bullish" | "bearish">).map((key) => (
-                <div key={key} className="space-y-6">
-                  <div className="flex items-center justify-between">
+            <div>
+              {/* Bullish Narratives Section */}
+              {sentimentBuckets.bullish.length > 0 && (
+                <div className="mb-8">
+                  <div className="flex items-center justify-between mb-6">
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
-                        {key === "bullish" ? "Bullish narratives" : "Bearish narratives"}
+                        Bullish narratives
                       </p>
                       <h2 className="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">
-                        {key === "bullish" ? "Momentum on offense" : "Defensive setups"}
+                        Momentum on offense
                       </h2>
                     </div>
-                    <div
-                      className={`flex h-12 w-12 items-center justify-center rounded-2xl border border-white/50 bg-white/70 text-slate-900 shadow-lg ${
-                        key === "bullish" ? "ring-2 ring-emerald-200/60" : "ring-2 ring-rose-200/60"
-                      }`}
-                    >
-                      {key === "bullish" ? <TrendingUp className="h-5 w-5" /> : <TrendingDown className="h-5 w-5" />}
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/50 bg-white/70 text-slate-900 shadow-lg ring-2 ring-emerald-200/60">
+                      <TrendingUp className="h-5 w-5" />
                     </div>
                   </div>
-                  <div className="space-y-6">
-                    {sentimentBuckets[key].length > 0 ? (
-                      sentimentBuckets[key].map((sentiment) => (
-                        <SentimentCard key={`${key}-${sentiment.symbol}`} sentiment={sentiment} type={key} />
-                      ))
-                    ) : (
-                      <div className="rounded-3xl border border-dashed border-slate-200/70 bg-white/40 p-6 text-sm text-slate-500 shadow-inner dark:border-slate-700/60 dark:bg-slate-900/40 dark:text-slate-400">
-                        We haven't identified a strong {key} narrative yet. Stay tuned as the news tape updates.
-                      </div>
-                    )}
+                  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    {sentimentBuckets.bullish.map((sentiment) => (
+                      <SentimentCard key={`bullish-${sentiment.symbol}`} sentiment={sentiment} type="bullish" />
+                    ))}
                   </div>
                 </div>
-              ))}
+              )}
+
+              {/* Bearish Narratives Section */}
+              {sentimentBuckets.bearish.length > 0 && (
+                <div>
+                  <div className="flex items-center justify-between mb-6">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
+                        Bearish narratives
+                      </p>
+                      <h2 className="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">
+                        Defensive setups
+                      </h2>
+                    </div>
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/50 bg-white/70 text-slate-900 shadow-lg ring-2 ring-rose-200/60">
+                      <TrendingDown className="h-5 w-5" />
+                    </div>
+                  </div>
+                  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    {sentimentBuckets.bearish.map((sentiment) => (
+                      <SentimentCard key={`bearish-${sentiment.symbol}`} sentiment={sentiment} type="bearish" />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Empty State */}
+              {sentimentBuckets.bullish.length === 0 && sentimentBuckets.bearish.length === 0 && (
+                <div className="rounded-3xl border border-dashed border-slate-200/70 bg-white/40 p-6 text-center text-slate-500 shadow-inner dark:border-slate-700/60 dark:bg-slate-900/40 dark:text-slate-400">
+                  No sentiment narratives available yet. Stay tuned as the news tape updates.
+                </div>
+              )}
             </div>
           </section>
         </div>
