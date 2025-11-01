@@ -279,6 +279,7 @@ export interface Database {
           realized_pl: number
           daily_change: number
           daily_change_percent: number
+          opening_value_today: number | null
           open_positions_count: number
           closed_positions_count: number
           created_at: string
@@ -295,6 +296,7 @@ export interface Database {
           realized_pl?: number
           daily_change?: number
           daily_change_percent?: number
+          opening_value_today?: number | null
           open_positions_count?: number
           closed_positions_count?: number
           created_at?: string
@@ -311,6 +313,7 @@ export interface Database {
           realized_pl?: number
           daily_change?: number
           daily_change_percent?: number
+          opening_value_today?: number | null
           open_positions_count?: number
           closed_positions_count?: number
           created_at?: string

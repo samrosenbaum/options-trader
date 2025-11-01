@@ -101,7 +101,12 @@ export async function POST() {
     // Determine opening value for today
     // If we don't have an opening value yet, use current total as opening
     // This happens on first calculation of the day
-    let openingValueToday = todaySnapshot?.opening_value_today || totalValue
+    // IMPORTANT: Only set opening value if it doesn't exist (null or undefined)
+    // Once set, it should remain locked for the day
+    let openingValueToday = todaySnapshot?.opening_value_today
+    if (openingValueToday === null || openingValueToday === undefined) {
+      openingValueToday = totalValue
+    }
 
     // Calculate intraday change based on opening value
     const dailyChange = totalValue - openingValueToday
