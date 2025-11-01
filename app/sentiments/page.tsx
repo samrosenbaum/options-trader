@@ -118,16 +118,26 @@ function SentimentCard({ sentiment, type }: { sentiment: SentimentNarrative; typ
         </header>
 
         <div className="grid gap-3 sm:grid-cols-2">
-          {sentiment.catalysts.map((catalyst) => (
+          {sentiment.catalysts.length > 0 ? (
+            sentiment.catalysts.map((catalyst, index) => (
+              <div
+                key={`${sentiment.symbol}-catalyst-${index}`}
+                className={`flex items-start gap-3 rounded-2xl border border-transparent bg-gradient-to-r px-4 py-3 text-sm font-medium leading-snug text-slate-500 shadow-inner ${
+                  type === "bullish"
+                    ? "from-emerald-50 via-white/40 to-transparent"
+                    : "from-rose-50 via-white/40 to-transparent"
+                }`}
+              >
+                <ShieldCheck className={`mt-0.5 h-4 w-4 ${type === "bullish" ? "text-emerald-500" : "text-rose-500"}`} />
+                <span>{catalyst}</span>
+              </div>
+            ))
+          ) : (
             <div
-              className={`flex items-start gap-3 rounded-2xl border border-transparent bg-gradient-to-r px-4 py-3 text-sm font-medium leading-snug text-slate-500 shadow-inner ${
-                type === "bullish"
-                  ? "from-emerald-50 via-white/40 to-transparent"
-                  : "from-rose-50 via-white/40 to-transparent"
-              }`}
+              className="flex items-start gap-3 rounded-2xl border border-transparent bg-gradient-to-r from-slate-100 via-white/40 to-transparent px-4 py-3 text-sm font-medium leading-snug text-slate-500 shadow-inner"
             >
-              <ShieldCheck className="h-4 w-4 text-slate-400" />
-              Live catalysts will populate as fresh headlines arrive.
+              <ShieldCheck className="mt-0.5 h-4 w-4 text-slate-400" />
+              <span>Live catalysts will populate as fresh headlines arrive.</span>
             </div>
           )}
         </div>
