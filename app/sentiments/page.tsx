@@ -300,11 +300,11 @@ function SentimentCard({
           </div>
         </header>
 
-        <div className="grid gap-3 md:grid-cols-2">
+        <div className="grid gap-3 lg:grid-cols-2">
           {sentiment.catalysts.map((catalyst) => (
             <div
               key={catalyst}
-              className={`flex items-center gap-3 rounded-2xl border border-transparent bg-gradient-to-r px-4 py-3 text-sm font-medium text-slate-700 shadow-inner ${
+              className={`flex items-start gap-3 rounded-2xl border border-transparent bg-gradient-to-r px-4 py-3 text-sm font-medium leading-snug text-slate-700 shadow-inner ${
                 type === "bullish"
                   ? "from-emerald-100 via-white/60 to-transparent"
                   : "from-rose-100 via-white/60 to-transparent"
@@ -334,7 +334,7 @@ function SentimentCard({
           ))}
         </ul>
 
-        <footer className="flex flex-wrap items-center justify-between gap-4 text-sm text-slate-500">
+        <footer className="flex flex-wrap items-center gap-4 text-sm text-slate-500">
           <div className="flex items-center gap-2">
             <div
               className={`flex h-10 w-10 items-center justify-center rounded-full border border-white/60 bg-white/80 text-slate-900 shadow-md ${
@@ -347,14 +347,6 @@ function SentimentCard({
               Updated {formatDistanceToNow(new Date(sentiment.lastUpdated), { addSuffix: true })}
             </span>
           </div>
-          <button
-            type="button"
-            className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full border border-slate-200/80 bg-white/80 px-5 py-2 text-sm font-semibold text-slate-700 transition-all duration-300 hover:border-transparent hover:bg-slate-900 hover:text-white"
-          >
-            <span className="absolute inset-0 -z-10 bg-gradient-to-r from-emerald-400 via-cyan-400 to-blue-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-            View trade plan
-            <ArrowUpRight className="h-4 w-4" />
-          </button>
         </footer>
       </div>
     </article>
