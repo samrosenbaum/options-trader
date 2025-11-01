@@ -351,37 +351,41 @@ export default function MacroPage() {
                     <div className="pt-3 border-t border-slate-200 dark:border-slate-700">
                       <div className="grid grid-cols-2 gap-3">
                         {/* Market Breadth */}
-                        <div className="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg">
-                          <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">Market Breadth</div>
-                          <div className={`text-sm font-semibold ${
-                            data.indices.SPY.change_pct > 0 && data.indices.QQQ.change_pct > 0 && data.indices.DIA.change_pct > 0
-                              ? 'text-emerald-600 dark:text-emerald-400'
-                              : data.indices.SPY.change_pct < 0 && data.indices.QQQ.change_pct < 0 && data.indices.DIA.change_pct < 0
-                              ? 'text-red-600 dark:text-red-400'
-                              : 'text-amber-600 dark:text-amber-400'
-                          }`}>
-                            {data.indices.SPY.change_pct > 0 && data.indices.QQQ.change_pct > 0 && data.indices.DIA.change_pct > 0
-                              ? 'Broad Rally'
-                              : data.indices.SPY.change_pct < 0 && data.indices.QQQ.change_pct < 0 && data.indices.DIA.change_pct < 0
-                              ? 'Broad Decline'
-                              : 'Mixed'}
+                        {data.indices?.SPY && data.indices?.QQQ && data.indices?.DIA && (
+                          <div className="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg">
+                            <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">Market Breadth</div>
+                            <div className={`text-sm font-semibold ${
+                              data.indices.SPY.change_pct > 0 && data.indices.QQQ.change_pct > 0 && data.indices.DIA.change_pct > 0
+                                ? 'text-emerald-600 dark:text-emerald-400'
+                                : data.indices.SPY.change_pct < 0 && data.indices.QQQ.change_pct < 0 && data.indices.DIA.change_pct < 0
+                                ? 'text-red-600 dark:text-red-400'
+                                : 'text-amber-600 dark:text-amber-400'
+                            }`}>
+                              {data.indices.SPY.change_pct > 0 && data.indices.QQQ.change_pct > 0 && data.indices.DIA.change_pct > 0
+                                ? 'Broad Rally'
+                                : data.indices.SPY.change_pct < 0 && data.indices.QQQ.change_pct < 0 && data.indices.DIA.change_pct < 0
+                                ? 'Broad Decline'
+                                : 'Mixed'}
+                            </div>
                           </div>
-                        </div>
+                        )}
 
                         {/* Risk Appetite */}
-                        <div className="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg">
-                          <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">Risk Appetite</div>
-                          <div className={`text-sm font-semibold ${
-                            data.indices.QQQ.change_pct > data.indices.DIA.change_pct
-                              ? 'text-emerald-600 dark:text-emerald-400'
-                              : 'text-amber-600 dark:text-amber-400'
-                          }`}>
-                            {data.indices.QQQ.change_pct > data.indices.DIA.change_pct ? 'Risk On' : 'Risk Off'}
+                        {data.indices?.QQQ && data.indices?.DIA && (
+                          <div className="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg">
+                            <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">Risk Appetite</div>
+                            <div className={`text-sm font-semibold ${
+                              data.indices.QQQ.change_pct > data.indices.DIA.change_pct
+                                ? 'text-emerald-600 dark:text-emerald-400'
+                                : 'text-amber-600 dark:text-amber-400'
+                            }`}>
+                              {data.indices.QQQ.change_pct > data.indices.DIA.change_pct ? 'Risk On' : 'Risk Off'}
+                            </div>
                           </div>
-                        </div>
+                        )}
 
                         {/* Yield Curve */}
-                        {data.treasuries['10-Year'] && data.treasuries['2-Year'] && (
+                        {data.treasuries?.['10-Year'] && data.treasuries?.['2-Year'] && (
                           <div className="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg col-span-2">
                             <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">Yield Curve</div>
                             <div className={`text-sm font-semibold ${
