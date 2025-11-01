@@ -432,29 +432,6 @@ export default async function SentimentsPage() {
                   </div>
                 </div>
               </div>
-
-              <div className="overflow-hidden rounded-[2.5rem] border border-white/20 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-8 text-white shadow-xl">
-                <div className="flex flex-col gap-6">
-                  <div className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em]">
-                    <Sparkles className="h-4 w-4" />
-                    Upgrade your edge
-                  </div>
-                  <h3 className="text-3xl font-semibold">
-                    Overlay the sentiment board with your watchlists.
-                  </h3>
-                  <p className="text-sm text-slate-200">
-                    Save bullish and bearish cards directly into personalized trade decks. Alerts ping you when conviction or catalysts shift.
-                  </p>
-                  <button
-                    type="button"
-                    className="group relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-full border border-white/30 bg-white/10 px-6 py-3 text-sm font-semibold uppercase tracking-[0.3em] transition-all duration-300 hover:border-transparent"
-                  >
-                    <span className="absolute inset-0 -z-10 bg-gradient-to-r from-emerald-400 via-cyan-400 to-blue-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-                    Add to workspace
-                    <ArrowUpRight className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
             </aside>
           </section>
         </div>
