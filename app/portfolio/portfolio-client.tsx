@@ -41,7 +41,6 @@ function formatDateLocal(dateString: string): string {
 }
 
 type Position = Database['public']['Tables']['positions']['Row']
-type UserSettings = Database['public']['Tables']['user_settings']['Row']
 type User = { id: string; email?: string }
 
 type PortfolioInsight = {
@@ -198,12 +197,6 @@ export default function PortfolioClient({
   const [signalsMessage, setSignalsMessage] = useState<string | null>(null)
   const [notificationsEnabled, setNotificationsEnabled] = useState(false)
   const supabase = useMemo(() => createClient(), [])
-  const [portfolioSizeInput, setPortfolioSizeInput] = useState<string>('')
-  const [dailyBudgetInput, setDailyBudgetInput] = useState<string>('')
-  const [settingsLoading, setSettingsLoading] = useState(true)
-  const [settingsError, setSettingsError] = useState<string | null>(null)
-  const [isSavingSettings, setIsSavingSettings] = useState(false)
-  const [settingsFeedback, setSettingsFeedback] = useState<'idle' | 'success' | 'error'>('idle')
   const [hasAutoRefreshed, setHasAutoRefreshed] = useState(false)
   const [showCashRain, setShowCashRain] = useState(false)
   const [cashRainKey, setCashRainKey] = useState(0)
@@ -283,129 +276,6 @@ export default function PortfolioClient({
       setTimeout(() => notification.close(), 10000)
     }
   }, [notificationsEnabled])
-
-  useEffect(() => {
-    let isMounted = true
-
-    const loadSettings = async () => {
-      try {
-        setSettingsError(null)
-        const { data, error } = await supabase
-          .from('user_settings')
-          .select('portfolio_size, daily_contract_budget')
-          .eq('user_id', user.id)
-          .maybeSingle()
-
-        if (!isMounted) {
-          return
-        }
-
-        if (error && error.code !== 'PGRST116') {
-          console.error('Failed to load portfolio settings', error)
-          setSettingsError('Unable to load portfolio preferences. Please try again later.')
-        }
-
-        if (data) {
-          const settings = data as UserSettings
-          const portfolioSize =
-            settings.portfolio_size !== null && settings.portfolio_size !== undefined
-              ? Number(settings.portfolio_size)
-              : null
-          const dailyBudget =
-            settings.daily_contract_budget !== null && settings.daily_contract_budget !== undefined
-              ? Number(settings.daily_contract_budget)
-              : null
-          setPortfolioSizeInput(
-            portfolioSize !== null && Number.isFinite(portfolioSize)
-              ? String(portfolioSize)
-              : '',
-          )
-          setDailyBudgetInput(
-            dailyBudget !== null && Number.isFinite(dailyBudget)
-              ? String(dailyBudget)
-              : '',
-          )
-        } else {
-          setPortfolioSizeInput('')
-          setDailyBudgetInput('')
-        }
-      } catch (loadError) {
-        if (!isMounted) {
-          return
-        }
-        console.error('Failed to fetch user settings', loadError)
-        setSettingsError('Unable to load portfolio preferences. Please try again later.')
-      } finally {
-        if (isMounted) {
-          setSettingsLoading(false)
-        }
-      }
-    }
-
-    loadSettings()
-
-    return () => {
-      isMounted = false
-    }
-  }, [supabase, user.id])
-
-  const handleSaveSettings = async () => {
-    const parseInput = (value: string) => {
-      if (value.trim() === '') {
-        return null
-      }
-      const parsed = Number(value)
-      if (!Number.isFinite(parsed) || parsed <= 0) {
-        return NaN
-      }
-      return parsed
-    }
-
-    setSettingsError(null)
-    setSettingsFeedback('idle')
-
-    const portfolioSize = parseInput(portfolioSizeInput)
-    if (Number.isNaN(portfolioSize)) {
-      setSettingsError('Portfolio size must be a positive number.')
-      return
-    }
-
-    const dailyBudget = parseInput(dailyBudgetInput)
-    if (Number.isNaN(dailyBudget)) {
-      setSettingsError('Daily contract budget must be a positive number.')
-      return
-    }
-
-    try {
-      setIsSavingSettings(true)
-      const { error } = await supabase
-        .from('user_settings')
-        .upsert(
-          {
-            user_id: user.id,
-            portfolio_size: portfolioSize ?? null,
-            daily_contract_budget: dailyBudget ?? null,
-          },
-          { onConflict: 'user_id' },
-        )
-
-      if (error) {
-        console.error('Failed to save portfolio settings', error)
-        setSettingsError('Unable to save your preferences. Please try again.')
-        setSettingsFeedback('error')
-        return
-      }
-
-      setSettingsFeedback('success')
-      setTimeout(() => setSettingsFeedback('idle'), 4000)
-    } catch (saveError) {
-      console.error('Unexpected error saving portfolio settings', saveError)
-      setSettingsError('Unexpected error while saving preferences.')
-      setSettingsFeedback('error')
-    } finally {
-      setIsSavingSettings(false)
-    }
-  }
 
   const handleAddPosition = () => {
     setShowAddModal(true)
@@ -1146,90 +1016,6 @@ export default function PortfolioClient({
                 <span className="text-xs text-slate-500 dark:text-slate-400">Unrealized performance</span>
               </div>
             </motion.div>
-          </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1, duration: 0.6, ease: 'easeOut' }}
-          className="relative overflow-hidden rounded-3xl border border-white/60 bg-white/80 p-8 shadow-lg backdrop-blur dark:border-white/10 dark:bg-slate-950/60"
-        >
-          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Portfolio Preferences</h2>
-              <p className="text-sm text-slate-600 dark:text-slate-400">
-                Configure the portfolio size and daily contract budget used by the scanner for personalized sizing guidance.
-              </p>
-            </div>
-            <div className="flex items-center gap-3 text-sm">
-              {settingsLoading ? (
-                <span className="text-slate-500 dark:text-slate-400">Loading...</span>
-              ) : settingsFeedback === 'success' ? (
-                <span className="text-emerald-600 dark:text-emerald-400 font-medium">Preferences saved</span>
-              ) : settingsFeedback === 'error' ? (
-                <span className="text-red-600 dark:text-red-400 font-medium">Save failed</span>
-              ) : null}
-            </div>
-          </div>
-
-          <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-3">
-            <div className="flex flex-col">
-              <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                Portfolio size (USD)
-              </label>
-              <input
-                type="number"
-                inputMode="decimal"
-                min="0"
-                step="100"
-                value={portfolioSizeInput}
-                onChange={(event) => {
-                  setPortfolioSizeInput(event.target.value)
-                  setSettingsFeedback('idle')
-                }}
-                disabled={settingsLoading || isSavingSettings}
-                placeholder="e.g. 50000"
-                className="rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-4 py-2 text-slate-900 dark:text-white shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-              />
-            </div>
-
-            <div className="flex flex-col">
-              <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                Daily contract budget
-              </label>
-              <input
-                type="number"
-                inputMode="decimal"
-                min="0"
-                step="1"
-                value={dailyBudgetInput}
-                onChange={(event) => {
-                  setDailyBudgetInput(event.target.value)
-                  setSettingsFeedback('idle')
-                }}
-                disabled={settingsLoading || isSavingSettings}
-                placeholder="e.g. 10"
-                className="rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-4 py-2 text-slate-900 dark:text-white shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-              />
-            </div>
-
-            <div className="flex flex-col justify-end gap-3">
-              <button
-                onClick={handleSaveSettings}
-                disabled={settingsLoading || isSavingSettings}
-                className={`inline-flex items-center justify-center rounded-lg px-4 py-2 font-semibold text-white transition-colors ${
-                  settingsLoading || isSavingSettings
-                    ? 'bg-slate-400 dark:bg-slate-700 cursor-not-allowed'
-                    : 'bg-emerald-600 hover:bg-emerald-700'
-                }`}
-              >
-                {isSavingSettings ? 'Saving...' : 'Save preferences'}
-              </button>
-              {settingsError && (
-                <p className="text-sm text-red-600 dark:text-red-400">{settingsError}</p>
-              )}
-            </div>
           </div>
         </motion.div>
 
