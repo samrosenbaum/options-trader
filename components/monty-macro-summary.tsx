@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Sparkles, RefreshCw } from "lucide-react"
+import { RefreshCw } from "lucide-react"
 
 interface MacroSummaryProps {
   vix: number
@@ -119,12 +119,9 @@ export function MontyMacroSummary({
 
       <div className="relative">
         <div className="mb-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-              Monty's Market Summary
-            </h3>
-          </div>
+          <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+            Monty's Market Summary
+          </h3>
           <button
             onClick={generateSummary}
             disabled={isLoading}
