@@ -377,7 +377,7 @@ export default function MacroPage() {
               <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">
                 Market Intelligence
               </h2>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="space-y-6">
                 <PoliticianTradesFeed />
                 <LiveNewsFeed />
               </div>

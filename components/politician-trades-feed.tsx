@@ -113,21 +113,22 @@ export function PoliticianTradesFeed() {
           </div>
         )}
 
-        <div className="space-y-2">
-          {isLoading && trades.length === 0 ? (
-            <div className="flex items-center justify-center py-8">
-              <RefreshCw className="h-6 w-6 animate-spin text-emerald-600 dark:text-emerald-400" />
-            </div>
-          ) : error ? (
-            <div className="rounded-xl border border-red-500/40 bg-red-500/10 p-4 text-center dark:border-red-400/40 dark:bg-red-500/10 dark:backdrop-blur-sm">
-              <p className="text-sm text-red-700 dark:text-red-200">Failed to load politician trades</p>
-            </div>
-          ) : (
-            trades.map((trade, index) => (
-              <div
-                key={index}
-                className="rounded-xl border border-slate-200 bg-slate-50 p-3 transition-all hover:border-emerald-400 hover:bg-slate-100 dark:border-white/10 dark:bg-white/10 dark:backdrop-blur-sm dark:hover:border-emerald-400/50 dark:hover:bg-white/15"
-              >
+        {isLoading && trades.length === 0 ? (
+          <div className="flex items-center justify-center py-8">
+            <RefreshCw className="h-6 w-6 animate-spin text-emerald-600 dark:text-emerald-400" />
+          </div>
+        ) : error ? (
+          <div className="rounded-xl border border-red-500/40 bg-red-500/10 p-4 text-center dark:border-red-400/40 dark:bg-red-500/10 dark:backdrop-blur-sm">
+            <p className="text-sm text-red-700 dark:text-red-200">Failed to load politician trades</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto -mx-6 px-6">
+            <div className="flex space-x-4 min-w-max pb-2">
+              {trades.map((trade, index) => (
+                <div
+                  key={index}
+                  className="flex-shrink-0 w-80 rounded-xl border border-slate-200 bg-slate-50 p-3 transition-all hover:border-emerald-400 hover:bg-slate-100 dark:border-white/10 dark:bg-white/10 dark:backdrop-blur-sm dark:hover:border-emerald-400/50 dark:hover:bg-white/15"
+                >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1">
                     {/* Politician Info */}
@@ -176,10 +177,11 @@ export function PoliticianTradesFeed() {
                     )}
                   </div>
                 </div>
-              </div>
-            ))
-          )}
-        </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Upgrade Notice */}
         <div className="mt-4 rounded-xl border border-sky-500/40 bg-sky-500/10 p-3 dark:border-sky-400/40 dark:bg-sky-500/10 dark:backdrop-blur-sm">

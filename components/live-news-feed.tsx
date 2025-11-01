@@ -73,21 +73,22 @@ export function LiveNewsFeed() {
         </div>
       </div>
       <div className="p-6">
-        <div className="space-y-3">
-          {isLoading && news.length === 0 ? (
-            <div className="flex items-center justify-center py-8">
-              <RefreshCw className="h-6 w-6 animate-spin text-emerald-600 dark:text-emerald-400" />
-            </div>
-          ) : error ? (
-            <div className="rounded-xl border border-red-500/40 bg-red-500/10 p-4 text-center dark:border-red-400/40 dark:bg-red-500/10 dark:backdrop-blur-sm">
-              <p className="text-sm text-red-700 dark:text-red-200">Failed to load news</p>
-            </div>
-          ) : (
-            news.map((item) => (
-              <div
-                key={item.id}
-                className="rounded-xl border border-slate-200 bg-slate-50 p-3 transition-all hover:border-emerald-400 hover:bg-slate-100 dark:border-white/10 dark:bg-white/10 dark:backdrop-blur-sm dark:hover:border-emerald-400/50 dark:hover:bg-white/15"
-              >
+        {isLoading && news.length === 0 ? (
+          <div className="flex items-center justify-center py-8">
+            <RefreshCw className="h-6 w-6 animate-spin text-emerald-600 dark:text-emerald-400" />
+          </div>
+        ) : error ? (
+          <div className="rounded-xl border border-red-500/40 bg-red-500/10 p-4 text-center dark:border-red-400/40 dark:bg-red-500/10 dark:backdrop-blur-sm">
+            <p className="text-sm text-red-700 dark:text-red-200">Failed to load news</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto -mx-6 px-6">
+            <div className="flex space-x-4 min-w-max pb-2">
+              {news.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex-shrink-0 w-96 rounded-xl border border-slate-200 bg-slate-50 p-3 transition-all hover:border-emerald-400 hover:bg-slate-100 dark:border-white/10 dark:bg-white/10 dark:backdrop-blur-sm dark:hover:border-emerald-400/50 dark:hover:bg-white/15"
+                >
                 <div className="flex items-start gap-3">
                   <div className="flex-shrink-0 pt-1">
                     {item.sentiment.label === "bullish" ? (
@@ -150,10 +151,11 @@ export function LiveNewsFeed() {
                     </div>
                   </div>
                 </div>
-              </div>
-            ))
-          )}
-        </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
