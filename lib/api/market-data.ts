@@ -107,8 +107,21 @@ export async function getCompanyNews(symbol: string, from: string, to: string): 
   try {
     const response = await fetch(
       `${FINNHUB_BASE_URL}/company-news?symbol=${symbol}&from=${from}&to=${to}&token=${FINNHUB_API_KEY}`,
+      { next: { revalidate: 300 } } // Cache for 5 minutes
     )
+
+    if (!response.ok) {
+      console.warn(`Finnhub API error for ${symbol}: ${response.status} ${response.statusText}`)
+      return []
+    }
+
     const data = (await response.json()) as FinnhubNewsItem[]
+
+    // Check if data is actually an array (API might return error object or rate limit response)
+    if (!Array.isArray(data)) {
+      // Silently handle empty responses (likely rate limited)
+      return []
+    }
 
     return data.slice(0, 10).map((item) => ({
       id: item.id.toString(),

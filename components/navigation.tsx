@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import Image from 'next/image'
 import { useState, useEffect } from 'react'
+import { ChevronDown } from 'lucide-react'
 
 const FUN_GREETINGS = [
   "Looking sharp today!",
@@ -18,10 +19,17 @@ const FUN_GREETINGS = [
   "Opportunity seeker online!",
 ]
 
+type NavItem = {
+  href?: string
+  label: string
+  dropdownItems?: Array<{ href: string; label: string }>
+}
+
 export default function Navigation({ userEmail }: { userEmail?: string }) {
   const pathname = usePathname()
   const [greeting, setGreeting] = useState('')
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [expandedSection, setExpandedSection] = useState<string | null>(null)
 
   useEffect(() => {
     // Pick a random greeting on mount
@@ -32,16 +40,27 @@ export default function Navigation({ userEmail }: { userEmail?: string }) {
   useEffect(() => {
     // Close the mobile nav when the route changes
     setIsMenuOpen(false)
+    setExpandedSection(null)
   }, [pathname])
 
-  const navItems = [
-    { href: '/scanner', label: 'Scanner' },
-    { href: '/macro', label: 'Macro' },
-    { href: '/market-info', label: 'Market Info' },
-    { href: '/sentiments', label: 'Sentiments' },
-    { href: '/rejection-learning', label: 'Anti-Portfolio' },
-    { href: '/watchlist', label: 'Watchlist' },
-    { href: '/portfolio', label: 'Portfolio' },
+  const navItems: NavItem[] = [
+    { href: '/scanner', label: 'Find Trades' },
+    {
+      label: 'Market Movers',
+      dropdownItems: [
+        { href: '/macro', label: 'Macro' },
+        { href: '/market-info', label: 'Market Info' },
+        { href: '/sentiments', label: 'Sentiments' },
+      ],
+    },
+    {
+      label: 'Your Positions',
+      dropdownItems: [
+        { href: '/portfolio', label: 'Portfolio' },
+        { href: '/watchlist', label: 'Watchlist' },
+        { href: '/rejection-learning', label: 'Anti-Portfolio' },
+      ],
+    },
   ]
 
   return (
@@ -88,21 +107,62 @@ export default function Navigation({ userEmail }: { userEmail?: string }) {
 
           {/* Navigation Links */}
           <div className="hidden md:flex md:flex-1 md:items-center md:justify-center md:gap-1">
-            {navItems.map((item) => {
-              const isActive = pathname === item.href
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`px-4 py-2 text-sm font-medium transition-colors ${
-                    isActive
-                      ? 'text-emerald-600 dark:text-emerald-400'
-                      : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              )
+            {navItems.map((item, index) => {
+              if (item.dropdownItems) {
+                // Dropdown menu item
+                const isActive = item.dropdownItems.some((dropItem) => pathname === dropItem.href)
+                return (
+                  <div key={index} className="group relative">
+                    <button
+                      className={`flex items-center gap-1 px-4 py-2 text-sm font-medium transition-colors ${
+                        isActive
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+                      }`}
+                    >
+                      {item.label}
+                      <ChevronDown className="h-4 w-4 transition-transform group-hover:rotate-180" />
+                    </button>
+                    {/* Dropdown menu */}
+                    <div className="absolute left-0 top-full mt-1 hidden w-48 rounded-lg border border-slate-200 bg-white shadow-lg group-hover:block dark:border-slate-700 dark:bg-slate-900">
+                      <div className="py-2">
+                        {item.dropdownItems.map((dropItem) => {
+                          const isDropActive = pathname === dropItem.href
+                          return (
+                            <Link
+                              key={dropItem.href}
+                              href={dropItem.href}
+                              className={`block px-4 py-2 text-sm transition-colors ${
+                                isDropActive
+                                  ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400'
+                                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'
+                              }`}
+                            >
+                              {dropItem.label}
+                            </Link>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )
+              } else {
+                // Regular link item
+                const isActive = pathname === item.href
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href!}
+                    className={`px-4 py-2 text-sm font-medium transition-colors ${
+                      isActive
+                        ? 'text-emerald-600 dark:text-emerald-400'
+                        : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                )
+              }
             })}
           </div>
 
@@ -137,22 +197,68 @@ export default function Navigation({ userEmail }: { userEmail?: string }) {
       >
         <div className="relative px-4 pt-3 pb-5 space-y-4">
           <span className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-400 via-cyan-400 to-blue-500 opacity-80" />
-          <div className="flex flex-col">
-            {navItems.map((item) => {
-              const isActive = pathname === item.href
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                    isActive
-                      ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300'
-                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white dark:hover:bg-slate-800'
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              )
+          <div className="flex flex-col space-y-2">
+            {navItems.map((item, index) => {
+              if (item.dropdownItems) {
+                // Dropdown section for mobile - collapsible
+                const isActive = item.dropdownItems.some((dropItem) => pathname === dropItem.href)
+                const isExpanded = expandedSection === item.label
+                return (
+                  <div key={index} className="space-y-1">
+                    <button
+                      onClick={() => setExpandedSection(isExpanded ? null : item.label)}
+                      className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                        isActive
+                          ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300'
+                          : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white dark:hover:bg-slate-800'
+                      }`}
+                    >
+                      {item.label}
+                      <ChevronDown
+                        className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                      />
+                    </button>
+                    <div
+                      className={`overflow-hidden transition-all duration-300 ${
+                        isExpanded ? 'max-h-48 opacity-100' : 'max-h-0 opacity-0'
+                      }`}
+                    >
+                      {item.dropdownItems.map((dropItem) => {
+                        const isDropActive = pathname === dropItem.href
+                        return (
+                          <Link
+                            key={dropItem.href}
+                            href={dropItem.href}
+                            className={`block rounded-lg px-3 py-2 pl-6 text-sm font-medium transition-colors ${
+                              isDropActive
+                                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300'
+                                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white dark:hover:bg-slate-800'
+                            }`}
+                          >
+                            {dropItem.label}
+                          </Link>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )
+              } else {
+                // Regular link for mobile
+                const isActive = pathname === item.href
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href!}
+                    className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                      isActive
+                        ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300'
+                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white dark:hover:bg-slate-800'
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                )
+              }
             })}
           </div>
 

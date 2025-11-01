@@ -189,6 +189,12 @@ export async function fetchSentimentInsights(): Promise<SentimentInsights> {
     }),
   ])
 
+  // Check if we got any news at all (API might be rate limited)
+  const totalNewsItems = newsResponses.reduce((sum, item) => sum + item.news.length, 0)
+  if (totalNewsItems === 0) {
+    console.warn("No news data available - API may be rate limited. Displaying empty state.")
+  }
+
   const quoteMap = new Map(quotes.map((quote) => [quote.symbol.toUpperCase(), quote]))
 
   const narratives: SentimentNarrative[] = []
@@ -280,7 +286,7 @@ export async function fetchSentimentInsights(): Promise<SentimentInsights> {
 
   const trackedQuotes = narratives
     .map((narrative) => quoteMap.get(narrative.symbol))
-    .filter((quote): quote is StockQuote => Boolean(quote) && typeof quote.changePercent === "number")
+    .filter((quote): quote is StockQuote => Boolean(quote) && typeof quote?.changePercent === "number")
 
   const avgAbsChange =
     trackedQuotes.length === 0
@@ -305,7 +311,7 @@ export async function fetchSentimentInsights(): Promise<SentimentInsights> {
     .map(({ symbol, item }) => {
       const direction: Direction = item.sentiment.score >= 0 ? "bullish" : "bearish"
       const detail = item.summary || item.headline
-      const identifier = typeof item.id === "string" ? item.id : item.id?.toString() ?? `${item.datetime}`
+      const identifier = item.id ?? `${item.datetime}`
 
       return {
         id: `${symbol}-${identifier}`,

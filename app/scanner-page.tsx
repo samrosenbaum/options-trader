@@ -467,36 +467,6 @@ async function fetchWithTimeout(input: RequestInfo | URL, init?: RequestInit, ti
   }
 }
 
-interface CryptoAlert {
-  symbol: string
-  name: string
-  current_price: number
-  market_cap: number
-  action: 'BUY' | 'SELL' | 'HOLD'
-  confidence: number
-  strategy: string
-  entry_price: number
-  target_price: number
-  stop_loss: number
-  position_size: {
-    recommended_size: number
-    position_amounts: Record<string, { amount: number; percentage: number }>
-    risk_level: string
-  }
-  risk_level: string
-  reasons: string[]
-  urgency: number
-  timestamp: string
-  directional_bias?: EnhancedDirectionalBias | null
-  allocation: {
-    action: 'INCREASE_POSITION' | 'DECREASE_POSITION' | 'MOVE_TO_USDC' | 'MAINTAIN_POSITION'
-    suggested_change_percent: number
-    target_allocation_percent: number
-    current_allocation_percent: number
-    usdc_reallocation_percent: number
-    rationale: string[]
-  }
-}
 
 type InvestmentScenario = {
   contractCost: number
@@ -1536,9 +1506,6 @@ export default function ScannerPage({ user }: ScannerPageProps) {
     const parsed = Number(investmentAmountInput)
     return Number.isFinite(parsed) ? parsed : null
   }, [investmentAmountInput])
-  const [activeTab, setActiveTab] = useState<'options' | 'crypto'>('options')
-  const [cryptoAlerts, setCryptoAlerts] = useState<CryptoAlert[]>([])
-  const [cryptoLoading, setCryptoLoading] = useState(false)
   const [sortOption, setSortOption] = useState<OpportunitySortOption>('promising')
   const [isStaleData, setIsStaleData] = useState(false)
   const [scanMetadata, setScanMetadata] = useState<ScanMetadata | null>(null)
@@ -1563,7 +1530,6 @@ export default function ScannerPage({ user }: ScannerPageProps) {
   const [volumeSurgeMode, setVolumeSurgeMode] = useState(false)
   const [layupsScanMode, setLayupsScanMode] = useState(false)
   const [uoaScanMode, setUoaScanMode] = useState(false)
-  const previousTabRef = useRef<'options' | 'crypto' | null>(null)
   const opportunitiesRef = useRef<Opportunity[]>([])
   const scanModeRef = useRef<FilterMode>('strict')
   const userSettingsRef = useRef<UserSettingsRow | null>(null)
@@ -2116,7 +2082,7 @@ export default function ScannerPage({ user }: ScannerPageProps) {
   }, [fallbackDebugInfo, fallbackIsNoResults, fallbackSearchMetadata])
   const metadataSource = typeof scanMetadata?.source === 'string' ? scanMetadata.source.toLowerCase() : null
   // Always use enhanced scanner for options
-  const enhancedModeActive = activeTab === 'options'
+  const enhancedModeActive = true
   const enhancedResponseDetected =
     enhancedModeActive &&
     (scanMetadata?.enhancedScanner === true ||
@@ -2513,20 +2479,6 @@ export default function ScannerPage({ user }: ScannerPageProps) {
     }
   }, [attemptFallbackFetch, earningsScanMode, handleScanPayload, hasCompletedFirstScan, hotScanMode, investmentAmount, isFirstScanIntroOpen, layupsScanMode, targetSymbolInput, uoaScanMode, userPortfolioConstraints, volumeSurgeMode])
 
-  const fetchCryptoAlerts = useCallback(async () => {
-    try {
-      setCryptoLoading(true)
-      const response = await fetch('/api/crypto-scan')
-      const data = await response.json()
-      if (data.success) {
-        setCryptoAlerts(data.trading_alerts || [])
-      }
-    } catch (error) {
-      console.error('Error fetching crypto alerts:', error)
-    } finally {
-      setCryptoLoading(false)
-    }
-  }, [])
 
   const isMarketOpen = () => {
     const now = new Date()
@@ -2565,12 +2517,6 @@ export default function ScannerPage({ user }: ScannerPageProps) {
     opportunitiesRef.current = opportunities
   }, [opportunities])
 
-  useEffect(() => {
-    if (activeTab === 'crypto' && previousTabRef.current !== 'crypto') {
-      fetchCryptoAlerts()
-    }
-    previousTabRef.current = activeTab
-  }, [activeTab, fetchCryptoAlerts])
 
   useEffect(() => {
     setExpandedCards({})
@@ -2708,31 +2654,6 @@ export default function ScannerPage({ user }: ScannerPageProps) {
     return 'bg-slate-500 text-white'
   }
 
-  const formatAllocationAction = (action: CryptoAlert['allocation']['action']) => {
-    switch (action) {
-      case 'INCREASE_POSITION':
-        return 'Increase Position'
-      case 'DECREASE_POSITION':
-        return 'Decrease Position'
-      case 'MOVE_TO_USDC':
-        return 'Shift into USDC'
-      default:
-        return 'Maintain Position'
-    }
-  }
-
-  const getAllocationBadgeClasses = (action: CryptoAlert['allocation']['action']) => {
-    switch (action) {
-      case 'INCREASE_POSITION':
-        return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300'
-      case 'DECREASE_POSITION':
-        return 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300'
-      case 'MOVE_TO_USDC':
-        return 'bg-sky-100 text-sky-700 dark:bg-sky-900/50 dark:text-sky-300'
-      default:
-        return 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
-    }
-  }
 
   function formatAgeDescription(minutes?: number | null) {
     if (typeof minutes !== 'number' || !Number.isFinite(minutes) || minutes < 0) {
@@ -3431,185 +3352,118 @@ export default function ScannerPage({ user }: ScannerPageProps) {
       {/* Scanner Controls - redesigned glass header */}
       <div className="border-b border-white/10 bg-white/5 shadow-[0_30px_120px_-60px_rgba(16,185,129,0.55)] backdrop-blur-2xl">
         <div className="max-w-7xl mx-auto px-6 py-6">
-          <div className="flex items-center justify-between flex-wrap gap-6">
-            <div className="flex items-center gap-3 flex-wrap">
-              {/* Tab Navigation */}
-              <div className="flex items-center gap-1 rounded-full border border-white/10 bg-white/10 p-1 backdrop-blur-sm">
-                <button
-                  onClick={() => setActiveTab('options')}
-                  className={`flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold uppercase tracking-widest transition-all duration-200 ${
-                    activeTab === 'options'
-                      ? 'bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-600 text-slate-950 shadow-lg shadow-emerald-500/40'
-                      : 'text-emerald-100/70 hover:text-emerald-100'
-                  }`}
-                >
-                  Options
-                </button>
-                <button
-                  onClick={() => setActiveTab('crypto')}
-                  className={`flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold uppercase tracking-widest transition-all duration-200 ${
-                    activeTab === 'crypto'
-                      ? 'bg-gradient-to-r from-sky-400 via-blue-500 to-indigo-600 text-slate-950 shadow-lg shadow-sky-500/40'
-                      : 'text-emerald-100/70 hover:text-emerald-100'
-                  }`}
-                >
-                  Crypto
-                  <span className="rounded-full bg-amber-400/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.4em] text-amber-200">
-                    Beta
-                  </span>
-                </button>
-              </div>
+          <div className="space-y-4">
+            {/* Scan Type Title */}
+            <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Scan Type</h2>
 
-              {activeTab === 'options' && (
-                <div className="flex items-center gap-1 rounded-full border border-white/10 bg-white/10 p-1 backdrop-blur-sm">
-                  <button
-                    onClick={() => setScanMode('strict')}
-                    className={`rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-widest transition-all duration-200 ${
-                      scanMode === 'strict'
-                        ? 'bg-gradient-to-r from-blue-500 via-blue-600 to-purple-600 text-white shadow-lg shadow-blue-500/40'
-                        : 'text-emerald-100/70 hover:text-emerald-100'
-                    }`}
-                  >
-                    Strict
-                  </button>
-                  <button
-                    onClick={() => setScanMode('relaxed')}
-                    className={`rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-widest transition-all duration-200 ${
-                      scanMode === 'relaxed'
-                        ? 'bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-600 text-slate-950 shadow-lg shadow-emerald-500/40'
-                        : 'text-emerald-100/70 hover:text-emerald-100'
-                    }`}
-                  >
-                    Relaxed
-                  </button>
-                </div>
-              )}
-
-              {activeTab === 'options' && (
-                <div className="flex items-center gap-3 rounded-full border border-white/10 bg-slate-950/40 px-5 py-2 shadow-inner shadow-emerald-500/10">
-                  <svg className="h-5 w-5 text-emerald-300" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
-                    <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                  </svg>
-                  <input
-                    type="text"
-                    value={targetSymbolInput}
-                    onChange={(e) => setTargetSymbolInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && targetSymbolInput.trim()) {
-                        e.preventDefault()
-                        void fetchOpportunities()
-                      }
-                    }}
-                    className="w-32 bg-transparent text-sm font-semibold text-white placeholder:text-emerald-200/50 focus:outline-none uppercase"
-                    placeholder="TSLA, AAPL"
-                    title="Enter ticker symbols (comma-separated) and press Enter to scan"
-                  />
-                  {targetSymbolInput && (
-                    <button
-                      onClick={() => setTargetSymbolInput('')}
-                      className="text-emerald-200/50 hover:text-emerald-200 transition-colors"
-                      title="Clear symbols"
-                    >
-                      <svg className="h-4 w-4" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
-                        <path d="M6 18L18 6M6 6l12 12"></path>
-                      </svg>
-                    </button>
-                  )}
-                </div>
-              )}
-
-              <div className="flex items-center gap-3 rounded-full border border-white/10 bg-slate-950/40 px-5 py-2 shadow-inner shadow-emerald-500/10">
-                <span className="text-sm font-semibold text-emerald-300">$</span>
-                <input
-                  type="number"
-                  value={investmentAmountInput}
-                  onChange={(e) => setInvestmentAmountInput(e.target.value)}
-                  className="w-28 bg-transparent text-lg font-semibold text-white placeholder:text-emerald-200/50 focus:outline-none"
-                  min="100"
-                  max="100000"
-                  step="100"
-                />
-                <span className="text-[11px] font-semibold uppercase tracking-[0.35em] text-emerald-200/70">
-                  per trade
-                </span>
-              </div>
-
-              {activeTab === 'options' && (
-                <>
-                  <button
-                    onClick={() => setHotScanMode(!hotScanMode)}
-                    className={`inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition-all duration-200 ${
-                      hotScanMode
-                        ? 'bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-slate-950 shadow-lg shadow-orange-500/40'
-                        : 'border border-slate-700 bg-slate-800/50 text-slate-300 hover:bg-slate-700/50'
-                    }`}
-                  >
-                    {hotScanMode ? 'Top Movers ON' : 'Scan Top Movers'}
-                  </button>
-                  <button
-                    onClick={() => setEarningsScanMode(!earningsScanMode)}
-                    className={`inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition-all duration-200 ${
-                      earningsScanMode
-                        ? 'bg-gradient-to-r from-purple-400 via-purple-500 to-purple-600 text-slate-950 shadow-lg shadow-purple-500/40'
-                        : 'border border-slate-700 bg-slate-800/50 text-slate-300 hover:bg-slate-700/50'
-                    }`}
-                  >
-                    {earningsScanMode ? 'Earnings ON' : 'Scan Earnings'}
-                  </button>
-                  <button
-                    onClick={() => setVolumeSurgeMode(!volumeSurgeMode)}
-                    className={`inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition-all duration-200 ${
-                      volumeSurgeMode
-                        ? 'bg-gradient-to-r from-green-400 via-green-500 to-green-600 text-slate-950 shadow-lg shadow-green-500/40'
-                        : 'border border-slate-700 bg-slate-800/50 text-slate-300 hover:bg-slate-700/50'
-                    }`}
-                  >
-                    {volumeSurgeMode ? 'Volume Surge ON' : 'Scan Volume Surge'}
-                  </button>
-                  <button
-                    onClick={() => setLayupsScanMode(!layupsScanMode)}
-                    className={`inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition-all duration-200 ${
-                      layupsScanMode
-                        ? 'bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 text-slate-950 shadow-lg shadow-blue-500/40'
-                        : 'border border-slate-700 bg-slate-800/50 text-slate-300 hover:bg-slate-700/50'
-                    }`}
-                  >
-                    {layupsScanMode ? 'Layups ON' : 'Scan Layups'}
-                  </button>
-                  <button
-                    onClick={() => setUoaScanMode(!uoaScanMode)}
-                    className={`inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition-all duration-200 ${
-                      uoaScanMode
-                        ? 'bg-gradient-to-r from-amber-400 via-orange-500 to-red-600 text-slate-950 shadow-lg shadow-orange-500/40'
-                        : 'border border-slate-700 bg-slate-800/50 text-slate-300 hover:bg-slate-700/50'
-                    }`}
-                  >
-                    {uoaScanMode ? 'UOA ON' : 'Scan UOA'}
-                  </button>
-                </>
-              )}
-
+            {/* Scan Type Cards Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
               <button
-                onClick={() =>
-                  activeTab === 'options' ? fetchOpportunities() : fetchCryptoAlerts()
-                }
-                disabled={activeTab === 'options' ? isLoading : cryptoLoading}
-                className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-600 px-8 py-4 text-base font-bold text-slate-950 shadow-lg shadow-emerald-500/40 transition-all duration-200 hover:shadow-emerald-500/60 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
+                onClick={() => setHotScanMode(!hotScanMode)}
+                className={`rounded-xl p-4 text-sm font-semibold transition-all duration-200 ${
+                  hotScanMode
+                    ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/40'
+                    : 'bg-slate-800/50 text-slate-300 hover:bg-slate-700/50 border border-slate-700'
+                }`}
               >
-                <span className="pointer-events-none absolute inset-0 -translate-x-full bg-white/25 transition-transform duration-500 group-hover:translate-x-0" />
-                <span className="relative flex items-center gap-2">
-                  {(activeTab === 'options' ? isLoading : cryptoLoading) ? (
-                    <>
-                      <div className="h-4 w-4 rounded-full border-2 border-slate-950 border-t-transparent animate-spin" />
-                      <span>Scanning…</span>
-                    </>
-                  ) : (
-                    <span>Scan</span>
-                  )}
-                </span>
+                Top Movers
               </button>
 
+              <button
+                onClick={() => setEarningsScanMode(!earningsScanMode)}
+                className={`rounded-xl p-4 text-sm font-semibold transition-all duration-200 ${
+                  earningsScanMode
+                    ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/40'
+                    : 'bg-slate-800/50 text-slate-300 hover:bg-slate-700/50 border border-slate-700'
+                }`}
+              >
+                Earnings
+              </button>
+
+              <button
+                onClick={() => setVolumeSurgeMode(!volumeSurgeMode)}
+                className={`rounded-xl p-4 text-sm font-semibold transition-all duration-200 ${
+                  volumeSurgeMode
+                    ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/40'
+                    : 'bg-slate-800/50 text-slate-300 hover:bg-slate-700/50 border border-slate-700'
+                }`}
+              >
+                Volume Surge
+              </button>
+
+              <button
+                onClick={() => setLayupsScanMode(!layupsScanMode)}
+                className={`rounded-xl p-4 text-sm font-semibold transition-all duration-200 ${
+                  layupsScanMode
+                    ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/40'
+                    : 'bg-slate-800/50 text-slate-300 hover:bg-slate-700/50 border border-slate-700'
+                }`}
+              >
+                Layups
+              </button>
+
+              <button
+                onClick={() => setUoaScanMode(!uoaScanMode)}
+                className={`rounded-xl p-4 text-sm font-semibold transition-all duration-200 ${
+                  uoaScanMode
+                    ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/40'
+                    : 'bg-slate-800/50 text-slate-300 hover:bg-slate-700/50 border border-slate-700'
+                }`}
+              >
+                UOA
+              </button>
             </div>
+
+            {/* Target Symbol Search */}
+            <div className="flex items-center gap-3 rounded-full border border-white/10 bg-slate-950/40 px-5 py-2 shadow-inner shadow-emerald-500/10 max-w-sm">
+              <svg className="h-5 w-5 text-emerald-300" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+                <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+              </svg>
+              <input
+                type="text"
+                value={targetSymbolInput}
+                onChange={(e) => setTargetSymbolInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && targetSymbolInput.trim()) {
+                    e.preventDefault()
+                    void fetchOpportunities()
+                  }
+                }}
+                className="flex-1 bg-transparent text-sm font-semibold text-white placeholder:text-emerald-200/50 focus:outline-none uppercase"
+                placeholder="Search symbols (TSLA, AAPL)"
+                title="Enter ticker symbols (comma-separated) and press Enter to scan"
+              />
+              {targetSymbolInput && (
+                <button
+                  onClick={() => setTargetSymbolInput('')}
+                  className="text-emerald-200/50 hover:text-emerald-200 transition-colors"
+                  title="Clear symbols"
+                >
+                  <svg className="h-4 w-4" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+                    <path d="M6 18L18 6M6 6l12 12"></path>
+                  </svg>
+                </button>
+              )}
+            </div>
+
+            {/* Run Scan Button */}
+            <button
+              onClick={() => fetchOpportunities()}
+              disabled={isLoading}
+              className="group relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-600 px-8 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-emerald-500/40 transition-all duration-200 hover:shadow-emerald-500/60 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
+            >
+              <span className="pointer-events-none absolute inset-0 -translate-x-full bg-white/25 transition-transform duration-500 group-hover:translate-x-0" />
+              <span className="relative flex items-center gap-2">
+                {isLoading ? (
+                  <>
+                    <div className="h-4 w-4 rounded-full border-2 border-slate-950 border-t-transparent animate-spin" />
+                    <span>Scanning…</span>
+                  </>
+                ) : (
+                  <span>Run Scan</span>
+                )}
+              </span>
+            </button>
           </div>
 
           <div className="mt-4 flex items-center gap-4 flex-wrap text-sm">
@@ -3633,7 +3487,7 @@ export default function ScannerPage({ user }: ScannerPageProps) {
                 )}
               </div>
             )}
-            {activeTab === 'options' && (fallbackActive || staleCacheActive) && (
+            {(fallbackActive || staleCacheActive) && (
               <div className="w-full mt-3 space-y-2">
                 {fallbackActive && (
                   fallbackIsNoResults ? (
@@ -3747,10 +3601,10 @@ export default function ScannerPage({ user }: ScannerPageProps) {
 
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Market Hours Banner - Show when market is closed (always visible, even during scans) */}
-        {activeTab === 'options' && <MarketHoursBanner />}
+        <MarketHoursBanner />
 
         {/* Custom Filters Panel */}
-        {activeTab === 'options' && showFilters && !isLoading && (
+        {showFilters && !isLoading && (
           <div className="my-6">
             <CustomScannerFilters
               criteria={customCriteria}
@@ -3790,12 +3644,12 @@ export default function ScannerPage({ user }: ScannerPageProps) {
 
         {/* Scan Progress */}
         <RealTimeProgress
-          isScanning={isLoading || cryptoLoading}
-          scanType={activeTab}
-          filterMode={activeTab === 'options' ? scanMode : undefined}
-          estimatedUniverse={activeTab === 'options' ? estimatedUniverseSize : null}
+          isScanning={isLoading}
+          scanType="options"
+          filterMode={scanMode}
+          estimatedUniverse={estimatedUniverseSize}
           lastTotalEvaluated={
-            activeTab === 'options' && Number.isFinite(totalEvaluated) && totalEvaluated > 0
+            Number.isFinite(totalEvaluated) && totalEvaluated > 0
               ? totalEvaluated
               : null
           }
@@ -3803,7 +3657,7 @@ export default function ScannerPage({ user }: ScannerPageProps) {
         />
 
         {/* Filters Button - Only show when there are results */}
-        {!isLoading && activeTab === 'options' && filteredOpportunities.length > 0 && (
+        {!isLoading && filteredOpportunities.length > 0 && (
           <div className="flex justify-end mb-4">
             <button
               onClick={() => setShowFilters(!showFilters)}
@@ -3871,8 +3725,7 @@ export default function ScannerPage({ user }: ScannerPageProps) {
           </div>
         )}
 
-        {activeTab === 'options' &&
-          !isLoading &&
+        {!isLoading &&
           (symbolUniverseStatus.scanned.length > 0 ||
             symbolUniverseStatus.requested.length > 0 ||
             (symbolUniverseStatus.rotation?.upcoming.length ?? 0) > 0) && (
@@ -4277,153 +4130,6 @@ export default function ScannerPage({ user }: ScannerPageProps) {
           </div>
         )}
 
-        {/* Crypto Alerts Section */}
-        {activeTab === 'crypto' && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">
-                Crypto Market Alerts
-              </h2>
-              <button
-                onClick={fetchCryptoAlerts}
-                disabled={cryptoLoading}
-                className="px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-medium hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors disabled:opacity-50"
-              >
-                {cryptoLoading ? 'Scanning...' : 'Scan Crypto'}
-              </button>
-            </div>
-
-            {cryptoLoading && (
-              <div className="text-center py-12">
-                <div className="animate-spin w-8 h-8 border-4 border-slate-300 border-t-slate-900 rounded-full mx-auto mb-4"></div>
-                <p className="text-slate-600 dark:text-slate-400">
-                  Scanning crypto markets for optimal entry points...
-                </p>
-              </div>
-            )}
-
-            {!cryptoLoading && cryptoAlerts.length === 0 && (
-              <div className="text-center py-12">
-                <p className="text-slate-600 dark:text-slate-400">
-                  No crypto alerts available. Click &ldquo;Scan Crypto&rdquo; to analyze current market conditions.
-                </p>
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {cryptoAlerts.map((alert, index) => (
-                <div
-                  key={index}
-                  className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 hover:shadow-lg transition-all"
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-bold text-slate-900 dark:text-white">
-                      {alert.symbol}
-                    </h3>
-                    <span className={`px-3 py-1 rounded-lg text-sm font-bold ${
-                      alert.action === 'BUY'
-                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300'
-                        : alert.action === 'SELL'
-                        ? 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300'
-                        : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
-                    }`}>
-                      {alert.action}
-                    </span>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <span className="text-slate-600 dark:text-slate-400">Price:</span>
-                      <span className="font-medium">${alert.current_price.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-600 dark:text-slate-400">Confidence:</span>
-                      <span className="font-bold text-emerald-600">{Math.round(alert.confidence)}%</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-600 dark:text-slate-400 block mb-1">Strategy:</span>
-                      <p className="text-sm text-slate-900 dark:text-white">{alert.strategy}</p>
-                    </div>
-
-                    {alert.directional_bias && (
-                      <div className="pt-3 border-t border-slate-200 dark:border-slate-800">
-                        <div className="flex items-center justify-between">
-                          <span className="text-slate-600 dark:text-slate-400 text-sm">Signal:</span>
-                          <span className={`px-2 py-1 rounded text-xs font-bold ${
-                            alert.directional_bias.direction === 'bullish'
-                              ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300'
-                              : alert.directional_bias.direction === 'bearish'
-                              ? 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300'
-                              : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
-                          }`}>
-                            {alert.directional_bias.direction.toUpperCase()}
-                          </span>
-                        </div>
-                        <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                          {alert.directional_bias.recommendation}
-                        </p>
-                      </div>
-                    )}
-
-                    {alert.reasons && alert.reasons.length > 0 && (
-                      <div className="pt-3 border-t border-slate-200 dark:border-slate-800">
-                        <span className="text-slate-600 dark:text-slate-400 text-sm block mb-2">Key Signals:</span>
-                        <ul className="space-y-1 text-xs text-slate-600 dark:text-slate-400">
-                          {alert.reasons.slice(0, 3).map((reason, idx) => (
-                            <li key={idx} className="flex items-start gap-1">
-                              <span className="text-emerald-500 mt-0.5">•</span>
-                              <span>{reason}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-
-                    {alert.allocation && (
-                      <div className="pt-3 border-t border-slate-200 dark:border-slate-800">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-slate-600 dark:text-slate-400 text-sm">Portfolio Move</span>
-                          <span
-                            className={`px-3 py-1 rounded-lg text-xs font-semibold ${getAllocationBadgeClasses(alert.allocation.action)}`}
-                          >
-                            {formatAllocationAction(alert.allocation.action)}
-                          </span>
-                        </div>
-                        <div className="space-y-1 text-sm text-slate-700 dark:text-slate-300">
-                          <div className="flex justify-between">
-                            <span>Suggested change:</span>
-                            <span className="font-medium">
-                              {alert.allocation.suggested_change_percent >= 0 ? '+' : ''}
-                              {alert.allocation.suggested_change_percent.toFixed(2)}%
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Target allocation:</span>
-                            <span className="font-medium">
-                              {alert.allocation.target_allocation_percent.toFixed(2)}%
-                            </span>
-                          </div>
-                          {alert.allocation.usdc_reallocation_percent > 0 && (
-                            <div className="text-xs text-slate-600 dark:text-slate-400">
-                              Move {alert.allocation.usdc_reallocation_percent.toFixed(2)}% into USDC to preserve capital.
-                            </div>
-                          )}
-                        </div>
-                        {alert.allocation.rationale.length > 0 && (
-                          <ul className="mt-2 space-y-1 text-xs text-slate-600 dark:text-slate-400 list-disc list-inside">
-                            {alert.allocation.rationale.slice(0, 3).map((reason, rationaleIndex) => (
-                              <li key={rationaleIndex}>{reason}</li>
-                            ))}
-                          </ul>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Welcome Setup Modal - only show after settings loaded */}
