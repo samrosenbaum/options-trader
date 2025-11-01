@@ -7,6 +7,7 @@ import {
   useMemo,
   useState,
 } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 import { createClient } from '@/lib/supabase/client'
 import type { Database } from '@/lib/types/database.types'
 import AddPositionModal from './add-position-modal'
@@ -127,6 +128,23 @@ const CHART_TOOLTIP_STYLE: CSSProperties = {
 }
 
 const formatPercentage = (value: number) => `${Math.round(value)}%`
+
+const formatSignedCurrency = (
+  value: number,
+  formatter: Intl.NumberFormat,
+) => {
+  const formatted = formatter.format(Math.abs(value))
+
+  if (value > 0) {
+    return `+${formatted}`
+  }
+
+  if (value < 0) {
+    return `-${formatted}`
+  }
+
+  return formatted
+}
 
 const getPositionExposure = (position: Position) => {
   const priceBasis =
@@ -766,6 +784,17 @@ export default function PortfolioClient({
     [],
   )
 
+  const preciseCurrencyFormatter = useMemo(
+    () =>
+      new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }),
+    [],
+  )
+
   const { mixData, totalExposure, totalContracts } = useMemo(() => {
     const exposures: Record<PositionBiasKey, number> = {
       long_call: 0,
@@ -932,6 +961,90 @@ export default function PortfolioClient({
     return insights
   }, [expirationProfile, mixData, openPositions.length])
 
+  const summaryCards = useMemo(
+    () => [
+      {
+        key: 'active-positions' as const,
+        title: 'Active Positions',
+        description: 'Currently monitored in your live book.',
+        value: openPositions.length.toString(),
+        accentClass:
+          'before:absolute before:inset-0 before:-z-10 before:bg-gradient-to-br before:from-emerald-400/25 before:via-emerald-400/5 before:to-transparent',
+        valueClass: 'text-slate-900 dark:text-white',
+        footer:
+          openPositions.length > 0
+            ? `${totalContracts} ${totalContracts === 1 ? 'contract' : 'contracts'} · ${currencyFormatter.format(totalExposure)} premium at work`
+            : 'No active exposure yet — add your first trade.',
+      },
+      {
+        key: 'unrealized-pl' as const,
+        title: 'Unrealized P&L',
+        description: 'Live mark-to-market delta.',
+        value: formatSignedCurrency(totalUnrealizedPL, preciseCurrencyFormatter),
+        accentClass:
+          totalUnrealizedPL >= 0
+            ? 'before:absolute before:inset-0 before:-z-10 before:bg-gradient-to-br before:from-emerald-400/20 before:via-emerald-400/5 before:to-transparent'
+            : 'before:absolute before:inset-0 before:-z-10 before:bg-gradient-to-br before:from-rose-500/20 before:via-rose-500/5 before:to-transparent',
+        valueClass:
+          totalUnrealizedPL >= 0
+            ? 'text-emerald-500 dark:text-emerald-300'
+            : 'text-rose-500 dark:text-rose-300',
+        footer:
+          openPositions.length > 0
+            ? `${openPositions.filter((p) => (p.unrealized_pl || 0) >= 0).length} winners · ${openPositions.filter((p) => (p.unrealized_pl || 0) < 0).length} under water`
+            : 'Waiting for live positions to start tracking.',
+      },
+      {
+        key: 'realized-pl' as const,
+        title: 'Realized P&L',
+        description: 'Closed trades since tracking began.',
+        value: formatSignedCurrency(totalRealizedPL, preciseCurrencyFormatter),
+        accentClass:
+          totalRealizedPL >= 0
+            ? 'before:absolute before:inset-0 before:-z-10 before:bg-gradient-to-br before:from-sky-400/20 before:via-sky-400/5 before:to-transparent'
+            : 'before:absolute before:inset-0 before:-z-10 before:bg-gradient-to-br before:from-rose-500/20 before:via-rose-500/5 before:to-transparent',
+        valueClass:
+          totalRealizedPL >= 0
+            ? 'text-sky-500 dark:text-sky-300'
+            : 'text-rose-500 dark:text-rose-300',
+        footer:
+          closedPositions.length > 0
+            ? `${closedPositions.length} closed · ${closedPositions.filter((p) => (p.realized_pl || 0) >= 0).length} green closes`
+            : 'No realized trades yet — keep logging exits.',
+      },
+      {
+        key: 'total-pl' as const,
+        title: 'Total P&L',
+        description: 'Realized + unrealized across the book.',
+        value: formatSignedCurrency(totalPL, preciseCurrencyFormatter),
+        accentClass:
+          totalPL >= 0
+            ? 'before:absolute before:inset-0 before:-z-10 before:bg-gradient-to-br before:from-purple-400/20 before:via-purple-400/5 before:to-transparent'
+            : 'before:absolute before:inset-0 before:-z-10 before:bg-gradient-to-br before:from-rose-500/20 before:via-rose-500/5 before:to-transparent',
+        valueClass:
+          totalPL >= 0
+            ? 'text-purple-500 dark:text-purple-300'
+            : 'text-rose-500 dark:text-rose-300',
+        footer:
+          positions.length > 0
+            ? `${openPositions.length} open · ${closedPositions.length} closed`
+            : 'No trades tracked yet.',
+      },
+    ],
+    [
+      closedPositions,
+      currencyFormatter,
+      openPositions,
+      positions,
+      preciseCurrencyFormatter,
+      totalContracts,
+      totalExposure,
+      totalPL,
+      totalRealizedPL,
+      totalUnrealizedPL,
+    ],
+  )
+
   useEffect(() => {
     if (hasAutoRefreshed || isRefreshing) {
       return
@@ -966,7 +1079,13 @@ export default function PortfolioClient({
   }, [positions, hasAutoRefreshed, handleRefreshPrices, isRefreshing])
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-100 via-white to-slate-200 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -left-24 top-[-10rem] h-72 w-72 rounded-full bg-emerald-400/30 blur-3xl dark:bg-emerald-500/30" />
+        <div className="absolute right-[-10%] bottom-[-12rem] h-[28rem] w-[28rem] rounded-full bg-sky-400/20 blur-[140px] dark:bg-sky-500/25" />
+        <div className="absolute left-1/2 top-1/3 h-52 w-52 -translate-x-1/2 rounded-full bg-purple-400/15 blur-3xl dark:bg-purple-500/20" />
+      </div>
+
       {showCashRain && (
         <CashRain
           key={cashRainKey}
@@ -975,8 +1094,55 @@ export default function PortfolioClient({
       )}
 
       {/* Summary Cards */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 mb-8">
+      <div className="relative z-10 mx-auto flex max-w-7xl flex-col gap-10 px-4 py-10 sm:px-6 lg:px-8">
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: 'easeOut' }}
+          className="relative overflow-hidden rounded-3xl border border-white/60 bg-white/80 p-8 shadow-xl backdrop-blur dark:border-white/10 dark:bg-slate-950/60"
+        >
+          <div className="flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
+            <div className="space-y-4">
+              <span className="inline-flex items-center gap-2 rounded-full border border-emerald-400/50 bg-emerald-50/70 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:border-emerald-400/30 dark:bg-emerald-500/10 dark:text-emerald-200">
+                Live Portfolio Command Center
+              </span>
+              <h1 className="text-3xl font-bold text-slate-900 dark:text-white sm:text-4xl">
+                Orchestrate your options book with fingertip clarity.
+              </h1>
+              <p className="max-w-2xl text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+                Monitor risk, redeploy premium, and harvest signals in one cohesive view. Every widget is tuned for the modern fintech workflow—fast, focused, and visually precise.
+              </p>
+            </div>
+
+            <motion.div
+              className="relative flex h-44 w-full items-center justify-center md:w-64"
+              animate={{ y: [0, -10, 0] }}
+              transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+            >
+              <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-emerald-400/40 to-sky-400/30 blur-2xl" />
+              <div className="relative flex flex-col items-center gap-2 rounded-2xl border border-emerald-400/30 bg-white/80 px-6 py-6 text-center shadow-2xl backdrop-blur dark:border-emerald-400/30 dark:bg-slate-950/70">
+                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Today&apos;s pulse</span>
+                <span
+                  className={`text-2xl font-bold ${
+                    totalUnrealizedPL >= 0
+                      ? 'text-emerald-500 dark:text-emerald-300'
+                      : 'text-rose-500 dark:text-rose-300'
+                  }`}
+                >
+                  {formatSignedCurrency(totalUnrealizedPL, preciseCurrencyFormatter)}
+                </span>
+                <span className="text-xs text-slate-500 dark:text-slate-400">Unrealized performance</span>
+              </div>
+            </motion.div>
+          </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1, duration: 0.6, ease: 'easeOut' }}
+          className="relative overflow-hidden rounded-3xl border border-white/60 bg-white/80 p-8 shadow-lg backdrop-blur dark:border-white/10 dark:bg-slate-950/60"
+        >
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
               <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Portfolio Preferences</h2>
@@ -1053,66 +1219,63 @@ export default function PortfolioClient({
               )}
             </div>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-200 dark:border-slate-800">
-            <div className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">
-              Open Positions
-            </div>
-            <div className="text-3xl font-bold text-slate-900 dark:text-white">
-              {openPositions.length}
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-200 dark:border-slate-800">
-            <div className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">
-              Unrealized P&L
-            </div>
-            <div
-              className={`text-3xl font-bold ${
-                totalUnrealizedPL >= 0
-                  ? 'text-emerald-600'
-                  : 'text-red-600'
-              }`}
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 0.6, ease: 'easeOut' }}
+          className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4"
+        >
+          {summaryCards.map((card, index) => (
+            <motion.div
+              key={card.key}
+              className={`group relative overflow-hidden rounded-2xl border border-white/50 bg-white/80 p-6 shadow-lg backdrop-blur transition-all hover:-translate-y-1 hover:shadow-2xl dark:border-white/10 dark:bg-slate-950/60 ${card.accentClass}`}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 + index * 0.05, duration: 0.4, ease: 'easeOut' }}
             >
-              ${totalUnrealizedPL.toFixed(2)}
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-200 dark:border-slate-800">
-            <div className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">
-              Realized P&L
-            </div>
-            <div
-              className={`text-3xl font-bold ${
-                totalRealizedPL >= 0
-                  ? 'text-emerald-600'
-                  : 'text-red-600'
-              }`}
-            >
-              ${totalRealizedPL.toFixed(2)}
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-200 dark:border-slate-800">
-            <div className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">
-              Total P&L
-            </div>
-            <div
-              className={`text-3xl font-bold ${
-                totalPL >= 0 ? 'text-emerald-600' : 'text-red-600'
-              }`}
-            >
-              ${totalPL.toFixed(2)}
-            </div>
-          </div>
-        </div>
+              <div className="flex flex-col gap-3">
+                <div className="space-y-1">
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    {card.description}
+                  </p>
+                  <h3 className="text-base font-semibold text-slate-900 dark:text-white">{card.title}</h3>
+                </div>
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className={`text-3xl font-bold ${card.valueClass}`}>{card.value}</span>
+                  <svg
+                    className="h-10 w-10 text-slate-300 transition-transform duration-500 group-hover:rotate-6 dark:text-slate-600"
+                    viewBox="0 0 100 100"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M20 70L45 45L60 60L80 40"
+                      stroke="currentColor"
+                      strokeWidth="8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
+                <p className="text-xs text-slate-600 transition-colors group-hover:text-slate-700 dark:text-slate-400 dark:group-hover:text-slate-300">
+                  {card.footer}
+                </p>
+              </div>
+            </motion.div>
+          ))}
+        </motion.div>
 
         {openPositions.length > 0 && (
-          <div className="mb-10 space-y-6">
-            <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-              <div>
+          <motion.section
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.6, ease: 'easeOut' }}
+            className="space-y-8"
+          >
+            <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+              <div className="space-y-2">
                 <h2 className="text-xl font-bold text-slate-900 dark:text-white">
                   Portfolio Construction
                 </h2>
@@ -1126,8 +1289,8 @@ export default function PortfolioClient({
               </div>
             </div>
 
-            <div className="grid grid-cols-1 xl:grid-cols-[2fr_2fr_1.2fr] gap-6">
-              <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
+            <div className="grid grid-cols-1 gap-6 xl:grid-cols-[2fr_2fr_1.2fr]">
+              <div className="group relative overflow-hidden rounded-2xl border border-white/60 bg-white/80 p-6 shadow-lg backdrop-blur transition-transform hover:-translate-y-1 hover:shadow-2xl dark:border-white/10 dark:bg-slate-950/60 before:absolute before:inset-0 before:-z-10 before:bg-gradient-to-br before:from-emerald-400/20 before:via-emerald-400/5 before:to-transparent">
                 <div className="flex items-start justify-between mb-6">
                   <div>
                     <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Current Mix</h3>
@@ -1190,11 +1353,11 @@ export default function PortfolioClient({
                       </div>
                     </div>
 
-                    <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                    <div className="mt-6 grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
                       {mixData.map((item) => (
                         <div
                           key={item.key}
-                          className="rounded-xl border border-slate-200 dark:border-slate-800 p-3"
+                          className="rounded-xl border border-slate-200/80 bg-white/70 p-3 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700/80 dark:bg-slate-950/50"
                         >
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
@@ -1222,7 +1385,7 @@ export default function PortfolioClient({
                 )}
               </div>
 
-              <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
+              <div className="relative overflow-hidden rounded-2xl border border-white/60 bg-white/80 p-6 shadow-lg backdrop-blur transition-transform hover:-translate-y-1 hover:shadow-2xl dark:border-white/10 dark:bg-slate-950/60 before:absolute before:inset-0 before:-z-10 before:bg-gradient-to-br before:from-sky-400/20 before:via-sky-400/5 before:to-transparent">
                 <div className="mb-6">
                   <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Target Mix &amp; Gaps</h3>
                   <p className="text-sm text-slate-600 dark:text-slate-400">
@@ -1243,7 +1406,7 @@ export default function PortfolioClient({
                     return (
                       <div
                         key={item.key}
-                        className="rounded-xl border border-slate-200 dark:border-slate-800 p-4"
+                        className="rounded-xl border border-slate-200/70 bg-white/70 p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700/70 dark:bg-slate-950/50"
                       >
                         <div className="flex items-center justify-between text-sm">
                           <div className="flex items-center gap-2">
@@ -1265,13 +1428,13 @@ export default function PortfolioClient({
                           <div className="relative h-2 flex-1 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
                             <div
                               className="absolute inset-y-0 rounded-full"
-                              style={{
-                                width: `${Math.min(100, item.actual)}%`,
-                                backgroundColor: POSITION_MIX_CONFIG[item.key].color,
-                                opacity: 0.85,
-                              }}
-                            />
-                            <span
+                          style={{
+                            width: `${Math.min(100, item.actual)}%`,
+                            backgroundColor: POSITION_MIX_CONFIG[item.key].color,
+                            opacity: 0.75,
+                          }}
+                        />
+                        <span
                               className="absolute inset-y-0 w-[2px] bg-slate-400/50 dark:bg-slate-500/50"
                               style={{ left: `${item.percentage}%` }}
                             />
@@ -1297,7 +1460,7 @@ export default function PortfolioClient({
                 </div>
               </div>
 
-              <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 flex flex-col">
+              <div className="relative flex flex-col overflow-hidden rounded-2xl border border-white/60 bg-white/80 p-6 shadow-lg backdrop-blur transition-transform hover:-translate-y-1 hover:shadow-2xl dark:border-white/10 dark:bg-slate-950/60 before:absolute before:inset-0 before:-z-10 before:bg-gradient-to-br before:from-purple-400/20 before:via-purple-400/5 before:to-transparent">
                 <div>
                   <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Balancing cues</h3>
                   <p className="text-sm text-slate-600 dark:text-slate-400">
@@ -1387,7 +1550,7 @@ export default function PortfolioClient({
                 {expirationProfile.data.map((bucket) => (
                   <div
                     key={bucket.key}
-                    className="rounded-xl border border-slate-200 dark:border-slate-800 p-4"
+                    className="rounded-xl border border-slate-200/70 bg-white/70 p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700/70 dark:bg-slate-950/50"
                   >
                     <div className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       {bucket.label}
@@ -1402,36 +1565,44 @@ export default function PortfolioClient({
                 ))}
               </div>
             </div>
-          </div>
+          </motion.section>
         )}
 
         {/* Action Buttons */}
         <div className="mb-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-            <button
+            <motion.button
               onClick={handleAddPosition}
-              className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
+              whileHover={{ y: -2 }}
+              whileTap={{ y: 0 }}
+              className="w-full transform rounded-xl bg-gradient-to-r from-emerald-500 via-emerald-500 to-emerald-600 py-3 px-6 font-semibold text-white shadow-lg transition-all hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-emerald-400/50 sm:w-auto"
             >
               + Add Position
-            </button>
+            </motion.button>
 
-            <button
+            <motion.button
               onClick={() => setShowImportModal(true)}
-              className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center gap-2 justify-center"
+              whileHover={{ y: -2 }}
+              whileTap={{ y: 0 }}
+              className="flex w-full transform items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 via-blue-500 to-indigo-600 py-3 px-6 font-semibold text-white shadow-lg transition-all hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-sky-300/50 dark:from-sky-500 dark:via-sky-500 dark:to-indigo-500 sm:w-auto"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
               </svg>
               Import CSV
-            </button>
+            </motion.button>
 
-            <button
+            <motion.button
               onClick={handleRefreshPrices}
               disabled={isRefreshing || openPositions.length === 0}
-              className={`w-full sm:w-auto flex items-center justify-center gap-2 font-semibold py-3 px-6 rounded-lg transition-colors ${
+              whileHover={
+                isRefreshing || openPositions.length === 0 ? undefined : { y: -2 }
+              }
+              whileTap={{ y: 0 }}
+              className={`flex w-full transform items-center justify-center gap-2 rounded-xl border py-3 px-6 font-semibold transition-all sm:w-auto ${
                 isRefreshing || openPositions.length === 0
-                  ? 'bg-slate-300 dark:bg-slate-700 text-slate-500 dark:text-slate-400 cursor-not-allowed'
-                  : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700'
+                  ? 'cursor-not-allowed border-slate-300/70 bg-slate-200/80 text-slate-500 dark:border-slate-700/70 dark:bg-slate-800/60 dark:text-slate-400'
+                  : 'border-white/60 bg-white/80 text-slate-700 shadow-lg hover:shadow-xl dark:border-white/10 dark:bg-slate-950/60 dark:text-slate-200'
               }`}
             >
               {isRefreshing ? (
@@ -1476,15 +1647,19 @@ export default function PortfolioClient({
                   Refresh Prices
                 </>
               )}
-            </button>
+            </motion.button>
 
-            <button
+            <motion.button
               onClick={handleCheckExitSignals}
               disabled={isCheckingSignals || openPositions.length === 0}
-              className={`w-full sm:w-auto flex items-center justify-center gap-2 font-semibold py-3 px-6 rounded-lg transition-colors ${
+              whileHover={
+                isCheckingSignals || openPositions.length === 0 ? undefined : { y: -2 }
+              }
+              whileTap={{ y: 0 }}
+              className={`flex w-full transform items-center justify-center gap-2 rounded-xl py-3 px-6 font-semibold transition-all sm:w-auto ${
                 isCheckingSignals || openPositions.length === 0
-                  ? 'bg-slate-300 dark:bg-slate-700 text-slate-500 dark:text-slate-400 cursor-not-allowed'
-                  : 'bg-orange-600 hover:bg-orange-700 dark:bg-orange-500 dark:hover:bg-orange-600 text-white'
+                  ? 'cursor-not-allowed bg-slate-300/80 text-slate-500 dark:bg-slate-800/60 dark:text-slate-400'
+                  : 'bg-gradient-to-r from-orange-500 via-orange-500 to-amber-500 text-white shadow-lg hover:shadow-xl dark:from-orange-500 dark:to-amber-500'
               }`}
             >
               {isCheckingSignals ? (
@@ -1529,31 +1704,45 @@ export default function PortfolioClient({
                   Check Exit Signals
                 </>
               )}
-            </button>
+            </motion.button>
 
-            {refreshMessage && (
-              <div
-                className={`w-full sm:w-auto px-4 py-2 rounded-lg text-sm font-medium ${
-                  refreshMessage.startsWith('✓')
-                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                    : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                }`}
-              >
-                {refreshMessage}
-              </div>
-            )}
+            <AnimatePresence>
+              {refreshMessage && (
+                <motion.div
+                  key="refresh-message"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.2 }}
+                  className={`w-full rounded-xl px-4 py-2 text-sm font-medium shadow-inner sm:w-auto ${
+                    refreshMessage.startsWith('✓')
+                      ? 'bg-emerald-100/90 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
+                      : 'bg-rose-100/90 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300'
+                  }`}
+                >
+                  {refreshMessage}
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-            {signalsMessage && (
-              <div
-                className={`w-full sm:w-auto px-4 py-2 rounded-lg text-sm font-medium ${
-                  signalsMessage.startsWith('✓')
-                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                    : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                }`}
-              >
-                {signalsMessage}
-              </div>
-            )}
+            <AnimatePresence>
+              {signalsMessage && (
+                <motion.div
+                  key="signals-message"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.2 }}
+                  className={`w-full rounded-xl px-4 py-2 text-sm font-medium shadow-inner sm:w-auto ${
+                    signalsMessage.startsWith('✓')
+                      ? 'bg-emerald-100/90 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
+                      : 'bg-rose-100/90 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300'
+                  }`}
+                >
+                  {signalsMessage}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
 
@@ -1580,7 +1769,10 @@ export default function PortfolioClient({
               {openPositions
                 .filter(p => p.pending_alerts && Array.isArray(p.pending_alerts) && p.pending_alerts.length > 0)
                 .map(position => (
-                  <div key={position.id} className="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800">
+                  <div
+                    key={position.id}
+                    className="relative overflow-hidden rounded-2xl border border-white/60 bg-white/80 p-4 shadow-lg backdrop-blur transition-transform hover:-translate-y-0.5 hover:shadow-xl dark:border-white/10 dark:bg-slate-950/60"
+                  >
                     <div className="flex items-center gap-2 mb-3">
                       <span className="text-sm font-bold text-slate-900 dark:text-white">
                         {position.symbol} ${position.strike} {position.option_type.toUpperCase()}
@@ -1611,7 +1803,10 @@ export default function PortfolioClient({
               {openPositions
                 .filter(p => p.contextual_insights && Array.isArray(p.contextual_insights) && p.contextual_insights.length > 0)
                 .map(position => (
-                  <div key={position.id} className="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800">
+                  <div
+                    key={position.id}
+                    className="relative overflow-hidden rounded-2xl border border-white/60 bg-white/80 p-4 shadow-lg backdrop-blur transition-transform hover:-translate-y-0.5 hover:shadow-xl dark:border-white/10 dark:bg-slate-950/60"
+                  >
                     <div className="flex items-center gap-2 mb-3">
                       <span className="text-sm font-bold text-slate-900 dark:text-white">
                         {position.symbol} ${position.strike} {position.option_type.toUpperCase()}
@@ -1633,10 +1828,10 @@ export default function PortfolioClient({
             <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">
               Open Positions ({openPositions.length})
             </h2>
-            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
+            <div className="relative overflow-hidden rounded-2xl border border-white/60 bg-white/80 shadow-xl backdrop-blur dark:border-white/10 dark:bg-slate-950/60">
               <div className="overflow-x-auto">
                 <table className="min-w-[960px] w-full">
-                  <thead className="bg-slate-50 dark:bg-slate-800">
+                  <thead className="bg-slate-100/80 text-slate-700 dark:bg-slate-900/70 dark:text-slate-200">
                     <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                       Symbol
@@ -1670,9 +1865,12 @@ export default function PortfolioClient({
                     </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                  <tbody className="divide-y divide-slate-200/70 dark:divide-slate-800/70">
                     {openPositions.map((position) => (
-                      <tr key={position.id}>
+                      <tr
+                        key={position.id}
+                        className="transition-colors hover:bg-emerald-50/60 dark:hover:bg-slate-900/60"
+                      >
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-white">
                         {position.symbol}
                       </td>
@@ -1806,10 +2004,10 @@ export default function PortfolioClient({
             <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">
               Closed Positions History ({closedPositions.length})
             </h2>
-            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
+            <div className="relative overflow-hidden rounded-2xl border border-white/60 bg-white/80 shadow-xl backdrop-blur dark:border-white/10 dark:bg-slate-950/60">
               <div className="overflow-x-auto">
                 <table className="min-w-[880px] w-full">
-                  <thead className="bg-slate-50 dark:bg-slate-800">
+                  <thead className="bg-slate-100/80 text-slate-700 dark:bg-slate-900/70 dark:text-slate-200">
                     <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                       Symbol
@@ -1840,9 +2038,12 @@ export default function PortfolioClient({
                     </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                  <tbody className="divide-y divide-slate-200/70 dark:divide-slate-800/70">
                     {closedPositions.map((position) => (
-                      <tr key={position.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                      <tr
+                        key={position.id}
+                        className="transition-colors hover:bg-purple-50/60 dark:hover:bg-slate-900/60"
+                      >
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-white">
                         {position.symbol}
                       </td>
@@ -1902,7 +2103,7 @@ export default function PortfolioClient({
 
         {/* Empty State */}
         {positions.length === 0 && (
-          <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-12 text-center">
+          <div className="relative overflow-hidden rounded-3xl border border-white/60 bg-white/80 p-12 text-center shadow-xl backdrop-blur dark:border-white/10 dark:bg-slate-950/60">
             <div className="text-slate-400 mb-4">
               <svg
                 className="mx-auto h-12 w-12"
@@ -1924,12 +2125,14 @@ export default function PortfolioClient({
             <p className="text-slate-600 dark:text-slate-400 mb-6">
               Start tracking your options trades by adding your first position.
             </p>
-            <button
+            <motion.button
               onClick={handleAddPosition}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+              whileHover={{ y: -2 }}
+              whileTap={{ y: 0 }}
+              className="rounded-xl bg-gradient-to-r from-emerald-500 via-emerald-500 to-emerald-600 py-2 px-6 font-semibold text-white shadow-lg transition-all hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
             >
               Add Your First Position
-            </button>
+            </motion.button>
           </div>
         )}
       </div>
