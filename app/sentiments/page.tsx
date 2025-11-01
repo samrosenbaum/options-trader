@@ -265,7 +265,7 @@ export default async function SentimentsPage() {
               ))}
             </div>
 
-            <div className="grid gap-8 xl:grid-cols-2">
+            <div className="grid gap-8 md:grid-cols-2">
               {(Object.keys(sentimentBuckets) as Array<"bullish" | "bearish">).map((key) => (
                 <div key={key} className="space-y-6">
                   <div className="flex items-center justify-between">
