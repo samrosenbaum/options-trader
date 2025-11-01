@@ -9,6 +9,7 @@ import LiveTicker from '@/components/live-ticker'
 import { PoliticianTradesFeed } from '@/components/politician-trades-feed'
 import { LiveNewsFeed } from '@/components/live-news-feed'
 import { WSBTrending } from '@/components/wsb-trending'
+import { MontyMacroSummary } from '@/components/monty-macro-summary'
 
 interface MacroData {
   indices: Record<string, {
@@ -252,6 +253,17 @@ export default function MacroPage() {
         <div className="mb-8">
           <LiveTicker />
         </div>
+
+        {/* Monty's AI Summary */}
+        {data && data.sentiment && (
+          <div className="mb-8">
+            <MontyMacroSummary
+              vix={data.sentiment.vix}
+              indices={data.indices}
+              treasuries={data.treasuries}
+            />
+          </div>
+        )}
 
         {error && (
           <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
