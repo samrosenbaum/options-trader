@@ -74,15 +74,15 @@ function SentimentCard({ sentiment, type }: { sentiment: SentimentNarrative; typ
 
   return (
     <article
-      className={`group relative overflow-hidden rounded-3xl border border-white/10 bg-white/75 p-6 shadow-lg transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl dark:border-white/5 dark:bg-slate-900/70 ${
+      className={`group relative w-full overflow-hidden rounded-3xl border border-white/10 bg-white/75 p-6 shadow-lg transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl dark:border-white/5 dark:bg-slate-900/70 ${
         type === "bullish"
           ? "before:absolute before:inset-0 before:bg-gradient-to-br before:from-emerald-500/10 before:via-transparent before:to-white/5"
           : "before:absolute before:inset-0 before:bg-gradient-to-br before:from-rose-500/10 before:via-transparent before:to-white/5"
       }`}
     >
-      <div className="relative flex flex-col gap-6">
-        <header className="flex items-start justify-between">
-          <div>
+      <div className="relative flex flex-col gap-8">
+        <header className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
+          <div className="flex-1">
             <div className="inline-flex items-center gap-3 rounded-full border border-white/40 bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 shadow-sm">
               <span>{type === "bullish" ? "Bullish" : "Bearish"}</span>
               <span className="inline-flex items-center gap-1 text-slate-900">
@@ -99,8 +99,8 @@ function SentimentCard({ sentiment, type }: { sentiment: SentimentNarrative; typ
               <span className="ml-3 text-base font-medium text-slate-500">{sentiment.company}</span>
             </h3>
           </div>
-          <div className="flex items-end gap-4">
-            <div className="text-right">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-end xl:gap-6">
+            <div className="text-left sm:text-right">
               <p className="text-sm font-medium text-slate-500">Last price</p>
               <p className="text-3xl font-semibold text-slate-900 dark:text-white">
                 {typeof sentiment.price === "number" ? `$${sentiment.price.toFixed(2)}` : "—"}
@@ -109,7 +109,7 @@ function SentimentCard({ sentiment, type }: { sentiment: SentimentNarrative; typ
                 {sentiment.change}
               </p>
             </div>
-            <div className="flex flex-col items-center gap-2 rounded-2xl border border-white/40 bg-white/70 px-4 py-3 text-center shadow-sm">
+            <div className="flex flex-col items-center gap-2 rounded-2xl border border-white/40 bg-white/70 px-4 py-3 text-center shadow-sm sm:min-w-[10rem]">
               <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Confidence</span>
               <span className="text-2xl font-semibold text-slate-900">{Math.round(sentiment.confidence * 100)}%</span>
               <span className="text-[10px] uppercase tracking-[0.3em] text-slate-400">multi-source</span>
@@ -117,26 +117,8 @@ function SentimentCard({ sentiment, type }: { sentiment: SentimentNarrative; typ
           </div>
         </header>
 
-        <div className="grid gap-3 lg:grid-cols-2">
-          {sentiment.catalysts.length > 0 ? (
-            sentiment.catalysts.map((catalyst) => (
-              <div
-                key={catalyst}
-                className={`flex items-start gap-3 rounded-2xl border border-transparent bg-gradient-to-r px-4 py-3 text-sm font-medium leading-snug text-slate-700 shadow-inner ${
-                  type === "bullish"
-                    ? "from-emerald-100 via-white/60 to-transparent"
-                    : "from-rose-100 via-white/60 to-transparent"
-                }`}
-              >
-                {type === "bullish" ? (
-                  <Sparkles className="h-4 w-4 text-emerald-500" />
-                ) : (
-                  <Zap className="h-4 w-4 text-rose-500" />
-                )}
-                {catalyst}
-              </div>
-            ))
-          ) : (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {sentiment.catalysts.map((catalyst) => (
             <div
               className={`flex items-start gap-3 rounded-2xl border border-transparent bg-gradient-to-r px-4 py-3 text-sm font-medium leading-snug text-slate-500 shadow-inner ${
                 type === "bullish"
