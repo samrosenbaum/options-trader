@@ -342,97 +342,47 @@ export default async function SentimentsPage() {
             </div>
           </section>
 
-          <section className="grid gap-8 lg:grid-cols-[1.6fr_1fr]">
-            <div className="space-y-8">
-              <div className="grid gap-6 sm:grid-cols-2">
-                {secondaryInsights.map((stat) => (
-                  <SentimentStat key={stat.label} stat={stat} />
-                ))}
-              </div>
-
-              <div className="grid gap-8 lg:grid-cols-2">
-                {(Object.keys(sentimentBuckets) as Array<"bullish" | "bearish">).map((key) => (
-                  <div key={key} className="space-y-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
-                          {key === "bullish" ? "Bullish narratives" : "Bearish narratives"}
-                        </p>
-                        <h2 className="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">
-                          {key === "bullish" ? "Momentum on offense" : "Defensive setups"}
-                        </h2>
-                      </div>
-                      <div
-                        className={`flex h-12 w-12 items-center justify-center rounded-2xl border border-white/50 bg-white/70 text-slate-900 shadow-lg ${
-                          key === "bullish" ? "ring-2 ring-emerald-200/60" : "ring-2 ring-rose-200/60"
-                        }`}
-                      >
-                        {key === "bullish" ? <TrendingUp className="h-5 w-5" /> : <TrendingDown className="h-5 w-5" />}
-                      </div>
-                    </div>
-                    <div className="space-y-6">
-                      {sentimentBuckets[key].length > 0 ? (
-                        sentimentBuckets[key].map((sentiment) => (
-                          <SentimentCard key={`${key}-${sentiment.symbol}`} sentiment={sentiment} type={key} />
-                        ))
-                      ) : (
-                        <div className="rounded-3xl border border-dashed border-slate-200/70 bg-white/40 p-6 text-sm text-slate-500 shadow-inner dark:border-slate-700/60 dark:bg-slate-900/40 dark:text-slate-400">
-                          We haven’t identified a strong {key} narrative yet. Stay tuned as the news tape updates.
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
+          <section className="space-y-8">
+            <div className="grid gap-6 sm:grid-cols-2">
+              {secondaryInsights.map((stat) => (
+                <SentimentStat key={stat.label} stat={stat} />
+              ))}
             </div>
 
-            <aside className="space-y-6">
-              <div className="overflow-hidden rounded-[2.5rem] border border-white/20 bg-white/70 shadow-xl backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/70">
-                <div className="relative flex flex-col gap-6 p-8">
-                  <div className="inline-flex items-center gap-2 rounded-full border border-cyan-300/50 bg-cyan-100/60 px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-cyan-700">
-                    <Layers className="h-4 w-4" />
-                    Signal tape
+            <div className="grid gap-8 lg:grid-cols-2">
+              {(Object.keys(sentimentBuckets) as Array<"bullish" | "bearish">).map((key) => (
+                <div key={key} className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
+                        {key === "bullish" ? "Bullish narratives" : "Bearish narratives"}
+                      </p>
+                      <h2 className="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">
+                        {key === "bullish" ? "Momentum on offense" : "Defensive setups"}
+                      </h2>
+                    </div>
+                    <div
+                      className={`flex h-12 w-12 items-center justify-center rounded-2xl border border-white/50 bg-white/70 text-slate-900 shadow-lg ${
+                        key === "bullish" ? "ring-2 ring-emerald-200/60" : "ring-2 ring-rose-200/60"
+                      }`}
+                    >
+                      {key === "bullish" ? <TrendingUp className="h-5 w-5" /> : <TrendingDown className="h-5 w-5" />}
+                    </div>
                   </div>
-                  <h2 className="text-3xl font-semibold text-slate-900 dark:text-white">
-                    Live market read
-                  </h2>
-                  <p className="text-sm text-slate-500">
-                    Cross-check macro, flow, and sentiment monitors in real time. Perfect for calibrating conviction before you act.
-                  </p>
-                  <div className="space-y-4">
-                    {recentSignals.length > 0 ? (
-                      recentSignals.map((signal) => (
-                        <div
-                          key={signal.id}
-                          className="rounded-2xl border border-white/50 bg-white/80 p-4 shadow-sm transition-transform duration-300 hover:-translate-y-1 dark:border-white/5 dark:bg-slate-900/70"
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="text-sm font-semibold text-slate-600">{signal.label}</div>
-                            <div
-                              className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] ${
-                                signal.direction === "bullish"
-                                  ? "bg-emerald-100 text-emerald-700"
-                                  : "bg-rose-100 text-rose-600"
-                              }`}
-                            >
-                              {signal.direction}
-                            </div>
-                          </div>
-                          <p className="mt-2 text-sm text-slate-500">{signal.detail}</p>
-                          <p className="mt-3 text-xs uppercase tracking-[0.25em] text-slate-400">
-                            {formatDistanceToNow(new Date(signal.time), { addSuffix: true })}
-                          </p>
-                        </div>
+                  <div className="space-y-6">
+                    {sentimentBuckets[key].length > 0 ? (
+                      sentimentBuckets[key].map((sentiment) => (
+                        <SentimentCard key={`${key}-${sentiment.symbol}`} sentiment={sentiment} type={key} />
                       ))
                     ) : (
-                      <div className="rounded-2xl border border-dashed border-white/40 bg-white/60 p-4 text-sm text-slate-500 shadow-inner dark:border-white/10 dark:bg-slate-900/60 dark:text-slate-400">
-                        No major sentiment signals have fired yet today. Once the news tape moves, they’ll land here automatically.
+                      <div className="rounded-3xl border border-dashed border-slate-200/70 bg-white/40 p-6 text-sm text-slate-500 shadow-inner dark:border-slate-700/60 dark:bg-slate-900/40 dark:text-slate-400">
+                        We haven't identified a strong {key} narrative yet. Stay tuned as the news tape updates.
                       </div>
                     )}
                   </div>
                 </div>
-              </div>
-            </aside>
+              ))}
+            </div>
           </section>
         </div>
       </div>

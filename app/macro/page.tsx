@@ -10,6 +10,7 @@ import { PoliticianTradesFeed } from '@/components/politician-trades-feed'
 import { LiveNewsFeed } from '@/components/live-news-feed'
 import { WSBTrending } from '@/components/wsb-trending'
 import { MontyMacroSummary } from '@/components/monty-macro-summary'
+import { SignalTape } from '@/components/signal-tape'
 
 interface MacroData {
   indices: Record<string, {
@@ -483,6 +484,7 @@ export default function MacroPage() {
                 Market Intelligence
               </h2>
               <div className="space-y-6">
+                <SignalTape />
                 <PoliticianTradesFeed />
                 <LiveNewsFeed />
               </div>
