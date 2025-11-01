@@ -169,13 +169,13 @@ export default function LiveTicker() {
   }
 
   return (
-    <div className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_30px_120px_-60px_rgba(16,185,129,0.45)] backdrop-blur-xl mb-6">
+    <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-lg dark:border-white/10 dark:bg-white/5 dark:shadow-[0_30px_120px_-60px_rgba(16,185,129,0.45)] dark:backdrop-blur-xl mb-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+        <h3 className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
           <span className="animate-pulse">📈</span>
           Live Market Ticker
         </h3>
-        <div className="flex items-center gap-2 text-sm text-emerald-100/70">
+        <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-emerald-100/70">
           <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
           <span>Live</span>
         </div>
@@ -196,25 +196,25 @@ export default function LiveTicker() {
             return (
               <div
                 key={item.sourceSymbol}
-                className="flex items-center space-x-3 p-3 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20 min-w-[200px] hover:bg-white/15 hover:shadow-emerald-500/20 hover:shadow-lg transition-all"
+                className="flex items-center space-x-3 p-3 bg-slate-50 rounded-xl border border-slate-200 min-w-[200px] hover:bg-slate-100 hover:shadow-lg transition-all dark:bg-white/10 dark:backdrop-blur-sm dark:border-white/20 dark:hover:bg-white/15 dark:hover:shadow-emerald-500/20"
               >
                 <div className="flex flex-col">
                   <div className="flex items-center gap-2">
-                    <span className={`text-lg ${item.type === 'crypto' ? 'text-orange-300' : 'text-sky-300'}`}>
+                    <span className={`text-lg ${item.type === 'crypto' ? 'text-orange-500 dark:text-orange-300' : 'text-sky-500 dark:text-sky-300'}`}>
                       {item.type === 'crypto' ? '₿' : '📊'}
                     </span>
                     <div>
-                      <div className="font-semibold text-white">{item.symbol}</div>
-                      <div className="text-xs text-slate-300 truncate">{item.name}</div>
+                      <div className="font-semibold text-slate-900 dark:text-white">{item.symbol}</div>
+                      <div className="text-xs text-slate-600 dark:text-slate-300 truncate">{item.name}</div>
                     </div>
                   </div>
                 </div>
 
                 <div className="flex flex-col items-end">
-                  <div className="font-bold text-white">${item.price.toLocaleString()}</div>
+                  <div className="font-bold text-slate-900 dark:text-white">${item.price.toLocaleString()}</div>
                   <div
                     className={`text-sm font-semibold ${
-                      item.change >= 0 ? 'text-emerald-300' : 'text-red-300'
+                      item.change >= 0 ? 'text-emerald-600 dark:text-emerald-300' : 'text-red-600 dark:text-red-300'
                     }`}
                   >
                     {item.change >= 0 ? '+' : ''}
@@ -222,10 +222,10 @@ export default function LiveTicker() {
                     {item.changePercent.toFixed(2)}%)
                   </div>
                   {volumeLabel && (
-                    <div className="text-xs text-slate-300">Vol: {volumeLabel}</div>
+                    <div className="text-xs text-slate-500 dark:text-slate-300">Vol: {volumeLabel}</div>
                   )}
                   {marketCapLabel && (
-                    <div className="text-xs text-slate-300">MC: {marketCapLabel}</div>
+                    <div className="text-xs text-slate-500 dark:text-slate-300">MC: {marketCapLabel}</div>
                   )}
                 </div>
               </div>
@@ -237,16 +237,16 @@ export default function LiveTicker() {
       <div className="mt-4 flex items-center justify-between text-sm">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-green-400 rounded-full" />
-            <span className="text-slate-200">Market Open</span>
+            <div className="w-2 h-2 bg-green-500 rounded-full" />
+            <span className="text-slate-600 dark:text-slate-200">Market Open</span>
           </div>
-          <div className="text-slate-300">
+          <div className="text-slate-500 dark:text-slate-300">
             Last updated: {lastUpdated ? lastUpdated.toLocaleTimeString() : '—'}
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-xs text-slate-300">📊 Stocks</span>
-          <span className="text-xs text-slate-300">₿ Crypto</span>
+          <span className="text-xs text-slate-500 dark:text-slate-300">📊 Stocks</span>
+          <span className="text-xs text-slate-500 dark:text-slate-300">₿ Crypto</span>
         </div>
       </div>
     </div>
