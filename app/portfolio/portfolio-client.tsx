@@ -14,6 +14,7 @@ import EditPositionModal from './edit-position-modal'
 import ClosePositionModal from './close-position-modal'
 import PositionAnalysisModal from './position-analysis-modal'
 import CashRain from './cash-rain'
+import LossRain from './loss-rain'
 import CSVImportModal from '@/components/csv-import-modal'
 import DropRiskRadar from '@/components/drop-risk-radar'
 import { PositionAlerts } from '@/components/position-alerts'
@@ -188,6 +189,8 @@ export default function PortfolioClient({
   const [hasAutoRefreshed, setHasAutoRefreshed] = useState(false)
   const [showCashRain, setShowCashRain] = useState(false)
   const [cashRainKey, setCashRainKey] = useState(0)
+  const [showLossRain, setShowLossRain] = useState(false)
+  const [lossRainKey, setLossRainKey] = useState(0)
 
   // Request notification permission on mount
   useEffect(() => {
@@ -407,6 +410,9 @@ export default function PortfolioClient({
     if (Number.isFinite(realizedPL) && realizedPL > 0) {
       setCashRainKey((prev) => prev + 1)
       setShowCashRain(true)
+    } else if (Number.isFinite(realizedPL) && realizedPL < 0) {
+      setLossRainKey((prev) => prev + 1)
+      setShowLossRain(true)
     }
 
     setPositionToClose(null)
@@ -971,6 +977,12 @@ export default function PortfolioClient({
         <CashRain
           key={cashRainKey}
           onComplete={() => setShowCashRain(false)}
+        />
+      )}
+      {showLossRain && (
+        <LossRain
+          key={lossRainKey}
+          onComplete={() => setShowLossRain(false)}
         />
       )}
 
