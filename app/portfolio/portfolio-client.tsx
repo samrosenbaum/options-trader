@@ -989,7 +989,7 @@ export default function PortfolioClient({
                 Live Portfolio Command Center
               </span>
               <h1 className="text-3xl font-bold text-slate-900 dark:text-white sm:text-4xl">
-                Orchestrate your options book with fingertip clarity.
+                Orchestrate your options book with clarity.
               </h1>
               <p className="max-w-2xl text-sm leading-relaxed text-slate-600 dark:text-slate-300">
                 Monitor risk, redeploy premium, and harvest signals in one cohesive view. Every widget is tuned for the modern fintech workflow—fast, focused, and visually precise.
