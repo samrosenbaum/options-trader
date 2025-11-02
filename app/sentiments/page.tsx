@@ -239,10 +239,10 @@ export default async function SentimentsPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">
-                Sentiment Intelligence
+                Your Sentiment Intelligence Hub
               </h1>
               <p className="text-slate-600 dark:text-slate-400">
-                Bullish and bearish narratives from market news and sentiment analysis
+                What's lookinig bullish, and what's looking bearish today
               </p>
             </div>
           </div>

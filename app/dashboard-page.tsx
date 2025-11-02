@@ -187,7 +187,7 @@ export default function DashboardPage() {
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Welcome back to the trade desk</h1>
+          <h1 className="text-3xl font-bold text-white mb-2">Welcome back to your trade desk</h1>
           <p className="text-emerald-100/70">Here&apos;s your portfolio at a glance</p>
         </div>
 

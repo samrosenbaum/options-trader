@@ -228,10 +228,10 @@ export default function MacroPage() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">
-              Macro Overview
+              What's Moving Markets Today?
             </h1>
             <p className="text-slate-600 dark:text-slate-400">
-              Real-time market data, economic indicators, and sentiment analysis
+              Real-time market data and economic indicators.
             </p>
           </div>
           <div className="text-right">
