@@ -505,9 +505,6 @@ export default function DashboardPage() {
                   Instant Access
                 </span>
                 <h2 className="text-2xl font-semibold text-white sm:text-3xl">Quick Actions</h2>
-                <p className="max-w-sm text-sm text-slate-400">
-                  Stay in the flow with a tactile launcher for the workflows you hit most often.
-                </p>
               </div>
 
               <div className="space-y-4">
