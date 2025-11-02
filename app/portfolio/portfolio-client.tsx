@@ -20,7 +20,6 @@ import CSVImportModal from '@/components/csv-import-modal'
 import DropRiskRadar from '@/components/drop-risk-radar'
 import { PositionAlerts } from '@/components/position-alerts'
 import { ContextualInsights } from '@/components/contextual-insights'
-import { FloatingMontyChat } from '@/components/floating-monty-chat'
 import {
   Bar,
   BarChart,
@@ -2061,50 +2060,6 @@ export default function PortfolioClient({
         }}
       />
 
-      {/* Floating Monty Chat */}
-      {openPositions.length > 0 && (
-        <FloatingMontyChat
-          message={(() => {
-            const plPercent = totalExposure > 0 ? (totalUnrealizedPL / totalExposure) * 100 : 0
-            const hasLongCalls = mixData.some(d => d.label === 'Long Calls' && d.value > 0)
-            const hasLongPuts = mixData.some(d => d.label === 'Long Puts' && d.value > 0)
-            const hasShortCalls = mixData.some(d => d.label === 'Short Calls' && d.value > 0)
-            const hasShortPuts = mixData.some(d => d.label === 'Short Puts' && d.value > 0)
-
-            let analysis = ""
-
-            // P&L analysis
-            if (totalUnrealizedPL > 1000) {
-              analysis = `Your portfolio is up ${preciseCurrencyFormatter.format(totalUnrealizedPL)} (${plPercent.toFixed(1)}%). Nice work! `
-            } else if (totalUnrealizedPL > 0) {
-              analysis = `You're up ${preciseCurrencyFormatter.format(totalUnrealizedPL)} right now. Small wins add up. `
-            } else if (totalUnrealizedPL < -1000) {
-              analysis = `You're down ${preciseCurrencyFormatter.format(Math.abs(totalUnrealizedPL))} (${Math.abs(plPercent).toFixed(1)}%). Stay disciplined—manage your risk. `
-            } else if (totalUnrealizedPL < 0) {
-              analysis = `You're down ${preciseCurrencyFormatter.format(Math.abs(totalUnrealizedPL))}. Not ideal, but manageable. `
-            } else {
-              analysis = "Your positions are at breakeven. "
-            }
-
-            // Strategy mix analysis
-            if (hasLongCalls && !hasLongPuts && !hasShortCalls && !hasShortPuts) {
-              analysis += "You're all-in on bullish bets. High risk, high reward—make sure the market agrees with your thesis."
-            } else if (hasLongPuts && !hasLongCalls && !hasShortCalls && !hasShortPuts) {
-              analysis += "Pure downside protection. Good for hedging, but you're missing upside exposure if the market rallies."
-            } else if (hasShortPuts && !hasLongCalls && !hasLongPuts && !hasShortCalls) {
-              analysis += "You're selling puts for premium. Works great in calm markets, but watch out for sudden drops."
-            } else if ((hasLongCalls || hasLongPuts) && (hasShortCalls || hasShortPuts)) {
-              analysis += "Nice balance of long and short positions. You're managing risk and collecting premium—smart approach."
-            } else if (hasLongCalls && hasLongPuts) {
-              analysis += "You've got both calls and puts, so you're ready for big moves either way. Straddle strategy?"
-            } else {
-              analysis += `You've got ${openPositions.length} open position${openPositions.length > 1 ? 's' : ''} across ${totalContracts} contract${totalContracts > 1 ? 's' : ''}.`
-            }
-
-            return analysis
-          })()}
-        />
-      )}
     </div>
   )
 }
