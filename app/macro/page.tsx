@@ -250,11 +250,6 @@ export default function MacroPage() {
           </div>
         </div>
 
-        {/* Live Market Ticker */}
-        <div className="mb-8">
-          <LiveTicker />
-        </div>
-
         {/* Monty's AI Summary */}
         {data && data.sentiment && (
           <div className="mb-8">
@@ -266,40 +261,41 @@ export default function MacroPage() {
           </div>
         )}
 
-        {/* How This Impacts Your Options Trading */}
+        {/* Live Market Ticker */}
+        <div className="mb-8">
+          <LiveTicker />
+        </div>
+
+        {/* Live Market News */}
+        <div className="mb-8">
+          <LiveNewsFeed />
+        </div>
+
+        {/* Major Indices */}
         {data && (
-          <div className="mb-8 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-2xl shadow-lg p-6 border border-emerald-200 dark:border-emerald-800">
+          <div className="mb-8 bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6 border border-slate-200 dark:border-slate-700">
             <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">
-              How This Impacts Your Options Trading
+              Major Indices
             </h2>
-            <div className="space-y-3">
-              <div className="flex items-start gap-3">
-                <div className="flex-shrink-0 w-6 h-6 bg-emerald-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
-                  1
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {Object.entries(data.indices).map(([symbol, index]) => (
+                <div key={symbol} className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-lg">
+                  <div className="text-sm text-slate-600 dark:text-slate-400 mb-1">
+                    {index.name}
+                  </div>
+                  <div className="text-2xl font-bold text-slate-900 dark:text-white mb-1">
+                    {formatNumber(index.price, 2)}
+                  </div>
+                  <div className={`text-sm font-medium ${getChangeColor(index.change)}`}>
+                    {index.change > 0 ? '+' : ''}
+                    {formatNumber(index.change, 2)} ({index.change_pct > 0 ? '+' : ''}
+                    {formatNumber(index.change_pct, 2)}%)
+                  </div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400 mt-2">
+                    52w: {formatNumber(index.low_52w, 0)} - {formatNumber(index.high_52w, 0)}
+                  </div>
                 </div>
-                <div>
-                  <div className="font-semibold text-slate-900 dark:text-white">VIX &gt; 20: Higher Premiums</div>
-                  <div className="text-sm text-slate-600 dark:text-slate-400">Elevated volatility = higher option prices. Great for sellers, expensive for buyers.</div>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="flex-shrink-0 w-6 h-6 bg-emerald-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
-                  2
-                </div>
-                <div>
-                  <div className="font-semibold text-slate-900 dark:text-white">Rising Yields: Tech Pressure</div>
-                  <div className="text-sm text-slate-600 dark:text-slate-400">Higher treasury yields often pressure growth stocks and tech. Watch your portfolio delta.</div>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="flex-shrink-0 w-6 h-6 bg-emerald-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
-                  3
-                </div>
-                <div>
-                  <div className="font-semibold text-slate-900 dark:text-white">Dollar Strength: International Impact</div>
-                  <div className="text-sm text-slate-600 dark:text-slate-400">Strong dollar can hurt multinational companies. Consider hedging with commodities.</div>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
         )}
@@ -486,34 +482,6 @@ export default function MacroPage() {
               <div className="space-y-6">
                 <SignalTape />
                 <PoliticianTradesFeed />
-                <LiveNewsFeed />
-              </div>
-            </div>
-
-            {/* Major Indices */}
-            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6 border border-slate-200 dark:border-slate-700">
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">
-                Major Indices
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {Object.entries(data.indices).map(([symbol, index]) => (
-                  <div key={symbol} className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-lg">
-                    <div className="text-sm text-slate-600 dark:text-slate-400 mb-1">
-                      {index.name}
-                    </div>
-                    <div className="text-2xl font-bold text-slate-900 dark:text-white mb-1">
-                      {formatNumber(index.price, 2)}
-                    </div>
-                    <div className={`text-sm font-medium ${getChangeColor(index.change)}`}>
-                      {index.change > 0 ? '+' : ''}
-                      {formatNumber(index.change, 2)} ({index.change_pct > 0 ? '+' : ''}
-                      {formatNumber(index.change_pct, 2)}%)
-                    </div>
-                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-2">
-                      52w: {formatNumber(index.low_52w, 0)} - {formatNumber(index.high_52w, 0)}
-                    </div>
-                  </div>
-                ))}
               </div>
             </div>
 
