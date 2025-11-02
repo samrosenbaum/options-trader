@@ -114,45 +114,49 @@ export function MontyDashboardBrief() {
   }
 
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-emerald-500/30 bg-emerald-900/20 p-6 shadow-[0_18px_60px_rgba(16,185,129,0.18)]">
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-transparent to-sky-500/10" />
-      <div className="pointer-events-none absolute -left-16 -top-16 h-32 w-32 rounded-full bg-emerald-500/20 blur-3xl" />
-      <div className="pointer-events-none absolute -right-24 bottom-0 h-40 w-40 rounded-full bg-sky-500/10 blur-3xl" />
-
-      <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-6">
-        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-200">
-          <MessageCircle className="h-6 w-6" />
-        </div>
-
-        <div className="flex-1">
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.32em] text-emerald-200/70">
-            <Sparkles className="h-3.5 w-3.5" />
-            Monty&apos;s desk ping
+    <div className="flex items-start gap-3 max-w-4xl">
+      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 text-white font-bold text-sm shadow-lg">
+        M
+      </div>
+      <div className="flex flex-col gap-1 flex-1">
+        <div className="rounded-[20px] bg-gradient-to-br from-emerald-500 to-emerald-600 px-5 py-4 shadow-lg">
+          <div className="flex items-center gap-2 mb-3">
+            <Sparkles className="h-4 w-4 text-white/90" />
+            <span className="text-xs font-semibold uppercase tracking-wider text-white/90">
+              Monty&apos;s desk ping
+            </span>
           </div>
 
-          <h2 className="mt-3 text-lg font-semibold text-white sm:text-xl">{data.greeting}</h2>
-          <p className="mt-2 text-sm text-emerald-100/80 sm:text-base">{data.marketSummary}</p>
+          <h3 className="text-base font-semibold text-white leading-relaxed">{data.greeting}</h3>
+          <p className="mt-2 text-[15px] leading-[1.5] text-white/95">{data.marketSummary}</p>
 
           {insightGroups.length > 0 && (
-            <ul className="mt-4 space-y-2 text-sm text-emerald-100/90">
+            <div className="mt-4 space-y-2">
               {insightGroups.map((insight) => (
-                <li
+                <div
                   key={insight.id}
-                  className="flex items-start gap-2 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-2"
+                  className="rounded-2xl border border-white/20 bg-white/10 px-4 py-2.5 backdrop-blur-sm"
                 >
-                  <span className="text-[11px] font-semibold uppercase tracking-wide text-emerald-300/80">
-                    {insight.label}
-                  </span>
-                  <span className={`text-sm ${sentimentStyles(insight.sentiment)}`}>{insight.text}</span>
-                </li>
+                  <div className="flex items-start gap-3">
+                    <span className="text-[11px] font-bold uppercase tracking-wide text-white/80 mt-0.5">
+                      {insight.label}
+                    </span>
+                    <span className="text-[14px] leading-[1.4] text-white/95 flex-1">{insight.text}</span>
+                  </div>
+                </div>
               ))}
-            </ul>
+            </div>
           )}
 
-          <p className="mt-4 text-sm font-medium text-emerald-200/90 italic">
-            {data.suggestedNextStep}
-          </p>
+          {data.suggestedNextStep && (
+            <p className="mt-4 text-[15px] leading-[1.5] text-white/95 italic border-t border-white/20 pt-3">
+              {data.suggestedNextStep}
+            </p>
+          )}
         </div>
+        <span className="px-1 text-xs text-slate-500 dark:text-slate-400">
+          Monty · Just now
+        </span>
       </div>
     </div>
   )
