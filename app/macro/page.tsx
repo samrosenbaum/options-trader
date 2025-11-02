@@ -277,7 +277,7 @@ export default function MacroPage() {
             <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">
               Major Indices
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
               {Object.entries(data.indices).map(([symbol, index]) => (
                 <div key={symbol} className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-lg">
                   <div className="text-sm text-slate-600 dark:text-slate-400 mb-1">
@@ -296,6 +296,52 @@ export default function MacroPage() {
                   </div>
                 </div>
               ))}
+            </div>
+
+            {/* Monty's Takeaway */}
+            <div className="mt-6 p-4 bg-gradient-to-br from-emerald-50 via-cyan-50/50 to-blue-50 dark:from-emerald-950/30 dark:via-cyan-950/20 dark:to-blue-950/30 rounded-xl border border-emerald-200/60 dark:border-emerald-800/40">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-emerald-500/20 dark:bg-emerald-500/30 flex items-center justify-center">
+                  <svg className="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-2">
+                    Monty's Takeaway
+                  </h3>
+                  <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                    {(() => {
+                      const indices = Object.values(data.indices)
+                      const allPositive = indices.every(idx => idx.change_pct > 0)
+                      const allNegative = indices.every(idx => idx.change_pct < 0)
+                      const spyChange = data.indices.SPY?.change_pct || 0
+                      const qqqChange = data.indices.QQQ?.change_pct || 0
+                      const techOutperforming = qqqChange > spyChange && Math.abs(qqqChange - spyChange) > 0.3
+                      const techUnderperforming = spyChange > qqqChange && Math.abs(spyChange - qqqChange) > 0.3
+
+                      if (allPositive) {
+                        if (techOutperforming) {
+                          return "Strong risk-on session with tech leading the charge. Consider call spreads on high-beta tech names or QQQ calls. Watch for momentum continuation into close."
+                        }
+                        return "Broad market strength across all major indices. This risk-on environment favors bullish call spreads and selling puts on quality names. Monitor for potential overbought conditions."
+                      } else if (allNegative) {
+                        if (techUnderperforming) {
+                          return "Tech-led selloff putting pressure across the board. Defensive put spreads or VIX calls could hedge downside risk. Look for oversold bounces in quality names."
+                        }
+                        return "Broad market weakness suggests risk-off sentiment. Consider protective puts, call credit spreads, or cash-secured puts on oversold levels for quality entries."
+                      } else {
+                        if (techOutperforming) {
+                          return "Sector rotation favoring growth/tech while value lags. This divergence creates opportunities in tech call spreads while avoiding laggards. Watch for rotation shifts."
+                        } else if (techUnderperforming) {
+                          return "Value outperforming growth signals defensive positioning. Consider spreads on defensive sectors (utilities, consumer staples) and be cautious on high-beta tech."
+                        }
+                        return "Mixed market action with divergent sector performance. Wait for clearer directional signals before deploying capital. Consider range-bound strategies like iron condors on neutral names."
+                      }
+                    })()}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         )}
