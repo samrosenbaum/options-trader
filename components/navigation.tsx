@@ -44,6 +44,7 @@ export default function Navigation({ userEmail }: { userEmail?: string }) {
   }, [pathname])
 
   const navItems: NavItem[] = [
+    { href: '/', label: 'Desk' },
     { href: '/scanner', label: 'Find Trades' },
     {
       label: 'Market Movers',
