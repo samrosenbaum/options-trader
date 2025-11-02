@@ -10,6 +10,7 @@ interface MacroSummaryProps {
   wsbTrending?: string[]
   recentTrades?: Array<{ ticker: string; transaction_type: string }>
   topNews?: Array<{ sentiment: { label: string } }>
+  userName?: string
 }
 
 export function MontyMacroSummary({
@@ -19,6 +20,7 @@ export function MontyMacroSummary({
   wsbTrending = [],
   recentTrades = [],
   topNews = [],
+  userName,
 }: MacroSummaryProps) {
   const [summary, setSummary] = useState<string>("")
   const [isLoading, setIsLoading] = useState(false)
@@ -26,76 +28,80 @@ export function MontyMacroSummary({
   const generateSummary = () => {
     setIsLoading(true)
 
-    // Analyze VIX
-    let vixTake = ""
-    if (vix > 25) {
-      vixTake = "the market is super volatile right now (VIX is high), so option premiums are expensive"
-    } else if (vix > 20) {
-      vixTake = "volatility is elevated, which means premiums are a bit pricey"
-    } else if (vix < 15) {
-      vixTake = "the market is pretty calm (low VIX), so options are cheaper than usual"
-    } else {
-      vixTake = "volatility is normal right now"
-    }
+    // Get user's first name or default greeting
+    const greeting = userName ? `@${userName}` : "Hey there"
 
     // Analyze market direction
     const spyChange = indices["SPY"]?.change_pct || 0
     const qqqChange = indices["QQQ"]?.change_pct || 0
-    let marketDirection = ""
+    const diaChange = indices["DIA"]?.change_pct || 0
 
-    if (spyChange > 1 && qqqChange > 1) {
-      marketDirection = "Markets are ripping higher today"
-    } else if (spyChange < -1 && qqqChange < -1) {
-      marketDirection = "Markets are getting hammered today"
-    } else if (spyChange > 0.5 || qqqChange > 0.5) {
-      marketDirection = "Markets are grinding higher"
-    } else if (spyChange < -0.5 || qqqChange < -0.5) {
-      marketDirection = "Markets are drifting lower"
+    let marketMood = ""
+    let marketExplanation = ""
+
+    if (spyChange > 1.5) {
+      marketMood = "the market is having a strong rally"
+      marketExplanation = "stocks are climbing fast, which usually means investors are feeling optimistic"
+    } else if (spyChange > 0.5) {
+      marketMood = "stocks are moving up steadily"
+      marketExplanation = "it's a positive day with buyers in control"
+    } else if (spyChange < -1.5) {
+      marketMood = "we're seeing a pretty rough selloff"
+      marketExplanation = "lots of people are selling stocks, which could mean fear or profit-taking"
+    } else if (spyChange < -0.5) {
+      marketMood = "the market is drifting lower"
+      marketExplanation = "sellers are in control but it's not a panic situation"
     } else {
-      marketDirection = "Markets are pretty flat"
+      marketMood = "the market is pretty quiet"
+      marketExplanation = "not much happening—buyers and sellers are balanced"
     }
 
-    // Check yield curve
+    // Tech vs broad market analysis
+    let sectorNote = ""
+    if (qqqChange > spyChange + 0.5) {
+      sectorNote = " Tech stocks (like Apple, Microsoft, Tesla) are leading the way higher."
+    } else if (spyChange > qqqChange + 0.5) {
+      sectorNote = " Traditional companies (banks, healthcare, etc.) are doing better than tech today."
+    }
+
+    // VIX in simple terms
+    let fearNote = ""
+    if (vix > 25) {
+      fearNote = " The 'fear gauge' (VIX) is high, meaning people expect big price swings soon. Options are expensive right now because of this uncertainty."
+    } else if (vix > 20) {
+      fearNote = " There's some nervousness in the market (VIX is elevated), so options cost a bit more than usual."
+    } else if (vix < 15) {
+      fearNote = " Things are calm (low VIX), so options are relatively cheap—good for buyers, not great for sellers."
+    }
+
+    // Interest rates in simple terms
     const tenYear = treasuries["10-Year"]?.yield || 0
     const twoYear = treasuries["2-Year"]?.yield || 0
-    let yieldCurveTake = ""
+    let ratesNote = ""
 
     if (tenYear && twoYear && twoYear > tenYear) {
-      yieldCurveTake = " The yield curve is inverted (short-term rates higher than long-term), which historically signals recession fears."
+      ratesNote = " Interest rates are wonky right now—short-term rates are higher than long-term ones, which historically means the economy might slow down."
     } else if (tenYear > 4.5) {
-      yieldCurveTake = " Yields are elevated, which can pressure growth stocks."
+      ratesNote = " Interest rates are pretty high, which can make stocks less attractive compared to bonds."
     }
 
-    // WSB analysis
-    let wsbTake = ""
+    // WSB hype
+    let hypeNote = ""
     if (wsbTrending.length > 0) {
-      const topTickers = wsbTrending.slice(0, 3).join(", ")
-      wsbTake = ` WSB is going crazy over ${topTickers} right now.`
+      const topTickers = wsbTrending.slice(0, 2).join(" and ")
+      hypeNote = ` Retail traders on WallStreetBets are pumping ${topTickers} today.`
     }
 
-    // Political trades
-    let politicianTake = ""
+    // Insider activity
+    let insiderNote = ""
     const recentBuys = recentTrades.filter((t) => t.transaction_type === "purchase").slice(0, 2)
     if (recentBuys.length > 0) {
       const tickers = recentBuys.map((t) => t.ticker).join(" and ")
-      politicianTake = ` Also, some politicians just bought ${tickers}.`
+      insiderNote = ` Some members of Congress just bought ${tickers}—worth keeping an eye on.`
     }
 
-    // News sentiment
-    let newsTake = ""
-    if (topNews.length > 0) {
-      const bullishCount = topNews.filter((n) => n.sentiment.label === "bullish").length
-      const bearishCount = topNews.filter((n) => n.sentiment.label === "bearish").length
-
-      if (bullishCount > bearishCount * 1.5) {
-        newsTake = " News flow is pretty bullish right now."
-      } else if (bearishCount > bullishCount * 1.5) {
-        newsTake = " News flow is pretty bearish right now."
-      }
-    }
-
-    // Combine into friendly summary
-    const fullSummary = `${marketDirection}. ${vixTake}.${yieldCurveTake}${wsbTake}${politicianTake}${newsTake}`
+    // Build the personalized summary
+    const fullSummary = `${greeting}, I've gone through the latest market info for you. Here's your TL;DR: ${marketMood}—${marketExplanation}.${sectorNote}${fearNote}${ratesNote}${hypeNote}${insiderNote}`
 
     setSummary(fullSummary)
     setIsLoading(false)
@@ -105,7 +111,7 @@ export function MontyMacroSummary({
     if (vix && indices) {
       generateSummary()
     }
-  }, [vix, indices, treasuries, wsbTrending, recentTrades, topNews])
+  }, [vix, indices, treasuries, wsbTrending, recentTrades, topNews, userName])
 
   if (!summary && !isLoading) {
     return null

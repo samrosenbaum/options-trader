@@ -257,6 +257,7 @@ export default function MacroPage() {
               vix={data.sentiment.vix}
               indices={data.indices}
               treasuries={data.treasuries}
+              userName={user?.user_metadata?.full_name || user?.email?.split('@')[0]}
             />
           </div>
         )}
