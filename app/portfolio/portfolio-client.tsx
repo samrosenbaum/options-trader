@@ -42,7 +42,13 @@ function formatDateLocal(dateString: string): string {
 }
 
 type Position = Database['public']['Tables']['positions']['Row']
-type User = { id: string; email?: string }
+type User = {
+  id: string
+  email?: string
+  user_metadata?: {
+    full_name?: string
+  }
+}
 
 type PortfolioInsight = {
   tone: 'warning' | 'positive'
