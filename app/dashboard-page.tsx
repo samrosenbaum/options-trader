@@ -7,7 +7,15 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { TickerTape } from '@/components/ticker-tape'
 import { TradingDeskBanner } from '@/components/trading-desk-banner'
 import { motion } from 'framer-motion'
-import { Trophy, TrendingDown } from 'lucide-react'
+import {
+  Trophy,
+  TrendingDown,
+  ArrowUpRight,
+  Scan,
+  Briefcase,
+  BarChart3,
+  Radar
+} from 'lucide-react'
 
 interface PortfolioSnapshot {
   id: string
@@ -52,6 +60,69 @@ export default function DashboardPage() {
   const [biggestLosers, setBiggestLosers] = useState<ClosedPosition[]>([])
   const [tradingDeskName, setTradingDeskName] = useState<string>('')
   const supabase = createClient()
+
+  const quickActions = [
+    {
+      title: 'Run Scanner',
+      description: 'Deploy the AI radar to surface asymmetric trade ideas in seconds.',
+      href: '/scanner',
+      icon: Scan,
+      accent: {
+        ring: 'ring-emerald-500/20 group-hover:ring-emerald-400/60',
+        glow: 'from-emerald-500/30 via-emerald-500/0 to-transparent',
+        icon: 'bg-emerald-500/10 text-emerald-300',
+        chip: 'from-emerald-400/20 via-emerald-500/10 to-transparent'
+      }
+    },
+    {
+      title: 'Manage Portfolio',
+      description: 'Rebalance, size positions, and monitor risk in one streamlined workspace.',
+      href: '/portfolio',
+      icon: Briefcase,
+      accent: {
+        ring: 'ring-sky-500/20 group-hover:ring-sky-400/50',
+        glow: 'from-sky-500/20 via-sky-500/0 to-transparent',
+        icon: 'bg-sky-500/10 text-sky-300',
+        chip: 'from-sky-400/20 via-sky-500/10 to-transparent'
+      }
+    },
+    {
+      title: 'Market Intelligence',
+      description: 'Digest macro signals, flow data, and volatility regimes at a glance.',
+      href: '/market-info',
+      icon: BarChart3,
+      accent: {
+        ring: 'ring-purple-500/20 group-hover:ring-purple-400/50',
+        glow: 'from-purple-500/20 via-purple-500/0 to-transparent',
+        icon: 'bg-purple-500/10 text-purple-300',
+        chip: 'from-purple-400/20 via-purple-500/10 to-transparent'
+      }
+    },
+    {
+      title: 'Macro Indicators',
+      description: 'Track leading indicators and regime shifts to anticipate the next move.',
+      href: '/macro',
+      icon: Radar,
+      accent: {
+        ring: 'ring-amber-500/20 group-hover:ring-amber-400/50',
+        glow: 'from-amber-500/20 via-amber-500/0 to-transparent',
+        icon: 'bg-amber-500/10 text-amber-300',
+        chip: 'from-amber-400/20 via-amber-500/10 to-transparent'
+      }
+    }
+  ]
+
+  const signalStyles: Record<Position['exit_signal'], string> = {
+    hold: 'border-emerald-400/40 text-emerald-300 bg-emerald-500/10',
+    consider: 'border-amber-400/40 text-amber-200 bg-amber-500/10',
+    exit_now: 'border-red-400/40 text-red-200 bg-red-500/10'
+  }
+
+  const signalLabels: Record<Position['exit_signal'], string> = {
+    hold: 'Hold',
+    consider: 'Watch Closely',
+    exit_now: 'Exit Now'
+  }
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -312,76 +383,171 @@ export default function DashboardPage() {
         </div>
 
         {/* Top Positions & Quick Actions */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] gap-6">
           {/* Top Positions */}
-          <div className="bg-slate-900/40 backdrop-blur-sm rounded-2xl border border-emerald-500/20 p-6 shadow-lg">
-            <h2 className="text-xl font-bold text-white mb-4">Top Positions</h2>
-            {topPositions.length > 0 ? (
-              <div className="space-y-3">
-                {topPositions.map((pos) => (
-                  <div
-                    key={pos.id}
-                    className="flex items-center justify-between p-3 rounded-lg bg-slate-800/40 border border-slate-700/50"
-                  >
-                    <div className="font-semibold text-white">{pos.symbol}</div>
-                    <div className="text-right">
-                      <div className={`font-bold ${
-                        (pos.unrealized_pl || 0) >= 0 ? 'text-emerald-400' : 'text-red-400'
-                      }`}>
-                        {(pos.unrealized_pl || 0) >= 0 ? '+' : ''}
-                        {formatCurrency(pos.unrealized_pl || 0)}
-                      </div>
-                      <div className={`text-xs ${
-                        (pos.unrealized_pl_percent || 0) >= 0 ? 'text-emerald-400' : 'text-red-400'
-                      }`}>
-                        {(pos.unrealized_pl_percent || 0) >= 0 ? '+' : ''}
-                        {(pos.unrealized_pl_percent || 0).toFixed(1)}%
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-center py-8 text-slate-400">No open positions</p>
-            )}
-            <Link
-              href="/portfolio"
-              className="block mt-4 text-center text-emerald-400 hover:text-emerald-300 text-sm font-medium"
-            >
-              View All Positions →
-            </Link>
-          </div>
+          <motion.div
+            initial={{ opacity: 0, y: 32 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.15, type: 'spring', stiffness: 120 }}
+            className="relative overflow-hidden rounded-3xl border border-emerald-500/20 bg-slate-950/70 shadow-[0_25px_70px_rgba(16,185,129,0.15)] backdrop-blur-xl"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/20 via-slate-950/60 to-slate-950/90" />
+            <div className="absolute -top-32 -right-28 h-64 w-64 rounded-full bg-emerald-500/20 blur-3xl opacity-60" />
+            <div className="absolute -bottom-24 -left-24 h-48 w-48 rounded-full bg-emerald-400/10 blur-3xl" />
 
-          {/* Quick Actions */}
-          <div className="bg-slate-900/40 backdrop-blur-sm rounded-2xl border border-emerald-500/20 p-6 shadow-lg">
-            <h2 className="text-xl font-bold text-white mb-4">Quick Actions</h2>
-            <div className="space-y-3">
-              <Link
-                href="/scanner"
-                className="block p-4 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-center transition-colors"
-              >
-                Run Scanner
-              </Link>
+            <div className="relative p-6 sm:p-8">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <span className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.38em] text-emerald-300/70">
+                    Active Alpha
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-300 shadow-[0_0_12px_rgba(110,231,183,0.7)] animate-pulse" />
+                    Live Feed
+                  </span>
+                  <h2 className="mt-3 text-2xl font-semibold text-white sm:text-3xl">Top Positions</h2>
+                </div>
+                <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-500/10 px-4 py-2 text-sm font-medium text-emerald-100 shadow-inner shadow-emerald-500/20">
+                  <span className="h-2 w-2 rounded-full bg-emerald-300 animate-ping" />
+                  {topPositions.length} Active
+                </div>
+              </div>
+
+              {topPositions.length > 0 ? (
+                <div className="mt-6 space-y-3">
+                  {topPositions.map((pos, idx) => {
+                    const isPositive = (pos.unrealized_pl || 0) >= 0
+                    const gradient = isPositive
+                      ? 'from-emerald-500/25 via-emerald-500/0 to-transparent'
+                      : 'from-red-500/25 via-red-500/0 to-transparent'
+
+                    return (
+                      <motion.div
+                        key={pos.id}
+                        initial={{ opacity: 0, y: 24 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.4, delay: 0.2 + idx * 0.08 }}
+                        whileHover={{ y: -3, scale: 1.01 }}
+                        className="group relative overflow-hidden rounded-2xl border border-slate-800/60 bg-slate-900/70 px-5 py-4 backdrop-blur"
+                      >
+                        <div className={`absolute inset-0 bg-gradient-to-r ${gradient} opacity-0 transition-opacity duration-500 group-hover:opacity-100`} />
+                        <div className="relative flex flex-wrap items-center justify-between gap-4">
+                          <div className="flex items-center gap-4">
+                            <div className="relative flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-slate-950/60 text-lg font-semibold text-white">
+                              <span>#{idx + 1}</span>
+                              <span className="absolute inset-x-2 -bottom-5 h-10 rounded-full bg-emerald-500/30 blur-xl opacity-60" />
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-3 text-base font-semibold text-white">
+                                <span>{pos.symbol}</span>
+                                <span className="rounded-full border border-slate-700/60 bg-slate-800/60 px-2 py-0.5 text-[11px] tracking-wide text-slate-300">
+                                  {pos.option_type.toUpperCase()} ${pos.strike}
+                                </span>
+                              </div>
+                              <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-slate-400">
+                                <span
+                                  className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 font-medium uppercase tracking-[0.25em] text-[10px] sm:text-[11px] transition-colors duration-300 ${signalStyles[pos.exit_signal]}`}
+                                >
+                                  {signalLabels[pos.exit_signal]}
+                                </span>
+                                <span className="text-slate-500/80">Last mark updated moments ago</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="text-right">
+                            <p className={`text-base font-semibold ${isPositive ? 'text-emerald-300' : 'text-red-300'}`}>
+                              {isPositive ? '+' : ''}
+                              {formatCurrency(pos.unrealized_pl || 0)}
+                            </p>
+                            <p className={`mt-1 text-xs font-medium ${isPositive ? 'text-emerald-400/80' : 'text-red-400/80'}`}>
+                              {isPositive ? '+' : ''}
+                              {(pos.unrealized_pl_percent || 0).toFixed(1)}%
+                            </p>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <div className="mt-8 flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-700/60 bg-slate-900/50 px-6 py-12 text-center">
+                  <span className="text-[10px] uppercase tracking-[0.4em] text-slate-500">No Signals Yet</span>
+                  <p className="mt-3 max-w-xs text-sm text-slate-400">
+                    As soon as positions go live, they will populate this interactive leaderboard.
+                  </p>
+                </div>
+              )}
+
               <Link
                 href="/portfolio"
-                className="block p-4 rounded-lg bg-slate-700 hover:bg-slate-600 text-white font-semibold text-center transition-colors"
+                className="group/link relative mt-8 inline-flex items-center gap-2 text-sm font-semibold text-emerald-200 transition-colors duration-300 hover:text-emerald-50"
               >
-                Manage Portfolio
-              </Link>
-              <Link
-                href="/market-info"
-                className="block p-4 rounded-lg bg-slate-700 hover:bg-slate-600 text-white font-semibold text-center transition-colors"
-              >
-                Market Intelligence
-              </Link>
-              <Link
-                href="/macro"
-                className="block p-4 rounded-lg bg-slate-700 hover:bg-slate-600 text-white font-semibold text-center transition-colors"
-              >
-                Macro Indicators
+                View full portfolio intelligence
+                <ArrowUpRight className="h-4 w-4 transition-transform duration-300 group-hover/link:-translate-y-0.5 group-hover/link:translate-x-1" />
               </Link>
             </div>
-          </div>
+          </motion.div>
+
+          {/* Quick Actions */}
+          <motion.div
+            initial={{ opacity: 0, y: 32 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.25, type: 'spring', stiffness: 120 }}
+            className="relative overflow-hidden rounded-3xl border border-slate-800/60 bg-slate-950/70 shadow-[0_25px_60px_rgba(14,116,144,0.12)] backdrop-blur-xl"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-slate-800/80 via-slate-950/70 to-slate-950/90" />
+            <div className="absolute -top-24 right-0 h-40 w-40 rounded-full bg-sky-500/10 blur-3xl opacity-70" />
+
+            <div className="relative p-6 sm:p-8">
+              <div className="mb-6 space-y-3">
+                <span className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.4em] text-slate-500">
+                  Command Center
+                  <span className="h-1 w-1 rounded-full bg-slate-500/60" />
+                  Instant Access
+                </span>
+                <h2 className="text-2xl font-semibold text-white sm:text-3xl">Quick Actions</h2>
+                <p className="max-w-sm text-sm text-slate-400">
+                  Stay in the flow with a tactile launcher for the workflows you hit most often.
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                {quickActions.map((action, idx) => {
+                  const Icon = action.icon
+                  return (
+                    <Link
+                      key={action.title}
+                      href={action.href}
+                      className="group block rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+                    >
+                      <motion.div
+                        initial={{ opacity: 0, y: 24 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.4, delay: 0.2 + idx * 0.05 }}
+                        whileHover={{ y: -4, scale: 1.01 }}
+                        whileTap={{ scale: 0.99 }}
+                        className={`relative overflow-hidden rounded-2xl border border-slate-800/80 bg-slate-900/70 p-5 sm:p-6 transition-all duration-300 backdrop-blur ring-1 ring-inset ${action.accent.ring}`}
+                      >
+                        <div className={`absolute inset-0 bg-gradient-to-r ${action.accent.glow} opacity-0 transition-opacity duration-500 group-hover:opacity-100`} />
+                        <div className="relative flex items-center justify-between gap-4">
+                          <div className="flex items-center gap-4">
+                            <div className={`relative flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl border border-white/10 ${action.accent.icon}`}>
+                              <Icon className="h-6 w-6" />
+                              <span className={`pointer-events-none absolute inset-x-2 -bottom-6 h-10 bg-gradient-to-r ${action.accent.chip} blur-xl opacity-60`} />
+                            </div>
+                            <div>
+                              <h3 className="text-base font-semibold text-white sm:text-lg">{action.title}</h3>
+                              <p className="mt-1 text-xs text-slate-400 sm:text-sm">{action.description}</p>
+                            </div>
+                          </div>
+                          <ArrowUpRight className="h-5 w-5 text-slate-500 transition-transform duration-300 group-hover:-translate-y-1 group-hover:translate-x-1 group-hover:text-white" />
+                        </div>
+                      </motion.div>
+                    </Link>
+                  )
+                })}
+              </div>
+            </div>
+          </motion.div>
         </div>
 
         {/* Wall of Gains & Wall of Shame */}
