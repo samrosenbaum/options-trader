@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useMemo, useState } from 'react'
-import { MessageCircle, Sparkles } from 'lucide-react'
 
 type Insight = {
   id: string
@@ -120,36 +119,26 @@ export function MontyDashboardBrief() {
       </div>
       <div className="flex flex-col gap-1 flex-1">
         <div className="rounded-[20px] bg-gradient-to-br from-emerald-500 to-emerald-600 px-5 py-4 shadow-lg">
-          <div className="flex items-center gap-2 mb-3">
-            <Sparkles className="h-4 w-4 text-white/90" />
-            <span className="text-xs font-semibold uppercase tracking-wider text-white/90">
-              Monty&apos;s desk ping
-            </span>
-          </div>
-
-          <h3 className="text-base font-semibold text-white leading-relaxed">{data.greeting}</h3>
-          <p className="mt-2 text-[15px] leading-[1.5] text-white/95">{data.marketSummary}</p>
+          <p className="text-[15px] leading-[1.5] text-white/95">
+            <strong className="font-semibold">{data.greeting}</strong>
+            <br />
+            {data.marketSummary}
+          </p>
 
           {insightGroups.length > 0 && (
-            <div className="mt-4 space-y-2">
+            <div className="mt-3 space-y-1.5">
               {insightGroups.map((insight) => (
-                <div
-                  key={insight.id}
-                  className="rounded-2xl border border-white/20 bg-white/10 px-4 py-2.5 backdrop-blur-sm"
-                >
-                  <div className="flex items-start gap-3">
-                    <span className="text-[11px] font-bold uppercase tracking-wide text-white/80 mt-0.5">
-                      {insight.label}
-                    </span>
-                    <span className="text-[14px] leading-[1.4] text-white/95 flex-1">{insight.text}</span>
-                  </div>
-                </div>
+                <p key={insight.id} className="text-[15px] leading-[1.5] text-white/95">
+                  <strong className="font-semibold">{insight.label}</strong>
+                  <br />
+                  {insight.text}
+                </p>
               ))}
             </div>
           )}
 
           {data.suggestedNextStep && (
-            <p className="mt-4 text-[15px] leading-[1.5] text-white/95 italic border-t border-white/20 pt-3">
+            <p className="mt-3 text-[15px] leading-[1.5] text-white/95">
               {data.suggestedNextStep}
             </p>
           )}
