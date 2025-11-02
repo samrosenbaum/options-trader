@@ -29,7 +29,9 @@ export function MontyMacroSummary({
     setIsLoading(true)
 
     // Get user's first name or default greeting
-    const greeting = userName ? `@${userName}` : "Hey there"
+    // Extract first name if full name is provided
+    const firstName = userName ? userName.split(' ')[0] : null
+    const greeting = firstName || "Hey there"
 
     // Analyze market direction
     const spyChange = indices["SPY"]?.change_pct || 0
