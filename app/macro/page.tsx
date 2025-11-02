@@ -323,21 +323,21 @@ export default function MacroPage() {
 
                       if (allPositive) {
                         if (techOutperforming) {
-                          return "Strong risk-on session with tech leading the charge. Consider call spreads on high-beta tech names or QQQ calls. Watch for momentum continuation into close."
+                          return "Strong risk-on session with tech leading the charge. Consider call spreads on high-beta tech names or QQQ calls to ride the momentum."
                         }
-                        return "Broad market strength across all major indices. This risk-on environment favors bullish call spreads and selling puts on quality names. Monitor for potential overbought conditions."
+                        return "Broad market strength across all major indices. This risk-on environment favors bullish strategies like call spreads and selling puts on quality names."
                       } else if (allNegative) {
                         if (techUnderperforming) {
-                          return "Tech-led selloff putting pressure across the board. Defensive put spreads or VIX calls could hedge downside risk. Look for oversold bounces in quality names."
+                          return "Tech-led selloff putting pressure across the board. Consider defensive put spreads or VIX calls to hedge downside risk, or wait for oversold bounces in quality names."
                         }
-                        return "Broad market weakness suggests risk-off sentiment. Consider protective puts, call credit spreads, or cash-secured puts on oversold levels for quality entries."
+                        return "Broad market weakness suggests risk-off sentiment. Consider protective strategies like put spreads or waiting for better entry points on quality names."
                       } else {
                         if (techOutperforming) {
-                          return "Sector rotation favoring growth/tech while value lags. This divergence creates opportunities in tech call spreads while avoiding laggards. Watch for rotation shifts."
+                          return "Sector rotation favoring growth/tech while value lags. Consider call spreads on tech names leading the move, but stay nimble as rotation can reverse quickly."
                         } else if (techUnderperforming) {
                           return "Value outperforming growth signals defensive positioning. Consider spreads on defensive sectors (utilities, consumer staples) and be cautious on high-beta tech."
                         }
-                        return "Mixed market action with divergent sector performance. Wait for clearer directional signals before deploying capital. Consider range-bound strategies like iron condors on neutral names."
+                        return "Mixed market action with divergent sector performance. Wait for clearer directional signals before deploying capital, or consider range-bound strategies like iron condors."
                       }
                     })()}
                   </p>
