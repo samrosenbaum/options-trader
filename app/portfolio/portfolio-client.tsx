@@ -360,7 +360,7 @@ export default function PortfolioClient({
       console.log('[Portfolio] Got', updatedPositions?.length, 'positions from database')
       setPositions(updatedPositions || [])
 
-      const message = `✓ Updated ${result.updated || 0} of ${result.total || 0} positions`
+      const message = `Updated ${result.updated || 0} of ${result.total || 0} positions`
       console.log('[Portfolio]', message)
       setRefreshMessage(message)
 
@@ -368,7 +368,7 @@ export default function PortfolioClient({
       setTimeout(() => setRefreshMessage(null), 5000)
     } catch (error) {
       console.error('[Portfolio] Error refreshing prices:', error)
-      const errorMsg = `✗ Error: ${error instanceof Error ? error.message : 'Failed to update prices'}`
+      const errorMsg = `Error: ${error instanceof Error ? error.message : 'Failed to update prices'}`
       setRefreshMessage(errorMsg)
 
       // Keep error message visible longer
@@ -561,14 +561,14 @@ export default function PortfolioClient({
           let body = `${position.symbol} ${position.option_type.toUpperCase()} $${position.strike}`
 
           if (currentSignal === 'exit_now') {
-            title = '🚨 EXIT NOW Signal'
+            title = 'EXIT NOW Signal'
             body += ` - ${position.exit_reasons && Array.isArray(position.exit_reasons) ? (position.exit_reasons as string[])[0] : 'Time to exit'}`
             urgentNotifications++
           } else if (currentSignal === 'consider') {
-            title = '⚠️ Consider Exiting'
+            title = 'Consider Exiting'
             body += ` - ${position.exit_reasons && Array.isArray(position.exit_reasons) ? (position.exit_reasons as string[])[0] : 'Consider taking profits'}`
           } else if (currentSignal === 'hold') {
-            title = '✅ Back to Hold'
+            title = 'Back to Hold'
             body += ' - Signal improved'
           }
 
@@ -577,8 +577,8 @@ export default function PortfolioClient({
       })
 
       const message = urgentNotifications > 0
-        ? `✓ Checked ${updatedCount} positions - ${urgentNotifications} urgent signal${urgentNotifications > 1 ? 's' : ''}!`
-        : `✓ Checked ${updatedCount} positions`
+        ? `Checked ${updatedCount} positions - ${urgentNotifications} urgent signal${urgentNotifications > 1 ? 's' : ''}!`
+        : `Checked ${updatedCount} positions`
       console.log('[Portfolio]', message)
       setSignalsMessage(message)
 
@@ -586,7 +586,7 @@ export default function PortfolioClient({
       setTimeout(() => setSignalsMessage(null), 5000)
     } catch (error) {
       console.error('[Portfolio] Error checking exit signals:', error)
-      const errorMsg = `✗ Error: ${error instanceof Error ? error.message : 'Failed to check signals'}`
+      const errorMsg = `Error: ${error instanceof Error ? error.message : 'Failed to check signals'}`
       setSignalsMessage(errorMsg)
 
       // Keep error message visible longer
@@ -1284,9 +1284,9 @@ export default function PortfolioClient({
                   exit={{ opacity: 0, y: -8 }}
                   transition={{ duration: 0.2 }}
                   className={`w-full rounded-xl px-4 py-2 text-sm font-medium shadow-inner sm:w-auto ${
-                    refreshMessage.startsWith('✓')
-                      ? 'bg-emerald-100/90 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
-                      : 'bg-rose-100/90 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300'
+                    refreshMessage.toLowerCase().startsWith('error')
+                      ? 'bg-rose-100/90 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300'
+                      : 'bg-emerald-100/90 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
                   }`}
                 >
                   {refreshMessage}
@@ -1303,9 +1303,9 @@ export default function PortfolioClient({
                   exit={{ opacity: 0, y: -8 }}
                   transition={{ duration: 0.2 }}
                   className={`w-full rounded-xl px-4 py-2 text-sm font-medium shadow-inner sm:w-auto ${
-                    signalsMessage.startsWith('✓')
-                      ? 'bg-emerald-100/90 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
-                      : 'bg-rose-100/90 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300'
+                    signalsMessage.toLowerCase().startsWith('error')
+                      ? 'bg-rose-100/90 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300'
+                      : 'bg-emerald-100/90 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
                   }`}
                 >
                   {signalsMessage}
@@ -1686,16 +1686,23 @@ export default function PortfolioClient({
                   See how premium exposure, hedges, and expirations stack up so you can source ideas that smooth risk.
                 </p>
               </div>
-              <div className="text-sm text-slate-500 dark:text-slate-400">
-                {currencyFormatter.format(totalExposure)} premium at risk · {totalContracts}{' '}
-                {totalContracts === 1 ? 'contract' : 'contracts'}
+              <div className="relative overflow-hidden rounded-2xl border border-white/20 bg-white/60 px-5 py-3 text-sm text-slate-700 shadow-[0_10px_30px_-12px_rgba(15,23,42,0.35)] backdrop-blur-sm dark:border-white/10 dark:bg-slate-900/60 dark:text-slate-200">
+                <div className="absolute inset-0 -z-10 bg-gradient-to-br from-emerald-400/40 via-white/40 to-transparent opacity-80 dark:from-emerald-500/30" />
+                <div className="font-semibold text-slate-900 dark:text-white">
+                  {currencyFormatter.format(totalExposure)} premium at risk
+                </div>
+                <div className="text-xs uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">
+                  {totalContracts} {totalContracts === 1 ? 'contract' : 'contracts'}
+                </div>
               </div>
             </div>
 
             <div className="grid grid-cols-1 gap-6 xl:grid-cols-[2fr_2fr_1.2fr]">
-              <div className="group relative overflow-hidden rounded-2xl border border-white/60 bg-white/80 p-6 shadow-lg backdrop-blur transition-transform hover:-translate-y-1 hover:shadow-2xl dark:border-white/10 dark:bg-slate-950/60 before:absolute before:inset-0 before:-z-10 before:bg-gradient-to-br before:from-emerald-400/20 before:via-emerald-400/5 before:to-transparent">
-                <div className="flex items-start justify-between mb-6">
-                  <div>
+              <div className="group relative overflow-hidden rounded-3xl border border-white/30 bg-white/40 p-6 shadow-[0_25px_80px_-35px_rgba(15,23,42,0.65)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_32px_120px_-40px_rgba(14,116,144,0.55)] dark:border-white/10 dark:bg-slate-900/50">
+                <div className="pointer-events-none absolute -top-24 right-[-40%] h-72 w-72 rounded-full bg-emerald-400/30 blur-3xl transition-opacity duration-500 group-hover:opacity-90 dark:bg-emerald-500/30" />
+                <div className="pointer-events-none absolute inset-0 rounded-3xl border border-white/40 opacity-40 mix-blend-overlay" />
+                <div className="relative flex items-start justify-between pb-6">
+                  <div className="space-y-1">
                     <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Current Mix</h3>
                     <p className="text-sm text-slate-600 dark:text-slate-400">
                       Premium-weighted view of your live exposure by strategy bias.
@@ -1712,12 +1719,12 @@ export default function PortfolioClient({
                 </div>
 
                 {totalExposure <= 0 ? (
-                  <div className="py-12 text-center text-sm text-slate-500 dark:text-slate-400">
+                  <div className="relative rounded-2xl border border-white/40 bg-white/40 py-12 text-center text-sm text-slate-500 shadow-inner backdrop-blur-sm dark:border-white/10 dark:bg-slate-900/40 dark:text-slate-400">
                     Add entry prices to your positions to generate a construction snapshot.
                   </div>
                 ) : (
                   <>
-                    <div className="relative h-64">
+                    <div className="relative h-64 overflow-hidden rounded-2xl border border-white/30 bg-white/30 backdrop-blur-sm dark:border-white/10 dark:bg-slate-900/30">
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                           <Pie
@@ -1760,8 +1767,9 @@ export default function PortfolioClient({
                       {mixData.map((item) => (
                         <div
                           key={item.key}
-                          className="rounded-xl border border-slate-200/80 bg-white/70 p-3 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700/80 dark:bg-slate-950/50"
+                          className="relative overflow-hidden rounded-2xl border border-white/30 bg-white/40 p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg dark:border-white/10 dark:bg-slate-900/40"
                         >
+                          <div className="absolute inset-0 -z-10 bg-gradient-to-br from-white/20 via-transparent to-transparent" />
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                               <span
@@ -1778,7 +1786,7 @@ export default function PortfolioClient({
                               {formatPercentage(item.percentage)}
                             </span>
                           </div>
-                          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                          <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
                             {POSITION_MIX_CONFIG[item.key].description}
                           </p>
                         </div>
@@ -1788,15 +1796,17 @@ export default function PortfolioClient({
                 )}
               </div>
 
-              <div className="relative overflow-hidden rounded-2xl border border-white/60 bg-white/80 p-6 shadow-lg backdrop-blur transition-transform hover:-translate-y-1 hover:shadow-2xl dark:border-white/10 dark:bg-slate-950/60 before:absolute before:inset-0 before:-z-10 before:bg-gradient-to-br before:from-sky-400/20 before:via-sky-400/5 before:to-transparent">
-                <div className="mb-6">
+              <div className="group relative overflow-hidden rounded-3xl border border-white/30 bg-white/40 p-6 shadow-[0_25px_80px_-35px_rgba(15,23,42,0.65)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_32px_120px_-38px_rgba(2,132,199,0.55)] dark:border-white/10 dark:bg-slate-900/50">
+                <div className="pointer-events-none absolute inset-0 rounded-3xl border border-white/40 opacity-40 mix-blend-overlay" />
+                <div className="pointer-events-none absolute -bottom-24 left-[-35%] h-72 w-72 rounded-full bg-sky-400/30 blur-3xl transition-opacity duration-500 group-hover:opacity-90 dark:bg-sky-500/30" />
+                <div className="relative mb-6 space-y-1">
                   <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Target Mix &amp; Gaps</h3>
                   <p className="text-sm text-slate-600 dark:text-slate-400">
                     Benchmark against a balanced book template, then see how far each sleeve is from target.
                   </p>
                 </div>
 
-                <div className="space-y-4">
+                <div className="relative space-y-4">
                   {mixGap.map((item) => {
                     const deltaMagnitude = Math.abs(Math.round(item.delta))
                     const statusLabel =
@@ -1809,8 +1819,9 @@ export default function PortfolioClient({
                     return (
                       <div
                         key={item.key}
-                        className="rounded-xl border border-slate-200/70 bg-white/70 p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700/70 dark:bg-slate-950/50"
+                        className="relative overflow-hidden rounded-2xl border border-white/30 bg-white/40 p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg dark:border-white/10 dark:bg-slate-900/40"
                       >
+                        <div className="absolute inset-0 -z-10 bg-gradient-to-br from-white/20 via-transparent to-transparent" />
                         <div className="flex items-center justify-between text-sm">
                           <div className="flex items-center gap-2">
                             <span
@@ -1828,16 +1839,16 @@ export default function PortfolioClient({
                           </span>
                         </div>
                         <div className="mt-3 flex items-center gap-3">
-                          <div className="relative h-2 flex-1 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                          <div className="relative h-2 flex-1 overflow-hidden rounded-full bg-slate-100/70 dark:bg-slate-800/70">
                             <div
                               className="absolute inset-y-0 rounded-full"
-                          style={{
-                            width: `${Math.min(100, item.actual)}%`,
-                            backgroundColor: POSITION_MIX_CONFIG[item.key].color,
-                            opacity: 0.75,
-                          }}
-                        />
-                        <span
+                              style={{
+                                width: `${Math.min(100, item.actual)}%`,
+                                backgroundColor: POSITION_MIX_CONFIG[item.key].color,
+                                opacity: 0.8,
+                              }}
+                            />
+                            <span
                               className="absolute inset-y-0 w-[2px] bg-slate-400/50 dark:bg-slate-500/50"
                               style={{ left: `${item.percentage}%` }}
                             />
@@ -1863,31 +1874,38 @@ export default function PortfolioClient({
                 </div>
               </div>
 
-              <div className="relative flex flex-col overflow-hidden rounded-2xl border border-white/60 bg-white/80 p-6 shadow-lg backdrop-blur transition-transform hover:-translate-y-1 hover:shadow-2xl dark:border-white/10 dark:bg-slate-950/60 before:absolute before:inset-0 before:-z-10 before:bg-gradient-to-br before:from-purple-400/20 before:via-purple-400/5 before:to-transparent">
-                <div>
+              <div className="group relative flex flex-col overflow-hidden rounded-3xl border border-white/30 bg-white/40 p-6 shadow-[0_25px_80px_-35px_rgba(15,23,42,0.65)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_34px_120px_-42px_rgba(109,40,217,0.55)] dark:border-white/10 dark:bg-slate-900/50">
+                <div className="pointer-events-none absolute inset-0 rounded-3xl border border-white/40 opacity-40 mix-blend-overlay" />
+                <div className="pointer-events-none absolute -top-20 left-1/2 h-60 w-60 -translate-x-1/2 rounded-full bg-purple-400/30 blur-3xl transition-opacity duration-500 group-hover:opacity-90 dark:bg-purple-500/25" />
+                <div className="relative">
                   <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Balancing cues</h3>
                   <p className="text-sm text-slate-600 dark:text-slate-400">
                     Quick reads on where to adjust before sourcing the next trade.
                   </p>
                 </div>
 
-                <div className="mt-6 space-y-4">
+                <div className="relative mt-6 space-y-4">
                   {portfolioInsights.map((insight, index) => (
                     <div
                       key={`${insight.title}-${index}`}
-                      className={`rounded-xl border p-4 text-sm leading-relaxed ${
+                      className={`relative overflow-hidden rounded-2xl border p-4 text-sm leading-relaxed shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg ${
                         insight.tone === 'warning'
-                          ? 'border-amber-200 bg-amber-50/70 text-amber-800 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200'
-                          : 'border-emerald-200 bg-emerald-50/70 text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-200'
+                          ? 'border-amber-200/60 bg-amber-100/30 dark:border-amber-900/40 dark:bg-amber-900/20'
+                          : 'border-emerald-200/60 bg-emerald-100/30 dark:border-emerald-900/40 dark:bg-emerald-900/20'
                       }`}
                     >
-                      <div className="flex items-start gap-3">
-                        <span className="text-lg">
-                          {insight.tone === 'warning' ? '⚠️' : '🌱'}
-                        </span>
-                        <div>
-                          <div className="font-semibold">{insight.title}</div>
-                          <p className="mt-1 text-xs sm:text-sm">
+                      <div className="absolute inset-0 -z-10 bg-gradient-to-br from-white/20 via-transparent to-transparent" />
+                      <div className="flex gap-3">
+                        <div
+                          className={`mt-1 h-8 w-8 shrink-0 rounded-xl bg-gradient-to-br ${
+                            insight.tone === 'warning'
+                              ? 'from-amber-200/70 via-amber-100/60 to-transparent dark:from-amber-500/30 dark:via-transparent'
+                              : 'from-emerald-200/70 via-emerald-100/60 to-transparent dark:from-emerald-500/30 dark:via-transparent'
+                          } shadow-inner`}
+                        />
+                        <div className="space-y-1">
+                          <div className="font-semibold text-slate-900 dark:text-white">{insight.title}</div>
+                          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300">
                             {insight.description}
                           </p>
                         </div>
@@ -1898,7 +1916,79 @@ export default function PortfolioClient({
               </div>
             </div>
 
-            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
+            <div className="relative overflow-hidden rounded-3xl border border-white/30 bg-white/50 p-6 shadow-[0_30px_90px_-45px_rgba(15,23,42,0.65)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_38px_130px_-50px_rgba(79,70,229,0.55)] dark:border-white/10 dark:bg-slate-900/50">
+              <div className="pointer-events-none absolute inset-0 rounded-3xl border border-white/40 opacity-40 mix-blend-overlay" />
+              <div className="pointer-events-none absolute -top-28 right-[-25%] h-72 w-72 rounded-full bg-indigo-400/30 blur-3xl transition-opacity duration-500 hover:opacity-90 dark:bg-indigo-500/25" />
+              <div className="relative flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between mb-6">
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+                    Expiration Ladder
+                  </h3>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    Distribution of premium across near, medium, and long-dated contracts.
+                  </p>
+                </div>
+                <div className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  {formatPercentage(
+                    expirationProfile.data.reduce((sum, bucket) => sum + bucket.percentage, 0),
+                  )}{' '}
+                  allocated
+                </div>
+              </div>
+
+              {expirationProfile.totalExposure <= 0 ? (
+                <div className="relative rounded-2xl border border-white/40 bg-white/40 py-12 text-center text-sm text-slate-500 shadow-inner backdrop-blur-sm dark:border-white/10 dark:bg-slate-900/40 dark:text-slate-400">
+                  We need premium values to build this ladder.
+                </div>
+              ) : (
+                <div className="relative h-64 overflow-hidden rounded-2xl border border-white/30 bg-white/40 backdrop-blur-sm dark:border-white/10 dark:bg-slate-900/40">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={expirationProfile.data} barSize={32}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis
+                        dataKey="label"
+                        stroke="hsl(var(--muted-foreground))"
+                        style={{ fontSize: '12px' }}
+                      />
+                      <YAxis
+                        stroke="hsl(var(--muted-foreground))"
+                        tickFormatter={(value) => `${Math.round(value)}%`}
+                        domain={[0, 100]}
+                        style={{ fontSize: '12px' }}
+                      />
+                      <RechartsTooltip
+                        contentStyle={CHART_TOOLTIP_STYLE}
+                        formatter={(value: number, _name, payload) => [
+                          `${formatPercentage(value as number)}`,
+                          payload?.payload?.label as string,
+                        ]}
+                      />
+                      <Bar dataKey="percentage" radius={[12, 12, 0, 0]} fill="#6366f1" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+
+              <div className="mt-6 grid grid-cols-1 gap-4 text-sm sm:grid-cols-3">
+                {expirationProfile.data.map((bucket) => (
+                  <div
+                    key={bucket.key}
+                    className="relative overflow-hidden rounded-2xl border border-white/30 bg-white/40 p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg dark:border-white/10 dark:bg-slate-900/40"
+                  >
+                    <div className="absolute inset-0 -z-10 bg-gradient-to-br from-white/20 via-transparent to-transparent" />
+                    <div className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      {bucket.label}
+                    </div>
+                    <div className="mt-2 text-lg font-semibold text-slate-900 dark:text-white">
+                      {formatPercentage(bucket.percentage)}
+                    </div>
+                    <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                      {EXPIRATION_BUCKET_DESCRIPTIONS[bucket.key]}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
               <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between mb-6">
                 <div>
                   <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
@@ -1967,7 +2057,6 @@ export default function PortfolioClient({
                   </div>
                 ))}
               </div>
-            </div>
           </motion.section>
         )}
 
