@@ -171,8 +171,7 @@ export default function LiveTicker() {
   return (
     <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-lg dark:border-white/10 dark:bg-white/5 dark:shadow-[0_30px_120px_-60px_rgba(16,185,129,0.45)] dark:backdrop-blur-xl mb-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-          <span className="animate-pulse">📈</span>
+        <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
           Live Market Ticker
         </h3>
         <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-emerald-100/70">
@@ -200,9 +199,6 @@ export default function LiveTicker() {
               >
                 <div className="flex flex-col">
                   <div className="flex items-center gap-2">
-                    <span className={`text-lg ${item.type === 'crypto' ? 'text-orange-500 dark:text-orange-300' : 'text-sky-500 dark:text-sky-300'}`}>
-                      {item.type === 'crypto' ? '₿' : '📊'}
-                    </span>
                     <div>
                       <div className="font-semibold text-slate-900 dark:text-white">{item.symbol}</div>
                       <div className="text-xs text-slate-600 dark:text-slate-300 truncate">{item.name}</div>
@@ -245,8 +241,7 @@ export default function LiveTicker() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-xs text-slate-500 dark:text-slate-300">📊 Stocks</span>
-          <span className="text-xs text-slate-500 dark:text-slate-300">₿ Crypto</span>
+          <span className="text-xs text-slate-500 dark:text-slate-300">Stocks & Crypto</span>
         </div>
       </div>
     </div>

@@ -120,35 +120,54 @@ export function MontyMacroSummary({
   }
 
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-emerald-500/30 bg-gradient-to-br from-emerald-50 via-cyan-50 to-blue-50 p-6 shadow-lg dark:border-emerald-400/30 dark:from-emerald-950/30 dark:via-cyan-950/20 dark:to-blue-950/20">
-      {/* Decorative background elements */}
-      <div className="pointer-events-none absolute -right-12 -top-12 h-48 w-48 rounded-full bg-emerald-400/10 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-8 -left-8 h-32 w-32 rounded-full bg-cyan-400/10 blur-2xl" />
-
-      <div className="relative">
-        <div className="mb-3 flex items-center justify-between">
-          <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-            Monty's Market Summary
-          </h3>
-          <button
-            onClick={generateSummary}
-            disabled={isLoading}
-            className="rounded-lg border border-emerald-300 bg-emerald-100 p-2 text-emerald-700 transition-all hover:bg-emerald-200 disabled:opacity-50 dark:border-emerald-400/30 dark:bg-emerald-900/30 dark:text-emerald-300 dark:hover:bg-emerald-900/50"
-          >
-            <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
-          </button>
+    <div className="flex flex-col gap-3">
+      {/* Contact Header */}
+      <div className="flex items-center gap-3 px-1">
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 text-white font-bold text-lg shadow-lg">
+          M
         </div>
-
-        {isLoading ? (
-          <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-            <RefreshCw className="h-4 w-4 animate-spin" />
-            <span>Analyzing market data...</span>
+        <div className="flex-1">
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
+              Monty
+            </h3>
+            <span className="text-xs text-slate-500 dark:text-slate-400">Market Assistant</span>
           </div>
-        ) : (
-          <p className="text-base leading-relaxed text-slate-700 dark:text-slate-300">
-            {summary}
-          </p>
-        )}
+        </div>
+        <button
+          onClick={generateSummary}
+          disabled={isLoading}
+          className="rounded-full p-2 text-slate-600 transition-colors hover:bg-slate-100 disabled:opacity-50 dark:text-slate-400 dark:hover:bg-slate-800"
+        >
+          <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+        </button>
+      </div>
+
+      {/* iMessage Bubble */}
+      <div className="flex items-start gap-2">
+        <div className="max-w-[85%]">
+          {isLoading ? (
+            <div className="rounded-[18px] bg-slate-200 dark:bg-slate-700 px-4 py-3 shadow-sm">
+              <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                <RefreshCw className="h-4 w-4 animate-spin" />
+                <span>Analyzing market data...</span>
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-[18px] bg-emerald-500 dark:bg-emerald-600 px-4 py-3 shadow-md">
+              <p className="text-[15px] leading-[1.4] text-white">
+                {summary}
+              </p>
+            </div>
+          )}
+          {!isLoading && (
+            <div className="mt-1 px-1">
+              <span className="text-xs text-slate-500 dark:text-slate-400">
+                Just now
+              </span>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
