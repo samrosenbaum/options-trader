@@ -325,7 +325,7 @@ export default function MacroPage() {
                         if (techOutperforming) {
                           return "Strong risk-on session with tech leading the charge. Consider call spreads on high-beta tech names or QQQ calls to ride the momentum."
                         }
-                        return "Broad market strength across all major indices. This risk-on environment favors bullish strategies like call spreads and selling puts on quality names."
+                        return "Broad market strength across all major indices. This risk-on environment favors bullish strategies like call spreads, or selling cash-secured puts to collect premium on quality names."
                       } else if (allNegative) {
                         if (techUnderperforming) {
                           return "Tech-led selloff putting pressure across the board. Consider defensive put spreads or VIX calls to hedge downside risk, or wait for oversold bounces in quality names."
