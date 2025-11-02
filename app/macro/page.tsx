@@ -275,10 +275,76 @@ export default function MacroPage() {
         {/* Major Indices */}
         {data && (
           <div className="mb-8 bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6 border border-slate-200 dark:border-slate-700">
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-6">
               Major Indices
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+
+            {/* iMessage-style conversation */}
+            <div className="mb-6 space-y-3">
+              {/* Your message (right side, gray) */}
+              <div className="flex items-start justify-end gap-2">
+                <div className="max-w-[75%]">
+                  <div className="rounded-[18px] bg-slate-200 dark:bg-slate-700 px-4 py-3 shadow-sm">
+                    <p className="text-[15px] leading-[1.4] text-slate-900 dark:text-white">
+                      What do these indices tell me about trading options right now?
+                    </p>
+                  </div>
+                  <div className="mt-1 px-1 text-right">
+                    <span className="text-xs text-slate-500 dark:text-slate-400">
+                      Just now
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Monty's response (left side, green) */}
+              <div className="flex items-start gap-2">
+                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 text-white font-bold text-sm shadow-lg">
+                  M
+                </div>
+                <div className="max-w-[75%]">
+                  <div className="rounded-[18px] bg-emerald-500 dark:bg-emerald-600 px-4 py-3 shadow-md">
+                    <p className="text-[15px] leading-[1.4] text-white">
+                      {(() => {
+                        const indices = Object.values(data.indices)
+                        const allPositive = indices.every(idx => idx.change_pct > 0)
+                        const allNegative = indices.every(idx => idx.change_pct < 0)
+                        const spyChange = data.indices.SPY?.change_pct || 0
+                        const qqqChange = data.indices.QQQ?.change_pct || 0
+                        const techOutperforming = qqqChange > spyChange && Math.abs(qqqChange - spyChange) > 0.3
+                        const techUnderperforming = spyChange > qqqChange && Math.abs(spyChange - qqqChange) > 0.3
+
+                        if (allPositive) {
+                          if (techOutperforming) {
+                            return "Strong risk-on session with tech leading the charge. Consider call spreads on high-beta tech names or QQQ calls to ride the momentum."
+                          }
+                          return "Broad market strength across all major indices. This risk-on environment favors bullish strategies like call spreads, or selling cash-secured puts to collect premium on quality names."
+                        } else if (allNegative) {
+                          if (techUnderperforming) {
+                            return "Tech-led selloff putting pressure across the board. Consider defensive put spreads or VIX calls to hedge downside risk, or wait for oversold bounces in quality names."
+                          }
+                          return "Broad market weakness suggests risk-off sentiment. Consider protective strategies like put spreads or waiting for better entry points on quality names."
+                        } else {
+                          if (techOutperforming) {
+                            return "Sector rotation favoring growth/tech while value lags. Consider call spreads on tech names leading the move, but stay nimble as rotation can reverse quickly."
+                          } else if (techUnderperforming) {
+                            return "Value outperforming growth signals defensive positioning. Consider spreads on defensive sectors (utilities, consumer staples) and be cautious on high-beta tech."
+                          }
+                          return "Mixed market action with divergent sector performance. Wait for clearer directional signals before deploying capital, or consider range-bound strategies like iron condors."
+                        }
+                      })()}
+                    </p>
+                  </div>
+                  <div className="mt-1 px-1">
+                    <span className="text-xs text-slate-500 dark:text-slate-400">
+                      Just now
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {Object.entries(data.indices).map(([symbol, index]) => (
                 <div key={symbol} className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-lg">
                   <div className="text-sm text-slate-600 dark:text-slate-400 mb-1">
@@ -297,52 +363,6 @@ export default function MacroPage() {
                   </div>
                 </div>
               ))}
-            </div>
-
-            {/* Monty's Takeaway */}
-            <div className="mt-6 p-4 bg-gradient-to-br from-emerald-50 via-cyan-50/50 to-blue-50 dark:from-emerald-950/30 dark:via-cyan-950/20 dark:to-blue-950/30 rounded-xl border border-emerald-200/60 dark:border-emerald-800/40">
-              <div className="flex items-start gap-3">
-                <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-emerald-500/20 dark:bg-emerald-500/30 flex items-center justify-center">
-                  <svg className="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                  </svg>
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-2">
-                    Monty's Takeaway
-                  </h3>
-                  <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
-                    {(() => {
-                      const indices = Object.values(data.indices)
-                      const allPositive = indices.every(idx => idx.change_pct > 0)
-                      const allNegative = indices.every(idx => idx.change_pct < 0)
-                      const spyChange = data.indices.SPY?.change_pct || 0
-                      const qqqChange = data.indices.QQQ?.change_pct || 0
-                      const techOutperforming = qqqChange > spyChange && Math.abs(qqqChange - spyChange) > 0.3
-                      const techUnderperforming = spyChange > qqqChange && Math.abs(spyChange - qqqChange) > 0.3
-
-                      if (allPositive) {
-                        if (techOutperforming) {
-                          return "Strong risk-on session with tech leading the charge. Consider call spreads on high-beta tech names or QQQ calls to ride the momentum."
-                        }
-                        return "Broad market strength across all major indices. This risk-on environment favors bullish strategies like call spreads, or selling cash-secured puts to collect premium on quality names."
-                      } else if (allNegative) {
-                        if (techUnderperforming) {
-                          return "Tech-led selloff putting pressure across the board. Consider defensive put spreads or VIX calls to hedge downside risk, or wait for oversold bounces in quality names."
-                        }
-                        return "Broad market weakness suggests risk-off sentiment. Consider protective strategies like put spreads or waiting for better entry points on quality names."
-                      } else {
-                        if (techOutperforming) {
-                          return "Sector rotation favoring growth/tech while value lags. Consider call spreads on tech names leading the move, but stay nimble as rotation can reverse quickly."
-                        } else if (techUnderperforming) {
-                          return "Value outperforming growth signals defensive positioning. Consider spreads on defensive sectors (utilities, consumer staples) and be cautious on high-beta tech."
-                        }
-                        return "Mixed market action with divergent sector performance. Wait for clearer directional signals before deploying capital, or consider range-bound strategies like iron condors."
-                      }
-                    })()}
-                  </p>
-                </div>
-              </div>
             </div>
           </div>
         )}
