@@ -58,7 +58,7 @@ const POSITION_MIX_CONFIG: Record<
 > = {
   long_call: {
     label: 'Long Calls',
-    color: '#38bdf8',
+    color: '#3b82f6',
     description: 'Directional upside exposure and growth bets.',
   },
   long_put: {
@@ -878,12 +878,12 @@ export default function PortfolioClient({
         value: formatSignedCurrency(totalRealizedPL, preciseCurrencyFormatter),
         accentClass:
           totalRealizedPL >= 0
-            ? 'before:absolute before:inset-0 before:-z-10 before:bg-gradient-to-br before:from-sky-400/20 before:via-sky-400/5 before:to-transparent'
-            : 'before:absolute before:inset-0 before:-z-10 before:bg-gradient-to-br before:from-rose-500/20 before:via-rose-500/5 before:to-transparent',
+            ? 'before:absolute before:inset-0 before:-z-10 before:bg-gradient-to-br before:from-blue-400/20 before:via-blue-400/5 before:to-transparent'
+            : 'before:absolute before:inset-0 before:-z-10 before:bg-gradient-to-br before:from-red-500/20 before:via-red-500/5 before:to-transparent',
         valueClass:
           totalRealizedPL >= 0
-            ? 'text-sky-500 dark:text-sky-300'
-            : 'text-rose-500 dark:text-rose-300',
+            ? 'text-blue-500 dark:text-blue-300'
+            : 'text-red-500 dark:text-red-300',
         footer:
           closedPositions.length > 0
             ? `${closedPositions.length} closed · ${closedPositions.filter((p) => (p.realized_pl || 0) >= 0).length} green closes`
@@ -896,12 +896,12 @@ export default function PortfolioClient({
         value: formatSignedCurrency(totalPL, preciseCurrencyFormatter),
         accentClass:
           totalPL >= 0
-            ? 'before:absolute before:inset-0 before:-z-10 before:bg-gradient-to-br before:from-purple-400/20 before:via-purple-400/5 before:to-transparent'
-            : 'before:absolute before:inset-0 before:-z-10 before:bg-gradient-to-br before:from-rose-500/20 before:via-rose-500/5 before:to-transparent',
+            ? 'before:absolute before:inset-0 before:-z-10 before:bg-gradient-to-br before:from-blue-400/20 before:via-blue-400/5 before:to-transparent'
+            : 'before:absolute before:inset-0 before:-z-10 before:bg-gradient-to-br before:from-red-500/20 before:via-red-500/5 before:to-transparent',
         valueClass:
           totalPL >= 0
-            ? 'text-purple-500 dark:text-purple-300'
-            : 'text-rose-500 dark:text-rose-300',
+            ? 'text-blue-500 dark:text-blue-300'
+            : 'text-red-500 dark:text-red-300',
         footer:
           positions.length > 0
             ? `${openPositions.length} open · ${closedPositions.length} closed`
@@ -959,8 +959,8 @@ export default function PortfolioClient({
     <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-100 via-white to-slate-200 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -left-24 top-[-10rem] h-72 w-72 rounded-full bg-emerald-400/30 blur-3xl dark:bg-emerald-500/30" />
-        <div className="absolute right-[-10%] bottom-[-12rem] h-[28rem] w-[28rem] rounded-full bg-sky-400/20 blur-[140px] dark:bg-sky-500/25" />
-        <div className="absolute left-1/2 top-1/3 h-52 w-52 -translate-x-1/2 rounded-full bg-purple-400/15 blur-3xl dark:bg-purple-500/20" />
+        <div className="absolute right-[-10%] bottom-[-12rem] h-[28rem] w-[28rem] rounded-full bg-blue-400/20 blur-[140px] dark:bg-blue-500/25" />
+        <div className="absolute left-1/2 top-1/3 h-52 w-52 -translate-x-1/2 rounded-full bg-blue-400/15 blur-3xl dark:bg-blue-500/20" />
       </div>
 
       {showCashRain && (
@@ -982,16 +982,68 @@ export default function PortfolioClient({
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: 'easeOut' }}
-          className="relative overflow-hidden rounded-3xl border border-white/60 bg-white/80 p-8 shadow-xl backdrop-blur dark:border-white/10 dark:bg-slate-950/60"
+          className="relative overflow-hidden rounded-3xl border border-white/60 bg-white/80 px-6 py-4 shadow-xl backdrop-blur dark:border-white/10 dark:bg-slate-950/60"
         >
           <div className="flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
-            <div className="space-y-4">
-              <h1 className="text-3xl font-bold text-slate-900 dark:text-white sm:text-4xl">
-                Orchestrate your options book with clarity.
+            <div className="space-y-6">
+              <h1 className="font-display text-4xl font-semibold text-slate-900 dark:text-white sm:text-5xl">
+                {user.user_metadata?.full_name?.split(' ')[0] || user.email?.split('@')[0] || 'Hey'}, let's check your positions
               </h1>
-              <p className="max-w-2xl text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-                Every detail you need to make the most of your open positions
-              </p>
+              {openPositions.length > 0 && (
+                <div className="flex items-start gap-3 max-w-3xl">
+                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 text-white font-bold text-sm shadow-lg">
+                    M
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <div className="rounded-[18px] bg-gradient-to-br from-emerald-500 to-emerald-600 px-4 py-3 shadow-lg">
+                      <p className="text-[15px] leading-[1.4] text-white">
+                        {(() => {
+                          const plPercent = totalExposure > 0 ? (totalUnrealizedPL / totalExposure) * 100 : 0
+                          const hasLongCalls = mixData.some(d => d.label === 'Long Calls' && d.value > 0)
+                          const hasLongPuts = mixData.some(d => d.label === 'Long Puts' && d.value > 0)
+                          const hasShortCalls = mixData.some(d => d.label === 'Short Calls' && d.value > 0)
+                          const hasShortPuts = mixData.some(d => d.label === 'Short Puts' && d.value > 0)
+
+                          let analysis = ""
+
+                          // P&L analysis
+                          if (totalUnrealizedPL > 1000) {
+                            analysis = `Your portfolio is up ${preciseCurrencyFormatter.format(totalUnrealizedPL)} (${plPercent.toFixed(1)}%). Nice work! `
+                          } else if (totalUnrealizedPL > 0) {
+                            analysis = `You're up ${preciseCurrencyFormatter.format(totalUnrealizedPL)} right now. Small wins add up. `
+                          } else if (totalUnrealizedPL < -1000) {
+                            analysis = `You're down ${preciseCurrencyFormatter.format(Math.abs(totalUnrealizedPL))} (${Math.abs(plPercent).toFixed(1)}%). Stay disciplined—manage your risk. `
+                          } else if (totalUnrealizedPL < 0) {
+                            analysis = `You're down ${preciseCurrencyFormatter.format(Math.abs(totalUnrealizedPL))}. Not ideal, but manageable. `
+                          } else {
+                            analysis = "Your positions are at breakeven. "
+                          }
+
+                          // Strategy mix analysis
+                          if (hasLongCalls && !hasLongPuts && !hasShortCalls && !hasShortPuts) {
+                            analysis += "You're all-in on bullish bets. High risk, high reward—make sure the market agrees with your thesis."
+                          } else if (hasLongPuts && !hasLongCalls && !hasShortCalls && !hasShortPuts) {
+                            analysis += "Pure downside protection. Good for hedging, but you're missing upside exposure if the market rallies."
+                          } else if (hasShortPuts && !hasLongCalls && !hasLongPuts && !hasShortCalls) {
+                            analysis += "You're selling puts for premium. Works great in calm markets, but watch out for sudden drops."
+                          } else if ((hasLongCalls || hasLongPuts) && (hasShortCalls || hasShortPuts)) {
+                            analysis += "Nice balance of long and short positions. You're managing risk and collecting premium—smart approach."
+                          } else if (hasLongCalls && hasLongPuts) {
+                            analysis += "You've got both calls and puts, so you're ready for big moves either way. Straddle strategy?"
+                          } else {
+                            analysis += `You've got ${openPositions.length} open position${openPositions.length > 1 ? 's' : ''} across ${totalContracts} contract${totalContracts > 1 ? 's' : ''}.`
+                          }
+
+                          return analysis
+                        })()}
+                      </p>
+                    </div>
+                    <span className="px-1 text-xs text-slate-500 dark:text-slate-400">
+                      Monty
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
 
             <motion.div
@@ -999,7 +1051,7 @@ export default function PortfolioClient({
               animate={{ y: [0, -10, 0] }}
               transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
             >
-              <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-emerald-400/40 to-sky-400/30 blur-2xl" />
+              <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-emerald-400/40 to-blue-400/30 blur-2xl" />
               <div className="relative flex flex-col items-center gap-2 rounded-2xl border border-emerald-400/30 bg-white/80 px-6 py-6 text-center shadow-2xl backdrop-blur dark:border-emerald-400/30 dark:bg-slate-950/70">
                 <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Today&apos;s pulse</span>
                 <span
@@ -1063,6 +1115,556 @@ export default function PortfolioClient({
           ))}
         </motion.div>
 
+        {/* Positions Section Header */}
+        {(openPositions.length > 0 || closedPositions.length > 0) && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, duration: 0.6, ease: 'easeOut' }}
+            className="mb-6"
+          >
+            <h2 className="font-display text-2xl font-semibold text-slate-900 dark:text-white sm:text-3xl">
+              Positions
+            </h2>
+            <p className="text-base text-slate-600 dark:text-slate-400 mt-2">
+              Track your open trades and review closed position history
+            </p>
+          </motion.div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="mb-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+            <motion.button
+              onClick={handleAddPosition}
+              whileHover={{ y: -2 }}
+              whileTap={{ y: 0 }}
+              className="w-full transform rounded-xl bg-gradient-to-r from-emerald-500 via-emerald-500 to-emerald-600 py-3 px-6 font-semibold text-white shadow-lg transition-all hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-emerald-400/50 sm:w-auto"
+            >
+              + Add Position
+            </motion.button>
+
+            <motion.button
+              onClick={() => setShowImportModal(true)}
+              whileHover={{ y: -2 }}
+              whileTap={{ y: 0 }}
+              className="flex w-full transform items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 via-blue-500 to-indigo-600 py-3 px-6 font-semibold text-white shadow-lg transition-all hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-sky-300/50 dark:from-sky-500 dark:via-sky-500 dark:to-indigo-500 sm:w-auto"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+              Import CSV
+            </motion.button>
+
+            <motion.button
+              onClick={handleRefreshPrices}
+              disabled={isRefreshing || openPositions.length === 0}
+              whileHover={
+                isRefreshing || openPositions.length === 0 ? undefined : { y: -2 }
+              }
+              whileTap={{ y: 0 }}
+              className={`flex w-full transform items-center justify-center gap-2 rounded-xl border py-3 px-6 font-semibold transition-all sm:w-auto ${
+                isRefreshing || openPositions.length === 0
+                  ? 'cursor-not-allowed border-slate-300/70 bg-slate-200/80 text-slate-500 dark:border-slate-700/70 dark:bg-slate-800/60 dark:text-slate-400'
+                  : 'border-white/60 bg-white/80 text-slate-700 shadow-lg hover:shadow-xl dark:border-white/10 dark:bg-slate-950/60 dark:text-slate-200'
+              }`}
+            >
+              {isRefreshing ? (
+                <>
+                  <svg
+                    className="animate-spin h-5 w-5"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Updating...
+                </>
+              ) : (
+                <>
+                  <svg
+                    className="h-5 w-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    />
+                  </svg>
+                  Refresh Prices
+                </>
+              )}
+            </motion.button>
+
+            <motion.button
+              onClick={handleCheckExitSignals}
+              disabled={isCheckingSignals || openPositions.length === 0}
+              whileHover={
+                isCheckingSignals || openPositions.length === 0 ? undefined : { y: -2 }
+              }
+              whileTap={{ y: 0 }}
+              className={`flex w-full transform items-center justify-center gap-2 rounded-xl py-3 px-6 font-semibold transition-all sm:w-auto ${
+                isCheckingSignals || openPositions.length === 0
+                  ? 'cursor-not-allowed bg-slate-300/80 text-slate-500 dark:bg-slate-800/60 dark:text-slate-400'
+                  : 'bg-gradient-to-r from-orange-500 via-orange-500 to-amber-500 text-white shadow-lg hover:shadow-xl dark:from-orange-500 dark:to-amber-500'
+              }`}
+            >
+              {isCheckingSignals ? (
+                <>
+                  <svg
+                    className="animate-spin h-5 w-5"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Checking...
+                </>
+              ) : (
+                <>
+                  <svg
+                    className="h-5 w-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                    />
+                  </svg>
+                  Check Exit Signals
+                </>
+              )}
+            </motion.button>
+
+            <AnimatePresence>
+              {refreshMessage && (
+                <motion.div
+                  key="refresh-message"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.2 }}
+                  className={`w-full rounded-xl px-4 py-2 text-sm font-medium shadow-inner sm:w-auto ${
+                    refreshMessage.startsWith('✓')
+                      ? 'bg-emerald-100/90 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
+                      : 'bg-rose-100/90 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300'
+                  }`}
+                >
+                  {refreshMessage}
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+              {signalsMessage && (
+                <motion.div
+                  key="signals-message"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.2 }}
+                  className={`w-full rounded-xl px-4 py-2 text-sm font-medium shadow-inner sm:w-auto ${
+                    signalsMessage.startsWith('✓')
+                      ? 'bg-emerald-100/90 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
+                      : 'bg-rose-100/90 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300'
+                  }`}
+                >
+                  {signalsMessage}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+
+        {/* Active Alerts - Show positions with pending alerts */}
+        {openPositions.some(p => p.pending_alerts && Array.isArray(p.pending_alerts) && p.pending_alerts.length > 0) && (
+          <div className="mb-8">
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">
+              Active Alerts
+            </h2>
+            <div className="space-y-4">
+              {openPositions
+                .filter(p => p.pending_alerts && Array.isArray(p.pending_alerts) && p.pending_alerts.length > 0)
+                .map(position => (
+                  <div
+                    key={position.id}
+                    className="relative overflow-hidden rounded-2xl border border-white/60 bg-white/80 p-4 shadow-lg backdrop-blur transition-transform hover:-translate-y-0.5 hover:shadow-xl dark:border-white/10 dark:bg-slate-950/60"
+                  >
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-sm font-bold text-slate-900 dark:text-white">
+                        {position.symbol} ${position.strike} {position.option_type.toUpperCase()}
+                      </span>
+                      <span className="text-xs text-slate-500 dark:text-slate-400">
+                        Exp: {formatDateLocal(position.expiration)}
+                      </span>
+                    </div>
+                    <PositionAlerts
+                      positionId={position.id}
+                      symbol={position.symbol}
+                      alerts={position.pending_alerts as any[]}
+                      onDismiss={(alertId) => handleDismissAlert(position.id, alertId)}
+                    />
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
+
+        {/* Contextual Insights - Show positions with insights */}
+        {openPositions.some(p => p.contextual_insights && Array.isArray(p.contextual_insights) && p.contextual_insights.length > 0) && (
+          <div className="mb-8">
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">
+              Position Insights
+            </h2>
+            <div className="space-y-4">
+              {openPositions
+                .filter(p => p.contextual_insights && Array.isArray(p.contextual_insights) && p.contextual_insights.length > 0)
+                .map(position => (
+                  <div
+                    key={position.id}
+                    className="relative overflow-hidden rounded-2xl border border-white/60 bg-white/80 p-4 shadow-lg backdrop-blur transition-transform hover:-translate-y-0.5 hover:shadow-xl dark:border-white/10 dark:bg-slate-950/60"
+                  >
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-sm font-bold text-slate-900 dark:text-white">
+                        {position.symbol} ${position.strike} {position.option_type.toUpperCase()}
+                      </span>
+                      <span className="text-xs text-slate-500 dark:text-slate-400">
+                        Exp: {formatDateLocal(position.expiration)}
+                      </span>
+                    </div>
+                    <ContextualInsights insights={position.contextual_insights as any[]} />
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
+
+        {/* Open Positions */}
+        {openPositions.length > 0 && (
+          <div className="mb-8">
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+              Open Positions ({openPositions.length})
+            </h3>
+            <div className="relative overflow-hidden rounded-2xl border border-white/60 bg-white/80 shadow-xl backdrop-blur dark:border-white/10 dark:bg-slate-950/60">
+              <div className="overflow-x-auto">
+                <table className="min-w-[960px] w-full">
+                  <thead className="bg-slate-100/80 text-slate-700 dark:bg-slate-900/70 dark:text-slate-200">
+                    <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      Symbol
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      Type
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      Strike
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      Expiration
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      Contracts
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      Entry
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      Current
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      P&L
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      Exit Signal
+                    </th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      Actions
+                    </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200/70 dark:divide-slate-800/70">
+                    {openPositions.map((position) => (
+                      <tr
+                        key={position.id}
+                        className="transition-colors hover:bg-emerald-50/60 dark:hover:bg-slate-900/60"
+                      >
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-white">
+                        {position.symbol}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">
+                        <span
+                          className={`px-2 py-1 rounded text-xs font-semibold ${
+                            position.option_type === 'call'
+                              ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                              : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                          }`}
+                        >
+                          {position.option_type.toUpperCase()}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">
+                        ${position.strike}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">
+                        {formatDateLocal(position.expiration)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">
+                        {position.contracts}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">
+                        ${position.entry_price.toFixed(2)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">
+                        ${position.current_price?.toFixed(2) || '—'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <div
+                          className={`font-semibold ${
+                            (position.unrealized_pl || 0) >= 0
+                              ? 'text-emerald-600'
+                              : 'text-red-600'
+                          }`}
+                        >
+                          ${position.unrealized_pl?.toFixed(2) || '—'}
+                        </div>
+                        {position.unrealized_pl_percent && (
+                          <div className="text-xs text-slate-500">
+                            ({position.unrealized_pl_percent.toFixed(1)}%)
+                          </div>
+                        )}
+                        {position.peak_unrealized_pl && position.peak_unrealized_pl > 0 && (
+                          <div className="text-xs text-slate-400 mt-1">
+                            Peak: ${position.peak_unrealized_pl.toFixed(2)} ({position.peak_unrealized_pl_percent?.toFixed(1)}%)
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-sm align-top">
+                        {position.exit_signal && (() => {
+                          const signal = position.exit_signal
+                          const urgency = position.exit_urgency_score || 0
+                          const reasons = (position.exit_reasons as string[]) || []
+
+                          let bgColor = 'bg-emerald-100 dark:bg-emerald-900/30'
+                          let textColor = 'text-emerald-700 dark:text-emerald-400'
+                          let emoji = '🟢'
+                          let label = 'HOLD'
+
+                          if (signal === 'exit_now') {
+                            bgColor = 'bg-red-100 dark:bg-red-900/30'
+                            textColor = 'text-red-700 dark:text-red-400'
+                            emoji = '🔴'
+                            label = 'EXIT NOW'
+                          } else if (signal === 'consider') {
+                            bgColor = 'bg-amber-100 dark:bg-amber-900/30'
+                            textColor = 'text-amber-700 dark:text-amber-400'
+                            emoji = '🟡'
+                            label = 'CONSIDER'
+                          }
+
+                          return (
+                            <div className="space-y-1 max-w-[240px]">
+                              <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold whitespace-nowrap ${bgColor} ${textColor}`}>
+                                <span>{emoji}</span>
+                                <span>{label}</span>
+                                <span className="text-[10px]">({urgency})</span>
+                              </div>
+                              {reasons.length > 0 && (
+                                <div className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                                  {reasons.map(r => r.replace(/_/g, ' ')).join(', ')}
+                                </div>
+                              )}
+                            </div>
+                          )
+                        })()}
+                      </td>
+                      <td className="px-6 py-4 text-sm">
+                        <div className="flex flex-col gap-1.5 w-[110px]">
+                          <button
+                            onClick={() => setPositionToAnalyze(position)}
+                            className="w-full px-2 py-1 rounded text-[11px] font-semibold transition-colors bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 text-white"
+                            title="Discuss with Monty"
+                          >
+                            Ask Monty
+                          </button>
+                          <div className="flex gap-1.5">
+                            <button
+                              onClick={() => setPositionToEdit(position)}
+                              className="flex-1 px-2 py-1 rounded text-[11px] font-semibold transition-colors bg-blue-600 hover:bg-blue-700 text-white"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => setPositionToClose(position)}
+                              className={`flex-1 px-2 py-1 rounded text-[11px] font-semibold transition-colors ${
+                                position.exit_signal === 'exit_now'
+                                  ? 'bg-red-600 hover:bg-red-700 text-white'
+                                  : 'bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200'
+                              }`}
+                            >
+                              Close
+                            </button>
+                          </div>
+                        </div>
+                      </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Drop Risk Monitor - Stocks showing bearish signals */}
+        <div className="mb-8">
+          <DropRiskRadar
+            limit={20}
+            minScore={50}
+            filterSymbols={[...new Set([...openPositions.map(p => p.symbol), ...watchlistSymbols])]}
+            symbolTags={Object.fromEntries([
+              ...openPositions.map(p => [p.symbol.toUpperCase(), 'portfolio' as const]),
+              ...watchlistSymbols.map(s => [s.toUpperCase(), 'watchlist' as const])
+            ])}
+          />
+        </div>
+
+        {/* Closed Positions History */}
+        {closedPositions.length > 0 && (
+          <div className="mb-8">
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+              Closed Positions History ({closedPositions.length})
+            </h3>
+            <div className="relative overflow-hidden rounded-2xl border border-white/60 bg-white/80 shadow-xl backdrop-blur dark:border-white/10 dark:bg-slate-950/60">
+              <div className="overflow-x-auto">
+                <table className="min-w-[880px] w-full">
+                  <thead className="bg-slate-100/80 text-slate-700 dark:bg-slate-900/70 dark:text-slate-200">
+                    <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      Symbol
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      Type
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      Strike
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      Expiration
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      Contracts
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      Entry
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      Exit
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      Realized P&L
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      Closed Date
+                    </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200/70 dark:divide-slate-800/70">
+                    {closedPositions.map((position) => (
+                      <tr
+                        key={position.id}
+                        className="transition-colors hover:bg-purple-50/60 dark:hover:bg-slate-900/60"
+                      >
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-white">
+                        {position.symbol}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">
+                        <span
+                          className={`px-2 py-1 rounded text-xs font-semibold ${
+                            position.option_type === 'call'
+                              ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                              : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                          }`}
+                        >
+                          {position.option_type.toUpperCase()}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">
+                        ${position.strike}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">
+                        {formatDateLocal(position.expiration)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">
+                        {position.contracts}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">
+                        ${position.entry_price.toFixed(2)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">
+                        ${position.exit_price?.toFixed(2) || '—'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <div
+                          className={`font-semibold ${
+                            (position.realized_pl || 0) >= 0
+                              ? 'text-emerald-600'
+                              : 'text-red-600'
+                          }`}
+                        >
+                          ${position.realized_pl?.toFixed(2) || '—'}
+                        </div>
+                        {position.realized_pl_percent && (
+                          <div className="text-xs text-slate-500">
+                            ({position.realized_pl_percent.toFixed(1)}%)
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">
+                        {position.exit_date ? formatDateLocal(position.exit_date) : '—'}
+                      </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
         {openPositions.length > 0 && (
           <motion.section
             initial={{ opacity: 0, y: 24 }}
@@ -1072,10 +1674,10 @@ export default function PortfolioClient({
           >
             <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
               <div className="space-y-2">
-                <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+                <h2 className="font-display text-2xl font-semibold text-slate-900 dark:text-white sm:text-3xl">
                   Portfolio Construction
                 </h2>
-                <p className="text-sm text-slate-600 dark:text-slate-400">
+                <p className="text-base text-slate-600 dark:text-slate-400">
                   See how premium exposure, hedges, and expirations stack up so you can source ideas that smooth risk.
                 </p>
               </div>
@@ -1364,539 +1966,6 @@ export default function PortfolioClient({
           </motion.section>
         )}
 
-        {/* Action Buttons */}
-        <div className="mb-6">
-          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-            <motion.button
-              onClick={handleAddPosition}
-              whileHover={{ y: -2 }}
-              whileTap={{ y: 0 }}
-              className="w-full transform rounded-xl bg-gradient-to-r from-emerald-500 via-emerald-500 to-emerald-600 py-3 px-6 font-semibold text-white shadow-lg transition-all hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-emerald-400/50 sm:w-auto"
-            >
-              + Add Position
-            </motion.button>
-
-            <motion.button
-              onClick={() => setShowImportModal(true)}
-              whileHover={{ y: -2 }}
-              whileTap={{ y: 0 }}
-              className="flex w-full transform items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 via-blue-500 to-indigo-600 py-3 px-6 font-semibold text-white shadow-lg transition-all hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-sky-300/50 dark:from-sky-500 dark:via-sky-500 dark:to-indigo-500 sm:w-auto"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-              </svg>
-              Import CSV
-            </motion.button>
-
-            <motion.button
-              onClick={handleRefreshPrices}
-              disabled={isRefreshing || openPositions.length === 0}
-              whileHover={
-                isRefreshing || openPositions.length === 0 ? undefined : { y: -2 }
-              }
-              whileTap={{ y: 0 }}
-              className={`flex w-full transform items-center justify-center gap-2 rounded-xl border py-3 px-6 font-semibold transition-all sm:w-auto ${
-                isRefreshing || openPositions.length === 0
-                  ? 'cursor-not-allowed border-slate-300/70 bg-slate-200/80 text-slate-500 dark:border-slate-700/70 dark:bg-slate-800/60 dark:text-slate-400'
-                  : 'border-white/60 bg-white/80 text-slate-700 shadow-lg hover:shadow-xl dark:border-white/10 dark:bg-slate-950/60 dark:text-slate-200'
-              }`}
-            >
-              {isRefreshing ? (
-                <>
-                  <svg
-                    className="animate-spin h-5 w-5"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                  Updating...
-                </>
-              ) : (
-                <>
-                  <svg
-                    className="h-5 w-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                    />
-                  </svg>
-                  Refresh Prices
-                </>
-              )}
-            </motion.button>
-
-            <motion.button
-              onClick={handleCheckExitSignals}
-              disabled={isCheckingSignals || openPositions.length === 0}
-              whileHover={
-                isCheckingSignals || openPositions.length === 0 ? undefined : { y: -2 }
-              }
-              whileTap={{ y: 0 }}
-              className={`flex w-full transform items-center justify-center gap-2 rounded-xl py-3 px-6 font-semibold transition-all sm:w-auto ${
-                isCheckingSignals || openPositions.length === 0
-                  ? 'cursor-not-allowed bg-slate-300/80 text-slate-500 dark:bg-slate-800/60 dark:text-slate-400'
-                  : 'bg-gradient-to-r from-orange-500 via-orange-500 to-amber-500 text-white shadow-lg hover:shadow-xl dark:from-orange-500 dark:to-amber-500'
-              }`}
-            >
-              {isCheckingSignals ? (
-                <>
-                  <svg
-                    className="animate-spin h-5 w-5"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                  Checking...
-                </>
-              ) : (
-                <>
-                  <svg
-                    className="h-5 w-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                    />
-                  </svg>
-                  Check Exit Signals
-                </>
-              )}
-            </motion.button>
-
-            <AnimatePresence>
-              {refreshMessage && (
-                <motion.div
-                  key="refresh-message"
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.2 }}
-                  className={`w-full rounded-xl px-4 py-2 text-sm font-medium shadow-inner sm:w-auto ${
-                    refreshMessage.startsWith('✓')
-                      ? 'bg-emerald-100/90 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
-                      : 'bg-rose-100/90 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300'
-                  }`}
-                >
-                  {refreshMessage}
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            <AnimatePresence>
-              {signalsMessage && (
-                <motion.div
-                  key="signals-message"
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.2 }}
-                  className={`w-full rounded-xl px-4 py-2 text-sm font-medium shadow-inner sm:w-auto ${
-                    signalsMessage.startsWith('✓')
-                      ? 'bg-emerald-100/90 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
-                      : 'bg-rose-100/90 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300'
-                  }`}
-                >
-                  {signalsMessage}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        </div>
-
-        {/* Drop Risk Monitor - Stocks showing bearish signals */}
-        <div className="mb-8">
-          <DropRiskRadar
-            limit={20}
-            minScore={50}
-            filterSymbols={[...new Set([...openPositions.map(p => p.symbol), ...watchlistSymbols])]}
-            symbolTags={Object.fromEntries([
-              ...openPositions.map(p => [p.symbol.toUpperCase(), 'portfolio' as const]),
-              ...watchlistSymbols.map(s => [s.toUpperCase(), 'watchlist' as const])
-            ])}
-          />
-        </div>
-
-        {/* Active Alerts - Show positions with pending alerts */}
-        {openPositions.some(p => p.pending_alerts && Array.isArray(p.pending_alerts) && p.pending_alerts.length > 0) && (
-          <div className="mb-8">
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">
-              Active Alerts
-            </h2>
-            <div className="space-y-4">
-              {openPositions
-                .filter(p => p.pending_alerts && Array.isArray(p.pending_alerts) && p.pending_alerts.length > 0)
-                .map(position => (
-                  <div
-                    key={position.id}
-                    className="relative overflow-hidden rounded-2xl border border-white/60 bg-white/80 p-4 shadow-lg backdrop-blur transition-transform hover:-translate-y-0.5 hover:shadow-xl dark:border-white/10 dark:bg-slate-950/60"
-                  >
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="text-sm font-bold text-slate-900 dark:text-white">
-                        {position.symbol} ${position.strike} {position.option_type.toUpperCase()}
-                      </span>
-                      <span className="text-xs text-slate-500 dark:text-slate-400">
-                        Exp: {formatDateLocal(position.expiration)}
-                      </span>
-                    </div>
-                    <PositionAlerts
-                      positionId={position.id}
-                      symbol={position.symbol}
-                      alerts={position.pending_alerts as any[]}
-                      onDismiss={(alertId) => handleDismissAlert(position.id, alertId)}
-                    />
-                  </div>
-                ))}
-            </div>
-          </div>
-        )}
-
-        {/* Contextual Insights - Show positions with insights */}
-        {openPositions.some(p => p.contextual_insights && Array.isArray(p.contextual_insights) && p.contextual_insights.length > 0) && (
-          <div className="mb-8">
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">
-              Position Insights
-            </h2>
-            <div className="space-y-4">
-              {openPositions
-                .filter(p => p.contextual_insights && Array.isArray(p.contextual_insights) && p.contextual_insights.length > 0)
-                .map(position => (
-                  <div
-                    key={position.id}
-                    className="relative overflow-hidden rounded-2xl border border-white/60 bg-white/80 p-4 shadow-lg backdrop-blur transition-transform hover:-translate-y-0.5 hover:shadow-xl dark:border-white/10 dark:bg-slate-950/60"
-                  >
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="text-sm font-bold text-slate-900 dark:text-white">
-                        {position.symbol} ${position.strike} {position.option_type.toUpperCase()}
-                      </span>
-                      <span className="text-xs text-slate-500 dark:text-slate-400">
-                        Exp: {formatDateLocal(position.expiration)}
-                      </span>
-                    </div>
-                    <ContextualInsights insights={position.contextual_insights as any[]} />
-                  </div>
-                ))}
-            </div>
-          </div>
-        )}
-
-        {/* Open Positions */}
-        {openPositions.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">
-              Open Positions ({openPositions.length})
-            </h2>
-            <div className="relative overflow-hidden rounded-2xl border border-white/60 bg-white/80 shadow-xl backdrop-blur dark:border-white/10 dark:bg-slate-950/60">
-              <div className="overflow-x-auto">
-                <table className="min-w-[960px] w-full">
-                  <thead className="bg-slate-100/80 text-slate-700 dark:bg-slate-900/70 dark:text-slate-200">
-                    <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                      Symbol
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                      Type
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                      Strike
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                      Expiration
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                      Contracts
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                      Entry
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                      Current
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                      P&L
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                      Exit Signal
-                    </th>
-                    <th className="px-6 py-3 text-center text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                      Actions
-                    </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200/70 dark:divide-slate-800/70">
-                    {openPositions.map((position) => (
-                      <tr
-                        key={position.id}
-                        className="transition-colors hover:bg-emerald-50/60 dark:hover:bg-slate-900/60"
-                      >
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-white">
-                        {position.symbol}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">
-                        <span
-                          className={`px-2 py-1 rounded text-xs font-semibold ${
-                            position.option_type === 'call'
-                              ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                              : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                          }`}
-                        >
-                          {position.option_type.toUpperCase()}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">
-                        ${position.strike}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">
-                        {formatDateLocal(position.expiration)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">
-                        {position.contracts}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">
-                        ${position.entry_price.toFixed(2)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">
-                        ${position.current_price?.toFixed(2) || '—'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <div
-                          className={`font-semibold ${
-                            (position.unrealized_pl || 0) >= 0
-                              ? 'text-emerald-600'
-                              : 'text-red-600'
-                          }`}
-                        >
-                          ${position.unrealized_pl?.toFixed(2) || '—'}
-                        </div>
-                        {position.unrealized_pl_percent && (
-                          <div className="text-xs text-slate-500">
-                            ({position.unrealized_pl_percent.toFixed(1)}%)
-                          </div>
-                        )}
-                        {position.peak_unrealized_pl && position.peak_unrealized_pl > 0 && (
-                          <div className="text-xs text-slate-400 mt-1">
-                            Peak: ${position.peak_unrealized_pl.toFixed(2)} ({position.peak_unrealized_pl_percent?.toFixed(1)}%)
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 text-sm align-top">
-                        {position.exit_signal && (() => {
-                          const signal = position.exit_signal
-                          const urgency = position.exit_urgency_score || 0
-                          const reasons = (position.exit_reasons as string[]) || []
-
-                          let bgColor = 'bg-emerald-100 dark:bg-emerald-900/30'
-                          let textColor = 'text-emerald-700 dark:text-emerald-400'
-                          let emoji = '🟢'
-                          let label = 'HOLD'
-
-                          if (signal === 'exit_now') {
-                            bgColor = 'bg-red-100 dark:bg-red-900/30'
-                            textColor = 'text-red-700 dark:text-red-400'
-                            emoji = '🔴'
-                            label = 'EXIT NOW'
-                          } else if (signal === 'consider') {
-                            bgColor = 'bg-amber-100 dark:bg-amber-900/30'
-                            textColor = 'text-amber-700 dark:text-amber-400'
-                            emoji = '🟡'
-                            label = 'CONSIDER'
-                          }
-
-                          return (
-                            <div className="space-y-1 max-w-[240px]">
-                              <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold whitespace-nowrap ${bgColor} ${textColor}`}>
-                                <span>{emoji}</span>
-                                <span>{label}</span>
-                                <span className="text-[10px]">({urgency})</span>
-                              </div>
-                              {reasons.length > 0 && (
-                                <div className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">
-                                  {reasons.map(r => r.replace(/_/g, ' ')).join(', ')}
-                                </div>
-                              )}
-                            </div>
-                          )
-                        })()}
-                      </td>
-                      <td className="px-6 py-4 text-sm">
-                        <div className="flex flex-col gap-1.5 w-[110px]">
-                          <button
-                            onClick={() => setPositionToAnalyze(position)}
-                            className="w-full px-2 py-1 rounded text-[11px] font-semibold transition-colors bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 text-white"
-                            title="Discuss with Monty"
-                          >
-                            Ask Monty
-                          </button>
-                          <div className="flex gap-1.5">
-                            <button
-                              onClick={() => setPositionToEdit(position)}
-                              className="flex-1 px-2 py-1 rounded text-[11px] font-semibold transition-colors bg-blue-600 hover:bg-blue-700 text-white"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => setPositionToClose(position)}
-                              className={`flex-1 px-2 py-1 rounded text-[11px] font-semibold transition-colors ${
-                                position.exit_signal === 'exit_now'
-                                  ? 'bg-red-600 hover:bg-red-700 text-white'
-                                  : 'bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200'
-                              }`}
-                            >
-                              Close
-                            </button>
-                          </div>
-                        </div>
-                      </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Closed Positions History */}
-        {closedPositions.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">
-              Closed Positions History ({closedPositions.length})
-            </h2>
-            <div className="relative overflow-hidden rounded-2xl border border-white/60 bg-white/80 shadow-xl backdrop-blur dark:border-white/10 dark:bg-slate-950/60">
-              <div className="overflow-x-auto">
-                <table className="min-w-[880px] w-full">
-                  <thead className="bg-slate-100/80 text-slate-700 dark:bg-slate-900/70 dark:text-slate-200">
-                    <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                      Symbol
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                      Type
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                      Strike
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                      Expiration
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                      Contracts
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                      Entry
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                      Exit
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                      Realized P&L
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                      Closed Date
-                    </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200/70 dark:divide-slate-800/70">
-                    {closedPositions.map((position) => (
-                      <tr
-                        key={position.id}
-                        className="transition-colors hover:bg-purple-50/60 dark:hover:bg-slate-900/60"
-                      >
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-white">
-                        {position.symbol}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">
-                        <span
-                          className={`px-2 py-1 rounded text-xs font-semibold ${
-                            position.option_type === 'call'
-                              ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                              : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                          }`}
-                        >
-                          {position.option_type.toUpperCase()}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">
-                        ${position.strike}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">
-                        {formatDateLocal(position.expiration)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">
-                        {position.contracts}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">
-                        ${position.entry_price.toFixed(2)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">
-                        ${position.exit_price?.toFixed(2) || '—'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <div
-                          className={`font-semibold ${
-                            (position.realized_pl || 0) >= 0
-                              ? 'text-emerald-600'
-                              : 'text-red-600'
-                          }`}
-                        >
-                          ${position.realized_pl?.toFixed(2) || '—'}
-                        </div>
-                        {position.realized_pl_percent && (
-                          <div className="text-xs text-slate-500">
-                            ({position.realized_pl_percent.toFixed(1)}%)
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">
-                        {position.exit_date ? formatDateLocal(position.exit_date) : '—'}
-                      </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Empty State */}
         {positions.length === 0 && (
           <div className="relative overflow-hidden rounded-3xl border border-white/60 bg-white/80 p-12 text-center shadow-xl backdrop-blur dark:border-white/10 dark:bg-slate-950/60">
@@ -1991,10 +2060,10 @@ export default function PortfolioClient({
         <FloatingMontyChat
           message={(() => {
             const plPercent = totalExposure > 0 ? (totalUnrealizedPL / totalExposure) * 100 : 0
-            const hasLongCalls = mixData.some(d => d.name === 'Long Calls' && d.value > 0)
-            const hasLongPuts = mixData.some(d => d.name === 'Long Puts' && d.value > 0)
-            const hasShortCalls = mixData.some(d => d.name === 'Short Calls' && d.value > 0)
-            const hasShortPuts = mixData.some(d => d.name === 'Short Puts' && d.value > 0)
+            const hasLongCalls = mixData.some(d => d.label === 'Long Calls' && d.value > 0)
+            const hasLongPuts = mixData.some(d => d.label === 'Long Puts' && d.value > 0)
+            const hasShortCalls = mixData.some(d => d.label === 'Short Calls' && d.value > 0)
+            const hasShortPuts = mixData.some(d => d.label === 'Short Puts' && d.value > 0)
 
             let analysis = ""
 

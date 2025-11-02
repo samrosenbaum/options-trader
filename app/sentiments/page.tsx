@@ -88,6 +88,7 @@ function SentimentCard({ sentiment, type }: { sentiment: SentimentNarrative; typ
                 )}
                 {Math.round(Math.abs(sentiment.score) * 100)}
               </span>
+              <span className="text-[10px] text-slate-400">Score: {sentiment.score > 0 ? '+' : ''}{sentiment.score.toFixed(2)}</span>
             </div>
             <h3 className="mt-4 text-3xl font-semibold text-slate-900 dark:text-white">
               {sentiment.symbol}
@@ -156,12 +157,17 @@ function SentimentCard({ sentiment, type }: { sentiment: SentimentNarrative; typ
           )}
         </ul>
 
-        <footer className="flex flex-wrap items-center gap-4 text-sm text-slate-500">
-          <span className="font-medium text-slate-600 dark:text-slate-400">
-            {updatedDate
-              ? `Updated ${formatDistanceToNow(updatedDate, { addSuffix: true })}`
-              : "Waiting on fresh data"}
-          </span>
+        <footer className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500">
+            <span className="font-medium text-slate-600 dark:text-slate-400">
+              {updatedDate
+                ? `Updated ${formatDistanceToNow(updatedDate, { addSuffix: true })}`
+                : "Waiting on fresh data"}
+            </span>
+          </div>
+          <div className="rounded-xl border border-slate-200/60 bg-slate-50/50 px-3 py-2 text-xs text-slate-500 dark:border-slate-700/60 dark:bg-slate-800/50 dark:text-slate-400">
+            <span className="font-semibold">Note:</span> Sentiment is based on full article analysis, not just headlines. A "bullish" rating may include articles with negative headlines if the content discusses positive fundamentals.
+          </div>
         </footer>
       </div>
     </article>

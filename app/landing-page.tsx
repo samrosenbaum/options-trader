@@ -17,15 +17,15 @@ const featureCards = [
   {
     title: 'Portfolio Intelligence',
     description: 'Track every position with live P&L, exit signals, and AI-powered insights. Know exactly when to take profits or cut losses.',
-    gradient: 'from-amber-400/90 via-orange-400/80 to-rose-500/70',
-    accent: 'bg-amber-400/60',
+    gradient: 'from-blue-400/90 via-blue-500/80 to-blue-600/70',
+    accent: 'bg-blue-400/60',
     rotate: 0,
   },
   {
     title: 'Ask Monty',
     description: 'Chat with your personal options quant about any trade. Get detailed analysis, risk assessments, and strategic recommendations instantly.',
-    gradient: 'from-cyan-400/90 via-blue-500/80 to-indigo-600/70',
-    accent: 'bg-cyan-400/60',
+    gradient: 'from-emerald-400/90 via-emerald-500/80 to-emerald-600/70',
+    accent: 'bg-emerald-400/60',
     rotate: 8,
   },
 ]

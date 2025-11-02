@@ -87,7 +87,7 @@ export default function Navigation({ userEmail }: { userEmail?: string }) {
             aria-expanded={isMenuOpen}
             onClick={() => setIsMenuOpen((prev) => !prev)}
           >
-            <span className="pointer-events-none absolute inset-0 bg-gradient-to-br from-emerald-400/10 via-cyan-400/5 to-transparent opacity-0 transition-opacity duration-300 ease-out group-hover:opacity-100" />
+            <span className="pointer-events-none absolute inset-0 bg-gradient-to-br from-emerald-400/10 via-blue-400/5 to-transparent opacity-0 transition-opacity duration-300 ease-out group-hover:opacity-100" />
             <span
               className={`relative block h-0.5 w-6 -translate-y-2 rounded-full bg-current transition-all duration-300 ease-out ${
                 isMenuOpen ? 'translate-y-0 rotate-45' : ''
@@ -198,7 +198,7 @@ export default function Navigation({ userEmail }: { userEmail?: string }) {
         }`}
       >
         <div className="relative px-4 pt-3 pb-5 space-y-4">
-          <span className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-400 via-cyan-400 to-blue-500 opacity-80" />
+          <span className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-400 via-blue-400 to-blue-500 opacity-80" />
           <div className="flex flex-col space-y-2">
             {navItems.map((item, index) => {
               if (item.dropdownItems) {
@@ -266,7 +266,7 @@ export default function Navigation({ userEmail }: { userEmail?: string }) {
 
           <div className="relative overflow-hidden rounded-xl border border-white/10 bg-gradient-to-br from-white/40 via-emerald-50/20 to-transparent p-4 shadow-inner backdrop-blur-lg dark:border-white/5 dark:from-slate-900/50 dark:via-emerald-500/5 dark:to-transparent">
             <span className="pointer-events-none absolute -left-12 top-1/2 h-24 w-24 -translate-y-1/2 rounded-full bg-emerald-400/20 blur-3xl" />
-            <span className="pointer-events-none absolute -right-8 -top-8 h-20 w-20 rounded-full bg-cyan-400/20 blur-3xl" />
+            <span className="pointer-events-none absolute -right-8 -top-8 h-20 w-20 rounded-full bg-blue-400/20 blur-3xl" />
             {userEmail && greeting && (
               <p className="text-sm font-medium text-emerald-600 dark:text-emerald-300">{greeting}</p>
             )}
@@ -274,11 +274,11 @@ export default function Navigation({ userEmail }: { userEmail?: string }) {
               href="/settings"
               className={`group relative mt-3 inline-flex w-full items-center justify-center overflow-hidden rounded-lg px-3 py-2 text-sm font-semibold transition-all duration-300 ${
                 pathname === '/settings'
-                  ? 'bg-gradient-to-r from-emerald-500 via-cyan-500 to-blue-500 text-white shadow-[0_10px_30px_-10px_rgba(16,185,129,0.7)]'
+                  ? 'bg-gradient-to-r from-emerald-500 via-emerald-600 to-blue-500 text-white shadow-[0_10px_30px_-10px_rgba(16,185,129,0.7)]'
                   : 'bg-white/80 text-slate-700 hover:bg-emerald-50/80 hover:text-emerald-700 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:bg-slate-800'
               }`}
             >
-              <span className="pointer-events-none absolute inset-0 bg-gradient-to-r from-emerald-400/10 via-cyan-400/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+              <span className="pointer-events-none absolute inset-0 bg-gradient-to-r from-emerald-400/10 via-blue-400/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
               Account
             </Link>
           </div>
