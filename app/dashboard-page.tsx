@@ -7,6 +7,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { TickerTape } from '@/components/ticker-tape'
 import { TradingDeskBanner } from '@/components/trading-desk-banner'
 import { motion } from 'framer-motion'
+import { MontyDashboardBrief } from '@/components/monty-dashboard-brief'
 import {
   Trophy,
   TrendingDown,
@@ -256,10 +257,14 @@ export default function DashboardPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Welcome back to your trade desk</h1>
-          <p className="text-emerald-100/70">Here&apos;s your portfolio at a glance</p>
+        <div className="mb-8 space-y-6">
+          <MontyDashboardBrief />
+
+          {/* Header */}
+          <div>
+            <h1 className="text-3xl font-bold text-white mb-2">Welcome back to your trade desk</h1>
+            <p className="text-emerald-100/70">Here&apos;s your portfolio at a glance</p>
+          </div>
         </div>
 
         {/* Portfolio Value Card */}
