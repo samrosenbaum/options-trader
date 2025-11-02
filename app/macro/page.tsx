@@ -300,6 +300,72 @@ export default function MacroPage() {
           </div>
         )}
 
+        {/* Economic Calendar */}
+        <div className="mb-8 bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6 border border-slate-200 dark:border-slate-700">
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">
+            Economic Calendar
+          </h2>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+            Upcoming high-impact events that may affect your options trades
+          </p>
+
+          {calendarLoading && (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600 mx-auto"></div>
+              <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">Loading calendar...</p>
+            </div>
+          )}
+
+          {!calendarLoading && calendarEvents.length === 0 && (
+            <div className="text-center py-8 text-slate-500 dark:text-slate-400">
+              No upcoming events found
+            </div>
+          )}
+
+          {!calendarLoading && calendarEvents.length > 0 && (
+            <div className="space-y-3">
+              {calendarEvents.map((event, index) => (
+                <div
+                  key={index}
+                  className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-700 transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={`px-2 py-1 rounded text-xs font-semibold ${getCategoryColor(event.category)}`}>
+                          {event.category.toUpperCase()}
+                        </span>
+                        <span className={`px-2 py-1 rounded text-xs font-semibold ${getImpactColor(event.impact)}`}>
+                          {event.impact.toUpperCase()}
+                        </span>
+                      </div>
+                      <div className="font-semibold text-slate-900 dark:text-white mb-1">
+                        {event.event}
+                      </div>
+                      <div className="flex items-center gap-4 text-xs text-slate-600 dark:text-slate-400">
+                        <span>{formatEventDate(event.date)} at {event.time} ET</span>
+                        {event.forecast && (
+                          <span>Forecast: {event.forecast}</span>
+                        )}
+                        {event.previous && (
+                          <span>Previous: {event.previous}</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+            <p className="text-xs text-blue-800 dark:text-blue-300">
+              <strong>Trading Tip:</strong> High-impact events like Fed meetings, jobs reports, and CPI data can cause significant volatility.
+              Consider adjusting your positions or hedging before major announcements.
+            </p>
+          </div>
+        </div>
+
         {error && (
           <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
             <p className="text-red-800 dark:text-red-300">{error}</p>
@@ -408,79 +474,12 @@ export default function MacroPage() {
               </div>
             </div>
 
-            {/* Economic Calendar */}
-            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6 border border-slate-200 dark:border-slate-700">
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">
-                Economic Calendar
-              </h2>
-              <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
-                Upcoming high-impact events that may affect your options trades
-              </p>
-
-              {calendarLoading && (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600 mx-auto"></div>
-                  <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">Loading calendar...</p>
-                </div>
-              )}
-
-              {!calendarLoading && calendarEvents.length === 0 && (
-                <div className="text-center py-8 text-slate-500 dark:text-slate-400">
-                  No upcoming events found
-                </div>
-              )}
-
-              {!calendarLoading && calendarEvents.length > 0 && (
-                <div className="space-y-3">
-                  {calendarEvents.map((event, index) => (
-                    <div
-                      key={index}
-                      className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-700 transition-colors"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className={`px-2 py-1 rounded text-xs font-semibold ${getCategoryColor(event.category)}`}>
-                              {event.category.toUpperCase()}
-                            </span>
-                            <span className={`px-2 py-1 rounded text-xs font-semibold ${getImpactColor(event.impact)}`}>
-                              {event.impact.toUpperCase()}
-                            </span>
-                          </div>
-                          <div className="font-semibold text-slate-900 dark:text-white mb-1">
-                            {event.event}
-                          </div>
-                          <div className="flex items-center gap-4 text-xs text-slate-600 dark:text-slate-400">
-                            <span>{formatEventDate(event.date)} at {event.time} ET</span>
-                            {event.forecast && (
-                              <span>Forecast: {event.forecast}</span>
-                            )}
-                            {event.previous && (
-                              <span>Previous: {event.previous}</span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                <p className="text-xs text-blue-800 dark:text-blue-300">
-                  <strong>Trading Tip:</strong> High-impact events like Fed meetings, jobs reports, and CPI data can cause significant volatility.
-                  Consider adjusting your positions or hedging before major announcements.
-                </p>
-              </div>
-            </div>
-
             {/* Market Intelligence Feeds */}
             <div>
               <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">
                 Market Intelligence
               </h2>
               <div className="space-y-6">
-                <SignalTape />
                 <PoliticianTradesFeed />
               </div>
             </div>

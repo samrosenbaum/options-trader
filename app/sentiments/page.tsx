@@ -16,6 +16,7 @@ import {
   fetchSentimentInsights,
   SentimentNarrative,
 } from "@/lib/sentiments/intelligence"
+import { SignalTape } from "@/components/signal-tape"
 
 export const metadata: Metadata = {
   title: "Sentiment Intelligence",
@@ -253,6 +254,9 @@ export default async function SentimentsPage() {
                 <SentimentStat key={stat.label} stat={stat} />
               ))}
             </div>
+
+            {/* Signal Tape */}
+            <SignalTape />
 
             <div>
               {/* Bullish Narratives Section */}
