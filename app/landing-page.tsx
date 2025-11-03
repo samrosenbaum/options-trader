@@ -5,7 +5,6 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { motion, useInView } from 'framer-motion'
 import ContractFunnel from '@/components/contract-funnel'
-import { MontyGuide } from '@/components/monty-guide'
 
 const featureCards = [
   {
@@ -109,7 +108,6 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
-      <MontyGuide />
       <div className="relative min-h-screen overflow-hidden">
         <video
           className="absolute inset-0 h-full w-full object-cover z-0"
