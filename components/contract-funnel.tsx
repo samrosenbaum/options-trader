@@ -94,10 +94,10 @@ export default function ContractFunnel() {
       <div className="relative mx-auto grid w-full max-w-6xl gap-16 lg:grid-cols-[1fr_1.1fr] lg:items-center">
         <div className="space-y-6">
           <span className="text-sm font-semibold uppercase tracking-[0.4em] text-emerald-200/70">
-            Signal refinery
+            Only the Best For You
           </span>
           <h2 className="text-3xl font-display font-semibold text-white sm:text-4xl">
-            Billions of option contracts, sifted into a handful of trades you can act on.
+            Millions of option contracts, sifted into a handful of trades you can act on.
           </h2>
           <p className="text-base text-white/70 sm:text-lg">
             Every sweep, quote, and volatility shift streams through Monty&apos;s machine. We score each contract in real time,

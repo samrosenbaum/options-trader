@@ -153,13 +153,13 @@ export default function LandingPage() {
           <main className="flex flex-1 flex-col items-start justify-center gap-10 py-20">
             <div className="inline-flex items-center gap-3 rounded-full border border-white/20 bg-white/10 px-5 py-2 text-xs uppercase tracking-[0.3em] text-white/60">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-              Your personal options quant
+              Hey, I'm Monty, let's see how the markets are moving today...
             </div>
             <h1 className="max-w-3xl text-4xl font-display font-semibold leading-tight text-white sm:text-5xl lg:text-6xl">
-              Your AI-powered options trading desk
+              Trade Options Like You Work On Wall Street.
             </h1>
             <p className="max-w-2xl text-lg text-white/70">
-              Monty is your AI-powered options trading analyst. Get real-time market scans, data-driven trade recommendations, and personalized portfolio analysis. From discovering high-probability setups to knowing exactly when to exit, Monty turns complex options data into actionable insights.
+              Monty uses techniques the institutions use, but puts the power in your hands.
             </p>
             <div className="flex flex-wrap items-center gap-4">
               <Link
