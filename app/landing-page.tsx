@@ -39,7 +39,7 @@ const featureCards = [
 const proofPoints = [
   {
     label: 'Options scanned daily',
-    value: '10K+',
+    value: '100K+',
     backTitle: 'Smart Scanner',
     backDescription: 'Our AI analyzes thousands of options contracts every day, filtering by unusual flow, gamma exposure, volume spikes, and technical patterns. Find the highest-probability setups before the crowd.',
   },
@@ -154,10 +154,7 @@ export default function LandingPage() {
                 </AnimatePresence>
               </h1>
               <p className="max-w-2xl text-lg text-slate-600">
-                Your friend, who happens to be an options genius.
-              </p>
-              <p className="max-w-2xl text-base text-slate-500">
-                Institutional-grade analysis, explained simply. 
+                Institutional-grade analysis, explained like texting with a friend.
               </p>
               <div className="flex flex-wrap items-center gap-4">
                 <Link
@@ -495,13 +492,13 @@ export default function LandingPage() {
               href="/auth/login"
               className="rounded-full bg-emerald-500 px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-200/70 transition hover:bg-emerald-400"
             >
-              Get started free
+              Try Monty
             </Link>
             <a
               href="mailto:sam@monty.trade"
               className="text-sm font-semibold text-emerald-600 transition hover:text-emerald-700"
             >
-              Questions? sam@monty.trade
+              
             </a>
           </div>
         </div>

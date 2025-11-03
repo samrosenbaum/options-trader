@@ -50,3 +50,9 @@ data/*.db
 # cache files
 options_cache_*.json
 data/scan_universe_state.json
+
+# large GIF files (too big for GitHub)
+public/*-demo.gif
+public/chat-feature.gif
+public/scanner-feature.gif
+public/portfolio-demo.gif
