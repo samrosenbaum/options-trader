@@ -13,6 +13,8 @@ const featureCards = [
     gradient: 'from-emerald-100 via-emerald-200 to-emerald-300',
     accent: 'bg-emerald-500/70',
     rotate: -8,
+    gifPath: '/scanner-feature.gif',
+    gifPlaceholder: 'Scanner Demo',
   },
   {
     title: 'Exit Signals',
@@ -20,6 +22,8 @@ const featureCards = [
     gradient: 'from-sky-100 via-sky-200 to-blue-200',
     accent: 'bg-sky-500/70',
     rotate: 0,
+    gifPath: '/exit-signals-feature.gif',
+    gifPlaceholder: 'Exit Signals Demo',
   },
   {
     title: 'Ask Monty',
@@ -27,6 +31,8 @@ const featureCards = [
     gradient: 'from-emerald-100 via-emerald-200 to-emerald-300',
     accent: 'bg-emerald-500/70',
     rotate: 8,
+    gifPath: '/chat-feature.gif',
+    gifPlaceholder: 'Chat Demo',
   },
 ]
 
@@ -122,44 +128,75 @@ export default function LandingPage() {
             </Link>
           </header>
 
-          <main className="flex flex-1 flex-col items-start justify-center gap-10 py-20">
-            <div className="inline-flex items-center gap-3 rounded-full border border-emerald-200/60 bg-white/70 px-5 py-2 text-xs uppercase tracking-[0.3em] text-emerald-600">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              Your Personal Options Assistant
-            </div>
-            <h1 className="max-w-3xl text-4xl font-display font-semibold leading-tight text-slate-900 sm:text-5xl lg:text-6xl">
-              Monty{' '}
-              <AnimatePresence mode="wait">
-                <motion.span
-                  key={currentValueProp}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ duration: 0.5 }}
-                  className="inline-block text-emerald-600"
+          <main className="flex flex-1 flex-col lg:flex-row items-center justify-between gap-12 py-20">
+            {/* Left: Hero Text */}
+            <div className="flex flex-col items-start gap-10 lg:w-1/2">
+              <div className="inline-flex items-center gap-3 rounded-full border border-emerald-200/60 bg-white/70 px-5 py-2 text-xs uppercase tracking-[0.3em] text-emerald-600">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                Your Personal Options Assistant
+              </div>
+              <h1 className="max-w-3xl text-4xl font-display font-semibold leading-tight text-slate-900 sm:text-5xl lg:text-6xl">
+                Monty{' '}
+                <AnimatePresence mode="wait">
+                  <motion.span
+                    key={currentValueProp}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.5 }}
+                    className="inline-block text-emerald-600"
+                  >
+                    {rotatingValueProps[currentValueProp]}
+                  </motion.span>
+                </AnimatePresence>
+              </h1>
+              <p className="max-w-2xl text-lg text-slate-600">
+                Techniques the institutions use, now at your fingertips.
+              </p>
+              <div className="flex flex-wrap items-center gap-4">
+                <Link
+                  href="/auth/login"
+                  className="rounded-full bg-emerald-500 px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-200/70 transition hover:bg-emerald-400"
                 >
-                  {rotatingValueProps[currentValueProp]}
-                </motion.span>
-              </AnimatePresence>
-            </h1>
-            <p className="max-w-2xl text-lg text-slate-600">
-              Techniques the institutions use, now at your fingertips.
-            </p>
-            <div className="flex flex-wrap items-center gap-4">
-              <Link
-                href="/auth/login"
-                className="rounded-full bg-emerald-500 px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-200/70 transition hover:bg-emerald-400"
-              >
-                Get Access
-              </Link>
-              <a
-                href="#how-it-works"
-                className="flex items-center gap-2 text-sm font-semibold text-emerald-600 transition hover:text-emerald-700"
-              >
-                See how it works
-                <span aria-hidden className="text-lg">→</span>
-              </a>
+                  Get Access
+                </Link>
+                <a
+                  href="#how-it-works"
+                  className="flex items-center gap-2 text-sm font-semibold text-emerald-600 transition hover:text-emerald-700"
+                >
+                  See how it works
+                  <span aria-hidden className="text-lg">→</span>
+                </a>
+              </div>
             </div>
+
+            {/* Right: Hero Demo GIF */}
+            <div className="lg:w-1/2 relative z-[3]">
+              <div className="relative overflow-hidden rounded-3xl border border-slate-200 bg-slate-100 shadow-[0_40px_80px_-30px_rgba(15,23,42,0.3)]">
+                {/* Replace with your hero demo GIF */}
+                <div className="aspect-video w-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
+                  <div className="text-center">
+                    <p className="text-sm font-semibold text-slate-500">Hero Demo GIF</p>
+                    <p className="mt-2 text-xs text-slate-400">Replace: /public/hero-demo.gif</p>
+                    <p className="mt-1 text-xs text-slate-400">Showcase: Main product overview</p>
+                  </div>
+                </div>
+                {/* Uncomment when you add the GIF:
+                <Image
+                  src="/hero-demo.gif"
+                  alt="Monty product demo"
+                  width={1200}
+                  height={675}
+                  className="w-full h-auto"
+                  unoptimized
+                />
+                */}
+              </div>
+            </div>
+          </main>
+
+          {/* Proof Points */}
+          <div className="pb-16">
             <div className="mt-6 grid gap-6 sm:grid-cols-3 relative z-[3]">
               {proofPoints.map((item) => (
                 <motion.div
@@ -179,7 +216,7 @@ export default function LandingPage() {
                 </motion.div>
               ))}
             </div>
-          </main>
+          </div>
         </div>
       </div>
 
@@ -212,20 +249,40 @@ export default function LandingPage() {
             {featureCards.map((card, index) => (
               <motion.div
                 key={card.title}
-                initial={{ opacity: 0, y: 40, scale: 0.95 }}
+                initial={{ opacity: 0, y: 40 }}
                 animate={
                   cardsInView
-                    ? { opacity: 1, y: 0, scale: 1 }
-                    : { opacity: 0, y: 40, scale: 0.95 }
+                    ? { opacity: 1, y: 0 }
+                    : { opacity: 0, y: 40 }
                 }
                 transition={{ delay: 0.15 * index, type: 'spring', stiffness: 140, damping: 16 }}
-                className={`relative rounded-[2rem] border border-slate-200 bg-gradient-to-br ${card.gradient} p-6 text-left text-slate-900 shadow-[0_35px_60px_-35px_rgba(30,64,175,0.35)] backdrop-blur`}
+                className={`rounded-[2rem] border border-slate-200 bg-gradient-to-br ${card.gradient} overflow-hidden shadow-[0_35px_60px_-35px_rgba(30,64,175,0.35)] backdrop-blur transition-all hover:scale-[1.02] hover:shadow-[0_40px_70px_-35px_rgba(30,64,175,0.45)]`}
               >
-              <div className={`mb-6 h-10 w-10 rounded-full ${card.accent}`} />
-              <h3 className="text-xl font-semibold text-slate-900">{card.title}</h3>
-              <p className="mt-3 text-sm text-slate-600">{card.description}</p>
-            </motion.div>
-          ))}
+                {/* Product Image Placeholder */}
+                <div className="aspect-video w-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center border-b border-slate-200/50">
+                  <div className="text-center px-4">
+                    <p className="text-xs font-semibold text-slate-500">{card.gifPlaceholder}</p>
+                    <p className="mt-1 text-[10px] text-slate-400">{card.gifPath}</p>
+                  </div>
+                  {/* Uncomment when you add images:
+                  <Image
+                    src={card.gifPath}
+                    alt={`${card.title} preview`}
+                    width={400}
+                    height={225}
+                    className="w-full h-full object-cover"
+                    unoptimized
+                  />
+                  */}
+                </div>
+
+                {/* Card Content */}
+                <div className="p-6">
+                  <h3 className="text-xl font-semibold text-slate-900">{card.title}</h3>
+                  <p className="mt-3 text-sm text-slate-600">{card.description}</p>
+                </div>
+              </motion.div>
+            ))}
           </div>
         </div>
       </section>
@@ -287,6 +344,149 @@ export default function LandingPage() {
               <p className="mt-2 text-slate-600">
                 Track your wins and losses with the Anti-Portfolio. Learn from rejected trades and refine your strategy with data-driven insights.
               </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Feature Showcase GIF Sections */}
+      <section className="bg-gradient-to-b from-slate-100 to-white px-6 py-28">
+        <div className="mx-auto w-full max-w-6xl space-y-24">
+          {/* Scanner Feature */}
+          <div className="grid gap-12 lg:grid-cols-2 lg:gap-16 items-center">
+            <div className="space-y-6">
+              <span className="text-sm font-semibold uppercase tracking-[0.4em] text-emerald-500">Live Scanner</span>
+              <h3 className="text-3xl font-display font-semibold text-slate-900 sm:text-4xl">
+                Find winning trades in seconds
+              </h3>
+              <p className="text-base text-slate-600">
+                Our scanner analyzes thousands of options contracts in real-time, filtering by unusual flow, gamma exposure, and technical patterns. Only the best opportunities make it to your desk.
+              </p>
+              <ul className="space-y-3 text-sm text-slate-600">
+                <li className="flex items-start gap-3">
+                  <span className="mt-1 text-emerald-500">✓</span>
+                  <span>Real-time unusual options activity detection</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="mt-1 text-emerald-500">✓</span>
+                  <span>Gamma exposure and momentum indicators</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="mt-1 text-emerald-500">✓</span>
+                  <span>Custom filters for your trading style</span>
+                </li>
+              </ul>
+            </div>
+            <div className="relative overflow-hidden rounded-3xl border border-slate-200 bg-slate-100 shadow-[0_40px_80px_-30px_rgba(15,23,42,0.3)]">
+              <div className="aspect-[4/3] w-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
+                <div className="text-center">
+                  <p className="text-sm font-semibold text-slate-500">Scanner Demo GIF</p>
+                  <p className="mt-2 text-xs text-slate-400">Replace: /public/scanner-demo.gif</p>
+                  <p className="mt-1 text-xs text-slate-400">Showcase: Live scanning & filtering</p>
+                </div>
+              </div>
+              {/* Uncomment when you add the GIF:
+              <Image
+                src="/scanner-demo.gif"
+                alt="Live scanner demo"
+                width={800}
+                height={600}
+                className="w-full h-auto"
+                unoptimized
+              />
+              */}
+            </div>
+          </div>
+
+          {/* Chat Feature */}
+          <div className="grid gap-12 lg:grid-cols-2 lg:gap-16 items-center">
+            <div className="relative overflow-hidden rounded-3xl border border-slate-200 bg-slate-100 shadow-[0_40px_80px_-30px_rgba(15,23,42,0.3)] lg:order-first">
+              <div className="aspect-[4/3] w-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
+                <div className="text-center">
+                  <p className="text-sm font-semibold text-slate-500">Chat Demo GIF</p>
+                  <p className="mt-2 text-xs text-slate-400">Replace: /public/chat-demo.gif</p>
+                  <p className="mt-1 text-xs text-slate-400">Showcase: AI chat analysis</p>
+                </div>
+              </div>
+              {/* Uncomment when you add the GIF:
+              <Image
+                src="/chat-demo.gif"
+                alt="Chat with Monty demo"
+                width={800}
+                height={600}
+                className="w-full h-auto"
+                unoptimized
+              />
+              */}
+            </div>
+            <div className="space-y-6 lg:order-last">
+              <span className="text-sm font-semibold uppercase tracking-[0.4em] text-emerald-500">AI Assistant</span>
+              <h3 className="text-3xl font-display font-semibold text-slate-900 sm:text-4xl">
+                Chat with your personal analyst
+              </h3>
+              <p className="text-base text-slate-600">
+                Ask Monty anything about your trades. Get instant insights on risk, Greeks, market sentiment, and optimal strategies—all in plain language.
+              </p>
+              <ul className="space-y-3 text-sm text-slate-600">
+                <li className="flex items-start gap-3">
+                  <span className="mt-1 text-emerald-500">✓</span>
+                  <span>Trade analysis and risk assessment</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="mt-1 text-emerald-500">✓</span>
+                  <span>Greeks explained in simple terms</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="mt-1 text-emerald-500">✓</span>
+                  <span>Strategy recommendations based on market conditions</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Portfolio Tracking */}
+          <div className="grid gap-12 lg:grid-cols-2 lg:gap-16 items-center">
+            <div className="space-y-6">
+              <span className="text-sm font-semibold uppercase tracking-[0.4em] text-emerald-500">Portfolio Management</span>
+              <h3 className="text-3xl font-display font-semibold text-slate-900 sm:text-4xl">
+                Track every position with precision
+              </h3>
+              <p className="text-base text-slate-600">
+                Monitor your entire portfolio with live P&L tracking, exit signals, and performance analytics. Know exactly when to hold and when to take profits.
+              </p>
+              <ul className="space-y-3 text-sm text-slate-600">
+                <li className="flex items-start gap-3">
+                  <span className="mt-1 text-emerald-500">✓</span>
+                  <span>Real-time P&L and Greeks tracking</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="mt-1 text-emerald-500">✓</span>
+                  <span>AI-powered exit signals</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="mt-1 text-emerald-500">✓</span>
+                  <span>Performance analytics and insights</span>
+                </li>
+              </ul>
+            </div>
+            <div className="relative overflow-hidden rounded-3xl border border-slate-200 bg-slate-100 shadow-[0_40px_80px_-30px_rgba(15,23,42,0.3)]">
+              <div className="aspect-[4/3] w-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
+                <div className="text-center">
+                  <p className="text-sm font-semibold text-slate-500">Portfolio Demo GIF</p>
+                  <p className="mt-2 text-xs text-slate-400">Replace: /public/portfolio-demo.gif</p>
+                  <p className="mt-1 text-xs text-slate-400">Showcase: Portfolio tracking & signals</p>
+                </div>
+              </div>
+              {/* Uncomment when you add the GIF:
+              <Image
+                src="/portfolio-demo.gif"
+                alt="Portfolio tracking demo"
+                width={800}
+                height={600}
+                className="w-full h-auto"
+                unoptimized
+              />
+              */}
             </div>
           </div>
         </div>
