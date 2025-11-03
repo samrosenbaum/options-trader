@@ -8,14 +8,14 @@ import ContractFunnel from '@/components/contract-funnel'
 
 const featureCards = [
   {
-    title: 'Smart Scanner',
+    title: 'Ask Monty Anything',
     description: 'Real-time market scans analyze thousands of options to surface high-probability trades based on unusual flow, gamma exposure, and technical setups.',
     gradient: 'from-emerald-100 via-emerald-200 to-emerald-300',
     accent: 'bg-emerald-500/70',
     rotate: -8,
   },
   {
-    title: 'Portfolio Intelligence',
+    title: 'Exit Signals',
     description: 'Track every position with live P&L, exit signals, and AI-powered insights. Know exactly when to take profits or cut losses.',
     gradient: 'from-sky-100 via-sky-200 to-blue-200',
     accent: 'bg-sky-500/70',
@@ -153,7 +153,7 @@ export default function LandingPage() {
           <main className="flex flex-1 flex-col items-start justify-center gap-10 py-20">
             <div className="inline-flex items-center gap-3 rounded-full border border-emerald-200/60 bg-white/70 px-5 py-2 text-xs uppercase tracking-[0.3em] text-emerald-600">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              Hey, I'm Monty, let's see how the markets are moving today...
+              Scanning the markets...
             </div>
             <h1 className="max-w-3xl text-4xl font-display font-semibold leading-tight text-slate-900 sm:text-5xl lg:text-6xl">
               Trade Options Like You Work On Wall Street.
@@ -209,7 +209,7 @@ export default function LandingPage() {
         <div className="mx-auto flex w-full max-w-5xl flex-col items-center text-center">
           <span className="text-sm font-semibold uppercase tracking-[0.4em] text-emerald-500/80">Everything you need</span>
           <h2 className="mt-6 max-w-2xl text-3xl font-display font-semibold text-slate-900 sm:text-4xl">
-            Options trading tools that give you an unfair advantage
+            Tools that give you the upper hand
           </h2>
         </div>
 

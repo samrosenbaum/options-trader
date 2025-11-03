@@ -94,7 +94,7 @@ export default function ContractFunnel() {
       <div className="relative mx-auto grid w-full max-w-6xl gap-16 lg:grid-cols-[1fr_1.1fr] lg:items-center">
         <div className="space-y-6">
           <span className="text-sm font-semibold uppercase tracking-[0.4em] text-emerald-600/80">
-            Only the Best For You
+            Cut through the noise
           </span>
           <h2 className="text-3xl font-display font-semibold text-slate-900 sm:text-4xl">
             Millions of option contracts, sifted into a handful of trades you can act on.
