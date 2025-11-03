@@ -12,6 +12,8 @@ from typing import Dict, List, Optional, Any
 import pandas as pd
 import yfinance as yf
 
+from src.scanner.pricing import infer_option_pricing
+
 from src.scanner.screening_criteria import (
     StockScreener,
     OptionsScreener,
@@ -82,9 +84,13 @@ def apply_enhanced_screening(
         # Extract option data
         strike = float(option.get('strike', 0))
         option_type = option.get('type', 'call')
-        premium = float(option.get('lastPrice', 0))
-        bid = float(option.get('bid', 0))
-        ask = float(option.get('ask', 0))
+        pricing = infer_option_pricing(option)
+        if not pricing.is_actionable:
+            continue
+
+        premium = pricing.price
+        bid = pricing.bid
+        ask = pricing.ask
         volume = int(option.get('volume', 0))
         open_interest = int(option.get('openInterest', 0))
         delta = float(option.get('delta', 0))

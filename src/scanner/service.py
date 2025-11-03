@@ -25,6 +25,12 @@ from src.models.preferences import (
 )
 from src.scanner.historical_moves import HistoricalMoveAnalyzer
 from src.scanner.iv_rank_history import IVRankHistory
+from src.scanner.pricing import (
+    OptionPricing,
+    apply_pricing_annotations,
+    infer_option_pricing,
+    safe_float as pricing_safe_float,
+)
 from src.scanner.universe import build_scan_universe
 from src.signals import (
     OptionsSkewAnalyzer,
@@ -149,6 +155,18 @@ class SmartOptionsScanner:
 
         # Initialize rejection tracker for filter optimization
         self.rejection_tracker = RejectionTracker()
+
+    @staticmethod
+    def _safe_float(value: Any) -> float:
+        """Convert arbitrary input to a finite float, returning 0.0 on failure."""
+
+        return pricing_safe_float(value)
+
+    @staticmethod
+    def _infer_option_price(option: Mapping[str, Any]) -> OptionPricing:
+        """Determine the most reliable live price to value a contract."""
+
+        return infer_option_pricing(option)
 
     def _derive_cache_key(self) -> str:
         if self.preference_signature == self._HOUSE_SIGNATURE:
@@ -979,7 +997,14 @@ class SmartOptionsScanner:
 
         opportunities: List[Dict[str, Any]] = []
         fallback_candidates: List[Dict[str, Any]] = []
-        for _, option in liquid_options.iterrows():
+        for _, option_row in liquid_options.iterrows():
+            pricing = self._infer_option_price(option_row)
+            if not pricing.is_actionable:
+                continue
+
+            option = option_row.copy()
+            apply_pricing_annotations(option, pricing)
+
             returns_analysis, metrics = self.calculate_returns_analysis(option)
             probability_score = self.calculate_probability_score(option, metrics)
             score = self.calculate_opportunity_score(option, metrics, probability_score)
@@ -1049,8 +1074,9 @@ class SmartOptionsScanner:
                 if moneyness > 0.15:  # More than 15% ITM = too deep
                     continue
 
+            effective_price = self._safe_float(option.get("_effectivePrice", option.get("lastPrice")))
             volume_ratio = float(option["volume"] / max(option["openInterest"], 1))
-            spread_pct = (option["ask"] - option["bid"]) / max(option["lastPrice"], 0.01)
+            spread_pct = (option["ask"] - option["bid"]) / max(effective_price, 0.01)
 
             swing_signal, swing_error = self._swing_signal_for(option["symbol"])
 
@@ -1143,7 +1169,7 @@ class SmartOptionsScanner:
             risk_reward_ratio = metrics["bestRoiPercent"] / 100 if metrics["bestRoiPercent"] > 0 else None
 
             # Classify into quality lane for retail-focused filtering
-            contract_cost = float(option["lastPrice"]) * 100
+            contract_cost = effective_price * 100
             cost_basis = metrics.get("costBasis", contract_cost)
             expected_net_profit = metrics.get("expectedMoveNetProfit", 0.0)
             payoff_ratio = expected_net_profit / cost_basis if cost_basis > 0 else 0.0
@@ -1160,7 +1186,7 @@ class SmartOptionsScanner:
                 "optionType": option["type"],
                 "strike": round(float(option["strike"]), 2),
                 "expiration": option["expiration"],
-                "premium": round(float(option["lastPrice"]) * 100, 2),  # Per contract (100 shares)
+                "premium": round(effective_price * 100, 2),  # Per contract (100 shares)
                 "tradeSummary": trade_summary,
                 "qualityLane": quality_lane,  # NEW: Two-lane classification system
                 "bid": round(float(option["bid"]) * 100, 2),  # Per contract
@@ -1220,6 +1246,9 @@ class SmartOptionsScanner:
                     "priceSource": option.get("_price_source", "unknown"),
                     "priceTimestamp": option.get("_price_timestamp"),
                     "priceAgeSeconds": option.get("_price_age_seconds"),
+                    "pricingBasis": option.get("_pricing_basis", "lastPrice"),
+                    "rawLastPrice": round(self._safe_float(option.get("_rawLastPrice")), 4),
+                    "effectivePrice": round(self._safe_float(option.get("lastPrice")), 4),
                 },
             }
             if swing_signal is not None:
@@ -1416,7 +1445,8 @@ class SmartOptionsScanner:
             score += 8
 
         # Spread quality (max 18 points) - same as before
-        spread_pct = (option["ask"] - option["bid"]) / max(option["lastPrice"], 0.01)
+        effective_price = self._safe_float(option.get("_effectivePrice", option.get("lastPrice")))
+        spread_pct = (option["ask"] - option["bid"]) / max(effective_price, 0.01)
         if spread_pct < 0.05:
             score += 18
         elif spread_pct < 0.1:
@@ -1439,7 +1469,7 @@ class SmartOptionsScanner:
         # NORMALIZED BREAKEVEN BONUS: Reward tight breakeven + good payoff (max 10 points)
         # Prevents deep ITM from getting free boost without attractive ROI
         breakeven_move = abs(metrics["breakevenMovePercent"])
-        cost_basis = metrics.get("costBasis", option["lastPrice"] * 100)
+        cost_basis = metrics.get("costBasis", effective_price * 100)
         expected_net_profit = metrics.get("expectedMoveNetProfit", 0.0)
 
         # Calculate payoff ratio for normalization
@@ -1478,7 +1508,7 @@ class SmartOptionsScanner:
 
         # COST SENSITIVITY: Favor affordable options for retail traders (max 9 points)
         # This helps cheap asymmetric plays outrank expensive deep ITM options
-        premium = option["lastPrice"]
+        premium = effective_price
         contract_cost = premium * 100
 
         # Award points based on affordability (lower premium = higher score)
@@ -1520,7 +1550,9 @@ class SmartOptionsScanner:
         Example: "Stock needs to go UP by $1.74 (3.0%) to make $164 profit (12% return) within 1 week"
         """
         stock_price = float(option["stockPrice"])
-        premium = float(option["lastPrice"])
+        premium = self._safe_float(option.get("_effectivePrice", option.get("lastPrice")))
+        if premium <= 0:
+            premium = self._safe_float(option.get("lastPrice"))
         cost_basis = premium * 100
         dte = self.calculate_days_to_expiration(option["expiration"])
         option_type = option["type"].upper()
@@ -1665,16 +1697,23 @@ class SmartOptionsScanner:
             return "low"
         if metrics["bestRoiPercent"] >= 250 and probability_percent >= 55:
             return "medium"
-        if option["lastPrice"] < 1.0 and probability_percent < 50:
+        effective_price = self._safe_float(option.get("_effectivePrice", option.get("lastPrice")))
+        if effective_price < 1.0 and probability_percent < 50:
             return "high"
         return "medium"
 
     def calculate_breakeven(self, option: pd.Series) -> float:
         """Calculate breakeven price."""
 
+        premium = self._safe_float(option.get("_effectivePrice", option.get("lastPrice")))
+        if premium <= 0:
+            premium = self._safe_float(option.get("lastPrice"))
+
+        strike = self._safe_float(option.get("strike"))
+
         if option["type"] == "call":
-            return float(option["strike"] + option["lastPrice"])
-        return float(option["strike"] - option["lastPrice"])
+            return float(strike + premium)
+        return float(strike - premium)
 
     def calculate_iv_rank(self, option: pd.Series) -> float:
         """Calculate IV rank using a 52-week percentile of historical observations."""
@@ -2344,7 +2383,9 @@ class SmartOptionsScanner:
 
         stock_price = float(option["stockPrice"])
         strike = float(option["strike"])
-        premium = float(option["lastPrice"])
+        premium = self._safe_float(option.get("_effectivePrice", option.get("lastPrice")))
+        if premium <= 0:
+            premium = self._safe_float(option.get("lastPrice"))
         cost_basis = premium * 100
         breakeven_price = self.calculate_breakeven(option)
 

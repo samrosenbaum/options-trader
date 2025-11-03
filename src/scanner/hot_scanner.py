@@ -13,10 +13,14 @@ Examples:
   - TSLA down 15% on bad news → buy calls for oversold bounce
 """
 
-import yfinance as yf
 from datetime import datetime, timedelta
-from typing import List, Dict, Any, Optional
+from math import isfinite
+from typing import Any, Dict, List, Mapping, Optional
+
 import pandas as pd
+import yfinance as yf
+
+from src.scanner.pricing import OptionPricing, infer_option_pricing, safe_float
 
 
 class HotScanner:
@@ -26,6 +30,15 @@ class HotScanner:
         self.min_volume = 50  # Very relaxed - catch liquid plays
         self.min_oi = 50  # Very relaxed
         self.max_spread_pct = 0.60  # 60% spread OK for hot plays
+
+    @staticmethod
+    def _safe_float(value: Any) -> float:
+        return safe_float(value)
+
+    def _infer_option_price(self, option: Mapping[str, Any]) -> OptionPricing:
+        """Select the best available live price for a contract."""
+
+        return infer_option_pricing(option)
 
     def scan_for_momentum_plays(
         self,
@@ -183,8 +196,14 @@ class HotScanner:
                 liquid_options = liquid_options.nsmallest(3, 'strike_diff')
 
                 for _, option in liquid_options.iterrows():
-                    # Calculate spread
-                    spread_pct = (option['ask'] - option['bid']) / max(option['lastPrice'], 0.01)
+                    pricing = self._infer_option_price(option)
+                    if not pricing.is_actionable:
+                        continue
+
+                    price = pricing.price
+
+                    # Calculate spread using sanitized quotes
+                    spread_pct = max(pricing.ask - pricing.bid, 0.0) / max(price, 0.01)
 
                     if spread_pct > self.max_spread_pct:
                         continue
@@ -203,9 +222,10 @@ class HotScanner:
                         'optionType': direction,
                         'strike': float(option['strike']),
                         'expiration': exp_str,
-                        'premium': float(option['lastPrice']) * 100,  # Total contract cost
-                        'bid': float(option['bid']),
-                        'ask': float(option['ask']),
+                        'premium': round(price * 100, 2),  # Total contract cost
+                        'premiumSource': pricing.source,
+                        'bid': round(pricing.bid, 4),
+                        'ask': round(pricing.ask, 4),
                         'volume': int(option['volume']),
                         'openInterest': int(option['openInterest']),
                         'impliedVolatility': float(option.get('impliedVolatility', 0)),
@@ -233,7 +253,8 @@ class HotScanner:
                             'gamma': float(option.get('gamma', 0)),
                             'theta': float(option.get('theta', 0)),
                             'vega': float(option.get('vega', 0)),
-                        }
+                        },
+                        'rawLastPrice': pricing.last_trade,
                     }
 
                     opportunities.append(opp)

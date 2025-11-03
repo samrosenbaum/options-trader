@@ -9,6 +9,8 @@ from datetime import datetime, timedelta, time
 
 import pytz
 
+from src.scanner.pricing import infer_option_pricing
+
 
 ET_TZ = pytz.timezone("US/Eastern")
 
@@ -114,6 +116,9 @@ def detect_unusual_options_activity(
                 ]
 
                 for _, row in unusual_calls.iterrows():
+                    pricing = infer_option_pricing(row)
+                    if not pricing.is_actionable:
+                        continue
                     # Check if near ATM (within 5%)
                     strike = row['strike']
                     is_atm = abs((strike - current_price) / current_price) <= 0.05
@@ -125,7 +130,11 @@ def detect_unusual_options_activity(
                         'oi': int(row['openInterest']),
                         'vol_oi_ratio': float(row['vol_oi_ratio']),
                         'is_atm': is_atm,
-                        'premium': float(row['lastPrice'])
+                        'premium': pricing.price,
+                        'premium_source': pricing.source,
+                        'bid': pricing.bid,
+                        'ask': pricing.ask,
+                        'raw_last_price': pricing.last_trade,
                     })
 
             # Detect unusual put activity
@@ -139,6 +148,9 @@ def detect_unusual_options_activity(
                 ]
 
                 for _, row in unusual_puts.iterrows():
+                    pricing = infer_option_pricing(row)
+                    if not pricing.is_actionable:
+                        continue
                     strike = row['strike']
                     is_atm = abs((strike - current_price) / current_price) <= 0.05
 
@@ -149,7 +161,11 @@ def detect_unusual_options_activity(
                         'oi': int(row['openInterest']),
                         'vol_oi_ratio': float(row['vol_oi_ratio']),
                         'is_atm': is_atm,
-                        'premium': float(row['lastPrice'])
+                        'premium': pricing.price,
+                        'premium_source': pricing.source,
+                        'bid': pricing.bid,
+                        'ask': pricing.ask,
+                        'raw_last_price': pricing.last_trade,
                     })
 
             # If we found unusual activity, record it
