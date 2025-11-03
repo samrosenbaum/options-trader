@@ -64,8 +64,8 @@ export default function Navigation({ userEmail }: { userEmail?: string }) {
   ]
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-slate-200 bg-white transition-colors dark:border-slate-700/50 dark:bg-slate-950">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <nav className="sticky top-0 z-50 mx-4 mt-4 mb-6">
+      <div className="relative overflow-hidden rounded-[2rem] border border-white/20 bg-white/70 shadow-[0_8px_32px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.5)] backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/40 dark:shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.1)] max-w-7xl mx-auto px-6 sm:px-8 lg:px-10">
         <div className="flex items-center justify-between h-16 gap-4">
           {/* Logo/Brand - Clickable, links to dashboard */}
           <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">

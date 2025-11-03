@@ -166,7 +166,7 @@ export default function LandingPage() {
                 href="/auth/login"
                 className="rounded-full bg-emerald-400 px-8 py-3 text-sm font-semibold text-black transition hover:bg-emerald-300"
               >
-                Build your trade desk
+                Get Access
               </Link>
               <a
                 href="#how-it-works"
