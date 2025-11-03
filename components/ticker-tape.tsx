@@ -27,6 +27,11 @@ export function TickerTape() {
         ]
 
         const response = await fetch(`/api/quotes-python?symbols=${symbols.join(',')}`)
+
+        if (!response.ok) {
+          throw new Error(`Request failed with status ${response.status}`)
+        }
+
         const data = await response.json()
 
         if (data.success && data.quotes) {
