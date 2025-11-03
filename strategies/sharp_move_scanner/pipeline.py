@@ -189,8 +189,17 @@ class SharpMoveScanner:
         df["mid"] = df["mid"].astype(float)
         df["spread_pct"] = (df["ask"] - df["bid"]).clip(lower=0) / df["mid"].replace(0, np.nan)
         df["spread_pct"] = df["spread_pct"].fillna(1.0)
-        df["volume"] = df.get("volume", 0).fillna(0).astype(float)
-        df["open_interest"] = df.get("openInterest", 0).fillna(0).astype(float)
+        volume = df.get("volume")
+        if volume is None:
+            df["volume"] = np.nan
+        else:
+            df["volume"] = pd.to_numeric(volume, errors="coerce")
+
+        open_interest = df.get("openInterest")
+        if open_interest is None:
+            df["open_interest"] = np.nan
+        else:
+            df["open_interest"] = pd.to_numeric(open_interest, errors="coerce")
         df["iv"] = df.get("impliedVolatility", 0).astype(float)
         df["delta"] = df.get("delta", np.nan)
         df["gamma"] = df.get("gamma", np.nan)
