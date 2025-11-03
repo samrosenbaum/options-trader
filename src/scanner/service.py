@@ -18,6 +18,7 @@ from scripts.bulk_options_fetcher import BulkOptionsFetcher
 from src.analysis import SwingSignal, SwingSignalAnalyzer
 from src.analysis.rejection_tracker import RejectionTracker
 from src.config import AppSettings, get_settings
+from src.monitoring import QuoteIntegrityMonitor
 from src.models.preferences import (
     PreferencePersistenceError,
     ScannerPreference,
@@ -149,6 +150,7 @@ class SmartOptionsScanner:
 
         # Initialize rejection tracker for filter optimization
         self.rejection_tracker = RejectionTracker()
+        self.quote_monitor = QuoteIntegrityMonitor()
 
     @staticmethod
     def _safe_float(value: Any) -> float:
@@ -2857,6 +2859,9 @@ class SmartOptionsScanner:
         options_data = self.get_current_options_data(symbols, force_refresh=force_refresh)
         print(f"📍 Options data fetched successfully: {len(options_data) if options_data is not None else 0} rows", file=sys.stderr)
 
+        quote_integrity = self.quote_monitor.evaluate_dataframe(options_data)
+        self.quote_monitor.log_summary(quote_integrity)
+
         allow_relaxed = (
             self._resolve_relaxed_default()
             if allow_relaxed_fallback is None
@@ -2877,6 +2882,7 @@ class SmartOptionsScanner:
                 "symbolLimit": self.symbol_limit,
                 "rotationState": dict(self.rotation_state or {}),
             }
+            metadata["quoteIntegrity"] = quote_integrity.to_dict()
             self._apply_freshness_metadata(metadata)
             metadata["filterMode"] = filter_mode
             metadata["preferenceProfile"] = self.preference_profile
@@ -2926,6 +2932,7 @@ class SmartOptionsScanner:
             "opportunityCount": len(opportunities),
             "rotationState": dict(self.rotation_state or {}),
         }
+        metadata["quoteIntegrity"] = quote_integrity.to_dict()
         self._apply_freshness_metadata(metadata)
         metadata["filterMode"] = filter_mode
         metadata["preferenceProfile"] = self.preference_profile
