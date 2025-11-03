@@ -168,21 +168,7 @@ export default function LandingPage() {
               Scanning the markets...
             </div>
             <h1 className="max-w-3xl text-4xl font-display font-semibold leading-tight text-slate-900 sm:text-5xl lg:text-6xl">
-              Monty{' '}
-              <span className="block text-emerald-600 sm:inline">
-                <AnimatePresence mode="wait" initial={false}>
-                  <motion.span
-                    key={rotatingValueProps[currentValueProp]}
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -12 }}
-                    transition={{ duration: 0.4, ease: 'easeInOut' }}
-                    className="inline-block"
-                  >
-                    {rotatingValueProps[currentValueProp]}
-                  </motion.span>
-                </AnimatePresence>
-              </span>
+              Trade with Superpowers
             </h1>
             <p className="max-w-2xl text-lg text-slate-600">
               Monty uses techniques the institutions use, but puts the power in your hands.
@@ -232,9 +218,9 @@ export default function LandingPage() {
         className="relative isolate overflow-hidden bg-white px-6 py-28"
       >
         <div className="mx-auto flex w-full max-w-5xl flex-col items-center text-center">
-          <span className="text-sm font-semibold uppercase tracking-[0.4em] text-emerald-500/80">Everything you need</span>
+          <span className="text-sm font-semibold uppercase tracking-[0.4em] text-emerald-500/80">Your Options Toolkit</span>
           <h2 className="mt-6 max-w-2xl text-3xl font-display font-semibold text-slate-900 sm:text-4xl">
-            Tools that give you the upper hand
+            Monty gives you the upper hand
           </h2>
         </div>
 
