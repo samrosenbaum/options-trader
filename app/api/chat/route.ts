@@ -26,17 +26,35 @@ You have access to the user's portfolio data and can answer questions about:
 
 If you don't have enough context to answer a specific question about their portfolio, politely ask for more details.`
 
-interface Message {
-  role: 'user' | 'assistant'
-  content: string
-}
-
 export async function POST(request: Request) {
   try {
-    const { message, history } = await request.json()
+    const body = await request.json()
 
-    if (!message || typeof message !== 'string') {
-      return NextResponse.json({ error: 'Message is required' }, { status: 400 })
+    const messages = Array.isArray(body?.messages)
+      ? (body.messages as Array<{ role: 'user' | 'assistant'; content: unknown }>)
+      : undefined
+
+    if (!messages || messages.length === 0) {
+      return NextResponse.json({ error: 'Messages array is required' }, { status: 400 })
+    }
+
+    const hasInvalidMessage = messages.some(
+      (msg) =>
+        (msg.role !== 'user' && msg.role !== 'assistant') || typeof msg.content !== 'string'
+    )
+
+    if (hasInvalidMessage) {
+      return NextResponse.json({ error: 'Invalid message format' }, { status: 400 })
+    }
+
+    const normalizedMessages = messages as Array<{ role: 'user' | 'assistant'; content: string }>
+
+    const lastMessage = normalizedMessages[normalizedMessages.length - 1]
+    if (!lastMessage || lastMessage.role !== 'user' || typeof lastMessage.content !== 'string') {
+      return NextResponse.json(
+        { error: 'Last message must be a user message' },
+        { status: 400 }
+      )
     }
 
     if (!process.env.ANTHROPIC_API_KEY) {
@@ -46,38 +64,40 @@ export async function POST(request: Request) {
       )
     }
 
-    // Build conversation history
-    const messages: Array<{ role: 'user' | 'assistant'; content: string }> = []
-
-    if (history && Array.isArray(history)) {
-      history.forEach((msg: Message) => {
-        messages.push({
-          role: msg.role,
-          content: msg.content,
-        })
-      })
-    }
-
-    // Add current message
-    messages.push({
-      role: 'user',
-      content: message,
-    })
-
-    // Call Claude API
-    const response = await anthropic.messages.create({
+    const stream = await anthropic.messages.create({
       model: 'claude-3-5-sonnet-20241022',
       max_tokens: 1024,
       system: SYSTEM_PROMPT,
-      messages,
+      messages: normalizedMessages,
+      stream: true,
     })
 
-    const assistantMessage = response.content[0]
-    const text = assistantMessage.type === 'text' ? assistantMessage.text : ''
+    const encoder = new TextEncoder()
+    const readableStream = new ReadableStream<Uint8Array>({
+      async start(controller) {
+        try {
+          for await (const event of stream) {
+            if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+              controller.enqueue(
+                encoder.encode(`data: ${JSON.stringify({ text: event.delta.text })}\n\n`)
+              )
+            }
+          }
 
-    return NextResponse.json({
-      message: text,
-      usage: response.usage,
+          controller.enqueue(encoder.encode('data: [DONE]\n\n'))
+          controller.close()
+        } catch (error) {
+          controller.error(error)
+        }
+      },
+    })
+
+    return new Response(readableStream, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        Connection: 'keep-alive',
+      },
     })
   } catch (error) {
     console.error('Chat API error:', error)

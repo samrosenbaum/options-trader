@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import type { KeyboardEvent } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Send, Sparkles } from 'lucide-react'
+import { X, Send } from 'lucide-react'
 import Image from 'next/image'
 
 interface Message {
@@ -57,7 +58,20 @@ export function InteractiveMontyChat({ initialMessage }: InteractiveMontyChatPro
       timestamp: new Date(),
     }
 
-    setMessages((prev) => [...prev, userMessage])
+    const assistantId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    const assistantPlaceholder: Message = {
+      id: assistantId,
+      role: 'assistant',
+      content: '...',
+      timestamp: new Date(),
+    }
+
+    const conversation = [
+      ...messages.map((m) => ({ role: m.role, content: m.content })),
+      { role: 'user' as const, content: userMessage.content },
+    ]
+
+    setMessages((prev) => [...prev, userMessage, assistantPlaceholder])
     setInput('')
     setIsLoading(true)
 
@@ -65,39 +79,107 @@ export function InteractiveMontyChat({ initialMessage }: InteractiveMontyChatPro
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: input.trim(),
-          history: messages.map((m) => ({ role: m.role, content: m.content })),
-        }),
+        body: JSON.stringify({ messages: conversation }),
       })
 
-      if (!response.ok) throw new Error('Failed to get response')
-
-      const data = await response.json()
-
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: data.message || 'I apologize, I had trouble processing that. Could you try rephrasing?',
-        timestamp: new Date(),
+      if (!response.ok) {
+        let errorMessage = 'Failed to get response'
+        try {
+          const errorData = await response.json()
+          if (errorData?.error) {
+            errorMessage = errorData.error
+          }
+        } catch (parseError) {
+          console.error('Failed to parse error response:', parseError)
+        }
+        throw new Error(errorMessage)
       }
 
-      setMessages((prev) => [...prev, assistantMessage])
+      if (!response.body) {
+        throw new Error('No response body received from chat API')
+      }
+
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder()
+      let assistantContent = ''
+      let buffer = ''
+      let done = false
+
+      while (!done) {
+        const { value, done: readerDone } = await reader.read()
+        done = readerDone
+
+        if (value) {
+          buffer += decoder.decode(value, { stream: !readerDone })
+        }
+
+        const segments = buffer.split('\n\n')
+        buffer = segments.pop() ?? ''
+
+        for (const segment of segments) {
+          const line = segment.trim()
+          if (!line.startsWith('data:')) continue
+
+          const data = line.slice(5).trim()
+          if (!data) continue
+
+          if (data === '[DONE]') {
+            done = true
+            break
+          }
+
+          try {
+            const parsed = JSON.parse(data) as { text?: string }
+            if (parsed.text) {
+              assistantContent += parsed.text
+              const updatedContent = assistantContent
+              setMessages((prev) =>
+                prev.map((msg) =>
+                  msg.id === assistantId
+                    ? { ...msg, content: updatedContent, timestamp: new Date() }
+                    : msg
+                )
+              )
+            }
+          } catch (chunkError) {
+            console.error('Failed to parse chat chunk:', chunkError)
+          }
+        }
+      }
+
+      if (!assistantContent.trim()) {
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === assistantId
+              ? {
+                  ...msg,
+                  content:
+                    'I apologize, I had trouble processing that. Could you try asking in a different way?',
+                  timestamp: new Date(),
+                }
+              : msg
+          )
+        )
+      }
     } catch (error) {
       console.error('Chat error:', error)
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: 'Sorry, I encountered an error. Please try again in a moment.',
-        timestamp: new Date(),
-      }
-      setMessages((prev) => [...prev, errorMessage])
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === assistantId
+            ? {
+                ...msg,
+                content: 'Sorry, I encountered an error. Please try again in a moment.',
+                timestamp: new Date(),
+              }
+            : msg
+        )
+      )
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyPress = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       handleSend()
@@ -245,21 +327,6 @@ export function InteractiveMontyChat({ initialMessage }: InteractiveMontyChatPro
                       </div>
                     </motion.div>
                   ))}
-                  {isLoading && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="flex justify-start"
-                    >
-                      <div className="flex items-center gap-2 rounded-[18px] bg-white/60 backdrop-blur-sm border border-white/40 px-4 py-3 shadow-sm">
-                        <div className="flex gap-1">
-                          <div className="h-2 w-2 animate-bounce rounded-full bg-emerald-500" style={{ animationDelay: '0ms' }} />
-                          <div className="h-2 w-2 animate-bounce rounded-full bg-emerald-500" style={{ animationDelay: '150ms' }} />
-                          <div className="h-2 w-2 animate-bounce rounded-full bg-emerald-500" style={{ animationDelay: '300ms' }} />
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
                   <div ref={messagesEndRef} />
                 </>
               )}
@@ -276,7 +343,7 @@ export function InteractiveMontyChat({ initialMessage }: InteractiveMontyChatPro
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  onKeyPress={handleKeyPress}
+                  onKeyDown={handleKeyPress}
                   placeholder="Ask Monty anything..."
                   disabled={isLoading}
                   className="flex-1 rounded-2xl border border-white/40 bg-white/60 px-4 py-3 text-sm text-slate-900 placeholder-slate-500 backdrop-blur-sm transition-all focus:border-emerald-400/60 focus:outline-none focus:ring-2 focus:ring-emerald-400/20 disabled:opacity-50"
