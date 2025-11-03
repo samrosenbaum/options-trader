@@ -1,9 +1,9 @@
 'use client'
 
-import { useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { motion, useInView } from 'framer-motion'
+import { AnimatePresence, motion, useInView } from 'framer-motion'
 import ContractFunnel from '@/components/contract-funnel'
 
 const featureCards = [
@@ -92,9 +92,32 @@ const uprisingTimeline = [
   },
 ]
 
+const rotatingValueProps = [
+  'is your institutional options trading assistant',
+  'finds unusual options activity',
+  'searches the options universe but delivers you the best options',
+  'runs backtests in seconds to see how often trades win',
+  'tracks your portfolio',
+  'shows you hold or sell signals',
+  'can chat about your positions',
+  'tracks your portfolio',
+]
+
 export default function LandingPage() {
   const cardsRef = useRef<HTMLDivElement | null>(null)
   const cardsInView = useInView(cardsRef, { once: true, amount: 0.2 })
+
+  const [currentValueProp, setCurrentValueProp] = useState(0)
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setCurrentValueProp((prev) => (prev + 1) % rotatingValueProps.length)
+    }, 3000)
+
+    return () => {
+      window.clearInterval(interval)
+    }
+  }, [])
 
   const navLinks = useMemo(
     () => [
@@ -108,19 +131,8 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
-      <div className="relative min-h-screen overflow-hidden">
-        <video
-          className="absolute inset-0 h-full w-full object-cover z-0"
-          autoPlay
-          muted
-          loop
-          playsInline
-          poster="/trade_desk.png"
-        >
-          <source src="/garage.mp4" type="video/mp4" />
-        </video>
-        <div className="absolute inset-0 bg-gradient-to-b from-white/85 via-white/80 to-white/95 z-[1]" />
-        <div className="relative z-[2] mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 pb-16 pt-10">
+      <div className="relative min-h-screen bg-white">
+        <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 pb-16 pt-10">
           <header className="flex items-center justify-between">
             <Link href="/" className="group flex items-center gap-3">
               <Image
@@ -197,7 +209,6 @@ export default function LandingPage() {
             </div>
           </main>
         </div>
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-white to-transparent" />
       </div>
 
       <ContractFunnel />
