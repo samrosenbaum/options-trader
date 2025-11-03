@@ -65,7 +65,7 @@ export default function Navigation({ userEmail }: { userEmail?: string }) {
 
   return (
     <nav className="sticky top-0 z-50 mx-4 mt-4 mb-6">
-      <div className="relative overflow-hidden rounded-[2rem] border border-white/30 bg-gradient-to-br from-white/90 via-emerald-50/70 to-blue-50/70 shadow-[0_8px_40px_rgba(16,185,129,0.12)] backdrop-blur-2xl dark:border-white/10 dark:bg-gradient-to-br dark:from-slate-900/70 dark:via-emerald-950/40 dark:to-slate-900/70 dark:shadow-[0_12px_45px_rgba(15,118,110,0.35)] max-w-7xl mx-auto px-6 sm:px-8 lg:px-10">
+      <div className="relative rounded-[2rem] border border-white/30 bg-gradient-to-br from-white/90 via-emerald-50/70 to-blue-50/70 shadow-[0_8px_40px_rgba(16,185,129,0.12)] backdrop-blur-2xl dark:border-white/10 dark:bg-gradient-to-br dark:from-slate-900/70 dark:via-emerald-950/40 dark:to-slate-900/70 dark:shadow-[0_12px_45px_rgba(15,118,110,0.35)] max-w-7xl mx-auto px-6 sm:px-8 lg:px-10">
         <div className="pointer-events-none absolute inset-0 opacity-70">
           <div className="absolute -left-24 top-0 h-40 w-40 rounded-full bg-emerald-300/20 blur-3xl" />
           <div className="absolute -right-16 bottom-0 h-48 w-48 rounded-full bg-blue-300/20 blur-3xl" />
@@ -128,8 +128,8 @@ export default function Navigation({ userEmail }: { userEmail?: string }) {
                       <ChevronDown className="h-4 w-4 transition-transform group-hover:rotate-180" />
                     </button>
                     {/* Dropdown menu - with padding bridge to prevent gap */}
-                    <div className="absolute left-0 top-full pt-2 hidden group-hover:block">
-                      <div className="w-52 rounded-2xl border border-emerald-200/70 bg-gradient-to-br from-white via-emerald-50/70 to-blue-50/60 shadow-[0_25px_45px_-20px_rgba(16,185,129,0.45)] dark:border-emerald-500/30 dark:bg-gradient-to-br dark:from-slate-950 dark:via-emerald-900/30 dark:to-slate-900">
+                    <div className="absolute left-0 top-full pt-2 hidden group-hover:block z-[100]">
+                      <div className="w-52 rounded-2xl border border-emerald-200/70 bg-gradient-to-br from-white via-emerald-50/70 to-blue-50/60 shadow-[0_25px_45px_-20px_rgba(16,185,129,0.45)] backdrop-blur-xl dark:border-emerald-500/30 dark:bg-gradient-to-br dark:from-slate-950 dark:via-emerald-900/30 dark:to-slate-900">
                         <div className="py-2">
                           {item.dropdownItems.map((dropItem) => {
                             const isDropActive = pathname === dropItem.href

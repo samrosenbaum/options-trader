@@ -8,6 +8,7 @@ import {
   useState,
 } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import type { Database } from '@/lib/types/database.types'
 import AddPositionModal from './add-position-modal'
@@ -996,8 +997,14 @@ export default function PortfolioClient({
               </h1>
               {openPositions.length > 0 && (
                 <div className="flex items-start gap-3 max-w-3xl">
-                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 text-white font-bold text-sm shadow-lg">
-                    M
+                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-white shadow-lg overflow-hidden">
+                    <Image
+                      src="/monty-avatar.png"
+                      alt="Monty"
+                      width={32}
+                      height={32}
+                      className="w-full h-full object-cover"
+                    />
                   </div>
                   <div className="flex flex-col gap-1">
                     <div className="rounded-[18px] bg-gradient-to-br from-emerald-500 to-emerald-600 px-4 py-3 shadow-lg">
