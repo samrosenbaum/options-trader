@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import Image from "next/image";
 
 interface TradeChatProps {
   opportunity: {
@@ -260,36 +261,60 @@ export function TradeChat({ opportunity, isOpen, onClose }: TradeChatProps) {
                 key={index}
                 className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
               >
-                <div
-                  className={`max-w-[80%] rounded-3xl px-5 py-4 text-sm leading-relaxed shadow-lg backdrop-blur ${
-                    message.role === "user"
-                      ? "border border-white/30 bg-gradient-to-r from-blue-500/80 to-indigo-500/80 text-white"
-                      : "border border-white/20 bg-white/20 text-slate-900 dark:border-white/10 dark:bg-slate-900/50 dark:text-white"
-                  }`}
-                >
-                  <p className="whitespace-pre-wrap">{message.content}</p>
+                <div className={`flex gap-2 max-w-[85%] ${message.role === "user" ? "flex-row-reverse" : ""}`}>
+                  {message.role === "assistant" && (
+                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-white overflow-hidden shadow-lg">
+                      <Image
+                        src="/monty-avatar.png"
+                        alt="Monty"
+                        width={32}
+                        height={32}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+                  <div
+                    className={`rounded-3xl px-5 py-4 text-sm leading-relaxed shadow-lg backdrop-blur ${
+                      message.role === "user"
+                        ? "border border-white/30 bg-gradient-to-r from-blue-500/80 to-indigo-500/80 text-white"
+                        : "border border-white/20 bg-white/20 text-slate-900 dark:border-white/10 dark:bg-slate-900/50 dark:text-white"
+                    }`}
+                  >
+                    <p className="whitespace-pre-wrap">{message.content}</p>
+                  </div>
                 </div>
               </div>
             ))}
 
             {isLoading && (
               <div className="flex justify-start">
-                <div className="max-w-[80%] rounded-3xl border border-white/20 bg-white/20 px-5 py-4 shadow-lg backdrop-blur dark:border-white/10 dark:bg-slate-900/40">
-                  <div className="flex items-center gap-2 text-slate-600 dark:text-slate-200">
-                    <div className="flex gap-1.5">
-                      <div className="h-2.5 w-2.5 animate-bounce rounded-full bg-blue-500" />
-                      <div
-                        className="h-2.5 w-2.5 animate-bounce rounded-full bg-purple-500"
-                        style={{ animationDelay: "0.12s" }}
-                      />
-                      <div
-                        className="h-2.5 w-2.5 animate-bounce rounded-full bg-blue-500"
-                        style={{ animationDelay: "0.24s" }}
-                      />
+                <div className="flex gap-2 max-w-[85%]">
+                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-white overflow-hidden shadow-lg">
+                    <Image
+                      src="/monty-avatar.png"
+                      alt="Monty"
+                      width={32}
+                      height={32}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="rounded-3xl border border-white/20 bg-white/20 px-5 py-4 shadow-lg backdrop-blur dark:border-white/10 dark:bg-slate-900/40">
+                    <div className="flex items-center gap-2 text-slate-600 dark:text-slate-200">
+                      <div className="flex gap-1.5">
+                        <div className="h-2.5 w-2.5 animate-bounce rounded-full bg-blue-500" />
+                        <div
+                          className="h-2.5 w-2.5 animate-bounce rounded-full bg-purple-500"
+                          style={{ animationDelay: "0.12s" }}
+                        />
+                        <div
+                          className="h-2.5 w-2.5 animate-bounce rounded-full bg-blue-500"
+                          style={{ animationDelay: "0.24s" }}
+                        />
+                      </div>
+                      <span className="text-sm font-medium">
+                        Monty is thinking...
+                      </span>
                     </div>
-                    <span className="text-sm font-medium">
-                      Monty is thinking...
-                    </span>
                   </div>
                 </div>
               </div>

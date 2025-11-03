@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from 'react'
+import Image from 'next/image'
 
 type Insight = {
   id: string
@@ -114,8 +115,14 @@ export function MontyDashboardBrief() {
 
   return (
     <div className="flex items-start gap-3 max-w-4xl">
-      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 text-white font-bold text-sm shadow-lg">
-        M
+      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-white shadow-lg overflow-hidden">
+        <Image
+          src="/monty-avatar.png"
+          alt="Monty"
+          width={40}
+          height={40}
+          className="w-full h-full object-cover"
+        />
       </div>
       <div className="flex flex-col gap-1 flex-1">
         <div className="rounded-[20px] bg-gradient-to-br from-emerald-500 to-emerald-600 px-5 py-4 shadow-lg">

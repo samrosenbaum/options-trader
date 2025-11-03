@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X } from 'lucide-react'
+import Image from 'next/image'
 
 interface FloatingMontyChatProps {
   message: string
@@ -22,14 +23,24 @@ export function FloatingMontyChat({ message }: FloatingMontyChatProps) {
         animate={{ scale: 1, opacity: 1 }}
         transition={{ delay: 1, type: 'spring', stiffness: 260, damping: 20 }}
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full border border-white/40 bg-gradient-to-br from-emerald-300/90 via-emerald-400/80 to-emerald-500/90 text-white shadow-[0_18px_40px_-18px_rgba(16,185,129,0.9)] backdrop-blur-xl transition-all hover:scale-110 hover:shadow-[0_22px_48px_-18px_rgba(16,185,129,1)]"
+        className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full border border-white/40 bg-white shadow-[0_18px_40px_-18px_rgba(16,185,129,0.9)] backdrop-blur-xl transition-all hover:scale-110 hover:shadow-[0_22px_48px_-18px_rgba(16,185,129,1)] overflow-hidden"
       >
         <motion.div
           animate={{ rotate: isOpen ? 180 : 0 }}
           transition={{ duration: 0.3 }}
-          className="text-xl font-bold"
+          className="w-full h-full flex items-center justify-center"
         >
-          {isOpen ? '✕' : 'M'}
+          {isOpen ? (
+            <X className="h-5 w-5 text-emerald-600" />
+          ) : (
+            <Image
+              src="/monty-avatar.png"
+              alt="Monty"
+              width={56}
+              height={56}
+              className="w-full h-full object-cover"
+            />
+          )}
         </motion.div>
 
         {/* Pulse animation */}
@@ -67,8 +78,14 @@ export function FloatingMontyChat({ message }: FloatingMontyChatProps) {
 
               {/* Contact header */}
               <div className="relative mb-3 flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/40 bg-gradient-to-br from-emerald-300/80 via-emerald-400/70 to-emerald-500/80 text-[15px] font-semibold text-white shadow-[0_10px_30px_-12px_rgba(16,185,129,0.8)] backdrop-blur">
-                  M
+                <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/40 bg-white shadow-[0_10px_30px_-12px_rgba(16,185,129,0.8)] backdrop-blur overflow-hidden">
+                  <Image
+                    src="/monty-avatar.png"
+                    alt="Monty"
+                    width={40}
+                    height={40}
+                    className="w-full h-full object-cover"
+                  />
                 </div>
                 <div>
                   <div className="text-sm font-semibold text-slate-800 drop-shadow-sm dark:text-white">

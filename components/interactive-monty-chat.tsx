@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Send, Sparkles } from 'lucide-react'
+import Image from 'next/image'
 
 interface Message {
   id: string
@@ -111,20 +112,23 @@ export function InteractiveMontyChat({ initialMessage }: InteractiveMontyChatPro
         animate={{ scale: 1, opacity: 1 }}
         transition={{ delay: 0.5, type: 'spring', stiffness: 260, damping: 20 }}
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 z-50 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 text-white shadow-2xl transition-all hover:scale-110 hover:shadow-emerald-500/50"
+        className="fixed bottom-6 right-6 z-50 flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-2xl transition-all hover:scale-110 hover:shadow-emerald-500/50 overflow-hidden"
       >
         <motion.div
           animate={{ rotate: isOpen ? 180 : 0 }}
           transition={{ duration: 0.3 }}
-          className="relative"
+          className="relative w-full h-full flex items-center justify-center"
         >
           {isOpen ? (
-            <X className="h-6 w-6" />
+            <X className="h-6 w-6 text-emerald-600" />
           ) : (
-            <div className="flex flex-col items-center gap-0.5">
-              <Sparkles className="h-5 w-5" />
-              <span className="text-[10px] font-bold">MONTY</span>
-            </div>
+            <Image
+              src="/monty-avatar.png"
+              alt="Monty"
+              width={64}
+              height={64}
+              className="w-full h-full object-cover"
+            />
           )}
         </motion.div>
 
@@ -158,8 +162,14 @@ export function InteractiveMontyChat({ initialMessage }: InteractiveMontyChatPro
               style={{ background: 'rgba(255, 255, 255, 0.5)' }}
             >
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 text-white font-bold shadow-lg">
-                  M
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-lg overflow-hidden">
+                  <Image
+                    src="/monty-avatar.png"
+                    alt="Monty"
+                    width={40}
+                    height={40}
+                    className="w-full h-full object-cover"
+                  />
                 </div>
                 <div>
                   <div className="text-sm font-semibold text-slate-900">Monty</div>
@@ -180,8 +190,14 @@ export function InteractiveMontyChat({ initialMessage }: InteractiveMontyChatPro
                 <div className="flex h-full items-center justify-center">
                   <div className="text-center">
                     <div className="mb-4 flex justify-center">
-                      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 text-white">
-                        <Sparkles className="h-8 w-8" />
+                      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white overflow-hidden">
+                        <Image
+                          src="/monty-avatar.png"
+                          alt="Monty"
+                          width={64}
+                          height={64}
+                          className="w-full h-full object-cover"
+                        />
                       </div>
                     </div>
                     <p className="text-sm font-semibold text-slate-900">Hey! I'm Monty</p>
@@ -202,8 +218,14 @@ export function InteractiveMontyChat({ initialMessage }: InteractiveMontyChatPro
                       <div className="flex max-w-[80%] flex-col gap-1">
                         {message.role === 'assistant' && (
                           <div className="flex items-center gap-2 px-1">
-                            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 text-white text-xs font-bold">
-                              M
+                            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-white overflow-hidden">
+                              <Image
+                                src="/monty-avatar.png"
+                                alt="Monty"
+                                width={24}
+                                height={24}
+                                className="w-full h-full object-cover"
+                              />
                             </div>
                             <span className="text-xs text-slate-500">Monty</span>
                           </div>
