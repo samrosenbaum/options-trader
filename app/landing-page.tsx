@@ -10,22 +10,22 @@ const featureCards = [
   {
     title: 'Smart Scanner',
     description: 'Real-time market scans analyze thousands of options to surface high-probability trades based on unusual flow, gamma exposure, and technical setups.',
-    gradient: 'from-emerald-400/90 via-emerald-500/80 to-emerald-600/60',
-    accent: 'bg-emerald-400/60',
+    gradient: 'from-emerald-100 via-emerald-200 to-emerald-300',
+    accent: 'bg-emerald-500/70',
     rotate: -8,
   },
   {
     title: 'Portfolio Intelligence',
     description: 'Track every position with live P&L, exit signals, and AI-powered insights. Know exactly when to take profits or cut losses.',
-    gradient: 'from-blue-400/90 via-blue-500/80 to-blue-600/70',
-    accent: 'bg-blue-400/60',
+    gradient: 'from-sky-100 via-sky-200 to-blue-200',
+    accent: 'bg-sky-500/70',
     rotate: 0,
   },
   {
     title: 'Ask Monty',
     description: 'Chat with your personal options quant about any trade. Get detailed analysis, risk assessments, and strategic recommendations instantly.',
-    gradient: 'from-emerald-400/90 via-emerald-500/80 to-emerald-600/70',
-    accent: 'bg-emerald-400/60',
+    gradient: 'from-emerald-100 via-emerald-200 to-emerald-300',
+    accent: 'bg-emerald-500/70',
     rotate: 8,
   },
 ]
@@ -107,7 +107,7 @@ export default function LandingPage() {
   )
 
   return (
-    <div className="min-h-screen bg-[#05070E] text-white">
+    <div className="min-h-screen bg-slate-50 text-slate-900">
       <div className="relative min-h-screen overflow-hidden">
         <video
           className="absolute inset-0 h-full w-full object-cover z-0"
@@ -119,7 +119,7 @@ export default function LandingPage() {
         >
           <source src="/garage.mp4" type="video/mp4" />
         </video>
-        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/60 to-[#05070E]/95 z-[1]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-white/85 via-white/80 to-white/95 z-[1]" />
         <div className="relative z-[2] mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 pb-16 pt-10">
           <header className="flex items-center justify-between">
             <Link href="/" className="group flex items-center gap-3">
@@ -131,12 +131,12 @@ export default function LandingPage() {
                 className="transition group-hover:opacity-80"
               />
             </Link>
-            <nav className="hidden items-center gap-8 text-sm text-white/80 md:flex">
+            <nav className="hidden items-center gap-8 text-sm text-slate-600 md:flex">
               {navLinks.map((link) => (
                 <a
                   key={link.href}
                   href={link.href}
-                  className="transition hover:text-white"
+                  className="transition hover:text-slate-900"
                 >
                   {link.label}
                 </a>
@@ -144,33 +144,33 @@ export default function LandingPage() {
             </nav>
             <Link
               href="/auth/login"
-              className="rounded-full border border-white/30 bg-white/10 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-black/40 transition hover:border-emerald-400/60 hover:bg-emerald-400 hover:text-black"
+              className="rounded-full border border-slate-200 bg-white px-5 py-2 text-sm font-semibold text-slate-900 shadow-lg shadow-slate-200/80 transition hover:border-emerald-400/60 hover:bg-emerald-400 hover:text-white"
             >
               Sign In
             </Link>
           </header>
 
           <main className="flex flex-1 flex-col items-start justify-center gap-10 py-20">
-            <div className="inline-flex items-center gap-3 rounded-full border border-white/20 bg-white/10 px-5 py-2 text-xs uppercase tracking-[0.3em] text-white/60">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+            <div className="inline-flex items-center gap-3 rounded-full border border-emerald-200/60 bg-white/70 px-5 py-2 text-xs uppercase tracking-[0.3em] text-emerald-600">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
               Hey, I'm Monty, let's see how the markets are moving today...
             </div>
-            <h1 className="max-w-3xl text-4xl font-display font-semibold leading-tight text-white sm:text-5xl lg:text-6xl">
+            <h1 className="max-w-3xl text-4xl font-display font-semibold leading-tight text-slate-900 sm:text-5xl lg:text-6xl">
               Trade Options Like You Work On Wall Street.
             </h1>
-            <p className="max-w-2xl text-lg text-white/70">
+            <p className="max-w-2xl text-lg text-slate-600">
               Monty uses techniques the institutions use, but puts the power in your hands.
             </p>
             <div className="flex flex-wrap items-center gap-4">
               <Link
                 href="/auth/login"
-                className="rounded-full bg-emerald-400 px-8 py-3 text-sm font-semibold text-black transition hover:bg-emerald-300"
+                className="rounded-full bg-emerald-500 px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-200/70 transition hover:bg-emerald-400"
               >
                 Get Access
               </Link>
               <a
                 href="#how-it-works"
-                className="flex items-center gap-2 text-sm font-semibold text-white/80 transition hover:text-white"
+                className="flex items-center gap-2 text-sm font-semibold text-emerald-600 transition hover:text-emerald-700"
               >
                 See how it works
                 <span aria-hidden className="text-lg">→</span>
@@ -180,7 +180,7 @@ export default function LandingPage() {
               {proofPoints.map((item) => (
                 <motion.div
                   key={item.label}
-                  className="group relative flex flex-col justify-center rounded-2xl border border-white/10 bg-black/20 p-6 backdrop-blur transition-all duration-300 hover:border-emerald-400/40 hover:bg-black/40 hover:shadow-[0_20px_60px_-15px_rgba(52,211,153,0.3)]"
+                  className="group relative flex flex-col justify-center rounded-2xl border border-slate-200 bg-white/80 p-6 shadow-[0_20px_50px_-20px_rgba(15,23,42,0.2)] backdrop-blur transition-all duration-300 hover:border-emerald-400/50 hover:shadow-[0_25px_70px_-20px_rgba(16,185,129,0.35)]"
                   whileHover={{
                     scale: 1.05,
                     y: -5,
@@ -189,40 +189,40 @@ export default function LandingPage() {
                 >
                   <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-emerald-400/0 via-emerald-400/0 to-emerald-400/0 opacity-0 transition-opacity duration-300 group-hover:from-emerald-400/5 group-hover:via-cyan-400/5 group-hover:to-transparent group-hover:opacity-100" />
                   <div className="relative">
-                    <p className="text-xs uppercase tracking-[0.3em] text-white/50 transition-colors group-hover:text-emerald-300/70">{item.label}</p>
-                    <p className="mt-3 text-3xl font-semibold text-white transition-colors group-hover:text-emerald-100">{item.value}</p>
+                    <p className="text-xs uppercase tracking-[0.3em] text-slate-500 transition-colors group-hover:text-emerald-600/80">{item.label}</p>
+                    <p className="mt-3 text-3xl font-semibold text-slate-900 transition-colors group-hover:text-emerald-600">{item.value}</p>
                   </div>
                 </motion.div>
               ))}
             </div>
           </main>
         </div>
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#05070E] to-transparent" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-white to-transparent" />
       </div>
 
       <ContractFunnel />
 
       <section
         id="features"
-        className="relative isolate overflow-hidden bg-[#05070E] px-6 py-28"
+        className="relative isolate overflow-hidden bg-white px-6 py-28"
       >
         <div className="mx-auto flex w-full max-w-5xl flex-col items-center text-center">
-          <span className="text-sm font-semibold uppercase tracking-[0.4em] text-white/40">Everything you need</span>
-          <h2 className="mt-6 max-w-2xl text-3xl font-display font-semibold text-white sm:text-4xl">
+          <span className="text-sm font-semibold uppercase tracking-[0.4em] text-emerald-500/80">Everything you need</span>
+          <h2 className="mt-6 max-w-2xl text-3xl font-display font-semibold text-slate-900 sm:text-4xl">
             Options trading tools that give you an unfair advantage
           </h2>
         </div>
 
         <div ref={cardsRef} className="relative mx-auto mt-16 grid h-[620px] w-full max-w-5xl place-items-center">
-          <div className="absolute inset-0 -z-10 overflow-hidden rounded-[2.5rem] border border-white/10 bg-black/60 shadow-[0_80px_120px_-40px_rgba(0,0,0,0.7)]">
+          <div className="absolute inset-0 -z-10 overflow-hidden rounded-[2.5rem] border border-slate-200 bg-slate-100/80 shadow-[0_80px_120px_-60px_rgba(30,64,175,0.25)]">
             <Image
               src="/trade_desk.png"
               alt="Trading desk"
               fill
               priority
-              className="object-cover opacity-60"
+              className="object-cover opacity-50"
             />
-            <div className="absolute inset-0 bg-gradient-to-tr from-black/70 via-black/50 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-tr from-white/90 via-white/60 to-transparent" />
           </div>
 
           {featureCards.map((card, index) => (
@@ -235,11 +235,11 @@ export default function LandingPage() {
                   : { opacity: 0, y: 120, rotate: 0, x: 0, scale: 0.95 }
               }
               transition={{ delay: 0.2 * index, type: 'spring', stiffness: 140, damping: 16 }}
-              className={`relative w-64 max-w-[15rem] rounded-[2rem] border border-white/20 bg-gradient-to-br ${card.gradient} p-6 text-left text-white shadow-[0_35px_60px_-25px_rgba(15,15,15,0.8)] backdrop-blur`}
+              className={`relative w-64 max-w-[15rem] rounded-[2rem] border border-slate-200 bg-gradient-to-br ${card.gradient} p-6 text-left text-slate-900 shadow-[0_35px_60px_-35px_rgba(30,64,175,0.35)] backdrop-blur`}
             >
               <div className={`mb-6 h-10 w-10 rounded-full ${card.accent}`} />
-              <h3 className="text-xl font-semibold text-white">{card.title}</h3>
-              <p className="mt-3 text-sm text-white/70">{card.description}</p>
+              <h3 className="text-xl font-semibold text-slate-900">{card.title}</h3>
+              <p className="mt-3 text-sm text-slate-600">{card.description}</p>
             </motion.div>
           ))}
         </div>
@@ -247,16 +247,16 @@ export default function LandingPage() {
 
       <section
         id="manifesto"
-        className="relative overflow-hidden bg-gradient-to-b from-black/80 via-[#0A0E1A] to-[#05070E] px-6 py-28"
+        className="relative overflow-hidden bg-gradient-to-b from-white via-slate-100 to-slate-200 px-6 py-28"
       >
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(12,188,141,0.18),transparent_60%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(16,185,129,0.18),transparent_60%)]" />
         <div className="relative mx-auto grid w-full max-w-6xl gap-16 lg:grid-cols-[1.1fr_0.9fr]">
           <div className="space-y-6">
-            <span className="text-sm font-semibold uppercase tracking-[0.4em] text-emerald-300/80">The Monty Manifesto</span>
-            <h2 className="text-3xl font-display font-semibold text-white sm:text-4xl">
+            <span className="text-sm font-semibold uppercase tracking-[0.4em] text-emerald-500">The Monty Manifesto</span>
+            <h2 className="text-3xl font-display font-semibold text-slate-900 sm:text-4xl">
               Wall Street wrote the rules. Retail traders are rewriting them.
             </h2>
-            <p className="text-base text-white/70">
+            <p className="text-base text-slate-600">
               Derivatives were built to keep retail on the outside looking in. When the house writes the rules and hides the
               math, the house always wins. Monty flips the script by putting a battle-tested analyst&mdash;a data-driven
               strategist focused on your edge&mdash;right on your desk, no finance degree required.
@@ -265,28 +265,28 @@ export default function LandingPage() {
               {manifestoPoints.map((point) => (
                 <div
                   key={point.title}
-                  className="rounded-2xl border border-white/10 bg-black/40 p-6 shadow-[0_25px_60px_-30px_rgba(0,0,0,0.7)]"
+                  className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_25px_60px_-40px_rgba(15,23,42,0.25)]"
                 >
-                  <p className="text-sm font-semibold text-white">{point.title}</p>
-                  <p className="mt-2 text-sm text-white/70">{point.description}</p>
+                  <p className="text-sm font-semibold text-slate-900">{point.title}</p>
+                  <p className="mt-2 text-sm text-slate-600">{point.description}</p>
                 </div>
               ))}
             </div>
           </div>
-          <div className="space-y-6 rounded-[2rem] border border-white/10 bg-white/5 p-8 backdrop-blur">
-            <p className="text-sm font-semibold uppercase tracking-[0.4em] text-white/40">From the bottom up</p>
-            <p className="text-lg font-semibold text-white">
+          <div className="space-y-6 rounded-[2rem] border border-emerald-200/70 bg-white/80 p-8 backdrop-blur">
+            <p className="text-sm font-semibold uppercase tracking-[0.4em] text-emerald-500/70">From the bottom up</p>
+            <p className="text-lg font-semibold text-slate-900">
               Every generation of traders had to claw their way into the room. We are that next wave.
             </p>
             <div className="space-y-5">
               {uprisingTimeline.map((chapter) => (
-                <div key={chapter.era} className="rounded-xl border border-white/10 bg-black/40 p-5">
-                  <p className="text-xs uppercase tracking-[0.3em] text-emerald-200/80">{chapter.era}</p>
-                  <p className="mt-2 text-sm text-white/70">{chapter.story}</p>
+                <div key={chapter.era} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                  <p className="text-xs uppercase tracking-[0.3em] text-emerald-500">{chapter.era}</p>
+                  <p className="mt-2 text-sm text-slate-600">{chapter.story}</p>
                 </div>
               ))}
             </div>
-            <p className="text-sm text-white/60">
+            <p className="text-sm text-slate-600">
               We study their grit, automate their edge, and package it in tools the street can&apos;t ignore. Your seat at the desk
               is no longer optional&mdash;it&apos;s inevitable.
             </p>
@@ -296,32 +296,32 @@ export default function LandingPage() {
 
       <section
         id="how-it-works"
-        className="relative overflow-hidden bg-black/40 px-6 py-28"
+        className="relative overflow-hidden bg-slate-100 px-6 py-28"
       >
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(32,196,152,0.18),transparent_60%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(16,185,129,0.18),transparent_60%)]" />
         <div className="relative mx-auto grid w-full max-w-6xl gap-16 lg:grid-cols-[1.1fr_1fr]">
           <div className="space-y-6">
-            <span className="text-sm font-semibold uppercase tracking-[0.4em] text-emerald-300/80">Your trading workflow</span>
-            <h2 className="text-3xl font-display font-semibold text-white sm:text-4xl">
+            <span className="text-sm font-semibold uppercase tracking-[0.4em] text-emerald-500">Your trading workflow</span>
+            <h2 className="text-3xl font-display font-semibold text-slate-900 sm:text-4xl">
               From market scan to profitable exit—all in one platform
             </h2>
-            <p className="text-base text-white/70">
+            <p className="text-base text-slate-600">
               Monty combines real-time market data, quantitative analysis, and AI-powered insights to help you make smarter trades. Whether you&apos;re hunting for momentum plays or managing complex positions, Monty has you covered.
             </p>
-            <div className="grid gap-5 text-sm text-white/70">
+            <div className="grid gap-5 text-sm text-slate-600">
               {[
                 'Live scanner filters thousands of options by flow, gamma, and technical patterns.',
                 'AI chatbot analyzes your positions and answers questions about risk and strategy.',
                 'Exit signals tell you exactly when to take profits or cut losses.',
               ].map((item) => (
                 <div key={item} className="flex items-start gap-3">
-                  <span className="mt-0.5 text-emerald-300">●</span>
+                  <span className="mt-0.5 text-emerald-500">●</span>
                   <p>{item}</p>
                 </div>
               ))}
             </div>
           </div>
-          <div className="relative rounded-[2rem] border border-white/10 bg-white/5 p-8 backdrop-blur-lg">
+          <div className="relative rounded-[2rem] border border-slate-200 bg-white/90 p-8 shadow-lg shadow-emerald-200/40 backdrop-blur-lg">
             <div className="grid gap-6">
               {[
                 {
@@ -340,15 +340,15 @@ export default function LandingPage() {
                     'Monitor all your positions with live P&L tracking, exit signals, and performance analytics to maximize returns.',
                 },
               ].map((item) => (
-                <div key={item.title} className="rounded-2xl border border-white/10 bg-black/40 p-6 shadow-[0_25px_60px_-30px_rgba(0,0,0,0.7)]">
-                  <p className="text-xs uppercase tracking-[0.4em] text-white/40">{item.title}</p>
-                  <p className="mt-3 text-sm text-white/70">{item.description}</p>
+                <div key={item.title} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_25px_60px_-40px_rgba(15,23,42,0.25)]">
+                  <p className="text-xs uppercase tracking-[0.4em] text-emerald-500/70">{item.title}</p>
+                  <p className="mt-3 text-sm text-slate-600">{item.description}</p>
                 </div>
               ))}
             </div>
-            <div className="mt-8 rounded-2xl border border-emerald-400/40 bg-emerald-400/10 p-6 text-sm text-emerald-100">
-              <p className="font-semibold text-emerald-200">Learning & improving</p>
-              <p className="mt-2 text-white/70">
+            <div className="mt-8 rounded-2xl border border-emerald-400/40 bg-emerald-50 p-6 text-sm text-emerald-700">
+              <p className="font-semibold text-emerald-600">Learning & improving</p>
+              <p className="mt-2 text-slate-600">
                 Track your wins and losses with the Anti-Portfolio. Learn from rejected trades and refine your strategy with data-driven insights.
               </p>
             </div>
@@ -356,43 +356,43 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section id="get-started" className="bg-[#05070E] px-6 pb-24">
-        <div className="mx-auto w-full max-w-5xl rounded-[2.5rem] border border-white/10 bg-gradient-to-br from-white/5 via-white/2 to-transparent p-12 text-center shadow-[0_80px_120px_-50px_rgba(0,0,0,0.8)]">
-          <p className="text-sm font-semibold uppercase tracking-[0.4em] text-white/40">Start trading smarter</p>
-          <h2 className="mt-4 text-3xl font-display font-semibold text-white sm:text-4xl">
+      <section id="get-started" className="bg-white px-6 pb-24">
+        <div className="mx-auto w-full max-w-5xl rounded-[2.5rem] border border-slate-200 bg-gradient-to-br from-white via-emerald-50/60 to-white p-12 text-center shadow-[0_80px_120px_-60px_rgba(30,64,175,0.25)]">
+          <p className="text-sm font-semibold uppercase tracking-[0.4em] text-emerald-500/80">Start trading smarter</p>
+          <h2 className="mt-4 text-3xl font-display font-semibold text-slate-900 sm:text-4xl">
             Ready to build your options empire?
           </h2>
-          <p className="mt-6 text-base text-white/70">
+          <p className="mt-6 text-base text-slate-600">
             Join traders who use Monty to find better setups, manage risk intelligently, and maximize their returns. Sign up now and get instant access to the full platform.
           </p>
           <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
             <Link
               href="/auth/login"
-              className="rounded-full bg-white px-7 py-3 text-sm font-semibold text-black transition hover:bg-white/80"
+              className="rounded-full bg-emerald-500 px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-200/70 transition hover:bg-emerald-400"
             >
               Get started free
             </Link>
             <a
               href="mailto:sam@monty.trade"
-              className="text-sm font-semibold text-white/70 transition hover:text-white"
+              className="text-sm font-semibold text-emerald-600 transition hover:text-emerald-700"
             >
               Questions? sam@monty.trade
             </a>
           </div>
         </div>
-        <footer className="mx-auto mt-16 flex w-full max-w-5xl flex-col items-center justify-between gap-4 text-xs text-white/50 sm:flex-row">
+        <footer className="mx-auto mt-16 flex w-full max-w-5xl flex-col items-center justify-between gap-4 text-xs text-slate-500 sm:flex-row">
           <p>© {new Date().getFullYear()} Monty Quantitative Labs. All rights reserved.</p>
           <div className="flex items-center gap-4">
-            <a href="#features" className="transition hover:text-white">
+            <a href="#features" className="transition hover:text-slate-900">
               Features
             </a>
-            <a href="#how-it-works" className="transition hover:text-white">
+            <a href="#how-it-works" className="transition hover:text-slate-900">
               How It Works
             </a>
-            <Link href="/terms" className="transition hover:text-white">
+            <Link href="/terms" className="transition hover:text-slate-900">
               Terms
             </Link>
-            <Link href="/auth/login" className="transition hover:text-white">
+            <Link href="/auth/login" className="transition hover:text-slate-900">
               Sign In
             </Link>
           </div>

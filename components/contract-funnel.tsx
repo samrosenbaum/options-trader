@@ -89,34 +89,34 @@ const bestTrades = [
 
 export default function ContractFunnel() {
   return (
-    <section className="relative overflow-hidden bg-[#05070E] px-6 py-24">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(39,174,96,0.12),transparent_65%)]" />
+    <section className="relative overflow-hidden bg-slate-100 px-6 py-24">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(16,185,129,0.15),transparent_65%)]" />
       <div className="relative mx-auto grid w-full max-w-6xl gap-16 lg:grid-cols-[1fr_1.1fr] lg:items-center">
         <div className="space-y-6">
-          <span className="text-sm font-semibold uppercase tracking-[0.4em] text-emerald-200/70">
+          <span className="text-sm font-semibold uppercase tracking-[0.4em] text-emerald-600/80">
             Only the Best For You
           </span>
-          <h2 className="text-3xl font-display font-semibold text-white sm:text-4xl">
+          <h2 className="text-3xl font-display font-semibold text-slate-900 sm:text-4xl">
             Millions of option contracts, sifted into a handful of trades you can act on.
           </h2>
-          <p className="text-base text-white/70 sm:text-lg">
+          <p className="text-base text-slate-600 sm:text-lg">
             Every sweep, quote, and volatility shift streams through Monty&apos;s machine. We score each contract in real time,
             discard the noise, and elevate the structures with the strongest edge.
           </p>
-          <div className="space-y-3 text-sm text-white/60">
+          <div className="space-y-3 text-sm text-slate-600">
             <p className="flex items-center gap-2">
-              <span className="inline-flex h-2 w-2 rounded-full bg-emerald-400" aria-hidden />
+              <span className="inline-flex h-2 w-2 rounded-full bg-emerald-500" aria-hidden />
               Streaming data from CBOE, IEX, and dark pool feeds.
             </p>
             <p className="flex items-center gap-2">
-              <span className="inline-flex h-2 w-2 rounded-full bg-cyan-400" aria-hidden />
+              <span className="inline-flex h-2 w-2 rounded-full bg-cyan-500" aria-hidden />
               Reinforced by proprietary scanners that continuously learn which setups pay.
             </p>
           </div>
         </div>
 
-        <div className="relative flex h-[420px] w-full items-center justify-center rounded-[2.75rem] border border-white/10 bg-white/5 p-6 backdrop-blur-lg">
-          <div className="absolute inset-0 rounded-[2.75rem] bg-gradient-to-br from-white/5 via-white/0 to-transparent" />
+        <div className="relative flex h-[420px] w-full items-center justify-center rounded-[2.75rem] border border-slate-200 bg-white p-6 shadow-[0_40px_100px_-40px_rgba(15,23,42,0.35)] backdrop-blur-lg">
+          <div className="absolute inset-0 rounded-[2.75rem] bg-gradient-to-br from-emerald-50 via-white to-transparent" />
 
           {/* SVG Paths */}
           <svg
@@ -153,7 +153,7 @@ export default function ContractFunnel() {
                 return (
                   <motion.div
                     key={`${streamIdx}-${chipIdx}`}
-                    className={`contract-chip absolute flex h-10 min-w-[190px] items-center gap-2 rounded-full border bg-gradient-to-r px-4 text-xs font-semibold uppercase tracking-[0.2em] text-white/80 shadow-[0_10px_30px_rgba(0,0,0,0.45)] backdrop-blur ${chip.tone}`}
+                    className={`contract-chip absolute flex h-10 min-w-[190px] items-center gap-2 rounded-full border bg-gradient-to-r px-4 text-xs font-semibold uppercase tracking-[0.2em] text-white/80 shadow-[0_10px_30px_rgba(15,23,42,0.2)] backdrop-blur ${chip.tone}`}
                     style={{
                       offsetPath: `path('${stream.path}')`,
                       offsetDistance: '0%',
@@ -180,29 +180,29 @@ export default function ContractFunnel() {
           ))}
 
           {/* Market Input - Top Left */}
-          <div className="absolute left-6 top-12 space-y-3 rounded-2xl border border-white/15 bg-black/80 p-5 shadow-[0_20px_40px_rgba(0,0,0,0.45)] z-10">
-            <div className="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.4em] text-white/70">
+          <div className="absolute left-6 top-12 space-y-3 rounded-2xl border border-emerald-200/70 bg-white p-5 shadow-[0_20px_40px_-25px_rgba(15,23,42,0.2)] z-10">
+            <div className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.4em] text-emerald-600">
               Market
             </div>
-            <div className="space-y-1.5 text-xs text-white/60">
+            <div className="space-y-1.5 text-xs text-slate-600">
               <p className="flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-white/40" />
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-200" />
                 10K+ contracts
               </p>
               <p className="flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-white/40" />
+                <span className="h-1.5 w-1.5 rounded-full bg-cyan-200" />
                 Live flow data
               </p>
               <p className="flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-white/40" />
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-200" />
                 All symbols
               </p>
             </div>
           </div>
 
           {/* Scanner - Center */}
-          <div className="pointer-events-none absolute left-1/2 h-60 w-36 -translate-x-1/2 rounded-full border border-emerald-400/40 bg-emerald-400/10 blur-[2px]" />
-          <div className="absolute left-1/2 flex h-44 w-32 -translate-x-1/2 items-center justify-center rounded-[2.5rem] border border-white/10 bg-black/70 p-6 shadow-[0_25px_60px_rgba(0,0,0,0.45)] z-10">
+          <div className="pointer-events-none absolute left-1/2 h-60 w-36 -translate-x-1/2 rounded-full border border-emerald-300/50 bg-emerald-100 blur-[2px]" />
+          <div className="absolute left-1/2 flex h-44 w-32 -translate-x-1/2 items-center justify-center rounded-[2.5rem] border border-emerald-200/70 bg-white p-6 shadow-[0_25px_60px_-30px_rgba(15,23,42,0.25)] z-10">
             <div className="relative flex h-full w-full flex-col items-center justify-center gap-4">
               {[0, 1, 2].map((pulse) => (
                 <motion.span
@@ -213,10 +213,10 @@ export default function ContractFunnel() {
                 />
               ))}
               <div className="relative z-10 flex flex-col items-center gap-2 text-center">
-                <div className="rounded-full bg-emerald-400/20 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.4em] text-emerald-200/80">
+                <div className="rounded-full bg-emerald-100 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.4em] text-emerald-600">
                   Scanner
                 </div>
-                <p className="max-w-[8rem] text-xs text-white/70">
+                <p className="max-w-[8rem] text-xs text-slate-600">
                   Filters contracts on spread, flow velocity, and volatility regime.
                 </p>
               </div>
@@ -224,15 +224,15 @@ export default function ContractFunnel() {
           </div>
 
           {/* Best Trades - Bottom Right (diagonal from Market) */}
-          <div className="absolute -right-3 -bottom-3 space-y-4 rounded-3xl border border-white/15 bg-black/80 p-6 shadow-[0_30px_60px_rgba(0,0,0,0.45)] z-10">
-            <div className="rounded-full bg-emerald-400/20 px-3 py-1 text-xs font-semibold uppercase tracking-[0.4em] text-emerald-200">
+          <div className="absolute -right-3 -bottom-3 space-y-4 rounded-3xl border border-emerald-200/70 bg-white p-6 shadow-[0_30px_60px_-30px_rgba(15,23,42,0.25)] z-10">
+            <div className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.4em] text-emerald-600">
               Best trades
             </div>
-            <ul className="space-y-3 text-sm text-white/70">
+            <ul className="space-y-3 text-sm text-slate-600">
               {bestTrades.map((item) => (
                 <li key={item.label}>
-                  <p className="text-white/80">{item.label}</p>
-                  <p className="text-xs text-white/50">{item.value}</p>
+                  <p className="text-slate-900">{item.label}</p>
+                  <p className="text-xs text-slate-500">{item.value}</p>
                 </li>
               ))}
             </ul>
