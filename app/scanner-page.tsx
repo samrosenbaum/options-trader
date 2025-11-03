@@ -115,6 +115,7 @@ type OpportunitySortOption =
   | 'maxReturn'
   | 'safety'
   | 'expiration'
+  | 'kellyFraction'
 
 const FIRST_SCAN_COMPLETED_KEY = 'scanner:firstScanComplete'
 
@@ -2577,6 +2578,14 @@ export default function ScannerPage({ user }: ScannerPageProps) {
       return comparePromising(a, b)
     }
 
+    const compareRawKelly = (a: Opportunity, b: Opportunity) => {
+      const diff =
+        toNumber(b.positionSizing?.kellyFraction, -Infinity) -
+        toNumber(a.positionSizing?.kellyFraction, -Infinity)
+      if (diff !== 0) return diff
+      return comparePromising(a, b)
+    }
+
     const comparatorMap: Record<OpportunitySortOption, (a: Opportunity, b: Opportunity) => number> = {
       promising: comparePromising,
       riskReward: compareRiskReward,
@@ -2584,6 +2593,7 @@ export default function ScannerPage({ user }: ScannerPageProps) {
       maxReturn: compareMaxReturn,
       safety: compareSafety,
       expiration: compareExpiration,
+      kellyFraction: compareRawKelly,
     }
 
     const comparator = comparatorMap[sortOption] ?? comparePromising
@@ -2628,6 +2638,7 @@ export default function ScannerPage({ user }: ScannerPageProps) {
     { value: 'maxReturn', label: 'Highest Max Return' },
     { value: 'safety', label: 'Lowest Risk' },
     { value: 'expiration', label: 'Soonest Expiration' },
+    { value: 'kellyFraction', label: 'Highest Raw Kelly Fraction' },
   ]
 
   const getRiskColor = (riskLevel?: string | null) => {
