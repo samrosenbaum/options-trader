@@ -396,7 +396,8 @@ class BulkOptionsFetcher:
                 'timestamp': datetime.now(timezone.utc).isoformat(),
                 'data_count': len(data_dict),
                 'symbols': data['symbol'].unique().tolist(),
-                'options': data_dict
+                'options': data_dict,
+                'provider': getattr(self.adapter, 'name', None),
             }
 
             with open(target_filename, 'w') as f:
@@ -437,6 +438,29 @@ class BulkOptionsFetcher:
             if cache_key:
                 cache_frame.attrs["cache_key"] = cache_key
 
+            cache_provider = cache_data.get('provider')
+            current_provider = getattr(self.adapter, 'name', None)
+            if cache_provider:
+                cache_frame.attrs["provider"] = cache_provider
+            elif current_provider:
+                cache_frame.attrs["provider"] = current_provider
+            provider_mismatch = (
+                bool(cache_provider)
+                and bool(current_provider)
+                and cache_provider != current_provider
+            )
+            if provider_mismatch:
+                message = (
+                    f"⚠️  Cache provider mismatch (cached={cache_provider}, configured={current_provider})"
+                )
+                print(message)
+                if not allow_stale:
+                    print("📂 Cache provider mismatch, refreshing data")
+                    return None
+                cache_frame.attrs["cache_source"] = "adapter-cache-stale"
+                cache_frame.attrs["cache_stale"] = True
+            cache_frame.attrs["provider_mismatch"] = provider_mismatch
+
             cached_symbols = [str(sym).upper() for sym in cache_data.get('symbols', [])]
             symbol_mismatch = False
             if symbols is not None:
@@ -466,6 +490,8 @@ class BulkOptionsFetcher:
                 return None
 
             if raw_age_minutes <= max_age_minutes:
+                if provider_mismatch:
+                    return cache_frame
                 print(f"📂 Using cached data ({raw_age_minutes:.1f} minutes old)")
                 cache_frame.attrs["cache_source"] = "adapter-cache"
                 cache_frame.attrs["cache_stale"] = False
@@ -546,6 +572,11 @@ class BulkOptionsFetcher:
             fresh_data.attrs["cache_has_future_contracts"] = has_future_contracts
             if cache_key:
                 fresh_data.attrs["cache_key"] = cache_key
+
+            provider_name = getattr(self.adapter, 'name', None)
+            if provider_name:
+                fresh_data.attrs["provider"] = provider_name
+            fresh_data.attrs["provider_mismatch"] = False
 
             if timeout_error is not None:
                 fresh_data.attrs["runtime_budget_exceeded"] = True

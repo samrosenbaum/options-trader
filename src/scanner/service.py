@@ -112,6 +112,10 @@ class SmartOptionsScanner:
         # Relaxed fallbacks are only safe when we are certain the snapshot is live.
         # Limit their activation window to the most recent few minutes of market data.
         self._fallback_max_age_minutes: float = 5.0
+        self._quote_live_max_age_minutes: float = 45.0
+        self._quote_closed_max_age_minutes: float = 72 * 60.0  # 3 days for long weekends
+        self._quote_absolute_max_age_minutes: float = 14 * 24 * 60.0  # Hard stop at two weeks
+        self._quote_guard_stats: Dict[str, Any] | None = None
         sqlite_path: Optional[str] = None
         try:
             sqlite_settings = settings.storage.require_sqlite()
@@ -493,6 +497,9 @@ class SmartOptionsScanner:
         if has_future_contracts is False:
             return True
 
+        if freshness.get("providerMismatch") is True:
+            return True
+
         return False
 
     def _filter_current_contracts(self, options_data: pd.DataFrame) -> pd.DataFrame:
@@ -511,6 +518,89 @@ class SmartOptionsScanner:
 
         # Drop contracts where the expiration could not be parsed or is in the distant past.
         filtered = options_data.loc[mask].copy()
+        return filtered
+
+    def _enforce_quote_freshness(
+        self, frame: pd.DataFrame, is_market_hours: bool
+    ) -> pd.DataFrame:
+        """Remove contracts with stale or missing quote timestamps."""
+
+        if frame is None or frame.empty or "lastTradeDate" not in frame.columns:
+            self._quote_guard_stats = {
+                "evaluated": int(len(frame) if frame is not None else 0),
+                "retained": int(len(frame) if frame is not None else 0),
+                "dropped": 0,
+                "invalidTimestamps": 0,
+                "staleQuotes": 0,
+                "hardExpired": 0,
+                "marketHours": bool(is_market_hours),
+                "thresholdMinutes": {
+                    "market": self._quote_live_max_age_minutes,
+                    "closed": self._quote_closed_max_age_minutes,
+                    "absolute": self._quote_absolute_max_age_minutes,
+                },
+            }
+            return frame if frame is not None else pd.DataFrame()
+
+        working = frame.copy()
+        quote_times = pd.to_datetime(working["lastTradeDate"], errors="coerce", utc=True)
+        now = pd.Timestamp.now(tz=timezone.utc)
+        age_minutes = (now - quote_times).dt.total_seconds() / 60.0
+
+        working["_quote_timestamp"] = quote_times.dt.tz_convert(timezone.utc)
+        working["_quote_age_minutes"] = age_minutes
+
+        invalid_mask = quote_times.isna() | age_minutes.isna() | (age_minutes < 0)
+        live_cutoff = self._quote_live_max_age_minutes
+        closed_cutoff = self._quote_closed_max_age_minutes
+        stale_cutoff = live_cutoff if is_market_hours else closed_cutoff
+        stale_mask = (age_minutes > stale_cutoff).fillna(False)
+        hard_mask = (age_minutes > self._quote_absolute_max_age_minutes).fillna(False)
+
+        # Hard limit always applies even if market closed.
+        drop_mask = invalid_mask | stale_mask | hard_mask
+        filtered = working.loc[~drop_mask].copy()
+
+        evaluated = int(len(working))
+        retained = int(len(filtered))
+        dropped = evaluated - retained
+        invalid_count = int(invalid_mask.sum())
+        hard_count = int((~invalid_mask & hard_mask).sum())
+        stale_count = int((~invalid_mask & stale_mask).sum())
+
+        self._quote_guard_stats = {
+            "evaluated": evaluated,
+            "retained": retained,
+            "dropped": dropped,
+            "invalidTimestamps": invalid_count,
+            "staleQuotes": stale_count,
+            "hardExpired": hard_count,
+            "marketHours": bool(is_market_hours),
+            "thresholdMinutes": {
+                "market": live_cutoff,
+                "closed": closed_cutoff,
+                "absolute": self._quote_absolute_max_age_minutes,
+            },
+        }
+
+        if dropped > 0:
+            reasons: List[str] = []
+            if invalid_count:
+                reasons.append(f"{invalid_count} missing timestamps")
+            stale_only = stale_count - hard_count if stale_count > hard_count else 0
+            if stale_only:
+                reasons.append(
+                    f"{stale_only} older than {stale_cutoff:.0f} min ({'market' if is_market_hours else 'closed'} window)"
+                )
+            if hard_count:
+                hard_days = self._quote_absolute_max_age_minutes / 1440.0
+                reasons.append(f"{hard_count} older than {hard_days:.1f} days (hard limit)")
+            reason_str = ", ".join(reasons) if reasons else "stale quotes"
+            print(
+                f"🚫 Dropped {dropped} option quotes due to stale data ({reason_str})",
+                file=sys.stderr,
+            )
+
         return filtered
 
     def get_current_options_data(
@@ -585,6 +675,14 @@ class SmartOptionsScanner:
         if isinstance(has_future_attr, bool):
             freshness["hasFutureContracts"] = has_future_attr
 
+        provider_attr = attrs.get("provider") or getattr(self.fetcher.adapter, "name", None)
+        if isinstance(provider_attr, str):
+            freshness["optionsProvider"] = provider_attr
+
+        provider_mismatch = attrs.get("provider_mismatch")
+        if isinstance(provider_mismatch, bool):
+            freshness["providerMismatch"] = provider_mismatch
+
         if symbols:
             freshness["requestedSymbols"] = list(symbols)
 
@@ -638,6 +736,14 @@ class SmartOptionsScanner:
         if isinstance(min_future, (int, float)) and isfinite(min_future):
             metadata["minFutureDte"] = float(min_future)
 
+        provider = self.data_freshness.get("optionsProvider")
+        if isinstance(provider, str):
+            metadata["optionsProvider"] = provider
+
+        provider_mismatch = self.data_freshness.get("providerMismatch")
+        if isinstance(provider_mismatch, bool):
+            metadata["providerMismatch"] = provider_mismatch
+
     def _snapshot_is_live(self) -> bool:
         """Return True when the currently cached snapshot represents live market data."""
 
@@ -646,6 +752,9 @@ class SmartOptionsScanner:
             return False
 
         if freshness.get("cacheStale") is True:
+            return False
+
+        if freshness.get("providerMismatch") is True:
             return False
 
         has_future = freshness.get("hasFutureContracts")
@@ -740,6 +849,7 @@ class SmartOptionsScanner:
             "stages": {},
         }
         relaxed_info = self.relaxed_scan_info
+        self._quote_guard_stats = None
 
         def record_relaxed_stage(
             stage: str,
@@ -801,6 +911,14 @@ class SmartOptionsScanner:
         is_weekend = now_et.weekday() >= 5  # 5=Saturday, 6=Sunday
         hour_decimal = now_et.hour + now_et.minute / 60
         is_market_hours = not is_weekend and 9.5 <= hour_decimal < 16.0
+
+        working_data = self._enforce_quote_freshness(working_data, is_market_hours)
+        if working_data.empty:
+            print(
+                "🚫 All option quotes rejected due to stale or missing lastTradeDate metadata",
+                file=sys.stderr,
+            )
+            return []
 
         cfg = self.filter_config
         mask = pd.Series(True, index=working_data.index)
@@ -1052,6 +1170,27 @@ class SmartOptionsScanner:
             option["_effectivePrice"] = fair_price
             option["_pricing_basis"] = price_source
 
+            quote_timestamp = option_row.get("_quote_timestamp")
+            if isinstance(quote_timestamp, pd.Timestamp):
+                option["_quote_timestamp"] = quote_timestamp.isoformat()
+            elif isinstance(quote_timestamp, datetime):
+                option["_quote_timestamp"] = quote_timestamp.astimezone(timezone.utc).isoformat()
+            else:
+                option["_quote_timestamp"] = quote_timestamp
+
+            quote_age_minutes = option_row.get("_quote_age_minutes")
+            if pd.notna(quote_age_minutes):
+                try:
+                    numeric_age = float(quote_age_minutes)
+                except (TypeError, ValueError):
+                    numeric_age = None
+            else:
+                numeric_age = None
+
+            option["_quote_age_minutes"] = numeric_age
+            option["_quote_age_seconds"] = numeric_age * 60.0 if numeric_age is not None else None
+            option["_quote_provider"] = getattr(self.fetcher.adapter, "name", "unknown")
+
             returns_analysis, metrics = self.calculate_returns_analysis(option)
             probability_score = self.calculate_probability_score(option, metrics)
             score = self.calculate_opportunity_score(option, metrics, probability_score)
@@ -1296,6 +1435,10 @@ class SmartOptionsScanner:
                     "pricingBasis": option.get("_pricing_basis", "lastPrice"),
                     "rawLastPrice": round(self._safe_float(option.get("_rawLastPrice")), 4),
                     "effectivePrice": round(self._safe_float(option.get("lastPrice")), 4),
+                    "quoteTimestamp": option.get("_quote_timestamp"),
+                    "quoteAgeMinutes": option.get("_quote_age_minutes"),
+                    "quoteAgeSeconds": option.get("_quote_age_seconds"),
+                    "quoteProvider": option.get("_quote_provider"),
                 },
             }
             if swing_signal is not None:
@@ -2878,6 +3021,8 @@ class SmartOptionsScanner:
                 "rotationState": dict(self.rotation_state or {}),
             }
             self._apply_freshness_metadata(metadata)
+            if self._quote_guard_stats is not None:
+                metadata["quoteGuards"] = self._quote_guard_stats
             metadata["filterMode"] = filter_mode
             metadata["preferenceProfile"] = self.preference_profile
             metadata["preferenceSignature"] = self.preference_signature
@@ -2927,6 +3072,8 @@ class SmartOptionsScanner:
             "rotationState": dict(self.rotation_state or {}),
         }
         self._apply_freshness_metadata(metadata)
+        if self._quote_guard_stats is not None:
+            metadata["quoteGuards"] = self._quote_guard_stats
         metadata["filterMode"] = filter_mode
         metadata["preferenceProfile"] = self.preference_profile
         metadata["preferenceSignature"] = self.preference_signature
