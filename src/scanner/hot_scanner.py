@@ -13,10 +13,12 @@ Examples:
   - TSLA down 15% on bad news → buy calls for oversold bounce
 """
 
-import yfinance as yf
 from datetime import datetime, timedelta
-from typing import List, Dict, Any, Optional
+from math import isfinite
+from typing import Any, Dict, List, Mapping, Optional
+
 import pandas as pd
+import yfinance as yf
 
 
 class HotScanner:
@@ -26,6 +28,50 @@ class HotScanner:
         self.min_volume = 50  # Very relaxed - catch liquid plays
         self.min_oi = 50  # Very relaxed
         self.max_spread_pct = 0.60  # 60% spread OK for hot plays
+
+    @staticmethod
+    def _safe_float(value: Any) -> float:
+        try:
+            parsed = float(value)
+        except (TypeError, ValueError):
+            return 0.0
+
+        if not isfinite(parsed):
+            return 0.0
+
+        return parsed
+
+    def _infer_option_price(self, option: Mapping[str, Any]) -> tuple[float, str]:
+        """Select the best available live price for a contract."""
+
+        def positive(value: Any) -> float:
+            parsed = self._safe_float(value)
+            return parsed if parsed > 0 else 0.0
+
+        for field in ("mark", "markPrice", "midpoint", "mid", "fairValue", "fair_price", "theoValue"):
+            price = positive(option.get(field))
+            if price > 0:
+                return price, field
+
+        bid = positive(option.get("bid"))
+        ask = positive(option.get("ask"))
+        last_trade = positive(option.get("lastPrice"))
+
+        if bid > 0 and ask > 0:
+            midpoint = (bid + ask) / 2
+            if midpoint > 0:
+                return midpoint, "midpoint"
+
+        if ask > 0:
+            return ask, "ask"
+
+        if bid > 0:
+            return bid, "bid"
+
+        if last_trade > 0:
+            return last_trade, "lastPrice"
+
+        return 0.0, "unavailable"
 
     def scan_for_momentum_plays(
         self,
@@ -183,8 +229,12 @@ class HotScanner:
                 liquid_options = liquid_options.nsmallest(3, 'strike_diff')
 
                 for _, option in liquid_options.iterrows():
+                    price, price_source = self._infer_option_price(option)
+                    if price <= 0:
+                        continue
+
                     # Calculate spread
-                    spread_pct = (option['ask'] - option['bid']) / max(option['lastPrice'], 0.01)
+                    spread_pct = (option['ask'] - option['bid']) / max(price, 0.01)
 
                     if spread_pct > self.max_spread_pct:
                         continue
@@ -203,7 +253,8 @@ class HotScanner:
                         'optionType': direction,
                         'strike': float(option['strike']),
                         'expiration': exp_str,
-                        'premium': float(option['lastPrice']) * 100,  # Total contract cost
+                        'premium': round(price * 100, 2),  # Total contract cost
+                        'premiumSource': price_source,
                         'bid': float(option['bid']),
                         'ask': float(option['ask']),
                         'volume': int(option['volume']),
