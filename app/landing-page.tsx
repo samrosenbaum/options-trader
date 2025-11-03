@@ -8,7 +8,7 @@ import ContractFunnel from '@/components/contract-funnel'
 
 const featureCards = [
   {
-    title: 'Ask Monty Anything',
+    title: 'Find the Best Options',
     description: 'Real-time market scans analyze thousands of options to surface high-probability trades based on unusual flow, gamma exposure, and technical setups.',
     gradient: 'from-emerald-100 via-emerald-200 to-emerald-300',
     accent: 'bg-emerald-500/70',
@@ -61,6 +61,7 @@ const rotatingValueProps = [
   'is your options trading assistant',
   'finds unusual options activity',
   'surfaces the best contracts',
+  'tracks market sentiment',
   'runs backtests in seconds',
   'tracks profit & loss',
   'calculates exit signals',
@@ -68,6 +69,8 @@ const rotatingValueProps = [
   'breaks down market moves',
   'makes sense of the greeks',
   'gives you the upper hand',
+  'helps you win',
+  'uses advanced mathematics',
 ]
 
 export default function LandingPage() {
@@ -104,8 +107,8 @@ export default function LandingPage() {
               <Image
                 src="/Monty_logo.png"
                 alt="Monty Logo"
-                width={50}
-                height={50}
+                width={70}
+                height={70}
                 className="transition group-hover:opacity-80"
               />
             </Link>
@@ -133,7 +136,7 @@ export default function LandingPage() {
             <div className="flex flex-col items-start gap-10 lg:w-1/2">
               <div className="inline-flex items-center gap-3 rounded-full border border-emerald-200/60 bg-white/70 px-5 py-2 text-xs uppercase tracking-[0.3em] text-emerald-600">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                Your Personal Options Assistant
+                Your Options Assistant
               </div>
               <h1 className="max-w-3xl text-4xl font-display font-semibold leading-tight text-slate-900 sm:text-5xl lg:text-6xl">
                 Monty{' '}
@@ -151,7 +154,10 @@ export default function LandingPage() {
                 </AnimatePresence>
               </h1>
               <p className="max-w-2xl text-lg text-slate-600">
-                Techniques the institutions use, now at your fingertips.
+                Your friend, who happens to be an options genius.
+              </p>
+              <p className="max-w-2xl text-base text-slate-500">
+                Institutional-grade analysis, explained simply. 
               </p>
               <div className="flex flex-wrap items-center gap-4">
                 <Link
@@ -170,27 +176,24 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Right: Hero Demo GIF */}
-            <div className="lg:w-1/2 relative z-[3]">
-              <div className="relative overflow-hidden rounded-3xl border border-slate-200 bg-slate-100 shadow-[0_40px_80px_-30px_rgba(15,23,42,0.3)]">
-                {/* Replace with your hero demo GIF */}
-                <div className="aspect-video w-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
-                  <div className="text-center">
-                    <p className="text-sm font-semibold text-slate-500">Hero Demo GIF</p>
-                    <p className="mt-2 text-xs text-slate-400">Replace: /public/hero-demo.gif</p>
-                    <p className="mt-1 text-xs text-slate-400">Showcase: Main product overview</p>
-                  </div>
-                </div>
-                {/* Uncomment when you add the GIF:
+            {/* Right: Hero Image */}
+            <div className="lg:w-[70%] relative -mr-12 lg:-mr-20">
+              {/* Decorative background elements */}
+              <div className="absolute -inset-8 bg-gradient-to-r from-emerald-400/20 via-blue-400/20 to-purple-400/20 blur-3xl opacity-70 rounded-full" />
+              <div className="absolute -top-24 -right-24 w-96 h-96 bg-emerald-400/30 rounded-full blur-[120px]" />
+              <div className="absolute -bottom-24 -left-24 w-80 h-80 bg-blue-400/30 rounded-full blur-[120px]" />
+
+              {/* Image - no hard container */}
+              <div className="relative">
                 <Image
-                  src="/hero-demo.gif"
-                  alt="Monty product demo"
-                  width={1200}
-                  height={675}
-                  className="w-full h-auto"
-                  unoptimized
+                  src="/public-hero-image.png"
+                  alt="Monty product overview"
+                  width={1400}
+                  height={800}
+                  className="w-full h-auto rounded-2xl shadow-[0_25px_80px_-20px_rgba(0,0,0,0.25)]"
                 />
-                */}
+                {/* Subtle overlay gradient */}
+                <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-transparent to-blue-500/10 pointer-events-none rounded-2xl" />
               </div>
             </div>
           </main>
@@ -227,7 +230,7 @@ export default function LandingPage() {
         className="relative isolate overflow-hidden bg-white px-6 py-28"
       >
         <div className="mx-auto flex w-full max-w-5xl flex-col items-center text-center">
-          <span className="text-sm font-semibold uppercase tracking-[0.4em] text-emerald-500/80">Your Options Toolkit</span>
+          <span className="text-sm font-semibold uppercase tracking-[0.4em] text-emerald-500/80">Your friend, who happens to be an options genius.</span>
           <h2 className="mt-6 max-w-2xl text-3xl font-display font-semibold text-slate-900 sm:text-4xl">
             Monty gives you the upper hand
           </h2>
@@ -256,24 +259,27 @@ export default function LandingPage() {
                     : { opacity: 0, y: 40 }
                 }
                 transition={{ delay: 0.15 * index, type: 'spring', stiffness: 140, damping: 16 }}
-                className={`rounded-[2rem] border border-slate-200 bg-gradient-to-br ${card.gradient} overflow-hidden shadow-[0_35px_60px_-35px_rgba(30,64,175,0.35)] backdrop-blur transition-all hover:scale-[1.02] hover:shadow-[0_40px_70px_-35px_rgba(30,64,175,0.45)]`}
+                whileHover={{ scale: 1.15, y: -16 }}
+                style={{ transition: 'box-shadow 0.2s ease-out, border-color 0.2s ease-out' }}
+                className={`rounded-[2rem] border border-slate-200 bg-gradient-to-br ${card.gradient} overflow-hidden shadow-[0_35px_60px_-35px_rgba(30,64,175,0.35)] backdrop-blur hover:shadow-[0_60px_120px_-40px_rgba(30,64,175,0.7)] hover:border-slate-300 hover:z-10`}
               >
-                {/* Product Image Placeholder */}
+                {/* Product Image */}
                 <div className="aspect-video w-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center border-b border-slate-200/50">
-                  <div className="text-center px-4">
-                    <p className="text-xs font-semibold text-slate-500">{card.gifPlaceholder}</p>
-                    <p className="mt-1 text-[10px] text-slate-400">{card.gifPath}</p>
-                  </div>
-                  {/* Uncomment when you add images:
-                  <Image
-                    src={card.gifPath}
-                    alt={`${card.title} preview`}
-                    width={400}
-                    height={225}
-                    className="w-full h-full object-cover"
-                    unoptimized
-                  />
-                  */}
+                  {card.gifPath === '/chat-feature.gif' || card.gifPath === '/scanner-feature.gif' ? (
+                    <Image
+                      src={card.gifPath}
+                      alt={`${card.title} preview`}
+                      width={400}
+                      height={225}
+                      className="w-full h-full object-cover"
+                      unoptimized
+                    />
+                  ) : (
+                    <div className="text-center px-4">
+                      <p className="text-xs font-semibold text-slate-500">{card.gifPlaceholder}</p>
+                      <p className="mt-1 text-[10px] text-slate-400">{card.gifPath}</p>
+                    </div>
+                  )}
                 </div>
 
                 {/* Card Content */}
@@ -304,7 +310,8 @@ export default function LandingPage() {
             <div className="grid gap-5 text-sm text-slate-600">
               {[
                 'Live scanner filters thousands of options by flow, gamma, and technical patterns.',
-                'AI chatbot analyzes your positions and answers questions about risk and strategy.',
+                'Market sentiment tracking aggregates social media, news, and trader positioning in real-time.',
+                'AI chatbot explains complex Greeks and strategies in plain English—like talking to a genius friend.',
                 'Exit signals tell you exactly when to take profits or cut losses.',
               ].map((item) => (
                 <div key={item} className="flex items-start gap-3">
@@ -401,14 +408,6 @@ export default function LandingPage() {
           {/* Chat Feature */}
           <div className="grid gap-12 lg:grid-cols-2 lg:gap-16 items-center">
             <div className="relative overflow-hidden rounded-3xl border border-slate-200 bg-slate-100 shadow-[0_40px_80px_-30px_rgba(15,23,42,0.3)] lg:order-first">
-              <div className="aspect-[4/3] w-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
-                <div className="text-center">
-                  <p className="text-sm font-semibold text-slate-500">Chat Demo GIF</p>
-                  <p className="mt-2 text-xs text-slate-400">Replace: /public/chat-demo.gif</p>
-                  <p className="mt-1 text-xs text-slate-400">Showcase: AI chat analysis</p>
-                </div>
-              </div>
-              {/* Uncomment when you add the GIF:
               <Image
                 src="/chat-demo.gif"
                 alt="Chat with Monty demo"
@@ -417,7 +416,6 @@ export default function LandingPage() {
                 className="w-full h-auto"
                 unoptimized
               />
-              */}
             </div>
             <div className="space-y-6 lg:order-last">
               <span className="text-sm font-semibold uppercase tracking-[0.4em] text-emerald-500">AI Assistant</span>
@@ -470,14 +468,6 @@ export default function LandingPage() {
               </ul>
             </div>
             <div className="relative overflow-hidden rounded-3xl border border-slate-200 bg-slate-100 shadow-[0_40px_80px_-30px_rgba(15,23,42,0.3)]">
-              <div className="aspect-[4/3] w-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
-                <div className="text-center">
-                  <p className="text-sm font-semibold text-slate-500">Portfolio Demo GIF</p>
-                  <p className="mt-2 text-xs text-slate-400">Replace: /public/portfolio-demo.gif</p>
-                  <p className="mt-1 text-xs text-slate-400">Showcase: Portfolio tracking & signals</p>
-                </div>
-              </div>
-              {/* Uncomment when you add the GIF:
               <Image
                 src="/portfolio-demo.gif"
                 alt="Portfolio tracking demo"
@@ -486,7 +476,6 @@ export default function LandingPage() {
                 className="w-full h-auto"
                 unoptimized
               />
-              */}
             </div>
           </div>
         </div>
