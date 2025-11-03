@@ -65,8 +65,12 @@ export default function Navigation({ userEmail }: { userEmail?: string }) {
 
   return (
     <nav className="sticky top-0 z-50 mx-4 mt-4 mb-6">
-      <div className="relative rounded-[2rem] border border-white/20 bg-white/40 shadow-[0_8px_32px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.5)] backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/25 dark:shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.1)] max-w-7xl mx-auto px-6 sm:px-8 lg:px-10">
-        <div className="flex items-center justify-between h-16 gap-4">
+      <div className="relative overflow-hidden rounded-[2rem] border border-white/30 bg-gradient-to-br from-white/90 via-emerald-50/70 to-blue-50/70 shadow-[0_8px_40px_rgba(16,185,129,0.12)] backdrop-blur-2xl dark:border-white/10 dark:bg-gradient-to-br dark:from-slate-900/70 dark:via-emerald-950/40 dark:to-slate-900/70 dark:shadow-[0_12px_45px_rgba(15,118,110,0.35)] max-w-7xl mx-auto px-6 sm:px-8 lg:px-10">
+        <div className="pointer-events-none absolute inset-0 opacity-70">
+          <div className="absolute -left-24 top-0 h-40 w-40 rounded-full bg-emerald-300/20 blur-3xl" />
+          <div className="absolute -right-16 bottom-0 h-48 w-48 rounded-full bg-blue-300/20 blur-3xl" />
+        </div>
+        <div className="relative flex items-center justify-between h-16 gap-4">
           {/* Logo/Brand - Clickable, links to dashboard */}
           <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
             <Image
@@ -114,10 +118,10 @@ export default function Navigation({ userEmail }: { userEmail?: string }) {
                 return (
                   <div key={index} className="group relative">
                     <button
-                      className={`flex items-center gap-1 px-4 py-2 text-sm font-medium transition-colors ${
+                      className={`flex items-center gap-1 px-4 py-2 text-sm font-semibold tracking-wide transition-colors ${
                         isActive
                           ? 'text-emerald-600 dark:text-emerald-400'
-                          : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+                          : 'text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
                       }`}
                     >
                       {item.label}
@@ -125,7 +129,7 @@ export default function Navigation({ userEmail }: { userEmail?: string }) {
                     </button>
                     {/* Dropdown menu - with padding bridge to prevent gap */}
                     <div className="absolute left-0 top-full pt-2 hidden group-hover:block">
-                      <div className="w-48 rounded-lg border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900">
+                      <div className="w-52 rounded-2xl border border-emerald-200/70 bg-gradient-to-br from-white via-emerald-50/70 to-blue-50/60 shadow-[0_25px_45px_-20px_rgba(16,185,129,0.45)] dark:border-emerald-500/30 dark:bg-gradient-to-br dark:from-slate-950 dark:via-emerald-900/30 dark:to-slate-900">
                         <div className="py-2">
                           {item.dropdownItems.map((dropItem) => {
                             const isDropActive = pathname === dropItem.href
@@ -133,10 +137,10 @@ export default function Navigation({ userEmail }: { userEmail?: string }) {
                               <Link
                                 key={dropItem.href}
                                 href={dropItem.href}
-                                className={`block px-4 py-2 text-sm transition-colors ${
+                                className={`block px-4 py-2 text-sm font-medium transition-colors ${
                                   isDropActive
                                     ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400'
-                                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'
+                                    : 'text-slate-600 hover:bg-white/70 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-emerald-900/30 dark:hover:text-white'
                                 }`}
                               >
                                 {dropItem.label}
@@ -155,10 +159,10 @@ export default function Navigation({ userEmail }: { userEmail?: string }) {
                   <Link
                     key={item.href}
                     href={item.href!}
-                    className={`px-4 py-2 text-sm font-medium transition-colors ${
+                    className={`px-4 py-2 text-sm font-semibold tracking-wide transition-colors ${
                       isActive
                         ? 'text-emerald-600 dark:text-emerald-400'
-                        : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+                        : 'text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
                     }`}
                   >
                     {item.label}
@@ -177,10 +181,10 @@ export default function Navigation({ userEmail }: { userEmail?: string }) {
             )}
             <Link
               href="/settings"
-              className={`text-sm px-3 py-2 rounded-lg transition-colors ${
+              className={`text-sm px-3 py-2 rounded-lg font-semibold tracking-wide transition-colors ${
                 pathname === '/settings'
                   ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20'
-                  : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+                  : 'text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
               }`}
             >
               Account
@@ -191,7 +195,7 @@ export default function Navigation({ userEmail }: { userEmail?: string }) {
 
       {/* Mobile navigation */}
       <div
-        className={`md:hidden overflow-hidden border-t border-emerald-500/10 bg-white shadow-[0_25px_70px_-20px_rgba(16,185,129,0.45)] transition-all duration-300 ease-out dark:border-emerald-400/10 dark:bg-slate-950 ${
+        className={`md:hidden overflow-hidden border-t border-emerald-500/20 bg-gradient-to-br from-white via-emerald-50/70 to-blue-50/60 shadow-[0_30px_80px_-25px_rgba(16,185,129,0.55)] transition-all duration-300 ease-out dark:border-emerald-400/20 dark:bg-gradient-to-br dark:from-slate-950 dark:via-emerald-900/20 dark:to-slate-950 ${
           isMenuOpen
             ? 'pointer-events-auto max-h-[28rem] opacity-100 translate-y-0'
             : 'pointer-events-none max-h-0 -translate-y-3 opacity-0'
@@ -209,10 +213,10 @@ export default function Navigation({ userEmail }: { userEmail?: string }) {
                   <div key={index} className="space-y-1">
                     <button
                       onClick={() => setExpandedSection(isExpanded ? null : item.label)}
-                      className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                      className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-sm font-semibold transition-colors ${
                         isActive
                           ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300'
-                          : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white dark:hover:bg-slate-800'
+                          : 'text-slate-700 hover:bg-white/70 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white dark:hover:bg-emerald-900/30'
                       }`}
                     >
                       {item.label}
@@ -234,7 +238,7 @@ export default function Navigation({ userEmail }: { userEmail?: string }) {
                             className={`block rounded-lg px-3 py-2 pl-6 text-sm font-medium transition-colors ${
                               isDropActive
                                 ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300'
-                                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white dark:hover:bg-slate-800'
+                                : 'text-slate-700 hover:bg-white/70 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white dark:hover:bg-emerald-900/30'
                             }`}
                           >
                             {dropItem.label}
@@ -251,10 +255,10 @@ export default function Navigation({ userEmail }: { userEmail?: string }) {
                   <Link
                     key={item.href}
                     href={item.href!}
-                    className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                    className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
                       isActive
                         ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300'
-                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white dark:hover:bg-slate-800'
+                        : 'text-slate-700 hover:bg-white/70 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white dark:hover:bg-emerald-900/30'
                     }`}
                   >
                     {item.label}
@@ -264,7 +268,7 @@ export default function Navigation({ userEmail }: { userEmail?: string }) {
             })}
           </div>
 
-          <div className="relative overflow-hidden rounded-xl border border-white/10 bg-gradient-to-br from-white/40 via-emerald-50/20 to-transparent p-4 shadow-inner backdrop-blur-lg dark:border-white/5 dark:from-slate-900/50 dark:via-emerald-500/5 dark:to-transparent">
+          <div className="relative overflow-hidden rounded-xl border border-emerald-200/40 bg-gradient-to-br from-white/70 via-emerald-50/50 to-blue-50/40 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.4)] backdrop-blur-xl dark:border-emerald-500/20 dark:bg-gradient-to-br dark:from-slate-950 dark:via-emerald-900/20 dark:to-slate-950">
             <span className="pointer-events-none absolute -left-12 top-1/2 h-24 w-24 -translate-y-1/2 rounded-full bg-emerald-400/20 blur-3xl" />
             <span className="pointer-events-none absolute -right-8 -top-8 h-20 w-20 rounded-full bg-blue-400/20 blur-3xl" />
             {userEmail && greeting && (
