@@ -52,19 +52,21 @@ const proofPoints = [
 ]
 
 const rotatingValueProps = [
-  'is your institutional options trading assistant',
+  'is your options trading assistant',
   'finds unusual options activity',
-  'searches the options universe but delivers you the best options',
-  'runs backtests in seconds to see how often trades win',
-  'tracks your portfolio',
-  'shows you hold or sell signals',
-  'can chat about your positions',
-  'tracks your portfolio',
+  'surfaces the best contracts',
+  'runs backtests in seconds',
+  'tracks profit & loss',
+  'calculates exit signals',
+  'answers your questions',
+  'breaks down market moves',
+  'makes sense of the greeks',
+  'gives you the upper hand',
 ]
 
 export default function LandingPage() {
   const cardsRef = useRef<HTMLDivElement | null>(null)
-  const cardsInView = useInView(cardsRef, { once: true, amount: 0.2 })
+  const cardsInView = useInView(cardsRef, { once: true, amount: 0.3 })
 
   const [currentValueProp, setCurrentValueProp] = useState(0)
 
@@ -123,13 +125,25 @@ export default function LandingPage() {
           <main className="flex flex-1 flex-col items-start justify-center gap-10 py-20">
             <div className="inline-flex items-center gap-3 rounded-full border border-emerald-200/60 bg-white/70 px-5 py-2 text-xs uppercase tracking-[0.3em] text-emerald-600">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              Scanning the markets...
+              Your Personal Options Assistant
             </div>
             <h1 className="max-w-3xl text-4xl font-display font-semibold leading-tight text-slate-900 sm:text-5xl lg:text-6xl">
-              Trade with Superpowers
+              Monty{' '}
+              <AnimatePresence mode="wait">
+                <motion.span
+                  key={currentValueProp}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.5 }}
+                  className="inline-block text-emerald-600"
+                >
+                  {rotatingValueProps[currentValueProp]}
+                </motion.span>
+              </AnimatePresence>
             </h1>
             <p className="max-w-2xl text-lg text-slate-600">
-              Monty uses techniques the institutions use, but puts the power in your hands.
+              Techniques the institutions use, now at your fingertips.
             </p>
             <div className="flex flex-wrap items-center gap-4">
               <Link
@@ -182,7 +196,7 @@ export default function LandingPage() {
           </h2>
         </div>
 
-        <div ref={cardsRef} className="relative mx-auto mt-16 grid h-[620px] w-full max-w-5xl place-items-center">
+        <div ref={cardsRef} className="relative mx-auto mt-16 w-full max-w-6xl">
           <div className="absolute inset-0 -z-10 overflow-hidden rounded-[2.5rem] border border-slate-200 bg-slate-100/80 shadow-[0_80px_120px_-60px_rgba(30,64,175,0.25)]">
             <Image
               src="/trade_desk.png"
@@ -194,23 +208,25 @@ export default function LandingPage() {
             <div className="absolute inset-0 bg-gradient-to-tr from-white/90 via-white/60 to-transparent" />
           </div>
 
-          {featureCards.map((card, index) => (
-            <motion.div
-              key={card.title}
-              initial={{ opacity: 0, y: 120, rotate: 0, x: 0, scale: 0.95 }}
-              animate={
-                cardsInView
-                  ? { opacity: 1, y: 0, rotate: card.rotate, x: card.rotate * 20, scale: 1 }
-                  : { opacity: 0, y: 120, rotate: 0, x: 0, scale: 0.95 }
-              }
-              transition={{ delay: 0.2 * index, type: 'spring', stiffness: 140, damping: 16 }}
-              className={`relative w-64 max-w-[15rem] rounded-[2rem] border border-slate-200 bg-gradient-to-br ${card.gradient} p-6 text-left text-slate-900 shadow-[0_35px_60px_-35px_rgba(30,64,175,0.35)] backdrop-blur`}
-            >
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-8 md:p-12">
+            {featureCards.map((card, index) => (
+              <motion.div
+                key={card.title}
+                initial={{ opacity: 0, y: 40, scale: 0.95 }}
+                animate={
+                  cardsInView
+                    ? { opacity: 1, y: 0, scale: 1 }
+                    : { opacity: 0, y: 40, scale: 0.95 }
+                }
+                transition={{ delay: 0.15 * index, type: 'spring', stiffness: 140, damping: 16 }}
+                className={`relative rounded-[2rem] border border-slate-200 bg-gradient-to-br ${card.gradient} p-6 text-left text-slate-900 shadow-[0_35px_60px_-35px_rgba(30,64,175,0.35)] backdrop-blur`}
+              >
               <div className={`mb-6 h-10 w-10 rounded-full ${card.accent}`} />
               <h3 className="text-xl font-semibold text-slate-900">{card.title}</h3>
               <p className="mt-3 text-sm text-slate-600">{card.description}</p>
             </motion.div>
           ))}
+          </div>
         </div>
       </section>
 
