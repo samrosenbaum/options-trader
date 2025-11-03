@@ -51,8 +51,5 @@ data/*.db
 options_cache_*.json
 data/scan_universe_state.json
 
-# large GIF files (too big for GitHub)
-public/*-demo.gif
-public/chat-feature.gif
-public/scanner-feature.gif
-public/portfolio-demo.gif
+# large GIF files (too big for GitHub) - keeping originals local only
+# Compressed versions are in git: *-compressed.gif and portfolio-demo-final.gif
