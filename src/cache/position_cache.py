@@ -53,8 +53,8 @@ class PositionPriceCache:
         self,
         path: str | Path,
         *,
-        ttl_seconds: int = 300,
-        stale_ttl_seconds: int = 900,
+        ttl_seconds: int = 30,  # Reduced from 300 to 30 seconds for real-time portfolio pricing
+        stale_ttl_seconds: int = 120,  # Reduced from 900 to 120 seconds
     ) -> None:
         self.path = Path(path)
         self.ttl_seconds = max(int(ttl_seconds), 0)
@@ -83,8 +83,8 @@ class PositionPriceCache:
     def from_environment(
         cls,
         *,
-        ttl_seconds: int = 300,
-        stale_ttl_seconds: int = 900,
+        ttl_seconds: int = 30,  # Reduced from 300 to 30 seconds for real-time portfolio pricing
+        stale_ttl_seconds: int = 120,  # Reduced from 900 to 120 seconds
     ) -> "PositionPriceCache":
         path = os.getenv("POSITION_PRICE_CACHE_PATH")
         if path:
