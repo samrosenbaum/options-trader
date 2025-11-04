@@ -51,6 +51,7 @@ export default function Navigation({ userEmail }: { userEmail?: string }) {
       dropdownItems: [
         { href: '/macro', label: 'Macro' },
         { href: '/sentiments', label: 'Sentiments' },
+        { href: '/crypto', label: 'Crypto (Alpha)' },
       ],
     },
     {
