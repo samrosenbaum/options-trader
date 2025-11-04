@@ -37,9 +37,58 @@ const INDEX_SYMBOLS = [
   { symbol: 'IWM', label: 'small caps' }
 ]
 
-function buildSuggestedNextStep(insights: DashboardInsight[]): string {
+function getRandomNoInsightMessage(marketIsOpen: boolean): string {
+  const now = new Date()
+  const easternHour = parseInt(
+    new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/New_York',
+      hour: 'numeric',
+      hour12: false
+    }).format(now)
+  )
+
+  // Different message pools based on context
+  const morningMessages = [
+    "Earnings season is always cooking something—check what's reporting today.",
+    "Market's still waking up. Good time to review your watchlist before things heat up.",
+    "Fresh coffee, fresh charts—scan for overnight moves and plan your day."
+  ]
+
+  const midDayMessages = [
+    "Quiet desk today—fire up the scanner and hunt for asymmetric setups.",
+    "Nothing urgent, which means you've got time to do real research. Dig into setups.",
+    "Slow day is a gift—review your positions, tighten stops, and scout for new plays.",
+    "Market's chopping around. Stay patient and wait for cleaner entries."
+  ]
+
+  const afternoonMessages = [
+    "Power hour incoming—watch for late-day volume spikes and momentum plays.",
+    "Markets tend to show their hand in the final hour. Keep your scanner ready.",
+    "If you haven't made your move yet, last hour can bring opportunities—or traps."
+  ]
+
+  const afterHoursMessages = [
+    "Bell just rang—time to review what worked, what didn't, and plan tomorrow.",
+    "After-hours is for learning. Review your trades and prep for the next session.",
+    "Market's closed but your edge gets built now—study charts and refine your strategy.",
+    "Session's done. Pour a drink, review the tape, and get ready for tomorrow."
+  ]
+
+  // Choose message pool based on time and market status
+  if (!marketIsOpen) {
+    return afterHoursMessages[Math.floor(Math.random() * afterHoursMessages.length)]
+  } else if (easternHour >= 9 && easternHour < 11) {
+    return morningMessages[Math.floor(Math.random() * morningMessages.length)]
+  } else if (easternHour >= 15) {
+    return afternoonMessages[Math.floor(Math.random() * afternoonMessages.length)]
+  } else {
+    return midDayMessages[Math.floor(Math.random() * midDayMessages.length)]
+  }
+}
+
+function buildSuggestedNextStep(insights: DashboardInsight[], marketIsOpen: boolean): string {
   if (insights.length === 0) {
-    return "Nothing screaming for attention—fire up the scanner and hunt for setups."
+    return getRandomNoInsightMessage(marketIsOpen)
   }
 
   const priorityOrder: Record<InsightType, number> = {
@@ -101,12 +150,29 @@ function isMarketHours(): boolean {
   return currentMinutes >= marketOpen && currentMinutes < marketClose
 }
 
+function getRandomWeekendSuggestedNextStep(): string {
+  const weekendMessages = [
+    "Take a breather—markets reopen Monday at 9:30 AM ET.",
+    "Recharge and prep. Best trades come from rested minds.",
+    "Weekend homework: review your winners and losers. What patterns do you see?",
+    "Markets are closed, but your edge gets sharpened now. Study up.",
+    "Step away from the screens. Come back Monday with fresh eyes and a clear plan."
+  ]
+  return weekendMessages[Math.floor(Math.random() * weekendMessages.length)]
+}
+
 function getWeekendMessage(firstName: string): { greeting: string; marketSummary: string; insights: DashboardInsight[] } {
   const now = new Date()
   const dayOfWeek = now.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'America/New_York' })
 
+  const greetings = [
+    `Hey ${firstName}, enjoy your ${dayOfWeek}.`,
+    `${firstName}, markets are dark—time to relax.`,
+    `Hey ${firstName}, it's the weekend. Take a break.`
+  ]
+
   return {
-    greeting: `Hey ${firstName}, enjoy your ${dayOfWeek}.`,
+    greeting: greetings[Math.floor(Math.random() * greetings.length)],
     marketSummary: "Markets are closed for the weekend. Next week kicks off Monday at 9:30 AM ET.",
     insights: [
       {
@@ -169,7 +235,7 @@ export async function GET() {
         greeting: weekendResponse.greeting,
         marketSummary: weekendResponse.marketSummary,
         insights: weekendResponse.insights,
-        suggestedNextStep: "Take a breather—markets reopen Monday at 9:30 AM ET.",
+        suggestedNextStep: getRandomWeekendSuggestedNextStep(),
         timestamp: new Date().toISOString(),
         meta: {
           trackedSymbols: [],
@@ -376,7 +442,7 @@ export async function GET() {
       ? `Hey ${firstName}, let's make some moves.`
       : `Hey ${firstName}, market just closed.`
 
-    const suggestedNextStep = buildSuggestedNextStep(insights)
+    const suggestedNextStep = buildSuggestedNextStep(insights, marketIsOpen)
 
     const response: DashboardBriefResponse = {
       success: true,
