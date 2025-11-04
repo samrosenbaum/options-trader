@@ -1,4 +1,6 @@
-import { NextResponse, type NextResponseInit } from 'next/server'
+import { NextResponse } from 'next/server'
+
+type ResponseInit = ResponseInit
 
 const DEFAULT_ALLOWED_HEADERS = [
   'Content-Type',
@@ -37,7 +39,7 @@ function applyCorsHeaders(
 export function jsonWithCors(
   request: Request,
   body: unknown,
-  init: NextResponseInit | undefined,
+  init: ResponseInit | undefined,
   methods: readonly string[],
 ) {
   const response = NextResponse.json(body, init)
