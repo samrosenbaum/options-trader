@@ -1,9 +1,16 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { handleOptions, jsonWithCors } from '@/lib/server/cors'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
 export const dynamic = 'force-dynamic'
+
+const ALLOWED_METHODS = ['POST'] as const
+
+export async function OPTIONS(request: Request) {
+  return handleOptions(request, ALLOWED_METHODS)
+}
 
 /**
  * Update current/final performance for closed positions in anti-portfolio
@@ -13,14 +20,14 @@ export const dynamic = 'force-dynamic'
  *
  * This helps you learn if you closed too soon.
  */
-export async function POST() {
+export async function POST(request: Request) {
   try {
     const supabase = await createClient()
 
     // Verify user is authenticated
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return jsonWithCors(request, { error: 'Unauthorized' }, { status: 401 }, ALLOWED_METHODS)
     }
 
     console.log('📊 Updating next-day performance for closed positions...')
@@ -36,15 +43,15 @@ export async function POST() {
 
     if (fetchError) {
       console.error('Error fetching closed positions:', fetchError)
-      return NextResponse.json({ error: fetchError.message }, { status: 500 })
+      return jsonWithCors(request, { error: fetchError.message }, { status: 500 }, ALLOWED_METHODS)
     }
 
     if (!closedPositions || closedPositions.length === 0) {
-      return NextResponse.json({
+      return jsonWithCors(request, {
         success: true,
         message: 'No positions need next-day data',
         updated: 0,
-      })
+      }, undefined, ALLOWED_METHODS)
     }
 
     console.log(`Found ${closedPositions.length} positions to update`)
@@ -203,22 +210,24 @@ except Exception as e:
 
     console.log(`✅ Update complete: ${updated} updated, ${skipped} skipped, ${errors} errors`)
 
-    return NextResponse.json({
+    return jsonWithCors(request, {
       success: true,
       message: `Updated ${updated} positions`,
       updated,
       skipped,
       errors,
       errorDetails: errors > 0 ? errorDetails : undefined,
-    })
+    }, undefined, ALLOWED_METHODS)
   } catch (error) {
     console.error('Update error:', error)
-    return NextResponse.json(
+    return jsonWithCors(
+      request,
       {
         error: 'Failed to update performance data',
         details: error instanceof Error ? error.message : String(error),
       },
-      { status: 500 }
+      { status: 500 },
+      ALLOWED_METHODS,
     )
   }
 }
