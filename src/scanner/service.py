@@ -455,7 +455,14 @@ class SmartOptionsScanner:
     def should_refresh_data(self) -> bool:
         """Determine whether cached option data is too stale to use."""
 
-        ttl = self.cache_ttl_seconds
+        # Use dynamic TTL based on market hours for accurate pricing
+        # During market hours: 5 minutes (fast-moving options need frequent updates)
+        # Market closed: 7 days (serve last session data to reduce API load)
+        if self.is_market_hours():
+            ttl = 300  # 5 minutes during market hours for fast-moving options
+        else:
+            ttl = 7 * 24 * 60 * 60  # 7 days when market closed
+
         freshness = self.data_freshness or {}
 
         # No prior data – force a refresh so we do not operate on an empty cache.
@@ -464,7 +471,7 @@ class SmartOptionsScanner:
 
         now = datetime.now(timezone.utc)
 
-        # Respect the configured cache TTL when available.
+        # Respect the dynamic cache TTL.
         if ttl > 0:
             if self.last_fetch_time is not None:
                 last_fetch = self.last_fetch_time
