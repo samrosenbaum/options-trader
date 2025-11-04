@@ -2,18 +2,22 @@ import { Metadata } from "next"
 import {
   BarChart3,
   Flame,
-  LayoutGrid,
-  TrendingUp,
-  TrendingDown,
-  ShieldCheck,
   Gauge,
+  Globe2,
+  Landmark,
+  LayoutGrid,
+  LineChart,
   LucideIcon,
+  ShieldCheck,
+  TrendingDown,
+  TrendingUp,
 } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 
 import Navigation from "@/components/navigation"
 import {
   fetchSentimentInsights,
+  MarketSentimentSnapshot,
   SentimentNarrative,
 } from "@/lib/sentiments/intelligence"
 import { SignalTape } from "@/components/signal-tape"
@@ -58,6 +62,63 @@ function SentimentStat({ stat }: { stat: SummaryItem }) {
           <p className="text-sm font-medium tracking-wide text-slate-500 uppercase">{stat.label}</p>
           <p className="text-3xl font-semibold text-slate-900">{stat.value}</p>
           <p className="text-sm text-slate-600">{stat.change}</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+type MarketSentimentCardProps = {
+  title: string
+  icon: LucideIcon
+  snapshot: MarketSentimentSnapshot
+}
+
+function MarketSentimentCard({ title, icon: Icon, snapshot }: MarketSentimentCardProps) {
+  const lastUpdated = snapshot.lastUpdated ? new Date(snapshot.lastUpdated) : null
+  const scoreDisplay = `${snapshot.score > 0 ? "+" : ""}${Math.round(snapshot.score * 100)}`
+
+  return (
+    <div
+      className={`group relative flex h-full flex-col overflow-hidden rounded-3xl border backdrop-blur-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-xl ${gradientByTone[snapshot.tone]}`}
+    >
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/15 via-transparent to-white/5 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+      <div className="relative flex flex-1 flex-col gap-5 p-6">
+        <div className="flex items-start justify-between gap-4">
+          <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white/70 text-slate-900 shadow-lg">
+            <Icon className="h-6 w-6" />
+          </div>
+          <div className="rounded-2xl border border-white/50 bg-white/70 px-4 py-2 text-right shadow-sm">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-500">Net score</p>
+            <p className="text-2xl font-semibold text-slate-900 dark:text-white">{scoreDisplay}</p>
+            <p className="text-xs text-slate-500">Confidence {Math.round(snapshot.confidence * 100)}%</p>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">{title}</p>
+          <p className="text-lg font-semibold leading-snug text-slate-900 dark:text-white">{snapshot.summary}</p>
+          <p className="text-sm text-slate-600 dark:text-slate-400">{snapshot.change}</p>
+        </div>
+
+        <div className="rounded-2xl border border-white/30 bg-white/60 p-4 shadow-inner dark:border-white/10 dark:bg-slate-900/40">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Top drivers</p>
+          <ul className="mt-2 space-y-2 text-sm text-slate-600 dark:text-slate-300">
+            {snapshot.drivers.length > 0 ? (
+              snapshot.drivers.map((driver, index) => (
+                <li key={`${title}-driver-${index}`} className="flex items-start gap-2">
+                  <span className="mt-1 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-slate-400" />
+                  <span>{driver}</span>
+                </li>
+              ))
+            ) : (
+              <li className="text-slate-500 dark:text-slate-400">Waiting on catalyst confirmation.</li>
+            )}
+          </ul>
+        </div>
+
+        <div className="mt-auto text-xs text-slate-500 dark:text-slate-400">
+          {lastUpdated ? `Updated ${formatDistanceToNow(lastUpdated, { addSuffix: true })}` : "Awaiting data"}
         </div>
       </div>
     </div>
@@ -179,6 +240,12 @@ export const revalidate = 300
 export default async function SentimentsPage() {
   const insights = await fetchSentimentInsights()
 
+  const marketSnapshots: Array<{ title: string; icon: LucideIcon; snapshot: MarketSentimentSnapshot }> = [
+    { title: "Overall market", icon: Globe2, snapshot: insights.market.overall },
+    { title: "S&P 500", icon: LineChart, snapshot: insights.market.sp500 },
+    { title: "U.S. economy", icon: Landmark, snapshot: insights.market.economy },
+  ]
+
   const secondaryInsights: SummaryItem[] = [
     {
       icon: BarChart3,
@@ -255,6 +322,25 @@ export default async function SentimentsPage() {
           </div>
 
           <section className="space-y-8">
+            <div className="space-y-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">Market overview</p>
+                <h2 className="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">
+                  Broader sentiment landscape
+                </h2>
+              </div>
+              <div className="grid gap-6 lg:grid-cols-3">
+                {marketSnapshots.map((snapshot) => (
+                  <MarketSentimentCard
+                    key={snapshot.title}
+                    title={snapshot.title}
+                    icon={snapshot.icon}
+                    snapshot={snapshot.snapshot}
+                  />
+                ))}
+              </div>
+            </div>
+
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
               {secondaryInsights.map((stat) => (
                 <SentimentStat key={stat.label} stat={stat} />
