@@ -207,6 +207,8 @@ export default function PortfolioClient({
   const [hasAutoRefreshed, setHasAutoRefreshed] = useState(false)
   const [showCashRain, setShowCashRain] = useState(false)
   const [cashRainKey, setCashRainKey] = useState(0)
+  const [dailyChange, setDailyChange] = useState<number>(0)
+  const [dailyChangePercent, setDailyChangePercent] = useState<number>(0)
   const [showLossRain, setShowLossRain] = useState(false)
   const [lossRainKey, setLossRainKey] = useState(0)
 
@@ -360,6 +362,23 @@ export default function PortfolioClient({
 
       console.log('[Portfolio] Got', updatedPositions?.length, 'positions from database')
       setPositions(updatedPositions || [])
+
+      // Update today's portfolio snapshot to calculate daily change
+      try {
+        const snapshotResponse = await fetch('/api/portfolio-snapshot', {
+          method: 'POST',
+        })
+        if (snapshotResponse.ok) {
+          const snapshotData = await snapshotResponse.json()
+          if (snapshotData.success && snapshotData.snapshot) {
+            setDailyChange(snapshotData.snapshot.daily_change || 0)
+            setDailyChangePercent(snapshotData.snapshot.daily_change_percent || 0)
+          }
+        }
+      } catch (snapshotError) {
+        console.error('[Portfolio] Failed to update snapshot:', snapshotError)
+        // Don't fail the whole refresh if snapshot fails
+      }
 
       const message = `Updated ${result.updated || 0} of ${result.total || 0} positions`
       console.log('[Portfolio]', message)
@@ -1065,17 +1084,19 @@ export default function PortfolioClient({
             >
               <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-emerald-400/40 to-blue-400/30 blur-2xl" />
               <div className="relative flex flex-col items-center gap-2 rounded-2xl border border-emerald-400/30 bg-white/80 px-6 py-6 text-center shadow-2xl backdrop-blur dark:border-emerald-400/30 dark:bg-slate-950/70">
-                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Today&apos;s pulse</span>
+                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Today</span>
                 <span
                   className={`text-2xl font-bold ${
-                    totalUnrealizedPL >= 0
+                    dailyChange >= 0
                       ? 'text-emerald-500 dark:text-emerald-300'
                       : 'text-rose-500 dark:text-rose-300'
                   }`}
                 >
-                  {formatSignedCurrency(totalUnrealizedPL, preciseCurrencyFormatter)}
+                  {formatSignedCurrency(dailyChange, preciseCurrencyFormatter)}
                 </span>
-                <span className="text-xs text-slate-500 dark:text-slate-400">Unrealized performance</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400">
+                  {dailyChangePercent >= 0 ? '+' : ''}{dailyChangePercent.toFixed(2)}% from open
+                </span>
               </div>
             </motion.div>
           </div>
