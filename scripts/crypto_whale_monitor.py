@@ -60,8 +60,18 @@ class CryptoWhaleMonitor:
                 }
 
                 response = self.session.get(url, params=params, timeout=15)
-                if response.status_code != 200:
+                if response.status_code == 429:
+                    print(f"    Rate limit hit for {asset}. Using cached/demo data...")
+                    # In production, implement caching or use premium API
+                    results[asset] = self._get_demo_asset_data(asset)
+                    continue
+                elif response.status_code == 403:
+                    print(f"    API access forbidden for {asset} (may require API key). Using demo data...")
+                    results[asset] = self._get_demo_asset_data(asset)
+                    continue
+                elif response.status_code != 200:
                     print(f"    Error fetching {asset} data: {response.status_code}")
+                    results[asset] = self._get_demo_asset_data(asset)
                     continue
 
                 data = response.json()
@@ -448,11 +458,12 @@ class CryptoWhaleMonitor:
             )
 
             if response.status_code != 200:
-                return {}
+                print(f"  Fear & Greed API unavailable (status {response.status_code}). Using demo data...")
+                return self._get_demo_fear_greed()
 
             data = response.json()
             if not data.get('data'):
-                return {}
+                return self._get_demo_fear_greed()
 
             latest = data['data'][0]
             value = int(latest.get('value', 50))
@@ -465,8 +476,90 @@ class CryptoWhaleMonitor:
             }
 
         except Exception as e:
-            print(f"Error fetching fear & greed index: {e}")
-            return {}
+            print(f"Error fetching fear & greed index: {e}. Using demo data...")
+            return self._get_demo_fear_greed()
+
+    def _get_demo_fear_greed(self) -> Dict:
+        """Demo fear & greed data when API is unavailable"""
+        return {
+            'value': 62,
+            'classification': 'Greed',
+            'timestamp': datetime.now().isoformat(),
+            'interpretation': self._interpret_fear_greed(62),
+            '_demo_data': True
+        }
+
+    def _get_demo_asset_data(self, asset: str) -> Dict:
+        """Provide demo data when API is unavailable"""
+        if asset == 'bitcoin':
+            return {
+                'symbol': 'BTC',
+                'current_price': 67500.00,
+                'market_cap': 1340000000000,
+                'total_volume_24h': 28000000000,
+                'price_change_24h': 2.3,
+                'derivatives': {
+                    'total_open_interest_usd': 15600000000,
+                    'open_interest_to_mcap_ratio': 1.16,
+                    'avg_basis_percentage': 0.12,
+                    'avg_funding_rate': 0.0008,
+                    'sentiment': {
+                        'overall': 'bullish',
+                        'basis_interpretation': 'Positive basis suggests moderate bullish sentiment',
+                        'funding_interpretation': 'Positive funding indicates more long interest'
+                    }
+                },
+                'long_short': {
+                    'estimated_long_short_ratio': 1.30,
+                    'interpretation': 'Moderate long bias',
+                    'signal': 'bullish'
+                },
+                'institutional_signals': {
+                    'signals': [
+                        'High open interest relative to market cap indicates institutional presence',
+                        'Derivatives volume exceeds spot - institutions likely using leverage',
+                        'Positive futures basis suggests institutions building long positions'
+                    ],
+                    'confidence_score': 72,
+                    'direction': 'bullish',
+                    'institutional_participation': 'high'
+                },
+                '_demo_data': True
+            }
+        else:  # ethereum
+            return {
+                'symbol': 'ETH',
+                'current_price': 2620.00,
+                'market_cap': 315000000000,
+                'total_volume_24h': 14000000000,
+                'price_change_24h': 1.8,
+                'derivatives': {
+                    'total_open_interest_usd': 8200000000,
+                    'open_interest_to_mcap_ratio': 2.60,
+                    'avg_basis_percentage': 0.08,
+                    'avg_funding_rate': 0.0005,
+                    'sentiment': {
+                        'overall': 'neutral',
+                        'basis_interpretation': 'Positive basis suggests moderate bullish sentiment',
+                        'funding_interpretation': 'Positive funding indicates more long interest'
+                    }
+                },
+                'long_short': {
+                    'estimated_long_short_ratio': 1.10,
+                    'interpretation': 'Slight long bias',
+                    'signal': 'neutral'
+                },
+                'institutional_signals': {
+                    'signals': [
+                        'High open interest relative to market cap indicates institutional presence',
+                        'Balanced positioning suggests wait-and-see approach by institutions'
+                    ],
+                    'confidence_score': 58,
+                    'direction': 'neutral',
+                    'institutional_participation': 'medium'
+                },
+                '_demo_data': True
+            }
 
     def _interpret_fear_greed(self, value: int) -> str:
         """Interpret fear & greed index value"""
