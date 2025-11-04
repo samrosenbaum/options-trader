@@ -1,13 +1,23 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { handleOptions, jsonWithCors } from '@/lib/server/cors'
 
-export async function POST() {
+export const runtime = 'nodejs'
+export const maxDuration = 60
+
+const ALLOWED_METHODS = ['POST'] as const
+
+export async function OPTIONS(request: Request) {
+  return handleOptions(request, ALLOWED_METHODS)
+}
+
+export async function POST(request: Request) {
   try {
     const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return jsonWithCors(request, { error: 'Unauthorized' }, { status: 401 }, ALLOWED_METHODS)
     }
 
     console.log('🔄 Starting backfill of closed positions to anti-portfolio...')
@@ -21,17 +31,17 @@ export async function POST() {
 
     if (fetchError) {
       console.error('❌ Error fetching closed positions:', fetchError)
-      return NextResponse.json({ error: 'Failed to fetch positions' }, { status: 500 })
+      return jsonWithCors(request, { error: 'Failed to fetch positions' }, { status: 500 }, ALLOWED_METHODS)
     }
 
     if (!closedPositions || closedPositions.length === 0) {
-      return NextResponse.json({
+      return jsonWithCors(request, {
         success: true,
         message: 'No closed positions found',
         backfilled: 0,
         skipped: 0,
-        errors: 0
-      })
+        errors: 0,
+      }, undefined, ALLOWED_METHODS)
     }
 
     console.log(`📊 Found ${closedPositions.length} closed positions`)
@@ -130,10 +140,15 @@ export async function POST() {
     }
 
     console.log('📊 Backfill Summary:', summary)
-    return NextResponse.json(summary)
+    return jsonWithCors(request, summary, undefined, ALLOWED_METHODS)
 
   } catch (err) {
     console.error('Error in backfill:', err)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return jsonWithCors(
+      request,
+      { error: 'Internal server error' },
+      { status: 500 },
+      ALLOWED_METHODS,
+    )
   }
 }

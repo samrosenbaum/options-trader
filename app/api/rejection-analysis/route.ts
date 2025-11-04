@@ -1,9 +1,16 @@
 import Anthropic from "@anthropic-ai/sdk"
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { handleOptions, jsonWithCors } from "@/lib/server/cors"
 
 export const runtime = "nodejs"
 export const maxDuration = 60
+
+const ALLOWED_METHODS = ['GET', 'POST'] as const
+
+export async function OPTIONS(request: Request) {
+  return handleOptions(request, ALLOWED_METHODS)
+}
 
 interface LogRejectionParams {
   action: 'log'
@@ -319,9 +326,11 @@ export async function POST(request: Request): Promise<NextResponse> {
         const { data: { user }, error: authError } = await supabase.auth.getUser()
 
         if (authError || !user) {
-          return NextResponse.json(
+          return jsonWithCors(
+            request,
             { success: false, error: 'Unauthorized - must be logged in to reject options' },
-            { status: 401 }
+            { status: 401 },
+            ALLOWED_METHODS,
           )
         }
 
@@ -353,18 +362,22 @@ export async function POST(request: Request): Promise<NextResponse> {
 
         if (error) {
           console.error('Failed to log rejection:', error)
-          return NextResponse.json(
+          return jsonWithCors(
+            request,
             { success: false, error: 'Failed to log rejection', details: error.message },
-            { status: 500 }
+            { status: 500 },
+            ALLOWED_METHODS,
           )
         }
 
-        return NextResponse.json({ success: true })
+        return jsonWithCors(request, { success: true }, undefined, ALLOWED_METHODS)
       } catch (error) {
         console.error('Error logging rejection:', error)
-        return NextResponse.json(
+        return jsonWithCors(
+          request,
           { success: false, error: 'Failed to log rejection' },
-          { status: 500 }
+          { status: 500 },
+          ALLOWED_METHODS,
         )
       }
     }
@@ -404,9 +417,11 @@ export async function POST(request: Request): Promise<NextResponse> {
         if (code !== 0) {
           console.error("Rejection analysis error:", errorString)
           resolve(
-            NextResponse.json(
+            jsonWithCors(
+              request,
               { success: false, error: "Analysis failed", details: errorString },
-              { status: 500 }
+              { status: 500 },
+              ALLOWED_METHODS,
             )
           )
           return
@@ -430,19 +445,26 @@ export async function POST(request: Request): Promise<NextResponse> {
             }
 
             resolve(
-              NextResponse.json({
-                success: true,
-                timestamp: new Date().toISOString(),
-                analysis,
-              })
+              jsonWithCors(
+                request,
+                {
+                  success: true,
+                  timestamp: new Date().toISOString(),
+                  analysis,
+                },
+                undefined,
+                ALLOWED_METHODS,
+              )
             )
           })()
         } catch (error) {
           console.error("Error parsing analysis output:", error)
           resolve(
-            NextResponse.json(
+            jsonWithCors(
+              request,
               { success: false, error: "Failed to parse results" },
-              { status: 500 }
+              { status: 500 },
+              ALLOWED_METHODS,
             )
           )
         }
@@ -450,9 +472,11 @@ export async function POST(request: Request): Promise<NextResponse> {
     })
   } catch (error) {
     console.error("Error running rejection analysis:", error)
-    return NextResponse.json(
+    return jsonWithCors(
+      request,
       { success: false, error: "Failed to analyze rejections" },
-      { status: 500 }
+      { status: 500 },
+      ALLOWED_METHODS,
     )
   }
 }
@@ -492,17 +516,24 @@ export async function GET(request: Request) {
       throw error
     }
 
-    return NextResponse.json({
-      success: true,
-      rejections: data || [],
-      count: data?.length || 0,
-      source,
-    })
+    return jsonWithCors(
+      request,
+      {
+        success: true,
+        rejections: data || [],
+        count: data?.length || 0,
+        source,
+      },
+      undefined,
+      ALLOWED_METHODS,
+    )
   } catch (error) {
     console.error("Error fetching rejections:", error)
-    return NextResponse.json(
+    return jsonWithCors(
+      request,
       { success: false, error: "Failed to fetch rejections" },
-      { status: 500 }
+      { status: 500 },
+      ALLOWED_METHODS,
     )
   }
 }

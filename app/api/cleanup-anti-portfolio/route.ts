@@ -1,8 +1,15 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { handleOptions, jsonWithCors } from '@/lib/server/cors'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
+
+const ALLOWED_METHODS = ['POST'] as const
+
+export async function OPTIONS(request: Request) {
+  return handleOptions(request, ALLOWED_METHODS)
+}
 
 /**
  * Cleanup orphaned anti-portfolio entries
@@ -10,14 +17,14 @@ export const maxDuration = 60
  * Removes rejected_options records with rejection_source='user_closed_position'
  * that don't have a corresponding position in the positions table.
  */
-export async function POST() {
+export async function POST(request: Request) {
   try {
     const supabase = await createClient()
 
     // Verify user is authenticated
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return jsonWithCors(request, { error: 'Unauthorized' }, { status: 401 }, ALLOWED_METHODS)
     }
 
     console.log('🧹 Cleaning up orphaned anti-portfolio entries...')
@@ -31,15 +38,15 @@ export async function POST() {
 
     if (rejError) {
       console.error('Error fetching rejections:', rejError)
-      return NextResponse.json({ error: rejError.message }, { status: 500 })
+      return jsonWithCors(request, { error: rejError.message }, { status: 500 }, ALLOWED_METHODS)
     }
 
     if (!rejections || rejections.length === 0) {
-      return NextResponse.json({
+      return jsonWithCors(request, {
         success: true,
         message: 'No anti-portfolio entries found',
         deleted: 0,
-      })
+      }, undefined, ALLOWED_METHODS)
     }
 
     console.log(`Found ${rejections.length} anti-portfolio entries`)
@@ -140,20 +147,27 @@ export async function POST() {
 
     console.log(`✅ Cleanup complete: deleted ${deleted} orphaned entries`)
 
-    return NextResponse.json({
-      success: true,
-      message: `Cleaned up ${deleted} orphaned entries`,
-      deleted,
-      deletedEntries,
-    })
+    return jsonWithCors(
+      request,
+      {
+        success: true,
+        message: `Cleaned up ${deleted} orphaned entries`,
+        deleted,
+        deletedEntries,
+      },
+      undefined,
+      ALLOWED_METHODS
+    )
   } catch (error) {
     console.error('Cleanup error:', error)
-    return NextResponse.json(
+    return jsonWithCors(
+      request,
       {
         error: 'Failed to cleanup anti-portfolio',
         details: error instanceof Error ? error.message : String(error),
       },
-      { status: 500 }
+      { status: 500 },
+      ALLOWED_METHODS
     )
   }
 }

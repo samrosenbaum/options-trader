@@ -1,22 +1,29 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { handleOptions, jsonWithCors } from '@/lib/server/cors'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
+
+const ALLOWED_METHODS = ['POST'] as const
+
+export async function OPTIONS(request: Request) {
+  return handleOptions(request, ALLOWED_METHODS)
+}
 
 /**
  * Sync Anti-Portfolio with correct P&L from closed positions
  *
  * This fixes cases where rejected_options has stale/incorrect realized_pl data
  */
-export async function POST() {
+export async function POST(request: Request) {
   try {
     const supabase = await createClient()
 
     // Verify user is authenticated
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return jsonWithCors(request, { error: 'Unauthorized' }, { status: 401 }, ALLOWED_METHODS)
     }
 
     console.log('🔄 Syncing Anti-Portfolio with closed positions...')
@@ -33,17 +40,17 @@ export async function POST() {
 
     if (posError) {
       console.error('Error fetching positions:', posError)
-      return NextResponse.json({ error: posError.message }, { status: 500 })
+      return jsonWithCors(request, { error: posError.message }, { status: 500 }, ALLOWED_METHODS)
     }
 
     if (!positions || positions.length === 0) {
-      return NextResponse.json({
+      return jsonWithCors(request, {
         success: true,
         message: 'No closed positions found',
         updated: 0,
         skipped: 0,
         errors: 0,
-      })
+      }, undefined, ALLOWED_METHODS)
     }
 
     console.log(`Found ${positions.length} closed positions`)
@@ -194,22 +201,24 @@ export async function POST() {
       updated++
     }
 
-    return NextResponse.json({
+    return jsonWithCors(request, {
       success: true,
       message: `Synced ${updated} positions`,
       updated,
       skipped,
       errors,
       errorDetails: errors > 0 ? errorDetails : undefined,
-    })
+    }, undefined, ALLOWED_METHODS)
   } catch (error) {
     console.error('Sync error:', error)
-    return NextResponse.json(
+    return jsonWithCors(
+      request,
       {
         error: 'Failed to sync anti-portfolio',
         details: error instanceof Error ? error.message : String(error),
       },
-      { status: 500 }
+      { status: 500 },
+      ALLOWED_METHODS
     )
   }
 }
