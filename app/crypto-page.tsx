@@ -5,65 +5,44 @@ import { User } from '@supabase/supabase-js'
 import Navigation from '@/components/navigation'
 import { TrendingUp, TrendingDown, Activity, Wallet, DollarSign, BarChart3, AlertCircle, RefreshCw } from 'lucide-react'
 
+interface AssetData {
+  symbol: string
+  current_price: number
+  price_change_24h: number
+  market_cap: number
+  derivatives: {
+    total_open_interest_usd: number
+    open_interest_to_mcap_ratio: number
+    avg_basis_percentage: number
+    avg_funding_rate: number
+    sentiment: {
+      overall: string
+      basis_interpretation: string
+      funding_interpretation: string
+    }
+  }
+  long_short: {
+    estimated_long_short_ratio: number
+    interpretation: string
+    signal: string
+  }
+  institutional_signals: {
+    signals: string[]
+    confidence_score: number
+    direction: string
+    institutional_participation: string
+  }
+}
+
+interface AssetError {
+  error: string
+}
+
 interface CryptoWhaleData {
   timestamp: string
   futures_analysis: {
-    bitcoin: {
-      symbol: string
-      current_price: number
-      price_change_24h: number
-      market_cap: number
-      derivatives: {
-        total_open_interest_usd: number
-        open_interest_to_mcap_ratio: number
-        avg_basis_percentage: number
-        avg_funding_rate: number
-        sentiment: {
-          overall: string
-          basis_interpretation: string
-          funding_interpretation: string
-        }
-      }
-      long_short: {
-        estimated_long_short_ratio: number
-        interpretation: string
-        signal: string
-      }
-      institutional_signals: {
-        signals: string[]
-        confidence_score: number
-        direction: string
-        institutional_participation: string
-      }
-    }
-    ethereum: {
-      symbol: string
-      current_price: number
-      price_change_24h: number
-      market_cap: number
-      derivatives: {
-        total_open_interest_usd: number
-        open_interest_to_mcap_ratio: number
-        avg_basis_percentage: number
-        avg_funding_rate: number
-        sentiment: {
-          overall: string
-          basis_interpretation: string
-          funding_interpretation: string
-        }
-      }
-      long_short: {
-        estimated_long_short_ratio: number
-        interpretation: string
-        signal: string
-      }
-      institutional_signals: {
-        signals: string[]
-        confidence_score: number
-        direction: string
-        institutional_participation: string
-      }
-    }
+    bitcoin: AssetData | AssetError | Record<string, never>
+    ethereum: AssetData | AssetError | Record<string, never>
   }
   market_sentiment: {
     value: number
@@ -116,14 +95,23 @@ export default function CryptoPage({ user }: { user: User }) {
     fetchCryptoData()
   }
 
-  const formatCurrency = (value: number): string => {
+  const isValidAssetData = (data: AssetData | AssetError | Record<string, never>): data is AssetData => {
+    if (!data || typeof data !== 'object') return false
+    if ('error' in data) return false
+    if (Object.keys(data).length === 0) return false
+    return 'symbol' in data && 'current_price' in data && 'derivatives' in data
+  }
+
+  const formatCurrency = (value: number | undefined | null): string => {
+    if (value === undefined || value === null || isNaN(value)) return 'N/A'
     if (value >= 1e9) return `$${(value / 1e9).toFixed(2)}B`
     if (value >= 1e6) return `$${(value / 1e6).toFixed(2)}M`
     if (value >= 1e3) return `$${(value / 1e3).toFixed(2)}K`
     return `$${value.toFixed(2)}`
   }
 
-  const formatPercent = (value: number): string => {
+  const formatPercent = (value: number | undefined | null): string => {
+    if (value === undefined || value === null || isNaN(value)) return 'N/A'
     return `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`
   }
 
@@ -139,11 +127,32 @@ export default function CryptoPage({ user }: { user: User }) {
     return 'bg-slate-500/10 border-slate-500/20'
   }
 
+  const renderErrorCard = (asset: 'bitcoin' | 'ethereum', errorMsg?: string) => {
+    return (
+      <div className="rounded-2xl border border-red-200/50 bg-red-50/50 p-6 shadow-lg backdrop-blur-sm dark:border-red-800/50 dark:bg-red-900/20">
+        <div className="flex items-start gap-3">
+          <AlertCircle className="mt-0.5 h-6 w-6 flex-shrink-0 text-red-600 dark:text-red-400" />
+          <div>
+            <h3 className="text-xl font-bold text-slate-900 dark:text-white">
+              {asset === 'bitcoin' ? 'Bitcoin' : 'Ethereum'} Data Unavailable
+            </h3>
+            <p className="mt-2 text-sm text-slate-700 dark:text-slate-300">
+              {errorMsg || 'Failed to load data for this asset. This may be due to API rate limits or temporary service issues.'}
+            </p>
+            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+              Try refreshing the page or check back later.
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   const renderAssetCard = (
     asset: 'bitcoin' | 'ethereum',
-    assetData: CryptoWhaleData['futures_analysis']['bitcoin'] | CryptoWhaleData['futures_analysis']['ethereum']
+    assetData: AssetData
   ) => {
-    const isPositive = assetData.price_change_24h >= 0
+    const isPositive = (assetData.price_change_24h ?? 0) >= 0
 
     return (
       <div className="rounded-2xl border border-white/20 bg-white/50 p-6 shadow-lg backdrop-blur-sm dark:border-white/10 dark:bg-slate-900/50">
@@ -173,27 +182,29 @@ export default function CryptoPage({ user }: { user: User }) {
           <div className="rounded-lg border border-slate-200/50 bg-slate-50/50 p-3 dark:border-slate-700/50 dark:bg-slate-800/50">
             <div className="text-xs text-slate-600 dark:text-slate-400">Open Interest</div>
             <div className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">
-              {formatCurrency(assetData.derivatives.total_open_interest_usd)}
+              {formatCurrency(assetData.derivatives?.total_open_interest_usd)}
             </div>
             <div className="text-xs text-slate-500 dark:text-slate-500">
-              {assetData.derivatives.open_interest_to_mcap_ratio.toFixed(1)}% of market cap
+              {assetData.derivatives?.open_interest_to_mcap_ratio != null
+                ? `${assetData.derivatives.open_interest_to_mcap_ratio.toFixed(1)}% of market cap`
+                : 'N/A'}
             </div>
           </div>
 
           <div className="rounded-lg border border-slate-200/50 bg-slate-50/50 p-3 dark:border-slate-700/50 dark:bg-slate-800/50">
             <div className="text-xs text-slate-600 dark:text-slate-400">Funding Rate</div>
-            <div className={`mt-1 text-lg font-semibold ${assetData.derivatives.avg_funding_rate >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-              {(assetData.derivatives.avg_funding_rate * 100).toFixed(4)}%
+            <div className={`mt-1 text-lg font-semibold ${(assetData.derivatives?.avg_funding_rate ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+              {assetData.derivatives?.avg_funding_rate != null ? (assetData.derivatives.avg_funding_rate * 100).toFixed(4) : 'N/A'}%
             </div>
             <div className="text-xs text-slate-500 dark:text-slate-500">
-              {assetData.derivatives.avg_funding_rate > 0 ? 'Longs paying shorts' : 'Shorts paying longs'}
+              {(assetData.derivatives?.avg_funding_rate ?? 0) > 0 ? 'Longs paying shorts' : 'Shorts paying longs'}
             </div>
           </div>
 
           <div className="rounded-lg border border-slate-200/50 bg-slate-50/50 p-3 dark:border-slate-700/50 dark:bg-slate-800/50">
             <div className="text-xs text-slate-600 dark:text-slate-400">Basis</div>
-            <div className={`mt-1 text-lg font-semibold ${assetData.derivatives.avg_basis_percentage >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-              {assetData.derivatives.avg_basis_percentage.toFixed(2)}%
+            <div className={`mt-1 text-lg font-semibold ${(assetData.derivatives?.avg_basis_percentage ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+              {assetData.derivatives?.avg_basis_percentage != null ? assetData.derivatives.avg_basis_percentage.toFixed(2) : 'N/A'}%
             </div>
             <div className="text-xs text-slate-500 dark:text-slate-500">
               Futures vs spot premium
@@ -202,72 +213,76 @@ export default function CryptoPage({ user }: { user: User }) {
 
           <div className="rounded-lg border border-slate-200/50 bg-slate-50/50 p-3 dark:border-slate-700/50 dark:bg-slate-800/50">
             <div className="text-xs text-slate-600 dark:text-slate-400">Long/Short Ratio</div>
-            <div className={`mt-1 text-lg font-semibold ${assetData.long_short.signal === 'bullish' ? 'text-emerald-600' : assetData.long_short.signal === 'bearish' ? 'text-red-600' : 'text-slate-600'}`}>
-              {assetData.long_short.estimated_long_short_ratio.toFixed(2)}
+            <div className={`mt-1 text-lg font-semibold ${assetData.long_short?.signal === 'bullish' ? 'text-emerald-600' : assetData.long_short?.signal === 'bearish' ? 'text-red-600' : 'text-slate-600'}`}>
+              {assetData.long_short?.estimated_long_short_ratio != null ? assetData.long_short.estimated_long_short_ratio.toFixed(2) : 'N/A'}
             </div>
             <div className="text-xs text-slate-500 dark:text-slate-500">
-              {assetData.long_short.interpretation}
+              {assetData.long_short?.interpretation ?? 'N/A'}
             </div>
           </div>
         </div>
 
         {/* Derivatives Sentiment */}
-        <div className={`mb-6 rounded-lg border p-4 ${getSentimentBgColor(assetData.derivatives.sentiment.overall)}`}>
-          <div className="mb-2 flex items-center gap-2">
-            <Activity className={`h-5 w-5 ${getSentimentColor(assetData.derivatives.sentiment.overall)}`} />
-            <h4 className="font-semibold text-slate-900 dark:text-white">
-              Market Sentiment: <span className={getSentimentColor(assetData.derivatives.sentiment.overall)}>
-                {assetData.derivatives.sentiment.overall.replace('_', ' ').toUpperCase()}
-              </span>
-            </h4>
+        {assetData.derivatives?.sentiment && (
+          <div className={`mb-6 rounded-lg border p-4 ${getSentimentBgColor(assetData.derivatives.sentiment.overall ?? 'neutral')}`}>
+            <div className="mb-2 flex items-center gap-2">
+              <Activity className={`h-5 w-5 ${getSentimentColor(assetData.derivatives.sentiment.overall ?? 'neutral')}`} />
+              <h4 className="font-semibold text-slate-900 dark:text-white">
+                Market Sentiment: <span className={getSentimentColor(assetData.derivatives.sentiment.overall ?? 'neutral')}>
+                  {(assetData.derivatives.sentiment.overall ?? 'neutral').replace('_', ' ').toUpperCase()}
+                </span>
+              </h4>
+            </div>
+            <div className="space-y-1 text-sm">
+              <p className="text-slate-700 dark:text-slate-300">
+                {assetData.derivatives.sentiment.basis_interpretation ?? 'N/A'}
+              </p>
+              <p className="text-slate-700 dark:text-slate-300">
+                {assetData.derivatives.sentiment.funding_interpretation ?? 'N/A'}
+              </p>
+            </div>
           </div>
-          <div className="space-y-1 text-sm">
-            <p className="text-slate-700 dark:text-slate-300">
-              {assetData.derivatives.sentiment.basis_interpretation}
-            </p>
-            <p className="text-slate-700 dark:text-slate-300">
-              {assetData.derivatives.sentiment.funding_interpretation}
-            </p>
-          </div>
-        </div>
+        )}
 
         {/* Institutional Signals */}
-        <div className="rounded-lg border border-blue-200/50 bg-blue-50/50 p-4 dark:border-blue-700/50 dark:bg-blue-900/20">
-          <div className="mb-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Wallet className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-              <h4 className="font-semibold text-slate-900 dark:text-white">Institutional Activity</h4>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className={`rounded-full px-3 py-1 text-xs font-medium ${
-                assetData.institutional_signals.direction === 'bullish'
-                  ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300'
-                  : assetData.institutional_signals.direction === 'bearish'
-                  ? 'bg-red-500/20 text-red-700 dark:text-red-300'
-                  : 'bg-slate-500/20 text-slate-700 dark:text-slate-300'
-              }`}>
-                {assetData.institutional_signals.direction.toUpperCase()}
-              </span>
-              <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
-                {assetData.institutional_signals.confidence_score}% confidence
-              </span>
-            </div>
-          </div>
-          <div className="mb-2 flex items-center gap-2 text-sm">
-            <BarChart3 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-            <span className="font-medium text-slate-700 dark:text-slate-300">
-              Participation: {assetData.institutional_signals.institutional_participation.toUpperCase()}
-            </span>
-          </div>
-          <div className="space-y-2">
-            {assetData.institutional_signals.signals.map((signal, idx) => (
-              <div key={idx} className="flex items-start gap-2 text-sm text-slate-700 dark:text-slate-300">
-                <span className="mt-1 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-blue-500" />
-                <span>{signal}</span>
+        {assetData.institutional_signals && (
+          <div className="rounded-lg border border-blue-200/50 bg-blue-50/50 p-4 dark:border-blue-700/50 dark:bg-blue-900/20">
+            <div className="mb-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Wallet className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                <h4 className="font-semibold text-slate-900 dark:text-white">Institutional Activity</h4>
               </div>
-            ))}
+              <div className="flex items-center gap-2">
+                <span className={`rounded-full px-3 py-1 text-xs font-medium ${
+                  assetData.institutional_signals.direction === 'bullish'
+                    ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300'
+                    : assetData.institutional_signals.direction === 'bearish'
+                    ? 'bg-red-500/20 text-red-700 dark:text-red-300'
+                    : 'bg-slate-500/20 text-slate-700 dark:text-slate-300'
+                }`}>
+                  {(assetData.institutional_signals.direction ?? 'neutral').toUpperCase()}
+                </span>
+                <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
+                  {assetData.institutional_signals.confidence_score ?? 0}% confidence
+                </span>
+              </div>
+            </div>
+            <div className="mb-2 flex items-center gap-2 text-sm">
+              <BarChart3 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              <span className="font-medium text-slate-700 dark:text-slate-300">
+                Participation: {(assetData.institutional_signals.institutional_participation ?? 'unknown').toUpperCase()}
+              </span>
+            </div>
+            <div className="space-y-2">
+              {(assetData.institutional_signals.signals ?? []).map((signal, idx) => (
+                <div key={idx} className="flex items-start gap-2 text-sm text-slate-700 dark:text-slate-300">
+                  <span className="mt-1 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-blue-500" />
+                  <span>{signal}</span>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     )
   }
@@ -379,8 +394,21 @@ export default function CryptoPage({ user }: { user: User }) {
 
             {/* Bitcoin & Ethereum Cards */}
             <div className="grid gap-8 lg:grid-cols-2">
-              {data.futures_analysis.bitcoin && renderAssetCard('bitcoin', data.futures_analysis.bitcoin)}
-              {data.futures_analysis.ethereum && renderAssetCard('ethereum', data.futures_analysis.ethereum)}
+              {/* Bitcoin Card */}
+              {isValidAssetData(data.futures_analysis.bitcoin)
+                ? renderAssetCard('bitcoin', data.futures_analysis.bitcoin)
+                : 'error' in data.futures_analysis.bitcoin
+                  ? renderErrorCard('bitcoin', data.futures_analysis.bitcoin.error)
+                  : renderErrorCard('bitcoin')
+              }
+
+              {/* Ethereum Card */}
+              {isValidAssetData(data.futures_analysis.ethereum)
+                ? renderAssetCard('ethereum', data.futures_analysis.ethereum)
+                : 'error' in data.futures_analysis.ethereum
+                  ? renderErrorCard('ethereum', data.futures_analysis.ethereum.error)
+                  : renderErrorCard('ethereum')
+              }
             </div>
 
             {/* Whale Activity Note */}
