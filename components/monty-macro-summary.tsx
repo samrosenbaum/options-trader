@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import { useState, useEffect } from "react"
 import { RefreshCw } from "lucide-react"
 
@@ -38,42 +39,78 @@ export function MontyMacroSummary({
     const qqqChange = indices["QQQ"]?.change_pct || 0
     const diaChange = indices["DIA"]?.change_pct || 0
 
-    let marketMood = ""
-    let marketExplanation = ""
+    const spyLabel = indices["SPY"]?.name || "S&P 500"
+    const qqqLabel = indices["QQQ"]?.name || "Nasdaq 100"
+    const diaLabel = indices["DIA"]?.name || "Dow Jones"
 
-    if (spyChange > 1.5) {
-      marketMood = "the market is having a strong rally"
-      marketExplanation = "stocks are climbing fast, which usually means investors are feeling optimistic"
-    } else if (spyChange > 0.5) {
-      marketMood = "stocks are moving up steadily"
-      marketExplanation = "it's a positive day with buyers in control"
-    } else if (spyChange < -1.5) {
-      marketMood = "we're seeing a pretty rough selloff"
-      marketExplanation = "lots of people are selling stocks, which could mean fear or profit-taking"
-    } else if (spyChange < -0.5) {
-      marketMood = "the market is drifting lower"
-      marketExplanation = "sellers are in control but it's not a panic situation"
+    const indexDetails = [
+      { ticker: "SPY", change: spyChange, label: spyLabel },
+      { ticker: "QQQ", change: qqqChange, label: qqqLabel },
+      { ticker: "DIA", change: diaChange, label: diaLabel },
+    ]
+
+    const formatPercent = (value: number) => {
+      const sign = value > 0 ? "+" : ""
+      return `${sign}${value.toFixed(2)}%`
+    }
+
+    let marketMood = ""
+    const explanationParts: string[] = []
+
+    if (spyChange >= 2) {
+      marketMood = `${spyLabel} is ripping higher, up ${formatPercent(spyChange)}.`
+      explanationParts.push("Momentum buyers are firmly in control right now.")
+    } else if (spyChange >= 1) {
+      marketMood = `${spyLabel} is staging a healthy rally at ${formatPercent(spyChange)}.`
+      explanationParts.push("Dip buyers are stepping back in and broad participation is improving.")
+    } else if (spyChange >= 0.3) {
+      marketMood = `${spyLabel} is grinding upward (${formatPercent(spyChange)}).`
+      explanationParts.push("It's a constructive tape with a modest risk-on bias.")
+    } else if (spyChange > -0.3) {
+      marketMood = `${spyLabel} is basically flat (${formatPercent(spyChange)}).`
+      explanationParts.push("Flows are choppy, so rotation and headlines matter more than index direction.")
+    } else if (spyChange > -1) {
+      marketMood = `${spyLabel} is fading, down ${formatPercent(spyChange)}.`
+      explanationParts.push("Sellers have the edge, but buyers are still probing for entries.")
+    } else if (spyChange > -1.8) {
+      marketMood = `${spyLabel} is under heavy pressure, off ${formatPercent(spyChange)}.`
+      explanationParts.push("Risk appetite is cooling quickly as bids get pulled.")
     } else {
-      marketMood = "the market is pretty quiet"
-      marketExplanation = "not much happening—buyers and sellers are balanced"
+      marketMood = `${spyLabel} is in full risk-off mode, plunging ${formatPercent(spyChange)}.`
+      explanationParts.push("Capitulation flows are dominating and dip buyers are scarce.")
+    }
+
+    const topMover = indexDetails.reduce(
+      (prev, curr) => (Math.abs(curr.change) > Math.abs(prev.change) ? curr : prev),
+      indexDetails[0],
+    )
+
+    if (topMover && Math.abs(topMover.change) >= 0.8) {
+      explanationParts.push(
+        `${topMover.label} is the standout move at ${formatPercent(topMover.change)}, setting the tone for the session.`,
+      )
     }
 
     // Tech vs broad market analysis
     let sectorNote = ""
-    if (qqqChange > spyChange + 0.5) {
-      sectorNote = " Tech stocks (like Apple, Microsoft, Tesla) are leading the way higher."
-    } else if (spyChange > qqqChange + 0.5) {
-      sectorNote = " Traditional companies (banks, healthcare, etc.) are doing better than tech today."
+    if (qqqChange >= spyChange + 0.5) {
+      sectorNote = ` Growth is leading—${qqqLabel} is at ${formatPercent(qqqChange)} versus the ${formatPercent(spyChange)} print for the ${spyLabel}.`
+    } else if (spyChange >= qqqChange + 0.5) {
+      sectorNote = ` Value and cyclicals are carrying things: ${diaLabel} is at ${formatPercent(diaChange)} while ${qqqLabel} lags at ${formatPercent(qqqChange)}.`
+    } else if (Math.abs(qqqChange - diaChange) >= 0.6) {
+      const leader = qqqChange > diaChange ? qqqLabel : diaLabel
+      const laggard = qqqChange > diaChange ? diaLabel : qqqLabel
+      sectorNote = ` There's a clear rotation—${leader} is pulling ahead while ${laggard} trails.`
     }
 
     // VIX in simple terms
     let fearNote = ""
     if (vix > 25) {
-      fearNote = " The 'fear gauge' (VIX) is high, meaning people expect big price swings soon. Options are expensive right now because of this uncertainty."
+      fearNote = ` Volatility is elevated with the VIX up at ${vix.toFixed(1)}, so option premium is getting pricey.`
     } else if (vix > 20) {
-      fearNote = " There's some nervousness in the market (VIX is elevated), so options cost a bit more than usual."
-    } else if (vix < 15) {
-      fearNote = " Things are calm (low VIX), so options are relatively cheap—good for buyers, not great for sellers."
+      fearNote = ` There's a nervous tone—VIX around ${vix.toFixed(1)} means traders are paying up for protection.`
+    } else if (vix < 15 && vix !== 0) {
+      fearNote = ` The volatility backdrop is calm with VIX near ${vix.toFixed(1)}, which keeps options relatively cheap for buyers.`
     }
 
     // Interest rates in simple terms
@@ -82,9 +119,11 @@ export function MontyMacroSummary({
     let ratesNote = ""
 
     if (tenYear && twoYear && twoYear > tenYear) {
-      ratesNote = " Interest rates are wonky right now—short-term rates are higher than long-term ones, which historically means the economy might slow down."
+      ratesNote = ` The yield curve is inverted (${twoYear.toFixed(2)}% on 2Y vs ${tenYear.toFixed(2)}% on 10Y), flagging slowdown risk.`
     } else if (tenYear > 4.5) {
-      ratesNote = " Interest rates are pretty high, which can make stocks less attractive compared to bonds."
+      ratesNote = ` Long rates near ${tenYear.toFixed(2)}% keep pressure on equity valuations.`
+    } else if (tenYear && tenYear < 3.5) {
+      ratesNote = ` Softer long-term yields around ${tenYear.toFixed(2)}% are giving growth stocks some breathing room.`
     }
 
     // WSB hype
@@ -102,8 +141,44 @@ export function MontyMacroSummary({
       insiderNote = ` Some members of Congress just bought ${tickers}—worth keeping an eye on.`
     }
 
+    // News sentiment
+    let newsNote = ""
+    if (topNews.length > 0) {
+      const sentimentCounts = topNews.reduce(
+        (acc, news) => {
+          const label = news.sentiment?.label?.toLowerCase()
+          if (label === "positive") acc.positive += 1
+          else if (label === "negative") acc.negative += 1
+          else acc.neutral += 1
+          return acc
+        },
+        { positive: 0, negative: 0, neutral: 0 },
+      )
+
+      if (sentimentCounts.positive >= sentimentCounts.negative + 2) {
+        newsNote = " Headlines skew upbeat, adding fuel to the bullish tone."
+      } else if (sentimentCounts.negative >= sentimentCounts.positive + 2) {
+        newsNote = " Headlines lean negative, which is keeping traders cautious."
+      } else if (sentimentCounts.neutral > 0) {
+        newsNote = " Newsflow is mixed, so positioning stays nimble."
+      }
+    }
+
+    const detailNotes = [
+      explanationParts.join(" "),
+      sectorNote,
+      fearNote,
+      ratesNote,
+      hypeNote,
+      insiderNote,
+      newsNote,
+    ]
+      .filter(Boolean)
+      .map((note) => note.trim())
+      .join(" ")
+
     // Build the personalized summary
-    const fullSummary = `${greeting}, I've gone through the latest market info for you. Here's your TL;DR: ${marketMood}—${marketExplanation}.${sectorNote}${fearNote}${ratesNote}${hypeNote}${insiderNote}`
+    const fullSummary = `${greeting}, here's what I'm seeing. ${marketMood} ${detailNotes}`.trim()
 
     setSummary(fullSummary)
     setIsLoading(false)
@@ -123,8 +198,8 @@ export function MontyMacroSummary({
     <div className="flex flex-col gap-3">
       {/* Contact Header */}
       <div className="flex items-center gap-3 px-1">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 text-white font-bold text-lg shadow-lg">
-          M
+        <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-white shadow-lg">
+          <Image src="/monty-avatar.png" alt="Monty" width={40} height={40} className="h-full w-full object-cover" />
         </div>
         <div className="flex-1">
           <div className="flex items-center gap-2">
