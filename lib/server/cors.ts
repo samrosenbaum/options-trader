@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server'
 
-type ResponseInit = ResponseInit
-
 const DEFAULT_ALLOWED_HEADERS = [
   'Content-Type',
   'Authorization',
