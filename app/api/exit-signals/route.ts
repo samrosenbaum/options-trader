@@ -34,6 +34,7 @@ interface ExitSignal {
   signal: "SELL_ALL" | "SELL_PARTIAL" | "HOLD" | "CUT_LOSS"
   confidence: number
   reasoning: string[]
+  friendlyMessage?: string
   trailingStopPrice: number | null
   suggestedAction: string
   momentumStrength: string
@@ -224,10 +225,22 @@ for pos in positions:
 
         profit_pct = ((current_option_price - pos['entryPrice']) / pos['entryPrice']) * 100
 
+        # Populate additional fields for friendly message
+        signal.profit_pct = profit_pct
+        signal.target_profit_pct = pos.get('targetProfitPct', 50)
+        signal.option_price = current_option_price
+        signal.theta = current_greeks.get('theta') if current_greeks else None
+        signal.unusual_activity_data = unusual_context
+        signal.expected_move_pct = expected_move_pct
+
+        # Generate friendly message
+        friendly_message = signal.get_friendly_message()
+
         signal_dict = {
             'signal': signal.signal,
             'confidence': signal.confidence,
             'reasoning': signal.reasoning,
+            'friendlyMessage': friendly_message,
             'trailingStopPrice': signal.trailing_stop_price,
             'suggestedAction': signal.suggested_action,
             'momentumStrength': signal.momentum_strength,
