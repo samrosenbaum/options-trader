@@ -5,13 +5,7 @@ import type { KeyboardEvent } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Send } from 'lucide-react'
 import Image from 'next/image'
-
-interface Message {
-  id: string
-  role: 'user' | 'assistant'
-  content: string
-  timestamp: Date
-}
+import { useMontyChat, type Message } from '@/contexts/monty-chat-context'
 
 interface InteractiveMontyChatProps {
   initialMessage?: string
@@ -19,11 +13,13 @@ interface InteractiveMontyChatProps {
 
 export function InteractiveMontyChat({ initialMessage }: InteractiveMontyChatProps) {
   const [isOpen, setIsOpen] = useState(false)
-  const [messages, setMessages] = useState<Message[]>([])
+  const { messages, setMessages } = useMontyChat()
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [hasNewMessage, setHasNewMessage] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const prevMessagesLengthRef = useRef(messages.length)
 
   useEffect(() => {
     if (initialMessage && messages.length === 0) {
@@ -36,7 +32,28 @@ export function InteractiveMontyChat({ initialMessage }: InteractiveMontyChatPro
         },
       ])
     }
-  }, [initialMessage, messages.length])
+  }, [initialMessage, messages.length, setMessages])
+
+  // Detect new messages and show notification
+  useEffect(() => {
+    if (messages.length > prevMessagesLengthRef.current && !isOpen) {
+      // New message arrived while chat is closed
+      setHasNewMessage(true)
+      // Auto-open the chat for new assistant messages
+      const lastMessage = messages[messages.length - 1]
+      if (lastMessage && lastMessage.role === 'assistant') {
+        setIsOpen(true)
+      }
+    }
+    prevMessagesLengthRef.current = messages.length
+  }, [messages, isOpen])
+
+  // Clear notification when chat is opened
+  useEffect(() => {
+    if (isOpen) {
+      setHasNewMessage(false)
+    }
+  }, [isOpen])
 
   useEffect(() => {
     if (isOpen && inputRef.current) {
@@ -221,6 +238,17 @@ export function InteractiveMontyChat({ initialMessage }: InteractiveMontyChatPro
             transition={{ duration: 2, repeat: Infinity }}
             className="absolute inset-0 rounded-full bg-emerald-400"
           />
+        )}
+
+        {/* New message notification badge */}
+        {hasNewMessage && !isOpen && (
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white text-xs font-bold shadow-lg"
+          >
+            !
+          </motion.div>
         )}
       </motion.button>
 
