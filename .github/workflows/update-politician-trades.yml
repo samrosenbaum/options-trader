@@ -1,0 +1,43 @@
+name: Update Politician Trades
+
+on:
+  # Run daily at 6:00 AM ET (10:00 UTC)
+  schedule:
+    - cron: '0 10 * * *'
+
+  # Allow manual triggering
+  workflow_dispatch:
+
+jobs:
+  update-trades:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          # Install supabase client if not in requirements
+          pip install supabase
+
+      - name: Run politician trades scraper
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}  # Optional: get free key at https://finnhub.io
+        run: |
+          python3 scripts/update_politician_trades.py
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "Politician trades update failed. Check the logs for details."

@@ -1,7 +1,8 @@
 """
 Politician Trading Data Fetcher
 
-Fetches congressional stock trades from Capitol Trades API (free tier).
+Fetches congressional stock trades from our local database.
+Data is scraped from House Stock Watcher and Senate Stock Watcher public sources.
 Provides "smart money" signals for retail traders - shows what politicians are buying/selling.
 
 This is INFORMATIONAL ONLY and does not affect opportunity scoring or filtering.
@@ -10,9 +11,10 @@ This is INFORMATIONAL ONLY and does not affect opportunity scoring or filtering.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import List, Optional
-import requests
+import os
+import sys
 
 
 @dataclass
@@ -118,13 +120,13 @@ def _get_demo_trades() -> List[PoliticianTrade]:
 
 def fetch_recent_trades(symbols: Optional[List[str]] = None, days_back: int = 30) -> List[PoliticianTrade]:
     """
-    Fetch recent politician trades.
+    Fetch recent politician trades from the database.
 
-    NOTE: Currently returns demo data. Free sources have limitations:
-    - Capitol Trades: Has anti-scraping protections
-    - Senate/House official sites: Complex XML/PDF parsing required
+    Data is sourced from our scraper that pulls from:
+    - House Stock Watcher (House of Representatives trades)
+    - Senate Stock Watcher (Senate trades)
 
-    For real-time data, use Quiver Quantitative API ($30-50/month).
+    Falls back to demo data if database is unavailable.
 
     Args:
         symbols: Optional list of symbols to filter. If None, fetches all recent trades.
@@ -135,113 +137,86 @@ def fetch_recent_trades(symbols: Optional[List[str]] = None, days_back: int = 30
     """
     trades = []
 
-    # Try alternative free sources
+    # Try to fetch from database first
     try:
-        # Attempt 1: Try Senate Stock Watcher (if available)
-        print("Attempting to fetch from alternative sources...", flush=True)
+        from supabase import create_client, Client
 
-        # Try a simple API endpoint approach (some services have public APIs)
-        test_url = "https://house-stock-watcher-data.s3-us-west-2.amazonaws.com/data/all_transactions.json"
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        }
+        supabase_url = os.environ.get("SUPABASE_URL")
+        supabase_anon_key = os.environ.get("SUPABASE_ANON_KEY")
 
-        response = requests.get(test_url, timeout=15, headers=headers)
+        if supabase_url and supabase_anon_key:
+            client: Client = create_client(supabase_url, supabase_anon_key)
 
-        if response.status_code == 200:
-            # Parse JSON data from House Stock Watcher
-            try:
-                import json
-                data = response.json()
+            # Calculate cutoff date
+            cutoff_date = (datetime.now(timezone.utc) - timedelta(days=days_back)).date().isoformat()
 
-                # Limit to recent trades
-                for item in data[:50]:
+            # Query the database
+            query = client.table("politician_trades").select("*")
+            query = query.gte("disclosure_date", cutoff_date)
+
+            if symbols:
+                query = query.in_("ticker", symbols)
+
+            query = query.order("disclosure_date", desc=True).limit(500)
+
+            result = query.execute()
+
+            if result.data:
+                # Convert database records to PoliticianTrade objects
+                for record in result.data:
                     try:
-                        # Extract fields from JSON
-                        politician_name = item.get('representative', 'Unknown')
-                        ticker = item.get('ticker', '').strip().upper()
-
-                        if not ticker or ticker == '--' or ticker == 'N/A':
-                            continue
-
-                        # Filter by symbols if provided
-                        if symbols and ticker not in symbols:
-                            continue
-
-                        # Parse transaction type
-                        tx_type = item.get('transaction_type', 'purchase').lower()
-                        transaction_type = "purchase"
-                        if "sale" in tx_type or "sold" in tx_type:
-                            transaction_type = "sale"
-                        elif "exchange" in tx_type:
-                            transaction_type = "exchange"
-
-                        # Get amount range
-                        amount_range = item.get('amount', '$1,001 - $15,000')
-
                         # Parse dates
                         trade_date = None
                         disclosure_date = None
 
-                        if item.get('transaction_date'):
+                        if record.get('transaction_date'):
                             try:
-                                trade_date = datetime.strptime(item['transaction_date'], "%Y-%m-%d")
-                                trade_date = trade_date.replace(tzinfo=timezone.utc)
+                                trade_date = datetime.fromisoformat(record['transaction_date'])
+                                if trade_date.tzinfo is None:
+                                    trade_date = trade_date.replace(tzinfo=timezone.utc)
                             except Exception:
                                 pass
 
-                        if item.get('disclosure_date'):
+                        if record.get('disclosure_date'):
                             try:
-                                disclosure_date = datetime.strptime(item['disclosure_date'], "%Y-%m-%d")
-                                disclosure_date = disclosure_date.replace(tzinfo=timezone.utc)
+                                disclosure_date = datetime.fromisoformat(record['disclosure_date'])
+                                if disclosure_date.tzinfo is None:
+                                    disclosure_date = disclosure_date.replace(tzinfo=timezone.utc)
                             except Exception:
                                 pass
-
-                        # Infer party from name or data
-                        party = item.get('party', 'Unknown')
-                        if party in ['D', 'Democratic']:
-                            party = "Democrat"
-                        elif party in ['R', 'Republican']:
-                            party = "Republican"
 
                         trade = PoliticianTrade(
-                            politician_name=politician_name,
-                            party=party,
-                            chamber="House",  # This dataset is House only
-                            ticker=ticker,
-                            transaction_type=transaction_type,
-                            amount_range=amount_range,
+                            politician_name=record['politician_name'],
+                            party=record['party'],
+                            chamber=record['chamber'],
+                            ticker=record['ticker'],
+                            transaction_type=record['transaction_type'],
+                            amount_range=record['amount_range'],
                             trade_date=trade_date,
                             disclosure_date=disclosure_date,
+                            asset_description=record.get('asset_description'),
                         )
 
                         trades.append(trade)
 
                     except Exception as e:
-                        print(f"Error parsing trade item: {e}", flush=True)
+                        print(f"Error parsing database record: {e}", flush=True)
                         continue
 
-                if trades:
-                    print(f"Successfully fetched {len(trades)} trades from House Stock Watcher", flush=True)
+                print(f"Successfully fetched {len(trades)} trades from database", flush=True)
 
-            except Exception as e:
-                print(f"Error parsing JSON data: {e}", flush=True)
-
-        else:
-            print(f"Error fetching data: HTTP {response.status_code}", flush=True)
-            print("Falling back to demo data...", flush=True)
-
+    except ImportError:
+        print("Supabase client not available, using demo data", flush=True)
     except Exception as e:
-        print(f"Error fetching politician trades: {e}", flush=True)
-        print("Falling back to demo data...", flush=True)
+        print(f"Error fetching from database: {e}", flush=True)
 
-    # If no trades fetched from real source, use demo data
+    # If no trades fetched from database, use demo data
     if not trades:
-        print("No real data available - using demo politician trades", flush=True)
+        print("No database data available - using demo politician trades", flush=True)
         trades = _get_demo_trades()
 
-    # Filter by symbols if provided
-    if symbols:
+    # Filter by symbols if provided (for demo data)
+    if symbols and trades and trades[0].politician_name == "Nancy Pelosi":  # Demo data check
         trades = [t for t in trades if t.ticker in symbols]
 
     return trades
