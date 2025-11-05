@@ -39,22 +39,6 @@ export async function POST(request: Request) {
       })
     }
 
-    // Fetch the morning brief from our own API (which calls Python backend)
-    const apiUrl = process.env.RENDER_EXTERNAL_URL || 'http://localhost:3000'
-    const briefResponse = await fetch(`${apiUrl}/api/analyst/morning-brief`)
-    if (!briefResponse.ok) {
-      const errorText = await briefResponse.text()
-      console.error(
-        'Failed to fetch morning brief from API:',
-        briefResponse.status,
-        errorText
-      )
-      throw new Error('Failed to fetch morning brief from API')
-    }
-
-    const briefData = await briefResponse.json()
-    const formattedText = briefData.formatted_text
-
     // Format date for Eastern Time
     const today = new Date().toLocaleDateString('en-US', {
       weekday: 'long',
@@ -64,15 +48,34 @@ export async function POST(request: Request) {
       timeZone: 'America/New_York'
     })
 
-    // Send email to all subscribers
-    const emailPromises = subscriptions.map(sub =>
-      resend.emails.send({
+    const apiUrl = process.env.RENDER_EXTERNAL_URL || 'http://localhost:3000'
+
+    // Send personalized email to each subscriber
+    const emailPromises = subscriptions.map(async sub => {
+      // Fetch personalized brief for this user
+      const briefResponse = await fetch(`${apiUrl}/api/analyst/morning-brief?email=${encodeURIComponent(sub.email)}`)
+
+      if (!briefResponse.ok) {
+        const errorText = await briefResponse.text()
+        console.error(
+          `Failed to fetch morning brief for ${sub.email}:`,
+          briefResponse.status,
+          errorText
+        )
+        throw new Error(`Failed to fetch morning brief for ${sub.email}`)
+      }
+
+      const briefData = await briefResponse.json()
+      const formattedText = briefData.formatted_text
+
+      // Send personalized email
+      return resend.emails.send({
         from: 'Monty Analyst <onboarding@resend.dev>',
         to: sub.email,
         subject: `☀️ Morning Brief - ${today}`,
         text: `📊 YOUR MORNING BRIEF FOR ${today.toUpperCase()}\n${'='.repeat(60)}\n\n${formattedText}`
       })
-    )
+    })
 
     const results = await Promise.allSettled(emailPromises)
     const successful = results.filter(r => r.status === 'fulfilled').length

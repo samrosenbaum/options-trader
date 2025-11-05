@@ -604,10 +604,6 @@ def format_brief_for_display(brief: Dict) -> str:
         output.append(f"Watchlist focus: {display}")
         output.append('')
 
-    output.append('Next Update: Market Open (9:35 AM ET)')
-    output.append('Manage preferences in Settings → Alerts')
-    output.append('')
-
     return '\n'.join(output)
 
 # Example usage

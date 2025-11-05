@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 from contextlib import AsyncExitStack, suppress
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, List
 
 from fastapi import FastAPI, HTTPException
 
@@ -25,6 +26,20 @@ from src.analyst.nightly_brief import generate_nightly_brief, format_nightly_bri
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
+
+# Initialize Supabase client for fetching user data
+try:
+    from supabase import Client, create_client
+    _supabase_url = os.environ.get("NEXT_PUBLIC_SUPABASE_URL")
+    _supabase_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY") or os.environ.get("NEXT_PUBLIC_SUPABASE_ANON_KEY")
+    if _supabase_url and _supabase_key:
+        _supabase_client: Optional[Client] = create_client(_supabase_url, _supabase_key)
+    else:
+        _supabase_client = None
+        logger.warning("Supabase credentials not found - portfolio personalization disabled")
+except ImportError:
+    _supabase_client = None
+    logger.warning("Supabase package not installed - portfolio personalization disabled")
 
 app = FastAPI(title="Options Trader Scoring API", version="1.0.0")
 
@@ -164,24 +179,110 @@ async def scan_custom(payload: CustomScanRequest) -> Dict[str, Any]:
     return serialize_scan_response(response)
 
 
+def _get_user_portfolio_and_watchlist(email: str) -> tuple[Optional[Dict], List[str]]:
+    """
+    Fetch user's portfolio positions and watchlist symbols from Supabase.
+
+    Args:
+        email: User's email address
+
+    Returns:
+        Tuple of (portfolio_dict, watchlist_symbols)
+        portfolio_dict contains 'open_positions' list if available
+    """
+    if not _supabase_client:
+        logger.warning("Supabase client not initialized - returning empty portfolio")
+        return None, []
+
+    try:
+        # Get user ID from email
+        user_response = _supabase_client.auth.admin.list_users()
+        user_id = None
+        for user in user_response:
+            if hasattr(user, 'email') and user.email == email:
+                user_id = user.id
+                break
+
+        if not user_id:
+            # Try direct table query for user lookup
+            profile_response = _supabase_client.table('profiles').select('id').eq('email', email).execute()
+            if profile_response.data and len(profile_response.data) > 0:
+                user_id = profile_response.data[0]['id']
+
+        if not user_id:
+            logger.warning(f"User not found for email: {email}")
+            return None, []
+
+        # Fetch open positions
+        positions_response = _supabase_client.table('positions').select('*').eq('user_id', user_id).eq('status', 'open').execute()
+
+        open_positions = []
+        if positions_response.data:
+            for pos in positions_response.data:
+                open_positions.append({
+                    'symbol': pos.get('symbol'),
+                    'strike': float(pos.get('strike', 0)),
+                    'option_type': pos.get('option_type'),
+                    'expiration': pos.get('expiration'),
+                    'contracts': int(pos.get('contracts', 1)),
+                    'entry_price': float(pos.get('entry_price', 0)),
+                    'current_price': float(pos.get('current_price', 0)) if pos.get('current_price') else None,
+                    'unrealized_pl_percent': float(pos.get('unrealized_pl_percent', 0)) if pos.get('unrealized_pl_percent') else None,
+                })
+
+        # Fetch watchlist symbols
+        watchlist_response = _supabase_client.table('watchlist').select('symbol').eq('user_id', user_id).execute()
+
+        watchlist_symbols = []
+        if watchlist_response.data:
+            watchlist_symbols = list(set([item['symbol'] for item in watchlist_response.data if item.get('symbol')]))
+
+        portfolio = {
+            'open_positions': open_positions,
+            'total_capital': 10000  # Default - could be fetched from user settings if available
+        } if open_positions else None
+
+        logger.info(f"Fetched {len(open_positions)} positions and {len(watchlist_symbols)} watchlist symbols for {email}")
+
+        return portfolio, watchlist_symbols
+
+    except Exception as e:
+        logger.exception(f"Error fetching user data for {email}: {e}")
+        return None, []
+
+
 @app.get("/analyst/morning-brief")
-async def get_morning_brief() -> Dict[str, Any]:
+async def get_morning_brief(email: Optional[str] = None) -> Dict[str, Any]:
     """
     Generate morning brief (7:00 AM pre-market intelligence).
+
+    Args:
+        email: Optional user email for personalized brief
 
     Returns:
         - formatted_text: Plain text email-ready brief
         - brief: Structured data (UOA, pre-market movers, watchlist, etc.)
     """
     try:
-        # Major symbols to scan
+        # Default symbols to scan
         symbols = [
             'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA',
             'NVDA', 'META', 'NFLX', 'COIN', 'AMD',
             'SPY', 'QQQ', 'SOFI', 'PLTR', 'RBLX'
         ]
 
-        brief = generate_morning_brief(symbols)
+        user_portfolio = None
+
+        # Fetch user-specific data if email provided
+        if email:
+            user_portfolio, watchlist_symbols = _get_user_portfolio_and_watchlist(email)
+
+            # Add user's watchlist symbols to scanning list
+            if watchlist_symbols:
+                symbols = list(set(symbols + watchlist_symbols))
+                logger.info(f"Scanning {len(symbols)} symbols (including {len(watchlist_symbols)} from watchlist)")
+
+        brief = generate_morning_brief(symbols, user_portfolio=user_portfolio)
         formatted_text = format_brief_for_display(brief)
 
         return {
@@ -203,23 +304,37 @@ async def get_morning_brief() -> Dict[str, Any]:
 
 
 @app.get("/analyst/nightly-brief")
-async def get_nightly_brief() -> Dict[str, Any]:
+async def get_nightly_brief(email: Optional[str] = None) -> Dict[str, Any]:
     """
     Generate nightly brief (8:00 PM tomorrow's battle plan).
+
+    Args:
+        email: Optional user email for personalized brief
 
     Returns:
         - formatted_text: Plain text email-ready brief
         - brief: Structured data (key setups, watchlist, market levels, etc.)
     """
     try:
-        # Major symbols to scan
+        # Default symbols to scan
         symbols = [
             'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA',
             'NVDA', 'META', 'NFLX', 'COIN', 'AMD',
             'SPY', 'QQQ', 'SOFI', 'PLTR', 'RBLX'
         ]
 
-        brief = generate_nightly_brief(symbols)
+        user_portfolio = None
+
+        # Fetch user-specific data if email provided
+        if email:
+            user_portfolio, watchlist_symbols = _get_user_portfolio_and_watchlist(email)
+
+            # Add user's watchlist symbols to scanning list
+            if watchlist_symbols:
+                symbols = list(set(symbols + watchlist_symbols))
+                logger.info(f"Scanning {len(symbols)} symbols (including {len(watchlist_symbols)} from watchlist)")
+
+        brief = generate_nightly_brief(symbols, user_portfolio=user_portfolio)
         formatted_text = format_nightly_brief(brief)
 
         return {

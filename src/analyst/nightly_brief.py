@@ -276,12 +276,6 @@ def format_nightly_brief(brief: Dict) -> str:
     output.append(f"Generated: {brief['timestamp'].strftime('%Y-%m-%d %I:%M %p')}")
     output.append("=" * 60)
     output.append("")
-    output.append("WHAT TO EXPECT TOMORROW:")
-    output.append("  [BULL] = Stock likely to go UP (consider buying)")
-    output.append("  [BEAR] = Stock likely to go DOWN (avoid or short)")
-    output.append("  Important Price = Price to watch - if it goes above or below this, big move likely")
-    output.append("  HIGH CONVICTION = Our strongest predictions (we're 80%+ confident based on past patterns)")
-    output.append("")
 
     # Key Setups (highest conviction)
     if brief['key_setups']:
@@ -350,9 +344,6 @@ def format_nightly_brief(brief: Dict) -> str:
                 output.append(f"     {pl_indicator} {pos['symbol']} ${pos['strike']} {pos['option_type'].upper()} - {pos['days_until_expiration']}d left ({pos['current_pl_pct']:+.1f}%)")
         output.append("")
 
-    output.append("=" * 60)
-    output.append("Tomorrow: Morning Brief at 7:00 AM")
-    output.append("Change your brief preferences anytime in Settings")
     output.append("=" * 60)
 
     return "\n".join(output)
