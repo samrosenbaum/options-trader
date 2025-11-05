@@ -12,6 +12,7 @@ import type { Database } from '@/lib/types/database.types'
 import type { PositionSizingRecommendation } from '@/lib/types/opportunity'
 import { useWatchlist } from '@/components/watchlist-context'
 import { CustomScannerFilters, type CustomFilterCriteria } from '@/components/custom-scanner-filters'
+import { ScanSearch, CheckCircle2, Clock, RotateCw, ArrowRight, ChevronRight } from 'lucide-react'
 
 interface MoveAnalysisFactor {
   label: string
@@ -227,7 +228,7 @@ const normalizeSymbolList = (symbols: string[]) => {
   return normalized
 }
 
-const renderSymbolChips = (symbols: string[], limit = 12): ReactNode => {
+const renderSymbolChips = (symbols: string[], limit = 12, variant: 'scanned' | 'requested' | 'upcoming' | 'outstanding' = 'scanned'): ReactNode => {
   if (!symbols.length) {
     return <p className="text-sm text-slate-500 dark:text-slate-400">No symbols available.</p>
   }
@@ -235,18 +236,26 @@ const renderSymbolChips = (symbols: string[], limit = 12): ReactNode => {
   const displaySymbols = symbols.slice(0, limit)
   const remainder = Math.max(symbols.length - displaySymbols.length, 0)
 
+  // Define variant-specific styles
+  const variantStyles = {
+    scanned: 'bg-gradient-to-br from-emerald-50 to-emerald-100/50 border-emerald-300/50 text-emerald-700 dark:from-emerald-500/20 dark:to-emerald-500/10 dark:border-emerald-500/30 dark:text-emerald-300',
+    requested: 'bg-gradient-to-br from-blue-50 to-blue-100/50 border-blue-300/50 text-blue-700 dark:from-blue-500/20 dark:to-blue-500/10 dark:border-blue-500/30 dark:text-blue-300',
+    upcoming: 'bg-gradient-to-br from-purple-50 to-purple-100/50 border-purple-300/50 text-purple-700 dark:from-purple-500/20 dark:to-purple-500/10 dark:border-purple-500/30 dark:text-purple-300',
+    outstanding: 'bg-gradient-to-br from-amber-50 to-amber-100/50 border-amber-300/50 text-amber-700 dark:from-amber-500/20 dark:to-amber-500/10 dark:border-amber-500/30 dark:text-amber-300',
+  }
+
   return (
     <div className="flex flex-wrap gap-2">
       {displaySymbols.map(symbol => (
         <span
           key={symbol}
-          className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+          className={`inline-flex items-center rounded-lg border px-3 py-1.5 text-xs font-semibold shadow-sm transition-all hover:shadow-md hover:scale-105 ${variantStyles[variant]}`}
         >
           {symbol}
         </span>
       ))}
       {remainder > 0 && (
-        <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-700 dark:text-slate-200">
+        <span className="inline-flex items-center rounded-lg border border-slate-300/50 bg-gradient-to-br from-slate-100 to-slate-200/50 px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm dark:border-slate-600/50 dark:from-slate-700/50 dark:to-slate-700/30 dark:text-slate-300">
           +{remainder} more
         </span>
       )}
@@ -3740,54 +3749,96 @@ export default function ScannerPage({ user }: ScannerPageProps) {
           (symbolUniverseStatus.scanned.length > 0 ||
             symbolUniverseStatus.requested.length > 0 ||
             (symbolUniverseStatus.rotation?.upcoming.length ?? 0) > 0) && (
-            <div className="mb-8 rounded-2xl border border-slate-200 bg-white px-6 py-6 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
-              <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Scan universe visibility</h3>
-                  <p className="text-sm text-slate-600 dark:text-slate-300">
-                    Review which symbols were covered this run and see what&apos;s queued for the next scan.
-                  </p>
+            <div className="mb-8 rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50/50 px-6 py-6 shadow-lg dark:border-slate-700 dark:from-slate-900/90 dark:to-slate-900/40">
+              {/* Header Section */}
+              <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 shadow-md">
+                    <ScanSearch className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">Scan Universe</h3>
+                    <p className="mt-0.5 text-sm text-slate-600 dark:text-slate-300">
+                      Track coverage and rotation status
+                    </p>
+                  </div>
                 </div>
                 {symbolUniverseStatus.rotation?.modeLabel && (
-                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                    Rotation mode: {symbolUniverseStatus.rotation.modeLabel}
-                    {typeof symbolUniverseStatus.rotation.total === 'number' && symbolUniverseStatus.rotation.total > 0 && (
-                      <span>
-                        {' '}
-                        • {symbolUniverseStatus.rotation.total.toLocaleString()} symbols
-                      </span>
-                    )}
+                  <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 shadow-sm dark:border-slate-700 dark:bg-slate-800/50">
+                    <RotateCw className="h-4 w-4 text-slate-500 dark:text-slate-400" />
+                    <div>
+                      <div className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                        {symbolUniverseStatus.rotation.modeLabel}
+                      </div>
+                      {typeof symbolUniverseStatus.rotation.total === 'number' && symbolUniverseStatus.rotation.total > 0 && (
+                        <div className="text-sm font-bold text-slate-900 dark:text-white">
+                          {symbolUniverseStatus.rotation.total.toLocaleString()} symbols
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
 
-              <div className="mt-5 grid gap-6 lg:grid-cols-2">
-                <div className="space-y-4">
+              {/* Main Content Grid */}
+              <div className="grid gap-5 lg:grid-cols-2">
+                {/* Left Column - Scanned & Requested */}
+                <div className="space-y-5">
                   {symbolUniverseStatus.scanned.length > 0 && (
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                        Scanned this run ({symbolUniverseStatus.scanned.length})
-                      </p>
-                      <div className="mt-2">{renderSymbolChips(symbolUniverseStatus.scanned, 18)}</div>
+                    <div className="rounded-xl border border-emerald-200/60 bg-gradient-to-br from-emerald-50 to-white p-5 shadow-sm dark:border-emerald-500/20 dark:from-emerald-500/10 dark:to-transparent">
+                      <div className="mb-3 flex items-center gap-2">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-500/20">
+                          <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="text-xs font-medium uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
+                            Scanned This Run
+                          </div>
+                          <div className="text-lg font-bold text-emerald-900 dark:text-emerald-300">
+                            {symbolUniverseStatus.scanned.length}
+                          </div>
+                        </div>
+                      </div>
+                      <div>{renderSymbolChips(symbolUniverseStatus.scanned, 18, 'scanned')}</div>
                     </div>
                   )}
 
                   {symbolUniverseStatus.requested.length > 0 && (
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                        Requested batch ({symbolUniverseStatus.requested.length})
-                      </p>
-                      <div className="mt-2">{renderSymbolChips(symbolUniverseStatus.requested, 18)}</div>
+                    <div className="rounded-xl border border-blue-200/60 bg-gradient-to-br from-blue-50 to-white p-5 shadow-sm dark:border-blue-500/20 dark:from-blue-500/10 dark:to-transparent">
+                      <div className="mb-3 flex items-center gap-2">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-500/20">
+                          <Clock className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="text-xs font-medium uppercase tracking-wide text-blue-600 dark:text-blue-400">
+                            Requested Batch
+                          </div>
+                          <div className="text-lg font-bold text-blue-900 dark:text-blue-300">
+                            {symbolUniverseStatus.requested.length}
+                          </div>
+                        </div>
+                      </div>
+                      <div>{renderSymbolChips(symbolUniverseStatus.requested, 18, 'requested')}</div>
                     </div>
                   )}
 
                   {symbolUniverseStatus.outstanding.length > 0 && (
-                    <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 dark:border-amber-500/40 dark:bg-amber-500/10">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-200">
-                        Outstanding in this batch ({symbolUniverseStatus.outstanding.length})
-                      </p>
-                      <div className="mt-2">{renderSymbolChips(symbolUniverseStatus.outstanding, 12)}</div>
-                      <p className="mt-2 text-xs text-amber-700/80 dark:text-amber-100/70">
+                    <div className="rounded-xl border border-amber-300/60 bg-gradient-to-br from-amber-50 to-white p-5 shadow-sm dark:border-amber-500/30 dark:from-amber-500/10 dark:to-transparent">
+                      <div className="mb-3 flex items-center gap-2">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-500/20">
+                          <Clock className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="text-xs font-medium uppercase tracking-wide text-amber-600 dark:text-amber-400">
+                            Outstanding
+                          </div>
+                          <div className="text-lg font-bold text-amber-900 dark:text-amber-300">
+                            {symbolUniverseStatus.outstanding.length}
+                          </div>
+                        </div>
+                      </div>
+                      <div>{renderSymbolChips(symbolUniverseStatus.outstanding, 12, 'outstanding')}</div>
+                      <p className="mt-3 text-xs text-amber-700/80 dark:text-amber-100/70">
                         Requested symbols that didn&apos;t return results in this pass.
                       </p>
                     </div>
@@ -3795,36 +3846,62 @@ export default function ScannerPage({ user }: ScannerPageProps) {
 
                   {symbolUniverseStatus.scanned.length === 0 &&
                     symbolUniverseStatus.requested.length === 0 && (
-                      <p className="text-sm text-slate-500 dark:text-slate-400">
-                        No symbol metadata was reported for this scan.
-                      </p>
+                      <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 p-8 dark:border-slate-700 dark:bg-slate-800/30">
+                        <p className="text-center text-sm text-slate-500 dark:text-slate-400">
+                          No symbol metadata was reported for this scan.
+                        </p>
+                      </div>
                     )}
                 </div>
 
-                <div className="space-y-4">
+                {/* Right Column - Next in Rotation */}
+                <div className="space-y-5">
                   {symbolUniverseStatus.rotation?.upcoming.length ? (
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                        Next in rotation ({symbolUniverseStatus.rotation.upcoming.length}
-                        {typeof symbolUniverseStatus.rotation.total === 'number'
-                          ? ` of ${symbolUniverseStatus.rotation.total.toLocaleString()}`
-                          : ''}
-                        )
-                      </p>
-                      <div className="mt-2">{renderSymbolChips(symbolUniverseStatus.rotation.upcoming, 15)}</div>
+                    <div className="rounded-xl border border-purple-200/60 bg-gradient-to-br from-purple-50 to-white p-5 shadow-sm dark:border-purple-500/20 dark:from-purple-500/10 dark:to-transparent">
+                      <div className="mb-3 flex items-center gap-2">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-500/20">
+                          <ArrowRight className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="text-xs font-medium uppercase tracking-wide text-purple-600 dark:text-purple-400">
+                            Next in Rotation
+                          </div>
+                          <div className="text-lg font-bold text-purple-900 dark:text-purple-300">
+                            {symbolUniverseStatus.rotation.upcoming.length}
+                            {typeof symbolUniverseStatus.rotation.total === 'number' && symbolUniverseStatus.rotation.total > 0 && (
+                              <span className="ml-1 text-sm font-medium text-purple-600 dark:text-purple-400">
+                                of {symbolUniverseStatus.rotation.total.toLocaleString()}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div>{renderSymbolChips(symbolUniverseStatus.rotation.upcoming, 15, 'upcoming')}</div>
                     </div>
                   ) : (
-                    <p className="text-sm text-slate-500 dark:text-slate-400">
-                      Rotation queue details will appear once the scanner reports its universe state.
-                    </p>
+                    <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 p-8 dark:border-slate-700 dark:bg-slate-800/30">
+                      <p className="text-center text-sm text-slate-500 dark:text-slate-400">
+                        Rotation queue details will appear once the scanner reports its universe state.
+                      </p>
+                    </div>
                   )}
 
                   {typeof symbolUniverseStatus.rotation?.remainingCount === 'number' && (
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      {symbolUniverseStatus.rotation.remainingCount > 0
-                        ? `${symbolUniverseStatus.rotation.remainingCount.toLocaleString()} symbols remain in the rotation after this batch.`
-                        : 'The rotation is ready to start over on the next scan.'}
-                    </p>
+                    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800/50">
+                      <div className="flex items-start gap-3">
+                        <ChevronRight className="mt-0.5 h-5 w-5 shrink-0 text-slate-400" />
+                        <div>
+                          <div className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                            Remaining
+                          </div>
+                          <p className="mt-1 text-sm text-slate-700 dark:text-slate-300">
+                            {symbolUniverseStatus.rotation.remainingCount > 0
+                              ? `${symbolUniverseStatus.rotation.remainingCount.toLocaleString()} symbols remain in the rotation after this batch.`
+                              : 'The rotation is ready to start over on the next scan.'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                   )}
                 </div>
               </div>
