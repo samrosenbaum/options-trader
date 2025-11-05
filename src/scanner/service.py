@@ -456,10 +456,10 @@ class SmartOptionsScanner:
         """Determine whether cached option data is too stale to use."""
 
         # Use dynamic TTL based on market hours for accurate pricing
-        # During market hours: 5 minutes (fast-moving options need frequent updates)
+        # During market hours: 1 minute (critical for accurate option pricing - options can move 50%+ in 5 minutes)
         # Market closed: 7 days (serve last session data to reduce API load)
         if self.is_market_hours():
-            ttl = 300  # 5 minutes during market hours for fast-moving options
+            ttl = 60  # 1 minute during market hours - critical for accurate option pricing
         else:
             ttl = 7 * 24 * 60 * 60  # 7 days when market closed
 

@@ -5,8 +5,11 @@ Background Scanner - Runs FAST Analysis and Caches Results
 This script runs an OPTIMIZED scan (limited symbols, reduced history)
 and stores the results in Supabase for instant serving to users.
 
-Designed to be run on a schedule (every 10 minutes via cron/scheduler).
-Must complete in <5 minutes to avoid cron timeout.
+Designed to be run on a schedule (every 5 minutes via cron/scheduler).
+Must complete in <3 minutes to avoid cron timeout and ensure fresh data.
+
+IMPORTANT: For accurate option pricing, this should run every 5 minutes (not 10).
+Options can move 50%+ in 5 minutes, making stale data unsuitable for trading decisions.
 """
 
 import json
@@ -30,7 +33,7 @@ class TimeoutError(Exception):
 
 def timeout_handler(signum, frame):
     """Handle timeout signal."""
-    raise TimeoutError("Scanner exceeded 4 minute timeout")
+    raise TimeoutError("Scanner exceeded 3 minute timeout")
 
 
 def make_json_serializable(obj):
@@ -144,7 +147,7 @@ def run_background_scan(filter_mode: str = 'strict', max_symbols: int = None) ->
     print(f"🚀 BACKGROUND SCANNER STARTED - {datetime.now().isoformat()}", file=sys.stderr)
     print("="*80, file=sys.stderr)
 
-    # AGGRESSIVE optimizations - must complete under 4 minutes to avoid Render timeout
+    # AGGRESSIVE optimizations - must complete under 3 minutes for 5-minute cron schedule
     os.environ['USE_SENTIMENT_PRESCREENING'] = '0'  # Disable pre-screening (saves 30-60s)
 
     # Check if backtesting should be disabled (default: enabled unless env var set)
@@ -156,12 +159,12 @@ def run_background_scan(filter_mode: str = 'strict', max_symbols: int = None) ->
 
     start_time = time.time()
 
-    # Set 4 minute timeout (Render cron jobs have ~5 min limit)
+    # Set 3 minute timeout (5-minute cron schedule with buffer for startup/cleanup)
     signal.signal(signal.SIGALRM, timeout_handler)
-    signal.alarm(240)  # 4 minutes
+    signal.alarm(180)  # 3 minutes
 
     try:
-        # Run OPTIMIZED scan with SPEED priority to stay under 4 minute timeout
+        # Run OPTIMIZED scan with SPEED priority to stay under 3 minute timeout
         # Default to 15 symbols if not specified (reduced for faster completion)
         if max_symbols is None:
             max_symbols = 15
@@ -170,7 +173,7 @@ def run_background_scan(filter_mode: str = 'strict', max_symbols: int = None) ->
         else:
             print(f"📊 Running background scan (filter_mode={filter_mode}, max_symbols={max_symbols})", file=sys.stderr)
 
-        print(f"⏰ TIMEOUT: 4 minutes - will abort if scan hangs", file=sys.stderr)
+        print(f"⏰ TIMEOUT: 3 minutes - will abort if scan hangs", file=sys.stderr)
 
         result = run_enhanced_scan(
             max_symbols=max_symbols,
@@ -213,7 +216,7 @@ def run_background_scan(filter_mode: str = 'strict', max_symbols: int = None) ->
     except TimeoutError as e:
         signal.alarm(0)  # Cancel alarm
         print(f"\n❌ BACKGROUND SCAN TIMEOUT: {e}", file=sys.stderr)
-        print(f"⚠️  Scanner took longer than 4 minutes - consider reducing max_symbols", file=sys.stderr)
+        print(f"⚠️  Scanner took longer than 3 minutes - consider reducing max_symbols", file=sys.stderr)
         sys.exit(1)
     except Exception as e:
         signal.alarm(0)  # Cancel alarm

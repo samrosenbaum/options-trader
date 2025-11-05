@@ -411,13 +411,13 @@ class BulkOptionsFetcher:
     def load_from_cache(
         self,
         filename="options_cache.json",
-        max_age_minutes=15,
+        max_age_minutes=2,
         symbols: list[str] | None = None,
         *,
         allow_stale: bool = False,
         cache_key: str | None = None,
     ):
-        """Load options data from cache if it's recent enough"""
+        """Load options data from cache if it's recent enough (default: 2 minutes for option data freshness)"""
         try:
             target_filename = self._cache_filename(cache_key, filename)
             with open(target_filename, 'r') as f:
@@ -492,6 +492,12 @@ class BulkOptionsFetcher:
             if raw_age_minutes <= max_age_minutes:
                 if provider_mismatch:
                     return cache_frame
+
+                # Warn if data is getting stale (>1 minute for options)
+                if raw_age_minutes > 1.0:
+                    print(f"⚠️  WARNING: Using cached data that is {raw_age_minutes:.1f} minutes old")
+                    print(f"    Option prices may have moved significantly since cache time")
+
                 print(f"📂 Using cached data ({raw_age_minutes:.1f} minutes old)")
                 cache_frame.attrs["cache_source"] = "adapter-cache"
                 cache_frame.attrs["cache_stale"] = False

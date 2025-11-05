@@ -3968,14 +3968,59 @@ export default function ScannerPage({ user }: ScannerPageProps) {
         {!isLoading && opportunities.length > 0 && (
           <div className="space-y-8">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-              <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
-                <h2 className="text-2xl font-semibold text-emerald-500 dark:text-emerald-400">
-                  Trading Opportunities
-                </h2>
-                <span className="text-sm text-slate-500 dark:text-slate-400">
-                  {recommendedOpportunities.length} recommended
-                  {notRecommendedOpportunities.length > 0 && ` · ${notRecommendedOpportunities.length} high risk`}
-                </span>
+              <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
+                  <h2 className="text-2xl font-semibold text-emerald-500 dark:text-emerald-400">
+                    Trading Opportunities
+                  </h2>
+                  <span className="text-sm text-slate-500 dark:text-slate-400">
+                    {recommendedOpportunities.length} recommended
+                    {notRecommendedOpportunities.length > 0 && ` · ${notRecommendedOpportunities.length} high risk`}
+                  </span>
+                </div>
+                {/* Cache Age Indicator */}
+                {(typeof scanMetadata?.cacheAgeMinutes === 'number' || cacheTimestamp) && (
+                  <div className="flex items-center gap-2">
+                    {typeof scanMetadata?.cacheAgeMinutes === 'number' && (
+                      <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
+                        scanMetadata.cacheAgeMinutes < 1
+                          ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                          : scanMetadata.cacheAgeMinutes < 2
+                          ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 border border-yellow-200 dark:border-yellow-800'
+                          : scanMetadata.cacheAgeMinutes < 5
+                          ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border border-orange-200 dark:border-orange-800'
+                          : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800'
+                      }`}>
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>
+                          {scanMetadata.cacheAgeMinutes < 1
+                            ? 'Live data (< 1 min)'
+                            : `Data ${formatAgeDescription(scanMetadata.cacheAgeMinutes)} old`}
+                        </span>
+                      </div>
+                    )}
+                    {cacheTimestamp && (
+                      <span className="text-xs text-slate-500 dark:text-slate-400">
+                        Updated: {cacheTimestamp.toLocaleTimeString()}
+                      </span>
+                    )}
+                    {scanMetadata?.cacheAgeMinutes && scanMetadata.cacheAgeMinutes >= 2 && (
+                      <button
+                        onClick={() => runScan()}
+                        disabled={isLoading}
+                        className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition-colors"
+                        title="Refresh data"
+                      >
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        Refresh
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <label
