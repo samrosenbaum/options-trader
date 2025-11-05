@@ -211,6 +211,7 @@ export default function PortfolioClient({
   const [dailyChangePercent, setDailyChangePercent] = useState<number>(0)
   const [showLossRain, setShowLossRain] = useState(false)
   const [lossRainKey, setLossRainKey] = useState(0)
+  const [expandedSignalDetails, setExpandedSignalDetails] = useState<Set<string>>(new Set())
 
   // Request notification permission on mount
   useEffect(() => {
@@ -536,6 +537,7 @@ export default function PortfolioClient({
           exit_signal: exitSignal,
           exit_urgency_score: Math.round(signal.confidence),
           exit_reasons: signal.reasoning,
+          exit_friendly_message: signal.friendlyMessage || null,
           last_signal_check: new Date().toISOString(),
         }
 
@@ -1510,6 +1512,20 @@ export default function PortfolioClient({
                           const signal = position.exit_signal
                           const urgency = position.exit_urgency_score || 0
                           const reasons = (position.exit_reasons as string[]) || []
+                          const friendlyMessage = position.exit_friendly_message
+                          const showDetails = expandedSignalDetails.has(position.id)
+
+                          const toggleDetails = () => {
+                            setExpandedSignalDetails(prev => {
+                              const next = new Set(prev)
+                              if (next.has(position.id)) {
+                                next.delete(position.id)
+                              } else {
+                                next.add(position.id)
+                              }
+                              return next
+                            })
+                          }
 
                           let bgColor = 'bg-emerald-100 dark:bg-emerald-900/30'
                           let textColor = 'text-emerald-700 dark:text-emerald-400'
@@ -1529,16 +1545,40 @@ export default function PortfolioClient({
                           }
 
                           return (
-                            <div className="space-y-1 max-w-[240px]">
+                            <div className="space-y-2 max-w-[420px]">
                               <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold whitespace-nowrap ${bgColor} ${textColor}`}>
                                 <span>{emoji}</span>
                                 <span>{label}</span>
                                 <span className="text-[10px]">({urgency})</span>
                               </div>
-                              {reasons.length > 0 && (
-                                <div className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">
-                                  {reasons.map(r => r.replace(/_/g, ' ')).join(', ')}
+
+                              {friendlyMessage ? (
+                                <div className="space-y-1">
+                                  <div className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">
+                                    {friendlyMessage}
+                                  </div>
+                                  {reasons.length > 0 && (
+                                    <button
+                                      onClick={toggleDetails}
+                                      className="text-[10px] text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                                    >
+                                      {showDetails ? '▲ Hide technical details' : '▼ See technical details'}
+                                    </button>
+                                  )}
+                                  {showDetails && reasons.length > 0 && (
+                                    <div className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed border-l-2 border-slate-300 dark:border-slate-600 pl-2 mt-1">
+                                      {reasons.map((r, idx) => (
+                                        <div key={idx}>• {r.replace(/_/g, ' ')}</div>
+                                      ))}
+                                    </div>
+                                  )}
                                 </div>
+                              ) : (
+                                reasons.length > 0 && (
+                                  <div className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                                    {reasons.map(r => r.replace(/_/g, ' ')).join(', ')}
+                                  </div>
+                                )
                               )}
                             </div>
                           )

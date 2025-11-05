@@ -53,6 +53,7 @@ export interface Database {
           exit_signal: 'hold' | 'consider' | 'exit_now'
           exit_urgency_score: number
           exit_reasons: Json
+          exit_friendly_message: string | null
           last_signal_check: string | null
           // Notes
           notes: string | null
@@ -98,6 +99,7 @@ export interface Database {
           exit_signal?: 'hold' | 'consider' | 'exit_now'
           exit_urgency_score?: number
           exit_reasons?: Json
+          exit_friendly_message?: string | null
           last_signal_check?: string | null
           notes?: string | null
           tags?: string[] | null
@@ -142,6 +144,7 @@ export interface Database {
           exit_signal?: 'hold' | 'consider' | 'exit_now'
           exit_urgency_score?: number
           exit_reasons?: Json
+          exit_friendly_message?: string | null
           last_signal_check?: string | null
           notes?: string | null
           tags?: string[] | null
