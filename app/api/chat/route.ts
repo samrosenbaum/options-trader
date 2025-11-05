@@ -8,7 +8,7 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 })
 
-const SYSTEM_PROMPT = `You are Monty, an expert options trading assistant and trusted friend to retail traders.
+const BASE_SYSTEM_PROMPT = `You are Monty, an expert options trading assistant and trusted friend to retail traders.
 You talk like a friend who also happens to be a quant genius—warm, direct, and on the trader's side.
 
 🎙️ **VOICE & DELIVERY**
@@ -35,6 +35,27 @@ You talk like a friend who also happens to be a quant genius—warm, direct, and
 
 If you don't have enough context to answer a specific question, politely ask for more details.`
 
+function buildSystemPrompt(scanContext?: { opportunities: unknown[]; scanType?: string }): string {
+  if (!scanContext || !scanContext.opportunities || scanContext.opportunities.length === 0) {
+    return BASE_SYSTEM_PROMPT
+  }
+
+  return `${BASE_SYSTEM_PROMPT}
+
+📊 **CURRENT SCAN CONTEXT**
+The user is viewing ${scanContext.opportunities.length} opportunities from a scanner${scanContext.scanType ? ` (${scanContext.scanType} mode)` : ''}.
+These trades have ALREADY PASSED institutional-grade filters for liquidity, risk-adjusted returns, and position sizing.
+
+**Your approach when discussing these scanned opportunities:**
+1. **Use the math**: Each trade has a quality score (0-100), probability of profit, potential return, Greeks, and directional bias. Reference these metrics to make objective comparisons.
+2. **Be constructively critical**: Don't just agree or disagree—explain WHICH factors make a trade attractive or concerning. For example: "The 75/100 score is solid, but that 45% win probability on a 60-day expiration means you need a bigger move than the IV suggests."
+3. **Help find the best option**: If the user asks what's best, compare trades by their risk/reward math, not just vibes. Highlight trades with strong scores, good probability of profit, favorable Greeks, and clear directional setups.
+4. **Recognize when trades are solid**: If a trade has a high score (70+), decent win probability (>50%), and reasonable risk, say so! These passed filters for a reason. You can still mention risks, but acknowledge the strengths.
+5. **Offer alternatives constructively**: If none of the trades are ideal, explain what you'd want to see improved (better score, higher win probability, shorter DTE, stronger directional signals) and guide the user on what to look for.
+
+Remember: You're a trusted friend helping evaluate real opportunities with real math. Be honest but helpful—like a sharp trading buddy who wants them to win.`
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json()
@@ -42,6 +63,8 @@ export async function POST(request: Request) {
     const messages = Array.isArray(body?.messages)
       ? (body.messages as Array<{ role: 'user' | 'assistant'; content: unknown }>)
       : undefined
+
+    const scanContext = body?.scanContext as { opportunities: unknown[]; scanType?: string } | undefined
 
     if (!messages || messages.length === 0) {
       return NextResponse.json({ error: 'Messages array is required' }, { status: 400 })
@@ -73,10 +96,12 @@ export async function POST(request: Request) {
       )
     }
 
+    const systemPrompt = buildSystemPrompt(scanContext)
+
     const stream = await anthropic.messages.create({
       model: 'claude-sonnet-4-5-20250929',
       max_tokens: 2048,
-      system: SYSTEM_PROMPT,
+      system: systemPrompt,
       messages: normalizedMessages,
       stream: true,
     })

@@ -12,6 +12,7 @@ import type { Database } from '@/lib/types/database.types'
 import type { PositionSizingRecommendation } from '@/lib/types/opportunity'
 import { useWatchlist } from '@/components/watchlist-context'
 import { CustomScannerFilters, type CustomFilterCriteria } from '@/components/custom-scanner-filters'
+import { useScanContext } from '@/contexts/scan-context'
 
 interface MoveAnalysisFactor {
   label: string
@@ -1494,6 +1495,7 @@ Liquidity: ${((opp as Record<string, unknown>).liquidityScore as number | undefi
 
 export default function ScannerPage({ user }: ScannerPageProps) {
   const { addItem: addToWatchlist, isOnWatchlist } = useWatchlist()
+  const { setScanResults } = useScanContext()
   const [opportunities, setOpportunities] = useState<Opportunity[]>([])
   const [totalEvaluated, setTotalEvaluated] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
@@ -1953,6 +1955,19 @@ export default function ScannerPage({ user }: ScannerPageProps) {
 
     setPrefilledInvestment(true)
   }, [settingsLoaded, prefilledInvestment, userPortfolioConstraints.portfolioSize])
+
+  // Update scan context for Monty chat
+  useEffect(() => {
+    // Determine active scan type
+    let scanType: string | undefined
+    if (hotScanMode) scanType = 'Top Movers'
+    else if (earningsScanMode) scanType = 'Earnings'
+    else if (volumeSurgeMode) scanType = 'Volume Surge'
+    else if (layupsScanMode) scanType = 'Layups'
+    else if (uoaScanMode) scanType = 'Unusual Options Activity'
+
+    setScanResults(opportunities, scanType)
+  }, [opportunities, hotScanMode, earningsScanMode, volumeSurgeMode, layupsScanMode, uoaScanMode, setScanResults])
 
   const extractFreshnessField = (field: string): unknown => {
     if (!scanMetadata || !scanMetadata.dataFreshness || typeof scanMetadata.dataFreshness !== 'object') {
