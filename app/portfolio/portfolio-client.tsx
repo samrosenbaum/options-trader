@@ -21,6 +21,7 @@ import CSVImportModal from '@/components/csv-import-modal'
 import DropRiskRadar from '@/components/drop-risk-radar'
 import { PositionAlerts } from '@/components/position-alerts'
 import { ContextualInsights } from '@/components/contextual-insights'
+import { useMontyChat } from '@/contexts/monty-chat-context'
 import {
   Bar,
   BarChart,
@@ -212,6 +213,7 @@ export default function PortfolioClient({
   const [showLossRain, setShowLossRain] = useState(false)
   const [lossRainKey, setLossRainKey] = useState(0)
   const [expandedSignalDetails, setExpandedSignalDetails] = useState<Set<string>>(new Set())
+  const { addMessage } = useMontyChat()
 
   // Request notification permission on mount
   useEffect(() => {
@@ -570,12 +572,14 @@ export default function PortfolioClient({
 
       // Check for signal changes and send notifications
       let urgentNotifications = 0
+      const chatMessages: string[] = []
+
       updatedPositions?.forEach((position) => {
         const previousSignal = previousSignals.get(position.id)
         const currentSignal = position.exit_signal
 
-        // Only notify if signal changed
-        if (previousSignal && currentSignal && previousSignal !== currentSignal) {
+        // Only notify if signal changed or this is a new signal
+        if (currentSignal && (!previousSignal || previousSignal !== currentSignal)) {
           const isUrgent = currentSignal === 'exit_now'
 
           // Format notification message
@@ -594,9 +598,28 @@ export default function PortfolioClient({
             body += ' - Signal improved'
           }
 
-          sendNotification(title, body, isUrgent)
+          if (previousSignal) {
+            sendNotification(title, body, isUrgent)
+          }
+
+          // Collect friendly messages for Monty chat
+          if (position.exit_friendly_message) {
+            const positionHeader = `**${position.symbol} ${position.option_type.toUpperCase()} $${position.strike}** (Exp: ${new Date(position.expiration).toLocaleDateString()})\n\n`
+            chatMessages.push(positionHeader + position.exit_friendly_message)
+          }
         }
       })
+
+      // Send collected messages to Monty chat
+      if (chatMessages.length > 0) {
+        // If multiple positions, send them in separate messages
+        chatMessages.forEach((message, index) => {
+          // Add a small delay between messages to ensure they appear in order
+          setTimeout(() => {
+            addMessage(message)
+          }, index * 100)
+        })
+      }
 
       const message = urgentNotifications > 0
         ? `Checked ${updatedCount} positions - ${urgentNotifications} urgent signal${urgentNotifications > 1 ? 's' : ''}!`
@@ -1512,7 +1535,6 @@ export default function PortfolioClient({
                           const signal = position.exit_signal
                           const urgency = position.exit_urgency_score || 0
                           const reasons = (position.exit_reasons as string[]) || []
-                          const friendlyMessage = position.exit_friendly_message
                           const showDetails = expandedSignalDetails.has(position.id)
 
                           const toggleDetails = () => {
@@ -1545,40 +1567,28 @@ export default function PortfolioClient({
                           }
 
                           return (
-                            <div className="space-y-2 max-w-[420px]">
+                            <div className="space-y-1.5">
                               <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold whitespace-nowrap ${bgColor} ${textColor}`}>
                                 <span>{emoji}</span>
                                 <span>{label}</span>
                                 <span className="text-[10px]">({urgency})</span>
                               </div>
 
-                              {friendlyMessage ? (
-                                <div className="space-y-1">
-                                  <div className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">
-                                    {friendlyMessage}
-                                  </div>
-                                  {reasons.length > 0 && (
-                                    <button
-                                      onClick={toggleDetails}
-                                      className="text-[10px] text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
-                                    >
-                                      {showDetails ? '▲ Hide technical details' : '▼ See technical details'}
-                                    </button>
-                                  )}
-                                  {showDetails && reasons.length > 0 && (
-                                    <div className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed border-l-2 border-slate-300 dark:border-slate-600 pl-2 mt-1">
-                                      {reasons.map((r, idx) => (
-                                        <div key={idx}>• {r.replace(/_/g, ' ')}</div>
-                                      ))}
-                                    </div>
-                                  )}
+                              {reasons.length > 0 && (
+                                <button
+                                  onClick={toggleDetails}
+                                  className="text-[10px] text-blue-600 dark:text-blue-400 hover:underline cursor-pointer block"
+                                >
+                                  {showDetails ? '▲ Hide details' : '▼ Details'}
+                                </button>
+                              )}
+
+                              {showDetails && reasons.length > 0 && (
+                                <div className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed border-l-2 border-slate-300 dark:border-slate-600 pl-2 mt-1 space-y-0.5">
+                                  {reasons.map((r, idx) => (
+                                    <div key={idx}>• {r.replace(/_/g, ' ')}</div>
+                                  ))}
                                 </div>
-                              ) : (
-                                reasons.length > 0 && (
-                                  <div className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">
-                                    {reasons.map(r => r.replace(/_/g, ' ')).join(', ')}
-                                  </div>
-                                )
                               )}
                             </div>
                           )
