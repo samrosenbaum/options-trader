@@ -494,9 +494,9 @@ class CryptoWhaleMonitor:
         if asset == 'bitcoin':
             return {
                 'symbol': 'BTC',
-                'current_price': 67500.00,
-                'market_cap': 1340000000000,
-                'total_volume_24h': 28000000000,
+                'current_price': 102000.00,
+                'market_cap': 2020000000000,
+                'total_volume_24h': 35000000000,
                 'price_change_24h': 2.3,
                 'derivatives': {
                     'total_open_interest_usd': 15600000000,
@@ -529,9 +529,9 @@ class CryptoWhaleMonitor:
         else:  # ethereum
             return {
                 'symbol': 'ETH',
-                'current_price': 2620.00,
-                'market_cap': 315000000000,
-                'total_volume_24h': 14000000000,
+                'current_price': 3800.00,
+                'market_cap': 456000000000,
+                'total_volume_24h': 20000000000,
                 'price_change_24h': 1.8,
                 'derivatives': {
                     'total_open_interest_usd': 8200000000,

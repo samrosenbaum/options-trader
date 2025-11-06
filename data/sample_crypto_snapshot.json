@@ -12,7 +12,7 @@
       "name": "Bitcoin",
       "symbol": "BTC",
       "metrics": {
-        "price": 61250.0,
+        "price": 102000.0,
         "change_24h": 1.8
       },
       "flow": {
@@ -94,7 +94,7 @@
       "name": "Ethereum",
       "symbol": "ETH",
       "metrics": {
-        "price": 2765.0,
+        "price": 3800.0,
         "change_24h": 1.1
       },
       "flow": {
@@ -176,7 +176,7 @@
       "name": "BNB",
       "symbol": "BNB",
       "metrics": {
-        "price": 342.0,
+        "price": 710.0,
         "change_24h": -0.6
       },
       "flow": {
@@ -253,7 +253,7 @@
       "name": "Cardano",
       "symbol": "ADA",
       "metrics": {
-        "price": 0.58,
+        "price": 1.05,
         "change_24h": 0.9
       },
       "flow": {
@@ -332,7 +332,7 @@
       "name": "Solana",
       "symbol": "SOL",
       "metrics": {
-        "price": 134.0,
+        "price": 220.0,
         "change_24h": 2.6
       },
       "flow": {
