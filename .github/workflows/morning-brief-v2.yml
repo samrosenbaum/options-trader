@@ -2,8 +2,8 @@ name: Morning Brief
 
 on:
   schedule:
-    # 7:00 AM ET (11:00 UTC) on weekdays
-    - cron: '0 11 * * 1-5'
+    # 10:00 AM ET (14:00 UTC during EDT) on weekdays - runs after 9:30 AM market open
+    - cron: '0 14 * * 1-5'
   workflow_dispatch: # Allow manual trigger for testing
 
 jobs:

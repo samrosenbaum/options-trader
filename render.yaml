@@ -74,12 +74,12 @@ services:
     dockerCommand: curl -f -X GET "${RENDER_EXTERNAL_URL}/api/warmup-cache" || exit 0
     autoDeploy: true
 
-  # Morning Brief - sends at 7:00 AM ET (11:00 UTC) on weekdays to all subscribed users
+  # Morning Brief - sends at 10:00 AM ET (14:00 UTC) on weekdays to all subscribed users
   - type: cron
     name: morning-brief
     runtime: docker
     plan: starter
-    schedule: "0 11 * * 1-5"  # 7:00 AM ET (11:00 UTC) on weekdays
+    schedule: "0 14 * * 1-5"  # 10:00 AM ET (14:00 UTC during EDT) on weekdays
     dockerfilePath: ./Dockerfile.cron
     dockerCommand: curl -f -X POST "${RENDER_EXTERNAL_URL}/api/cron/morning-brief" || exit 0
     autoDeploy: true
