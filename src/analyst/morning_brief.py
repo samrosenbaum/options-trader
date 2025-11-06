@@ -1,6 +1,6 @@
 """
-Morning Brief Generator (7:00 AM)
-Delivers pre-market intelligence to catch opportunities before market open
+Morning Brief Generator (10:00 AM ET)
+Delivers market open intelligence with fresh opening data and price action
 """
 import yfinance as yf
 from datetime import datetime, timedelta, time
@@ -197,24 +197,25 @@ def get_premarket_movers(
     include_all_snapshots: bool = False
 ) -> Dict[str, dict] | Tuple[Dict[str, dict], Dict[str, dict]]:
     """
-    Detect pre-market movers (stocks gapping up/down before open).
+    Detect market movers (stocks moving significantly from previous close).
+    Works for both pre-market and during market hours.
 
     Args:
         symbols: List of symbols to check
-        min_move_pct: Minimum % gap to flag (default 2%)
+        min_move_pct: Minimum % move to flag (default 2%)
 
     Returns:
-        Dict mapping symbol to gap data:
+        Dict mapping symbol to move data:
         {
             'symbol': str,
             'gap_pct': float,
             'gap_direction': 'up' | 'down',
-            'premarket_price': float,
+            'premarket_price': float,  # or current price if market is open
             'previous_close': float,
             'volume': int
         }
     """
-    print(f"\n🌅 Scanning for pre-market movers ({min_move_pct}%+ gaps)...")
+    print(f"\n📊 Scanning for market movers ({min_move_pct}%+ from previous close)...")
 
     movers: Dict[str, dict] = {}
     snapshots: Dict[str, dict] = {}
@@ -226,10 +227,16 @@ def get_premarket_movers(
     market_open = now_et.replace(hour=9, minute=30, second=0, microsecond=0)
     market_close = now_et.replace(hour=16, minute=0, second=0, microsecond=0)
 
-    # Only run before market close (pre-market focus but still allow context if after open)
+    # Determine market status for better messaging
+    is_market_open = market_open <= now_et < market_close
+
+    # Only run before market close
     if now_et >= market_close:
-        print("  ⏰ Market already closed - skipping pre-market scan")
+        print("  ⏰ Market already closed - skipping scan")
         return movers if not include_all_snapshots else (movers, snapshots)
+
+    if is_market_open:
+        print(f"  ⏰ Market is OPEN - capturing live price action (current time: {now_et.strftime('%I:%M %p ET')})")
 
     for symbol in symbols:
         try:
@@ -245,12 +252,17 @@ def get_premarket_movers(
                     continue
                 previous_close = float(hist['Close'].iloc[-1])
 
-            premarket_price = info.get('preMarketPrice') or fast_info.get('lastPrice') or info.get('regularMarketPrice')
+            # If market is open, prioritize current price; otherwise use pre-market
+            if is_market_open:
+                current_price = fast_info.get('lastPrice') or info.get('regularMarketPrice') or info.get('currentPrice')
+            else:
+                current_price = info.get('preMarketPrice') or fast_info.get('lastPrice') or info.get('regularMarketPrice')
+
             regular_price = info.get('regularMarketPrice') or fast_info.get('lastPrice')
             postmarket_price = info.get('postMarketPrice')
 
-            if not premarket_price and regular_price:
-                premarket_price = regular_price
+            # Use current_price as the comparison point
+            premarket_price = current_price
 
             if not premarket_price:
                 continue
@@ -276,8 +288,9 @@ def get_premarket_movers(
             if snapshot['is_significant']:
                 movers[symbol] = snapshot
 
+                move_label = "move" if is_market_open else "gap"
                 print(
-                    f"  🔥 {symbol}: {gap_pct:+.1f}% gap {gap_direction} "
+                    f"  🔥 {symbol}: {gap_pct:+.1f}% {move_label} {gap_direction} "
                     f"(${previous_close:.2f} → ${premarket_price:.2f})"
                 )
 
@@ -286,9 +299,10 @@ def get_premarket_movers(
             pass
 
     if movers:
-        print(f"✅ Found {len(movers)} pre-market movers")
+        move_type = "market movers" if is_market_open else "pre-market movers"
+        print(f"✅ Found {len(movers)} {move_type}")
     else:
-        print("  No significant pre-market gaps detected")
+        print("  No significant moves detected")
 
     if include_all_snapshots:
         return movers, snapshots
@@ -304,7 +318,7 @@ def generate_morning_brief(
     """Generate comprehensive morning brief with catalyst-aware context."""
 
     print("\n" + "=" * 60)
-    print("🌅 GENERATING MORNING BRIEF")
+    print("📊 GENERATING MARKET OPEN BRIEF")
     print("=" * 60)
 
     generated_at = datetime.now()
@@ -334,7 +348,7 @@ def generate_morning_brief(
     print("\n[2/5] Checking earnings calendar...")
     _, earnings_priority, earnings_dates = prioritize_by_earnings(symbols)
 
-    print("\n[3/5] Scanning pre-market movers...")
+    print("\n[3/5] Scanning market movers (live price action from open)...")
     premarket_movers, market_snapshots = get_premarket_movers(
         symbols,
         include_all_snapshots=True
@@ -373,10 +387,11 @@ def generate_morning_brief(
         if flow_data:
             confidence = summary['flow_confidence'] or 'medium'
 
-            if flow_data.get('age_hours', 0) >= 12:
-                summary['warnings'].append('Flow is over 12 hours old - treat as stale unless confirmed at the open.')
-                confidence = _degrade_confidence(confidence)
+            # Since we're now running after market open, adjust staleness warnings
             if flow_data.get('age_hours', 0) >= 18:
+                summary['warnings'].append('Flow is from yesterday - validate against current price action.')
+                confidence = _degrade_confidence(confidence)
+            if flow_data.get('age_hours', 0) >= 24:
                 confidence = _degrade_confidence(confidence)
 
             if earnings_context['label'] in {'post_day0', 'post_day1'}:
@@ -399,10 +414,10 @@ def generate_morning_brief(
                 summary['action_items'].append('Flow confidence degraded - wait for new orders before adding risk.')
 
             if summary['flow_status'] in {'under_review', 'contradiction'}:
-                summary['action_items'].append('Treat signal as neutral until the open proves the thesis.')
+                summary['action_items'].append('Current price action diverges from flow - prioritize what the market is doing now.')
 
-            if flow_data.get('age_hours', 0) >= 12:
-                summary['action_items'].append("Do not chase yesterday's contracts without fresh confirmation.")
+            if flow_data.get('age_hours', 0) >= 18:
+                summary['action_items'].append("Yesterday's flow - confirm thesis with current price action before entering.")
 
         if earnings_context['label'] in {'today', 'post_day0', 'post_day1'}:
             watchlist_set.add(symbol)
@@ -457,7 +472,7 @@ def generate_morning_brief(
     brief['portfolio_alerts'] = _build_portfolio_alerts(user_portfolio, symbol_summaries)
 
     print("\n" + "=" * 60)
-    print("✅ MORNING BRIEF COMPLETE")
+    print("✅ MARKET OPEN BRIEF COMPLETE")
     print("=" * 60)
 
     return brief
@@ -477,12 +492,13 @@ def format_brief_for_display(brief: Dict) -> str:
             return None
 
     output.append('=' * 70)
-    output.append('🌅 MORNING BRIEF')
+    output.append('📊 MARKET OPEN BRIEF')
     generated = brief.get('timestamp')
     if isinstance(generated, datetime):
         output.append(generated.strftime('Generated: %Y-%m-%d %I:%M %p ET'))
     else:
         output.append('Generated: unknown')
+    output.append('Fresh data from market open | Price action is current')
     output.append('=' * 70)
     output.append('')
 
@@ -490,7 +506,7 @@ def format_brief_for_display(brief: Dict) -> str:
     if market_regime:
         bias = market_regime.get('bias', 'neutral')
         bias_map = {'risk_off': '⚠️ Risk-Off', 'risk_on': '✅ Risk-On', 'neutral': '➖ Neutral'}
-        output.append(f"MARKET REGIME: {bias_map.get(bias, '➖ Neutral')}")
+        output.append(f"MARKET REGIME (LIVE): {bias_map.get(bias, '➖ Neutral')}")
         for note in market_regime.get('notes', []):
             output.append(f'  • {note}')
         output.append('')
@@ -533,7 +549,7 @@ def format_brief_for_display(brief: Dict) -> str:
     if conflicts:
         conflict_list = ', '.join(conflicts)
         output.append(f'⚠️ PRICE VS FLOW CONFLICT: {conflict_list}')
-        output.append("  Price action is diverging from yesterday's positioning — trust the tape until new flow arrives.")
+        output.append("  Current price action contradicts yesterday's flow — trust what the market is doing now.")
         output.append('')
     symbol_summaries = brief.get('symbol_summaries') or {}
     if symbol_summaries:
@@ -578,13 +594,13 @@ def format_brief_for_display(brief: Dict) -> str:
 
     movers = brief.get('premarket_movers') or {}
     if movers:
-        output.append('PRE-MARKET MOVERS')
+        output.append('TOP MOVERS (from previous close)')
         movers_sorted = sorted(movers.values(), key=lambda m: abs(m.get('gap_pct', 0)), reverse=True)[:5]
         for mover in movers_sorted:
             symbol = mover.get('symbol')
             gap_pct = mover.get('gap_pct', 0)
             direction = '▲' if gap_pct > 0 else '▼'
-            output.append(f"  {direction} {symbol}: {gap_pct:+.2f}% pre-market")
+            output.append(f"  {direction} {symbol}: {gap_pct:+.2f}% move")
             prev_close = mover.get('previous_close')
             pre_price = mover.get('premarket_price')
             if prev_close and pre_price:

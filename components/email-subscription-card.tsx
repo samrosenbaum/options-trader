@@ -126,10 +126,10 @@ export default function EmailSubscriptionCard() {
           />
           <div className="flex-1">
             <div className="font-semibold text-gray-900 group-hover:text-blue-600">
-              Morning Brief (7:00 AM)
+              Morning Brief (10:00 AM ET)
             </div>
             <div className="text-sm text-gray-600">
-              Pre-market intelligence, UOA signals, and today&apos;s watchlist
+              Market open intelligence with fresh price action, UOA signals, and watchlist
             </div>
           </div>
         </label>

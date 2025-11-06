@@ -5,8 +5,8 @@ export const runtime = "nodejs"
 export const maxDuration = 180 // 3 minutes for comprehensive analysis
 
 /**
- * Generate Morning Brief (7:00 AM)
- * Pre-market intelligence: UOA signals, earnings, gaps, watchlist
+ * Generate Morning Brief (10:00 AM ET)
+ * Market open intelligence: Fresh price action, UOA signals, earnings, gaps, watchlist
  */
 export async function POST(request: Request) {
   try {

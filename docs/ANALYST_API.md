@@ -5,7 +5,7 @@ Monty's Analyst system provides four timed intelligence briefs + real-time UOA s
 ## Overview
 
 **The Analyst's Daily Schedule:**
-- **7:00 AM** - Morning Brief (pre-market intelligence)
+- **10:00 AM** - Morning Brief (market open intelligence with fresh price action)
 - **9:35 AM** - Market Open Update (entry signals + momentum confirmation)
 - **8:00 PM** - Nightly Brief (tomorrow's battle plan)
 - **Saturday** - Weekly Analysis (learn from your trades)
@@ -87,11 +87,11 @@ COIN on 10/23 (day before JP Morgan upgrade):
 
 ---
 
-### 2. Morning Brief (7:00 AM)
+### 2. Morning Brief (10:00 AM ET)
 
 **Endpoint:** `/api/analyst/morning-brief`
 
-**Purpose:** Pre-market intelligence to plan your trading day
+**Purpose:** Market open intelligence with fresh price action to guide your trading day
 
 **Methods:** `GET` (default watchlist) | `POST` (custom symbols + portfolio)
 
@@ -636,12 +636,12 @@ async function checkEntryOpportunity(watchlist: string[]) {
 ### Option 1: Frontend Polling (Simple)
 
 ```typescript
-// Run morning brief at 7:00 AM local time
+// Run morning brief at 10:00 AM local time
 useEffect(() => {
   function scheduleCheck() {
     const now = new Date()
     const target = new Date()
-    target.setHours(7, 0, 0, 0)
+    target.setHours(10, 0, 0, 0)
 
     if (now > target) {
       target.setDate(target.getDate() + 1)
