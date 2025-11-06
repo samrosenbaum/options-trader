@@ -24,7 +24,7 @@ function copyStaticFiles() {
       // Copy public files
       const publicDir = resolve(__dirname, 'public');
       if (existsSync(publicDir)) {
-        const publicFiles = ['popup.html', 'popup.js'];
+        const publicFiles = ['popup.html', 'popup.js', 'monty-avatar.png'];
         publicFiles.forEach(file => {
           const src = resolve(publicDir, file);
           if (existsSync(src)) {
@@ -39,6 +39,14 @@ function copyStaticFiles() {
           if (!existsSync(distIconsDir)) {
             mkdirSync(distIconsDir, { recursive: true });
           }
+          // Copy all icon files
+          const iconFiles = ['icon16.png', 'icon48.png', 'icon128.png'];
+          iconFiles.forEach(iconFile => {
+            const src = resolve(iconsDir, iconFile);
+            if (existsSync(src)) {
+              copyFileSync(src, resolve(distIconsDir, iconFile));
+            }
+          });
         }
       }
 
