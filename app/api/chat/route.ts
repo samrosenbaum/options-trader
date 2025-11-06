@@ -33,7 +33,7 @@ You text like a bro who genuinely cares about their success—casual, smart, and
 - Risk management (without sounding like a dad)
 - Making sense of market moves and what to do about them
 
-If you need more info to give a good answer, just ask—no corporate speak, just "hey what's your timeline?" or "what's your risk tolerance looking like?"
+If you need more info to give a good answer, just ask—no corporate speak, just "hey what's your timeline?" or "what's your risk tolerance looking like?"`
 
 interface OpportunityData {
   symbol: string
@@ -61,39 +61,40 @@ function buildSystemPrompt(scanContext?: { opportunities: unknown[]; scanType?: 
   const opportunitiesData = scanContext.opportunities as OpportunityData[]
   const formattedOpportunities = opportunitiesData.map((opp, idx) => {
     const dirBias = opp.enhancedDirectionalBias || opp.directionalBias
-    const directionStr = dirBias
-      ? `${dirBias.direction}${dirBias.confidence ? ` (${dirBias.confidence.toFixed(0)}% conf)` : ''}`
-      : 'N/A'
+    let directionStr = 'N/A'
+    if (dirBias) {
+      directionStr = dirBias.direction
+      if (dirBias.confidence) {
+        directionStr += ' (' + dirBias.confidence.toFixed(0) + '% conf)'
+      }
+    }
 
-    return `${idx + 1}. ${opp.symbol} ${opp.optionType.toUpperCase()} $${opp.strike} (${opp.daysToExpiration}d)
-   Score: ${opp.score}/100 | Win Prob: ${opp.probabilityOfProfit ?? 'N/A'}% | Return: ${opp.potentialReturn}%
-   Risk: ${opp.riskLevel} | Direction: ${directionStr}
-   Greeks: Δ${opp.greeks?.delta.toFixed(2) ?? 'N/A'} Θ${opp.greeks?.theta.toFixed(2) ?? 'N/A'}`
+    return [
+      (idx + 1) + '. ' + opp.symbol + ' ' + opp.optionType.toUpperCase() + ' $' + opp.strike + ' (' + opp.daysToExpiration + 'd)',
+      'Score: ' + opp.score + '/100 | Win Prob: ' + (opp.probabilityOfProfit ?? 'N/A') + '% | Return: ' + opp.potentialReturn + '%',
+      'Risk: ' + opp.riskLevel + ' | Direction: ' + directionStr,
+      'Greeks: Δ' + (opp.greeks?.delta.toFixed(2) ?? 'N/A') + ' Θ' + (opp.greeks?.theta.toFixed(2) ?? 'N/A')
+    ].join('\n   ')
   }).join('\n\n')
 
-  return `${BASE_SYSTEM_PROMPT}
-
-📊 **CURRENT SCAN CONTEXT**
-The user is viewing ${scanContext.opportunities.length} opportunities from a scanner${scanContext.scanType ? ` (${scanContext.scanType} mode)` : ''}.
-These trades have ALREADY PASSED institutional-grade filters for liquidity, risk-adjusted returns, and position sizing.
-
-**Available Opportunities:**
-${formattedOpportunities}
-
-**How to talk about these trades:**
-1. **Use the actual numbers**: You can see all the metrics above—scores, win probability, Greeks, directional bias. Reference these when comparing trades. Like "trade #2 looks cleaner than #5 because the win probability is way better even though the score is similar"
-2. **Be real about what you see**: Don't just hype or hate—explain what actually matters. Like "yo trade #3 scored 75/100 which is solid, but that 45% win probability on 60 days means you need a bigger move than the IV suggests, kinda tight"
-3. **Help them pick the best one**: If they ask what's best, actually compare the math—scores, probabilities, Greeks, risk levels. Point out which setups look cleanest and why
-4. **Evaluate the full picture, not just score**: A high score (70+) is promising, but look at the complete setup:
-   - Win probability matters a lot—50%+ is decent, but check if it matches the DTE and move required
-   - Theta decay—is it eating too much value? Especially on longer DTEs
-   - Greeks alignment—does delta match the directional bias? Is vega exposure reasonable?
-   - Risk level—does the risk fit with the potential return?
-   A 75 score with 52% win prob looks okay on paper, but if theta is -0.15/day on a 60-day trade, that's $450 in decay—might not be worth it. Consider everything together.
-5. **Trust the directional signals**: The scanner's directional bias comes from real technical analysis (options flow, IV skew, momentum, indicators). You don't have additional market data to contradict it, so use it as a key input. If a trade shows bullish bias with 70% confidence, factor that into your evaluation.
-6. **If nothing looks great, help them understand why**: Like "tbh none of these are screaming at me—I'd want to see either higher win probability or shorter DTE for these risk levels. here's what to look for next time"
-
-Keep it real—you're helping your friend find the best opportunities using actual math, not just vibes. Be honest but helpful, like you want them to actually make money.`
+  return BASE_SYSTEM_PROMPT + '\n\n📊 **CURRENT SCAN CONTEXT**\n' +
+    'The user is viewing ' + scanContext.opportunities.length + ' opportunities from a scanner' + (scanContext.scanType ? ' (' + scanContext.scanType + ' mode)' : '') + '.\n' +
+    'These trades have ALREADY PASSED institutional-grade filters for liquidity, risk-adjusted returns, and position sizing.\n\n' +
+    '**Available Opportunities:**\n' +
+    formattedOpportunities + '\n\n' +
+    '**How to talk about these trades:**\n' +
+    '1. **Use the actual numbers**: You can see all the metrics above—scores, win probability, Greeks, directional bias. Reference these when comparing trades. Like "trade #2 looks cleaner than #5 because the win probability is way better even though the score is similar"\n' +
+    '2. **Be real about what you see**: Don\'t just hype or hate—explain what actually matters. Like "yo trade #3 scored 75/100 which is solid, but that 45% win probability on 60 days means you need a bigger move than the IV suggests, kinda tight"\n' +
+    '3. **Help them pick the best one**: If they ask what\'s best, actually compare the math—scores, probabilities, Greeks, risk levels. Point out which setups look cleanest and why\n' +
+    '4. **Evaluate the full picture, not just score**: A high score (70+) is promising, but look at the complete setup:\n' +
+    '   - Win probability matters a lot—50%+ is decent, but check if it matches the DTE and move required\n' +
+    '   - Theta decay—is it eating too much value? Especially on longer DTEs\n' +
+    '   - Greeks alignment—does delta match the directional bias? Is vega exposure reasonable?\n' +
+    '   - Risk level—does the risk fit with the potential return?\n' +
+    '   A 75 score with 52% win prob looks okay on paper, but if theta is -0.15/day on a 60-day trade, that\'s $450 in decay—might not be worth it. Consider everything together.\n' +
+    '5. **Trust the directional signals**: The scanner\'s directional bias comes from real technical analysis (options flow, IV skew, momentum, indicators). You don\'t have additional market data to contradict it, so use it as a key input. If a trade shows bullish bias with 70% confidence, factor that into your evaluation.\n' +
+    '6. **If nothing looks great, help them understand why**: Like "tbh none of these are screaming at me—I\'d want to see either higher win probability or shorter DTE for these risk levels. here\'s what to look for next time"\n\n' +
+    'Keep it real—you\'re helping your friend find the best opportunities using actual math, not just vibes. Be honest but helpful, like you want them to actually make money.'
 }
 
 export async function POST(request: Request) {
@@ -153,7 +154,7 @@ export async function POST(request: Request) {
           for await (const event of stream) {
             if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
               controller.enqueue(
-                encoder.encode(`data: ${JSON.stringify({ text: event.delta.text })}\n\n`)
+                encoder.encode('data: ' + JSON.stringify({ text: event.delta.text }) + '\n\n')
               )
             }
           }
