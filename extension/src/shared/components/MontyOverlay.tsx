@@ -16,6 +16,9 @@ export function MontyOverlay({ apiEndpoint, robinhoodContext }: MontyOverlayProp
   const [isLoading, setIsLoading] = useState(false);
   const [hasNewMessage, setHasNewMessage] = useState(false);
 
+  // Get Monty avatar URL
+  const montyAvatarUrl = chrome.runtime.getURL('monty-avatar.png');
+
   // Dragging state
   const [position, setPosition] = useState({ x: window.innerWidth - 450, y: 100 });
   const [isDragging, setIsDragging] = useState(false);
@@ -279,9 +282,11 @@ export function MontyOverlay({ apiEndpoint, robinhoodContext }: MontyOverlayProp
           {isOpen ? (
             <X size={24} style={{ color: '#10b981' }} />
           ) : (
-            <div style={{ width: '64px', height: '64px', background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '28px', fontWeight: 'bold' }}>
-              M
-            </div>
+            <img
+              src={montyAvatarUrl}
+              alt="Monty"
+              style={{ width: '64px', height: '64px', borderRadius: '50%', objectFit: 'cover' }}
+            />
           )}
         </motion.div>
 
@@ -369,9 +374,11 @@ export function MontyOverlay({ apiEndpoint, robinhoodContext }: MontyOverlayProp
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <GripVertical size={16} style={{ color: '#94a3b8' }} />
-                <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '20px', fontWeight: 'bold', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}>
-                  M
-                </div>
+                <img
+                  src={montyAvatarUrl}
+                  alt="Monty"
+                  style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                />
                 <div>
                   <div style={{ fontSize: '14px', fontWeight: 600, color: '#0f172a' }}>Monty</div>
                   <div style={{ fontSize: '12px', color: '#64748b' }}>Options Assistant</div>
@@ -423,9 +430,11 @@ export function MontyOverlay({ apiEndpoint, robinhoodContext }: MontyOverlayProp
                     <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center' }}>
                       <div style={{ textAlign: 'center' }}>
                         <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'center' }}>
-                          <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '32px', fontWeight: 'bold' }}>
-                            M
-                          </div>
+                          <img
+                            src={montyAvatarUrl}
+                            alt="Monty"
+                            style={{ width: '64px', height: '64px', borderRadius: '50%', objectFit: 'cover' }}
+                          />
                         </div>
                         <p style={{ fontSize: '14px', fontWeight: 600, color: '#0f172a' }}>Hey! I'm Monty</p>
                         <p style={{ marginTop: '8px', fontSize: '12px', color: '#64748b' }}>
@@ -450,9 +459,11 @@ export function MontyOverlay({ apiEndpoint, robinhoodContext }: MontyOverlayProp
                           <div style={{ maxWidth: '80%', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                             {message.role === 'assistant' && (
                               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingLeft: '4px' }}>
-                                <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '12px', fontWeight: 'bold' }}>
-                                  M
-                                </div>
+                                <img
+                                  src={montyAvatarUrl}
+                                  alt="Monty"
+                                  style={{ width: '24px', height: '24px', borderRadius: '50%', objectFit: 'cover' }}
+                                />
                                 <span style={{ fontSize: '12px', color: '#64748b' }}>Monty</span>
                               </div>
                             )}
