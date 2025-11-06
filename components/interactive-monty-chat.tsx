@@ -6,12 +6,15 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { X, Send } from 'lucide-react'
 import Image from 'next/image'
 import { useMontyChat, type Message } from '@/contexts/monty-chat-context'
+import { useScanContext } from '@/contexts/scan-context'
 
 interface InteractiveMontyChatProps {
   initialMessage?: string
 }
 
 export function InteractiveMontyChat({ initialMessage }: InteractiveMontyChatProps) {
+  const { opportunities, scanType } = useScanContext()
+  const scanContext = opportunities.length > 0 ? { opportunities, scanType } : undefined
   const [isOpen, setIsOpen] = useState(false)
   const { messages, setMessages } = useMontyChat()
   const [input, setInput] = useState('')
@@ -96,7 +99,10 @@ export function InteractiveMontyChat({ initialMessage }: InteractiveMontyChatPro
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: conversation }),
+        body: JSON.stringify({
+          messages: conversation,
+          scanContext: scanContext
+        }),
       })
 
       if (!response.ok) {
