@@ -604,7 +604,8 @@ export default function PortfolioClient({
 
           // Collect friendly messages for Monty chat
           if (position.exit_friendly_message) {
-            const positionHeader = `**${position.symbol} ${position.option_type.toUpperCase()} $${position.strike}** (Exp: ${new Date(position.expiration).toLocaleDateString()})\n\n`
+            const expDate = new Date(position.expiration).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+            const positionHeader = `**${position.symbol}** ${position.option_type.toUpperCase()} $${position.strike} • ${expDate}\n`
             chatMessages.push(positionHeader + position.exit_friendly_message)
           }
         }

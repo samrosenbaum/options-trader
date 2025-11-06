@@ -49,109 +49,90 @@ class ExitSignal:
     expected_move_pct: Optional[float] = None
 
     def get_friendly_message(self) -> str:
-        """Generate a conversational, Monty-style message."""
+        """Generate a conversational, text-message style update from a smart friend."""
         parts = []
 
-        # Opening: friendly greeting based on signal
+        # Opening - like you're texting a friend
         if self.signal == "HOLD":
-            parts.append("Hey, I'm thinking we should hold this one for now.")
+            if self.profit_pct is not None and self.profit_pct < -15:
+                parts.append("Hey - tough one, but I think we should hold tight 💪")
+            else:
+                parts.append("Hey! Let's hold this one 👍")
         elif self.signal == "SELL_ALL":
-            parts.append("Hey, I think it's time to exit this position.")
+            if self.profit_pct and self.profit_pct > 0:
+                parts.append("Yo! Time to take the money and run 💰")
+            else:
+                parts.append("Hey, I think we need to exit this one 👋")
         elif self.signal == "SELL_PARTIAL":
-            parts.append("Hey, I'm thinking we should take some profits off the table here.")
+            parts.append("Let's lock in some profits here 🎯")
         elif self.signal == "CUT_LOSS":
-            parts.append("Hey, I think we should cut our losses on this one.")
+            parts.append("Alright, time to cut this one loose 😬")
 
-        parts.append("")  # blank line
-
-        # Profit/Loss context
+        # Main reasoning - keep it brief and conversational
         if self.profit_pct is not None:
             if self.profit_pct >= 0:
-                profit_msg = f"You're up {self.profit_pct:.1f}% right now"
+                parts.append(f"\nYou're up {self.profit_pct:.1f}% right now.")
             else:
-                profit_msg = f"You're down {abs(self.profit_pct):.1f}% right now"
+                parts.append(f"\nCurrently down {abs(self.profit_pct):.1f}%.")
 
-            if self.target_profit_pct:
-                profit_msg += f" (we're aiming for {self.target_profit_pct}% profit)"
-            parts.append(profit_msg + ".")
+        # Key insight - ONE main point (choose most important)
+        key_insight = None
 
-        # Theta explanation (time decay)
-        if self.theta is not None and self.option_price is not None:
-            theta_abs = abs(self.theta)
-            daily_loss = theta_abs * 100 * (self.option_price if self.option_price > 0 else 1)
-
-            if theta_abs >= 0.10:
-                parts.append(f"Time decay is pretty aggressive here - this position loses about ${daily_loss:.0f} per day just from time passing, regardless of price movement. That's the 'theta' eating away at the option value.")
-            elif theta_abs >= 0.05:
-                parts.append(f"This position loses about ${daily_loss:.0f} per day from time decay (theta). Every day we wait, we need a bigger move just to break even.")
-            elif theta_abs >= 0.02:
-                parts.append(f"Time decay is costing us about ${daily_loss:.0f} per day (that's theta), so time is slowly working against us.")
-
-        parts.append("")  # blank line
-
-        # Momentum context
-        momentum_msg = ""
+        # Priority 1: Momentum (most actionable)
         if self.momentum_strength == "STRONG":
-            momentum_msg = "The momentum is strong right now - price is moving in our favor with good volume"
-        elif self.momentum_strength == "MODERATE":
-            momentum_msg = "We've got decent momentum going"
-        elif self.momentum_strength == "WEAKENING":
-            momentum_msg = "The momentum is starting to fade, which makes me a bit cautious"
+            key_insight = "Price is moving in our favor with solid volume 📈"
         elif self.momentum_strength == "REVERSING":
-            momentum_msg = "The trend is reversing against us"
+            key_insight = "Heads up - trend is reversing against us 🔄"
+        elif self.momentum_strength == "WEAKENING":
+            key_insight = "Momentum's fading a bit, watching it closely 👀"
         elif self.momentum_strength == "DEAD":
-            momentum_msg = "There's not much momentum right now - the stock is kind of just sitting there"
+            key_insight = "Not much movement right now, just sitting there 😴"
 
-        if self.volume_ratio is not None:
-            if self.volume_ratio >= 1.5:
-                momentum_msg += f" and trading volume is {self.volume_ratio:.1f}x normal, which shows conviction."
-            elif self.volume_ratio < 0.8:
-                momentum_msg += " and volume is drying up, which means there's not much interest driving the move."
-
-        if momentum_msg:
-            parts.append(momentum_msg)
-
-        # Unusual options activity (explain like I'm 5)
-        if self.unusual_activity_data:
+        # Priority 2: Unusual activity (if very significant)
+        if self.unusual_activity_data and not key_insight:
             total_vol = self.unusual_activity_data.get('total_volume')
             vol_ratio = self.unusual_activity_data.get('vol_oi_ratio')
             bias = self.unusual_activity_data.get('bias')
 
-            if total_vol and vol_ratio:
-                parts.append("")
-                parts.append(f"Here's something interesting - I'm seeing unusual options activity with {total_vol:,} contracts traded, running {vol_ratio:.1f}x the normal amount. This usually means 'smart money' (big institutions or informed traders) are making moves. They seem to be leaning {bias or 'neutral'}, which {'supports' if bias else 'is mixed with'} our position.")
+            if vol_ratio and vol_ratio >= 2.0:  # Only mention if really unusual
+                key_insight = f"Seeing some big players moving in ({bias} bias) 🐋"
 
-        # Probability and confidence
-        if self.probability_of_profit is not None:
+        # Priority 3: Probability (if extreme)
+        if self.probability_of_profit is not None and not key_insight:
             prob_pct = self.probability_of_profit * 100
-            parts.append("")
-            if prob_pct >= 65:
-                parts.append(f"The math says there's about a {prob_pct:.0f}% chance this trade works out, which is actually pretty solid. I'd say we can give it some breathing room.")
-            elif prob_pct >= 50:
-                parts.append(f"We've got about a {prob_pct:.0f}% probability of profit - basically a coin flip. Not terrible, but not great either.")
+            if prob_pct >= 70:
+                key_insight = "Math looks solid on this one 🎲"
             elif prob_pct < 35:
-                parts.append(f"I'll be honest - the probability this finishes profitable is only around {prob_pct:.0f}%. The odds aren't in our favor here.")
+                key_insight = "Honestly, odds aren't great here 🎲"
 
-        # Expected move context
-        if self.expected_move_pct is not None:
-            parts.append(f"The options market is pricing in about a ±{self.expected_move_pct:.1f}% move, so that's what the market thinks could happen.")
+        # Priority 4: Time decay (only if severe)
+        if self.theta is not None and self.option_price is not None and not key_insight:
+            theta_abs = abs(self.theta)
+            daily_loss = theta_abs * 100 * (self.option_price if self.option_price > 0 else 1)
 
-        # Closing advice based on signal
-        parts.append("")
+            if theta_abs >= 0.10:
+                key_insight = f"Time decay is brutal - losing ~${daily_loss:.0f}/day ⏰"
+
+        if key_insight:
+            parts.append(key_insight)
+
+        # Quick advice - what to do
         if self.signal == "HOLD":
             if self.profit_pct and self.profit_pct < -20:
-                parts.append("You could cut your losses here if you want to move on, but I think there might still be a chance this plays out. Your call - I'm here either way.")
+                parts.append("\nCould bail if you want, but might still have a shot. Your call.")
+            elif self.target_profit_pct and self.profit_pct and self.profit_pct < self.target_profit_pct * 0.7:
+                parts.append("\nLet's give it some room to work.")
             else:
-                parts.append("I say we hold and see how this develops, but keep an eye on it.")
+                parts.append("\nLet's see how it plays out 🎯")
         elif self.signal == "CUT_LOSS":
-            parts.append("I know it's tough, but sometimes the best trade is accepting a loss and moving on to the next opportunity.")
+            parts.append("\nBetter to move on and find a better setup.")
         elif self.signal == "SELL_ALL":
             if self.profit_pct and self.profit_pct > 0:
-                parts.append("Let's lock in this win and move on to the next play.")
+                parts.append("\nLock it in! 💪")
             else:
-                parts.append("Time to move on from this one.")
+                parts.append("\nTime to close this out.")
         elif self.signal == "SELL_PARTIAL":
-            parts.append("Taking some profit off the table means we lock in a win while still giving the rest room to run. Best of both worlds.")
+            parts.append("\nLock some profit, let the rest ride. Best of both worlds 🎯")
 
         return "\n".join(parts)
 
