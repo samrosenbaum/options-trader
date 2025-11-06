@@ -3891,7 +3891,29 @@ export default function ScannerPage({ user }: ScannerPageProps) {
                           </div>
                         </div>
                       </div>
-                      <div>{renderSymbolChips(symbolUniverseStatus.rotation.upcoming, 15, 'upcoming')}</div>
+                      <div className="mb-4">{renderSymbolChips(symbolUniverseStatus.rotation.upcoming, 15, 'upcoming')}</div>
+
+                      {/* Scan Next Batch Button */}
+                      <button
+                        onClick={() => fetchOpportunities()}
+                        disabled={isLoading}
+                        className="group relative inline-flex w-full items-center justify-center gap-2 overflow-hidden rounded-lg bg-gradient-to-r from-purple-500 via-purple-600 to-purple-700 px-6 py-2.5 text-sm font-semibold text-white shadow-md shadow-purple-500/30 transition-all duration-200 hover:shadow-purple-500/50 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
+                      >
+                        <span className="pointer-events-none absolute inset-0 -translate-x-full bg-white/20 transition-transform duration-500 group-hover:translate-x-0" />
+                        <span className="relative flex items-center gap-2">
+                          {isLoading ? (
+                            <>
+                              <div className="h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                              <span>Scanning…</span>
+                            </>
+                          ) : (
+                            <>
+                              <span>Scan Next Batch</span>
+                              <ArrowRight className="h-4 w-4" />
+                            </>
+                          )}
+                        </span>
+                      </button>
                     </div>
                   ) : (
                     <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 p-8 dark:border-slate-700 dark:bg-slate-800/30">
