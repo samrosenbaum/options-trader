@@ -35,10 +35,41 @@ You talk like a friend who also happens to be a quant genius—warm, direct, and
 
 If you don't have enough context to answer a specific question, politely ask for more details.`
 
+interface OpportunityData {
+  symbol: string
+  optionType: string
+  strike: number
+  expiration: string
+  score: number
+  probabilityOfProfit: number | null
+  potentialReturn: number
+  daysToExpiration: number
+  riskLevel: string
+  greeks?: { delta: number; theta: number; gamma: number; vega: number }
+  directionalBias?: { direction: string; confidence?: number }
+  enhancedDirectionalBias?: { direction: string; confidence: number; recommendation: string }
+  stockPrice: number
+  premium: number
+}
+
 function buildSystemPrompt(scanContext?: { opportunities: unknown[]; scanType?: string }): string {
   if (!scanContext || !scanContext.opportunities || scanContext.opportunities.length === 0) {
     return BASE_SYSTEM_PROMPT
   }
+
+  // Format opportunities data for the prompt
+  const opportunitiesData = scanContext.opportunities as OpportunityData[]
+  const formattedOpportunities = opportunitiesData.map((opp, idx) => {
+    const dirBias = opp.enhancedDirectionalBias || opp.directionalBias
+    const directionStr = dirBias
+      ? `${dirBias.direction}${dirBias.confidence ? ` (${dirBias.confidence.toFixed(0)}% conf)` : ''}`
+      : 'N/A'
+
+    return `${idx + 1}. ${opp.symbol} ${opp.optionType.toUpperCase()} $${opp.strike} (${opp.daysToExpiration}d)
+   Score: ${opp.score}/100 | Win Prob: ${opp.probabilityOfProfit ?? 'N/A'}% | Return: ${opp.potentialReturn}%
+   Risk: ${opp.riskLevel} | Direction: ${directionStr}
+   Greeks: Δ${opp.greeks?.delta.toFixed(2) ?? 'N/A'} Θ${opp.greeks?.theta.toFixed(2) ?? 'N/A'}`
+  }).join('\n\n')
 
   return `${BASE_SYSTEM_PROMPT}
 
@@ -46,9 +77,12 @@ function buildSystemPrompt(scanContext?: { opportunities: unknown[]; scanType?: 
 The user is viewing ${scanContext.opportunities.length} opportunities from a scanner${scanContext.scanType ? ` (${scanContext.scanType} mode)` : ''}.
 These trades have ALREADY PASSED institutional-grade filters for liquidity, risk-adjusted returns, and position sizing.
 
+**Available Opportunities:**
+${formattedOpportunities}
+
 **Your approach when discussing these scanned opportunities:**
-1. **Use the math**: Each trade has a quality score (0-100), probability of profit, potential return, Greeks, and directional bias. Reference these metrics to make objective comparisons.
-2. **Be constructively critical**: Don't just agree or disagree—explain WHICH factors make a trade attractive or concerning. For example: "The 75/100 score is solid, but that 45% win probability on a 60-day expiration means you need a bigger move than the IV suggests."
+1. **Use the math**: Each trade above has a quality score (0-100), probability of profit, potential return, Greeks, and directional bias. Reference these metrics to make objective comparisons between specific trades.
+2. **Be constructively critical**: Don't just agree or disagree—explain WHICH factors make a trade attractive or concerning. For example: "Trade #3 has a 75/100 score which is solid, but that 45% win probability on a 60-day expiration means you need a bigger move than the IV suggests."
 3. **Help find the best option**: If the user asks what's best, compare trades by their risk/reward math, not just vibes. Highlight trades with strong scores, good probability of profit, favorable Greeks, and clear directional setups.
 4. **Recognize when trades are solid**: If a trade has a high score (70+), decent win probability (>50%), and reasonable risk, say so! These passed filters for a reason. You can still mention risks, but acknowledge the strengths.
 5. **Offer alternatives constructively**: If none of the trades are ideal, explain what you'd want to see improved (better score, higher win probability, shorter DTE, stronger directional signals) and guide the user on what to look for.
