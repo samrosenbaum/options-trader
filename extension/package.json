@@ -1,0 +1,29 @@
+{
+  "name": "monty-chrome-extension",
+  "version": "1.0.0",
+  "description": "Monty AI assistant Chrome extension for Robinhood",
+  "scripts": {
+    "dev": "vite build --watch --mode development",
+    "build": "npm run icons && vite build",
+    "icons": "node scripts/generate-icons.js",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "lucide-react": "^0.263.1",
+    "framer-motion": "^10.16.4"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.254",
+    "@types/node": "^20.8.9",
+    "@types/react": "^18.2.33",
+    "@types/react-dom": "^18.2.14",
+    "@vitejs/plugin-react": "^4.1.1",
+    "autoprefixer": "^10.4.16",
+    "postcss": "^8.4.31",
+    "tailwindcss": "^3.3.5",
+    "typescript": "^5.2.2",
+    "vite": "^4.5.0"
+  }
+}
