@@ -1,0 +1,38 @@
+[
+  {
+    "symbol": "META",
+    "signal_date": "2022-02-02T00:00:00",
+    "signal_score": 19,
+    "predicted_drop": true,
+    "actual_drop_pct": -26.519763884167258,
+    "roi_pct": 3688.537697738181,
+    "successful": true
+  },
+  {
+    "symbol": "NFLX",
+    "signal_date": "2022-04-19T00:00:00",
+    "signal_score": 19,
+    "predicted_drop": true,
+    "actual_drop_pct": -35.116605949341675,
+    "roi_pct": 4916.657992763097,
+    "successful": true
+  },
+  {
+    "symbol": "SNAP",
+    "signal_date": "2022-05-23T00:00:00",
+    "signal_score": 19,
+    "predicted_drop": true,
+    "actual_drop_pct": -42.04802899864069,
+    "roi_pct": 5906.861285520099,
+    "successful": true
+  },
+  {
+    "symbol": "PYPL",
+    "signal_date": "2022-02-01T00:00:00",
+    "signal_score": 19,
+    "predicted_drop": true,
+    "actual_drop_pct": -23.979009810631997,
+    "roi_pct": 3325.572830090285,
+    "successful": true
+  }
+]
