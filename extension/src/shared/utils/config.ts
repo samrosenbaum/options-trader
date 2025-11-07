@@ -5,8 +5,8 @@
 const IS_DEV_MODE = import.meta.env.VITE_DEV_MODE === 'true';
 
 export const API_ENDPOINT = IS_DEV_MODE
-  ? 'http://localhost:3000'  // Development
-  : 'https://withmonty.com';  // Production (update this to your actual domain)
+  ? 'http://localhost:3000'     // Development
+  : 'https://www.withmonty.com'; // Production
 
 // Storage keys
 export const STORAGE_KEYS = {
