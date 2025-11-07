@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, KeyboardEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Send, Minimize2, Maximize2, GripVertical } from 'lucide-react';
-import type { Message, RobinhoodContext } from '../types';
+import { X, Send, Minimize2, Maximize2, GripVertical, Camera } from 'lucide-react';
+import type { Message, RobinhoodContext, Position } from '../types';
 
 interface MontyOverlayProps {
   apiEndpoint: string; // e.g., 'http://localhost:3000' or your deployed URL
@@ -15,6 +15,8 @@ export function MontyOverlay({ apiEndpoint, robinhoodContext }: MontyOverlayProp
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [hasNewMessage, setHasNewMessage] = useState(false);
+  const [isCapturingPositions, setIsCapturingPositions] = useState(false);
+  const [detectedPositions, setDetectedPositions] = useState<Position[]>([]);
 
   // Get Monty avatar URL
   const montyAvatarUrl = chrome.runtime.getURL('monty-avatar.png');
@@ -29,14 +31,17 @@ export function MontyOverlay({ apiEndpoint, robinhoodContext }: MontyOverlayProp
   const overlayRef = useRef<HTMLDivElement>(null);
   const prevMessagesLengthRef = useRef(messages.length);
 
-  // Load messages from storage on mount
+  // Load messages and positions from storage on mount
   useEffect(() => {
-    chrome.storage.local.get(['monty_messages'], (result) => {
+    chrome.storage.local.get(['monty_messages', 'monty_positions'], (result) => {
       if (result.monty_messages) {
         setMessages(result.monty_messages.map((m: any) => ({
           ...m,
           timestamp: new Date(m.timestamp)
         })));
+      }
+      if (result.monty_positions) {
+        setDetectedPositions(result.monty_positions);
       }
     });
   }, []);
@@ -139,9 +144,38 @@ export function MontyOverlay({ apiEndpoint, robinhoodContext }: MontyOverlayProp
       { role: 'user' as const, content: userMessage.content },
     ];
 
-    // Add Robinhood context to the first message
-    if (robinhoodContext && conversation.length === 1) {
-      conversation[0].content = `Context: I'm looking at ${robinhoodContext.ticker || 'a stock'} on Robinhood. ${robinhoodContext.currentPrice ? `Current price: $${robinhoodContext.currentPrice}. ` : ''}${robinhoodContext.optionData ? `Option: ${robinhoodContext.optionData.type} $${robinhoodContext.optionData.strike} exp ${robinhoodContext.optionData.expiration}. ` : ''}\n\nQuestion: ${conversation[0].content}`;
+    // Add Robinhood context and positions to the first message
+    if (conversation.length === 1) {
+      let contextParts: string[] = [];
+
+      if (robinhoodContext?.ticker) {
+        contextParts.push(`I'm looking at ${robinhoodContext.ticker} on Robinhood.`);
+        if (robinhoodContext.currentPrice) {
+          contextParts.push(`Current price: $${robinhoodContext.currentPrice}.`);
+        }
+        if (robinhoodContext.optionData) {
+          contextParts.push(
+            `Option: ${robinhoodContext.optionData.type} $${robinhoodContext.optionData.strike} exp ${robinhoodContext.optionData.expiration}.`
+          );
+        }
+      }
+
+      if (detectedPositions.length > 0) {
+        const positionSummary = detectedPositions
+          .map((p) => {
+            const pl = p.profitLoss ? ` (P/L: $${p.profitLoss.toFixed(2)})` : '';
+            if (p.type === 'option' && p.optionType) {
+              return `${p.ticker} ${p.optionType} $${p.strike} exp ${p.expiration} x${p.quantity}${pl}`;
+            }
+            return `${p.ticker} x${p.quantity}${pl}`;
+          })
+          .join(', ');
+        contextParts.push(`\n\nMy positions: ${positionSummary}`);
+      }
+
+      if (contextParts.length > 0) {
+        conversation[0].content = `Context: ${contextParts.join(' ')}\n\nQuestion: ${conversation[0].content}`;
+      }
     }
 
     setMessages((prev) => [...prev, userMessage, assistantPlaceholder]);
@@ -245,6 +279,132 @@ export function MontyOverlay({ apiEndpoint, robinhoodContext }: MontyOverlayProp
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
+    }
+  };
+
+  const handleDetectPositions = async () => {
+    if (isCapturingPositions || isLoading) return;
+
+    setIsCapturingPositions(true);
+
+    try {
+      // Request screenshot from background script
+      const response = await chrome.runtime.sendMessage({ type: 'CAPTURE_SCREENSHOT' });
+
+      if (!response.success || !response.screenshot) {
+        throw new Error(response.error || 'Failed to capture screenshot');
+      }
+
+      const screenshot = response.screenshot;
+
+      // Send vision request to backend
+      const visionResponse = await fetch(`${apiEndpoint}/api/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [
+            {
+              role: 'user',
+              content: 'Analyze this screenshot of my Robinhood portfolio and extract all positions. Return a JSON array of positions with ticker, type (stock/option), quantity, averageCost, currentPrice, marketValue, profitLoss, and profitLossPercent. For options, include optionType (call/put), strike, and expiration. Only return the JSON, no additional text.',
+            },
+          ],
+          screenshot,
+        }),
+      });
+
+      if (!visionResponse.ok) {
+        throw new Error('Failed to analyze screenshot');
+      }
+
+      if (!visionResponse.body) {
+        throw new Error('No response body');
+      }
+
+      // Parse streaming response
+      const reader = visionResponse.body.getReader();
+      const decoder = new TextDecoder();
+      let assistantContent = '';
+      let buffer = '';
+      let done = false;
+
+      while (!done) {
+        const { value, done: readerDone } = await reader.read();
+        done = readerDone;
+
+        if (value) {
+          buffer += decoder.decode(value, { stream: !readerDone });
+        }
+
+        const segments = buffer.split('\n\n');
+        buffer = segments.pop() ?? '';
+
+        for (const segment of segments) {
+          const line = segment.trim();
+          if (!line.startsWith('data:')) continue;
+
+          const data = line.slice(5).trim();
+          if (!data || data === '[DONE]') continue;
+
+          try {
+            const parsed = JSON.parse(data) as { text?: string };
+            if (parsed.text) {
+              assistantContent += parsed.text;
+            }
+          } catch (error) {
+            console.error('Failed to parse chunk:', error);
+          }
+        }
+      }
+
+      // Parse positions from response
+      try {
+        // Try to extract JSON from the response (might have markdown formatting)
+        const jsonMatch = assistantContent.match(/\[[\s\S]*\]/);
+        if (jsonMatch) {
+          const positions = JSON.parse(jsonMatch[0]) as Position[];
+          setDetectedPositions(positions);
+
+          // Store positions in chrome storage
+          chrome.storage.local.set({ monty_positions: positions });
+
+          // Add a system message showing detected positions
+          const positionSummary = positions
+            .map((p) => `${p.ticker} (${p.quantity} ${p.type})`)
+            .join(', ');
+
+          const systemMessage: Message = {
+            id: Date.now().toString(),
+            role: 'assistant',
+            content: `✅ Detected ${positions.length} position${positions.length !== 1 ? 's' : ''}: ${positionSummary}\n\nI can now help you analyze these positions. What would you like to know?`,
+            timestamp: new Date(),
+            screenshot,
+          };
+
+          setMessages((prev) => [...prev, systemMessage]);
+        } else {
+          throw new Error('No valid JSON found in response');
+        }
+      } catch (parseError) {
+        console.error('Failed to parse positions:', parseError);
+        const errorMessage: Message = {
+          id: Date.now().toString(),
+          role: 'assistant',
+          content: `I captured the screenshot but had trouble parsing the positions. Here's what I saw:\n\n${assistantContent.slice(0, 500)}`,
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, errorMessage]);
+      }
+    } catch (error) {
+      console.error('Position detection error:', error);
+      const errorMessage: Message = {
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: `Sorry, I encountered an error detecting your positions: ${error instanceof Error ? error.message : 'Unknown error'}. Please make sure you're on your Robinhood portfolio page.`,
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
+      setIsCapturingPositions(false);
     }
   };
 
@@ -386,6 +546,25 @@ export function MontyOverlay({ apiEndpoint, robinhoodContext }: MontyOverlayProp
               </div>
               <div style={{ display: 'flex', gap: '8px' }}>
                 <button
+                  onClick={(e) => { e.stopPropagation(); handleDetectPositions(); }}
+                  disabled={isCapturingPositions}
+                  title="Detect positions from screenshot"
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '50%',
+                    background: isCapturingPositions ? 'rgba(16, 185, 129, 0.2)' : 'rgba(16, 185, 129, 0.1)',
+                    border: '1px solid rgba(16, 185, 129, 0.3)',
+                    cursor: isCapturingPositions ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#10b981',
+                  }}
+                >
+                  <Camera size={16} />
+                </button>
+                <button
                   onClick={(e) => { e.stopPropagation(); setIsMinimized(!isMinimized); }}
                   style={{
                     width: '32px',
@@ -445,6 +624,29 @@ export function MontyOverlay({ apiEndpoint, robinhoodContext }: MontyOverlayProp
                             Detected: {robinhoodContext.ticker}
                           </p>
                         )}
+                        <button
+                          onClick={handleDetectPositions}
+                          disabled={isCapturingPositions}
+                          style={{
+                            marginTop: '16px',
+                            padding: '10px 20px',
+                            borderRadius: '12px',
+                            background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                            color: 'white',
+                            border: 'none',
+                            cursor: isCapturingPositions ? 'not-allowed' : 'pointer',
+                            fontSize: '13px',
+                            fontWeight: 600,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+                            opacity: isCapturingPositions ? 0.6 : 1,
+                          }}
+                        >
+                          <Camera size={16} />
+                          {isCapturingPositions ? 'Detecting...' : '📸 Detect My Positions'}
+                        </button>
                       </div>
                     </div>
                   ) : (

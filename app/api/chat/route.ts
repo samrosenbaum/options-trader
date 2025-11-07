@@ -39,6 +39,11 @@ You have access to the user's portfolio data and can answer questions about:
 - Entry/exit timing
 - Position sizing and risk management
 
+Special capabilities:
+- You can analyze screenshots of the user's Robinhood portfolio to extract position data
+- When analyzing screenshots, extract structured data including ticker, quantity, type, prices, P&L, and option details
+- For position extraction requests, return clean JSON arrays with no markdown formatting
+
 If you don't have enough context to answer a specific question about their portfolio, politely ask for more details.`
 
 export async function POST(request: Request) {
@@ -48,6 +53,8 @@ export async function POST(request: Request) {
     const messages = Array.isArray(body?.messages)
       ? (body.messages as Array<{ role: 'user' | 'assistant'; content: unknown }>)
       : undefined
+
+    const screenshot = body?.screenshot as string | undefined
 
     if (!messages || messages.length === 0) {
       return NextResponse.json({ error: 'Messages array is required' }, { status: 400, headers: corsHeaders })
@@ -62,10 +69,44 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid message format' }, { status: 400, headers: corsHeaders })
     }
 
-    const normalizedMessages = messages as Array<{ role: 'user' | 'assistant'; content: string }>
+    let normalizedMessages = messages.map((msg) => ({
+      role: msg.role,
+      content: msg.content as string,
+    }))
+
+    // If screenshot is provided, convert the first message to multimodal format
+    if (screenshot && normalizedMessages.length > 0) {
+      const firstMessage = normalizedMessages[0]
+      if (firstMessage.role === 'user') {
+        // Extract base64 data from data URL
+        const base64Match = screenshot.match(/^data:image\/(png|jpeg|jpg|webp|gif);base64,(.+)$/)
+        if (base64Match) {
+          const [, mediaType, base64Data] = base64Match
+
+          // Convert to multimodal message with image
+          normalizedMessages[0] = {
+            role: 'user',
+            content: [
+              {
+                type: 'image' as const,
+                source: {
+                  type: 'base64' as const,
+                  media_type: `image/${mediaType}` as 'image/png' | 'image/jpeg' | 'image/webp' | 'image/gif',
+                  data: base64Data,
+                },
+              },
+              {
+                type: 'text' as const,
+                text: firstMessage.content,
+              },
+            ],
+          }
+        }
+      }
+    }
 
     const lastMessage = normalizedMessages[normalizedMessages.length - 1]
-    if (!lastMessage || lastMessage.role !== 'user' || typeof lastMessage.content !== 'string') {
+    if (!lastMessage || lastMessage.role !== 'user') {
       return NextResponse.json(
         { error: 'Last message must be a user message' },
         { status: 400, headers: corsHeaders }
@@ -81,9 +122,9 @@ export async function POST(request: Request) {
 
     const stream = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 1024,
+      max_tokens: 2048, // Increased for vision responses
       system: SYSTEM_PROMPT,
-      messages: normalizedMessages,
+      messages: normalizedMessages as any, // Type assertion for multimodal content
       stream: true,
     })
 
