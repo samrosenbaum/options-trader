@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const apiEndpointInput = document.getElementById('api-endpoint');
   const enabledToggle = document.getElementById('enabled');
   const saveBtn = document.getElementById('save-btn');
+  const resetBtn = document.getElementById('reset-btn');
   const status = document.getElementById('status');
 
   // Load saved settings
@@ -45,6 +46,29 @@ document.addEventListener('DOMContentLoaded', () => {
         });
       }
     );
+  });
+
+  // Reset to defaults
+  resetBtn.addEventListener('click', () => {
+    chrome.storage.local.clear(() => {
+      apiEndpointInput.value = '';
+      enabledToggle.checked = true;
+
+      status.textContent = '✓ Reset to defaults! Reloading...';
+      status.classList.add('show');
+
+      setTimeout(() => {
+        // Reload Robinhood tabs
+        chrome.tabs.query({ url: '*://*.robinhood.com/*' }, (tabs) => {
+          tabs.forEach((tab) => {
+            if (tab.id) {
+              chrome.tabs.reload(tab.id);
+            }
+          });
+        });
+        status.classList.remove('show');
+      }, 1000);
+    });
   });
 
   // Allow Enter key to save
