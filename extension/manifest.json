@@ -5,7 +5,8 @@
   "description": "Your AI trading assistant that overlays on Robinhood to provide real-time options analysis",
   "permissions": [
     "activeTab",
-    "storage"
+    "storage",
+    "tabs"
   ],
   "host_permissions": [
     "https://robinhood.com/*",
