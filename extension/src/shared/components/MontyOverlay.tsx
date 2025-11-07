@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, KeyboardEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Send, Minimize2, Maximize2, GripVertical, Camera } from 'lucide-react';
+import { X, Send, Minimize2, Maximize2, GripVertical, Camera, Trash2 } from 'lucide-react';
 import type { Message, RobinhoodContext, Position } from '../types';
 
 interface MontyOverlayProps {
@@ -408,6 +408,19 @@ export function MontyOverlay({ apiEndpoint, robinhoodContext }: MontyOverlayProp
     }
   };
 
+  const handleClearHistory = () => {
+    if (window.confirm('Are you sure you want to clear all chat history? This cannot be undone.')) {
+      // Clear messages from state
+      setMessages([]);
+      // Clear detected positions
+      setDetectedPositions([]);
+      // Clear from chrome storage
+      chrome.storage.local.remove(['monty_messages', 'monty_positions'], () => {
+        console.log('[Monty] Chat history and positions cleared');
+      });
+    }
+  };
+
   return (
     <div style={{ position: 'fixed', zIndex: 2147483647 }}>
       {/* Floating button */}
@@ -563,6 +576,26 @@ export function MontyOverlay({ apiEndpoint, robinhoodContext }: MontyOverlayProp
                   }}
                 >
                   <Camera size={16} />
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleClearHistory(); }}
+                  disabled={messages.length === 0}
+                  title="Clear chat history"
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '50%',
+                    background: messages.length === 0 ? 'rgba(255, 255, 255, 0.3)' : 'rgba(239, 68, 68, 0.1)',
+                    border: messages.length === 0 ? 'none' : '1px solid rgba(239, 68, 68, 0.3)',
+                    cursor: messages.length === 0 ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: messages.length === 0 ? '#94a3b8' : '#ef4444',
+                    opacity: messages.length === 0 ? 0.5 : 1,
+                  }}
+                >
+                  <Trash2 size={16} />
                 </button>
                 <button
                   onClick={(e) => { e.stopPropagation(); setIsMinimized(!isMinimized); }}
