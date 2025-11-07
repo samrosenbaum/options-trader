@@ -1,7 +1,7 @@
 // Configuration for the Monty extension
 
 // API endpoint - update this with your deployed URL or local dev server
-export const API_ENDPOINT = process.env.API_ENDPOINT || 'http://localhost:3000';
+export const API_ENDPOINT = process.env.API_ENDPOINT || 'https://www.withmonty.com';
 
 // Storage keys
 export const STORAGE_KEYS = {
