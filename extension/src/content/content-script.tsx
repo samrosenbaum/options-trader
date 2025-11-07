@@ -27,21 +27,16 @@ function init() {
   // Create React root and render
   const root = ReactDOM.createRoot(container);
 
-  // Get API endpoint from storage or use default
-  chrome.storage.local.get(['monty_api_endpoint'], (result) => {
-    const apiEndpoint = result.monty_api_endpoint || API_ENDPOINT;
+  console.log('[Monty Extension] Using API endpoint:', API_ENDPOINT);
 
-    console.log('[Monty Extension] Using API endpoint:', apiEndpoint);
-
-    root.render(
-      <React.StrictMode>
-        <MontyOverlay
-          apiEndpoint={apiEndpoint}
-          robinhoodContext={initialContext}
-        />
-      </React.StrictMode>
-    );
-  });
+  root.render(
+    <React.StrictMode>
+      <MontyOverlay
+        apiEndpoint={API_ENDPOINT}
+        robinhoodContext={initialContext}
+      />
+    </React.StrictMode>
+  );
 
   // Listen for context changes and update overlay
   let currentContext = initialContext;
@@ -50,18 +45,14 @@ function init() {
     currentContext = newContext;
 
     // Re-render with new context
-    chrome.storage.local.get(['monty_api_endpoint'], (result) => {
-      const apiEndpoint = result.monty_api_endpoint || API_ENDPOINT;
-
-      root.render(
-        <React.StrictMode>
-          <MontyOverlay
-            apiEndpoint={apiEndpoint}
-            robinhoodContext={currentContext}
-          />
-        </React.StrictMode>
-      );
-    });
+    root.render(
+      <React.StrictMode>
+        <MontyOverlay
+          apiEndpoint={API_ENDPOINT}
+          robinhoodContext={currentContext}
+        />
+      </React.StrictMode>
+    );
   });
 
   console.log('[Monty Extension] Successfully injected!');

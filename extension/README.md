@@ -7,6 +7,7 @@ A floating AI assistant that overlays on Robinhood to provide real-time options 
 - 🎯 **Auto-detects** what you're viewing on Robinhood
 - 💬 **Real-time chat** with Monty AI assistant
 - 📊 **Context-aware** analysis based on current stock/option
+- 📸 **Vision-powered** position detection via screenshots
 - 🎨 **Draggable overlay** - position it anywhere on screen
 - 💾 **Persistent chat** history across sessions
 - ⚡ **Streaming responses** for instant feedback
@@ -32,22 +33,27 @@ A floating AI assistant that overlays on Robinhood to provide real-time options 
    - Click "Load unpacked"
    - Select the `extension/dist` folder
 
-4. **Configure API endpoint:**
-   - Click the Monty extension icon
-   - Enter your API endpoint (e.g., `http://localhost:3000` for local dev)
-   - Click "Save Settings"
-
-5. **Visit Robinhood:**
+4. **Visit Robinhood:**
    - Go to https://robinhood.com
    - You should see the Monty floating button in the bottom-right corner!
 
-### Development Mode (with hot reload)
+### Development Mode
 
-```bash
-npm run dev
-```
+**For local development** (connecting to localhost:3000 instead of production):
 
-This will watch for changes and rebuild automatically. You'll need to click the "Reload" button in `chrome://extensions/` after each build.
+1. Create a `.env` file in the `extension/` directory:
+   ```env
+   VITE_DEV_MODE=true
+   ```
+
+2. Build or run dev mode:
+   ```bash
+   npm run build
+   # OR for hot reload:
+   npm run dev
+   ```
+
+This will use `http://localhost:3000` instead of the production API. The production build (without `VITE_DEV_MODE=true`) uses the hardcoded production URL for security.
 
 ## Usage
 
@@ -98,11 +104,19 @@ extension/
 
 ## API Integration
 
-The extension connects to your main options-trader app's `/api/chat` endpoint. Make sure:
+The extension connects to the production API at `https://withmonty.com/api/chat` by default.
 
-1. Your API server is running
-2. CORS is enabled for the extension origin
-3. The API endpoint is configured in extension settings
+**For production users:** No configuration needed - the extension automatically uses the production API.
+
+**For developers:** Set `VITE_DEV_MODE=true` in `.env` to use `http://localhost:3000` during development.
+
+### Security Note
+
+The API endpoint is **hardcoded** in production builds to ensure:
+- Users always connect to the official API
+- Your Anthropic API key remains secure on the backend
+- Consistent experience for all users
+- No unauthorized API usage
 
 ### CORS Configuration
 
@@ -142,10 +156,11 @@ export async function OPTIONS(request: Request) {
 
 ## Future Enhancements
 
+- [x] **Screenshot analysis** - Vision-powered position detection ✅
 - [ ] Firefox extension support
 - [ ] Bookmarklet version (works in any browser)
-- [ ] Screenshot analysis
-- [ ] Position tracking integration
+- [ ] User profile & preferences
+- [ ] Position tracking history
 - [ ] Quick actions (add to watchlist, etc.)
 
 ## Contributing

@@ -1,11 +1,16 @@
 // Configuration for the Monty extension
 
-// API endpoint - update this with your deployed URL or local dev server
-export const API_ENDPOINT = process.env.API_ENDPOINT || 'http://localhost:3000';
+// API endpoint - hardcoded for production security
+// For development, set VITE_DEV_MODE=true in your environment
+const IS_DEV_MODE = import.meta.env.VITE_DEV_MODE === 'true';
+
+export const API_ENDPOINT = IS_DEV_MODE
+  ? 'http://localhost:3000'  // Development
+  : 'https://withmonty.com';  // Production (update this to your actual domain)
 
 // Storage keys
 export const STORAGE_KEYS = {
   MESSAGES: 'monty_messages',
-  API_ENDPOINT: 'monty_api_endpoint',
+  POSITIONS: 'monty_positions',
   ENABLED: 'monty_enabled',
 } as const;

@@ -7,14 +7,13 @@ chrome.runtime.onInstalled.addListener((details) => {
   if (details.reason === 'install') {
     console.log('[Monty Extension] Installed!');
 
-    // Set default API endpoint
+    // Set default settings
     chrome.storage.local.set({
-      monty_api_endpoint: 'http://localhost:3000',
       monty_enabled: true,
     });
 
     // Open welcome page (optional)
-    // chrome.tabs.create({ url: 'https://your-app-url.com/extension-welcome' });
+    // chrome.tabs.create({ url: 'https://withmonty.com/extension-welcome' });
   } else if (details.reason === 'update') {
     console.log('[Monty Extension] Updated!');
   }

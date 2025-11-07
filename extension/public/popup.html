@@ -203,15 +203,6 @@
 
   <div class="settings">
     <div class="setting-group">
-      <label for="api-endpoint">API Endpoint</label>
-      <input
-        type="text"
-        id="api-endpoint"
-        placeholder="http://localhost:3000"
-      />
-    </div>
-
-    <div class="setting-group">
       <div class="toggle-container">
         <label for="enabled" style="margin-bottom: 0;">Enable Monty</label>
         <label class="toggle">
@@ -223,6 +214,10 @@
   </div>
 
   <button class="button" id="save-btn">Save Settings</button>
+
+  <div class="info-box" style="margin-top: 16px; padding: 12px; background: rgba(255, 255, 255, 0.1); border-radius: 12px; font-size: 12px; line-height: 1.5;">
+    <strong>📸 Vision Feature:</strong> Click the camera button in Monty to automatically detect your Robinhood positions!
+  </div>
 
   <div class="status" id="status"></div>
 
