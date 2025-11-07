@@ -69,7 +69,22 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid message format' }, { status: 400, headers: corsHeaders })
     }
 
-    let normalizedMessages = messages.map((msg) => ({
+    // Type for message content (can be string or multimodal array)
+    type MessageContent =
+      | string
+      | Array<{
+          type: 'image';
+          source: {
+            type: 'base64';
+            media_type: 'image/png' | 'image/jpeg' | 'image/webp' | 'image/gif';
+            data: string;
+          };
+        } | {
+          type: 'text';
+          text: string;
+        }>;
+
+    let normalizedMessages: Array<{ role: 'user' | 'assistant'; content: MessageContent }> = messages.map((msg) => ({
       role: msg.role,
       content: msg.content as string,
     }))
@@ -77,7 +92,7 @@ export async function POST(request: Request) {
     // If screenshot is provided, convert the first message to multimodal format
     if (screenshot && normalizedMessages.length > 0) {
       const firstMessage = normalizedMessages[0]
-      if (firstMessage.role === 'user') {
+      if (firstMessage.role === 'user' && typeof firstMessage.content === 'string') {
         // Extract base64 data from data URL
         const base64Match = screenshot.match(/^data:image\/(png|jpeg|jpg|webp|gif);base64,(.+)$/)
         if (base64Match) {
