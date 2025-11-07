@@ -212,7 +212,7 @@ export class RobinhoodReader {
 
     Object.entries(greekLabels).forEach(([greek, pattern]) => {
       const match = allText.match(new RegExp(`${pattern.source}\\s*:?\\s*(-?[\\d.]+%?)`, 'i'));
-      if (match) {
+      if (match && match[1]) {
         let value = parseFloat(match[1].replace('%', ''));
 
         // Convert percentage to decimal for IV

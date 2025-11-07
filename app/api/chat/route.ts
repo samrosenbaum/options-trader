@@ -8,6 +8,21 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 })
 
+// CORS headers for Chrome extension
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+}
+
+// Handle OPTIONS preflight request
+export async function OPTIONS() {
+  return new Response(null, {
+    status: 200,
+    headers: corsHeaders,
+  })
+}
+
 const SYSTEM_PROMPT = `You are Monty, a friendly and knowledgeable options trading assistant. You help retail traders understand options strategies, analyze their portfolios, and make better trading decisions.
 
 Key traits:
@@ -35,7 +50,7 @@ export async function POST(request: Request) {
       : undefined
 
     if (!messages || messages.length === 0) {
-      return NextResponse.json({ error: 'Messages array is required' }, { status: 400 })
+      return NextResponse.json({ error: 'Messages array is required' }, { status: 400, headers: corsHeaders })
     }
 
     const hasInvalidMessage = messages.some(
@@ -44,7 +59,7 @@ export async function POST(request: Request) {
     )
 
     if (hasInvalidMessage) {
-      return NextResponse.json({ error: 'Invalid message format' }, { status: 400 })
+      return NextResponse.json({ error: 'Invalid message format' }, { status: 400, headers: corsHeaders })
     }
 
     const normalizedMessages = messages as Array<{ role: 'user' | 'assistant'; content: string }>
@@ -53,14 +68,14 @@ export async function POST(request: Request) {
     if (!lastMessage || lastMessage.role !== 'user' || typeof lastMessage.content !== 'string') {
       return NextResponse.json(
         { error: 'Last message must be a user message' },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       )
     }
 
     if (!process.env.ANTHROPIC_API_KEY) {
       return NextResponse.json(
         { error: 'API key not configured' },
-        { status: 500 }
+        { status: 500, headers: corsHeaders }
       )
     }
 
@@ -94,6 +109,7 @@ export async function POST(request: Request) {
 
     return new Response(readableStream, {
       headers: {
+        ...corsHeaders,
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
         Connection: 'keep-alive',
@@ -106,7 +122,7 @@ export async function POST(request: Request) {
         error: 'Failed to process chat message',
         details: error instanceof Error ? error.message : 'Unknown error',
       },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     )
   }
 }
