@@ -194,25 +194,23 @@ export function TradeChat({ opportunity, isOpen, onClose }: TradeChatProps) {
       onClick={onClose}
     >
       <div
-        className="relative flex h-[82vh] w-full max-w-3xl flex-col overflow-hidden rounded-[32px] border border-white/20 bg-gradient-to-br from-white/30 via-white/10 to-white/5 shadow-[0_24px_80px_rgba(15,23,42,0.55)] backdrop-blur-2xl dark:border-white/10 dark:from-slate-900/70 dark:via-slate-900/50 dark:to-slate-900/30"
+        className="relative flex h-[82vh] w-full max-w-3xl flex-col overflow-hidden rounded-[32px] border border-white/20 shadow-2xl backdrop-blur-2xl"
+        style={{
+          background: 'rgba(255, 255, 255, 0.7)',
+          backdropFilter: 'blur(40px) saturate(180%)',
+        }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div
-          className="pointer-events-none absolute -left-20 top-10 h-72 w-72 rounded-full bg-blue-500/40 blur-3xl"
-          aria-hidden="true"
-        />
-        <div
-          className="pointer-events-none absolute -right-16 bottom-0 h-64 w-64 rounded-full bg-purple-500/30 blur-[120px]"
-          aria-hidden="true"
-        />
-
-        <div className="relative z-10 flex h-full flex-col">
-          <div className="flex items-center justify-between border-b border-white/20 bg-white/10 px-6 py-5 backdrop-blur dark:border-white/10 dark:bg-slate-900/40">
+        <div className="relative flex h-full flex-col">
+          <div
+            className="flex items-center justify-between border-b border-white/20 px-6 py-5"
+            style={{ background: 'rgba(255, 255, 255, 0.5)' }}
+          >
             <div>
-              <h2 className="text-2xl font-semibold text-slate-900 drop-shadow-sm dark:text-white">
+              <h2 className="text-2xl font-semibold text-slate-900">
                 💬 Desk Notes: {opportunity.symbol}
               </h2>
-              <p className="text-sm text-slate-600 dark:text-slate-300">
+              <p className="text-sm text-slate-600">
                 {opportunity.optionType.toUpperCase()} ${opportunity.strike} •
                 Exp {opportunity.expiration} • Chat with Monty about this
                 position
@@ -220,7 +218,7 @@ export function TradeChat({ opportunity, isOpen, onClose }: TradeChatProps) {
             </div>
             <button
               onClick={onClose}
-              className="rounded-full border border-white/20 bg-white/20 p-2 text-slate-600 transition-colors hover:bg-white/30 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10"
+              className="rounded-full bg-white/50 p-2 text-slate-600 transition-colors hover:bg-white/80"
             >
               <svg
                 className="h-6 w-6"
@@ -240,12 +238,12 @@ export function TradeChat({ opportunity, isOpen, onClose }: TradeChatProps) {
 
           <div className="flex-1 space-y-4 overflow-y-auto px-6 py-6">
             {messages.length === 0 && (
-              <div className="mx-auto max-w-md rounded-3xl border border-white/20 bg-white/10 px-6 py-8 text-center text-slate-600 shadow-lg backdrop-blur dark:border-white/10 dark:bg-slate-900/40 dark:text-slate-200">
+              <div className="mx-auto max-w-md rounded-3xl border border-white/20 bg-white/60 px-6 py-8 text-center text-slate-600 shadow-lg backdrop-blur-sm">
                 <p className="mb-2 text-base">
                   👋 Hi! I&apos;m here to help you analyze this trade.
                 </p>
                 <p className="text-sm">Ask me anything:</p>
-                <ul className="mt-4 space-y-2 text-left text-sm text-slate-500 dark:text-slate-300">
+                <ul className="mt-4 space-y-2 text-left text-sm text-slate-600">
                   <li>• &ldquo;Why is the expected edge negative?&rdquo;</li>
                   <li>
                     • &ldquo;What needs to happen for this to profit?&rdquo;
@@ -274,10 +272,10 @@ export function TradeChat({ opportunity, isOpen, onClose }: TradeChatProps) {
                     </div>
                   )}
                   <div
-                    className={`rounded-3xl px-5 py-4 text-sm leading-relaxed shadow-lg backdrop-blur ${
+                    className={`rounded-3xl px-5 py-4 text-sm leading-relaxed shadow-lg backdrop-blur-sm ${
                       message.role === "user"
-                        ? "border border-white/30 bg-gradient-to-r from-blue-500/80 to-indigo-500/80 text-white"
-                        : "border border-white/20 bg-white/20 text-slate-900 dark:border-white/10 dark:bg-slate-900/50 dark:text-white"
+                        ? "bg-gradient-to-br from-blue-500 to-blue-600 text-white"
+                        : "bg-white/60 text-slate-900 border border-white/40"
                     }`}
                   >
                     <p className="whitespace-pre-wrap">{message.content}</p>
@@ -298,8 +296,8 @@ export function TradeChat({ opportunity, isOpen, onClose }: TradeChatProps) {
                       className="w-full h-full object-cover"
                     />
                   </div>
-                  <div className="rounded-3xl border border-white/20 bg-white/20 px-5 py-4 shadow-lg backdrop-blur dark:border-white/10 dark:bg-slate-900/40">
-                    <div className="flex items-center gap-2 text-slate-600 dark:text-slate-200">
+                  <div className="rounded-3xl border border-white/40 bg-white/60 px-5 py-4 shadow-lg backdrop-blur-sm">
+                    <div className="flex items-center gap-2 text-slate-600">
                       <div className="flex gap-1.5">
                         <div className="h-2.5 w-2.5 animate-bounce rounded-full bg-blue-500" />
                         <div
@@ -322,7 +320,10 @@ export function TradeChat({ opportunity, isOpen, onClose }: TradeChatProps) {
             <div ref={messagesEndRef} />
           </div>
 
-          <div className="border-t border-white/10 bg-white/10 px-5 py-4 backdrop-blur dark:border-white/10 dark:bg-slate-900/40">
+          <div
+            className="border-t border-white/20 px-5 py-4"
+            style={{ background: 'rgba(255, 255, 255, 0.5)' }}
+          >
             <div className="flex gap-3">
               <input
                 ref={inputRef}
@@ -332,12 +333,12 @@ export function TradeChat({ opportunity, isOpen, onClose }: TradeChatProps) {
                 onKeyPress={handleKeyPress}
                 placeholder="Ask about this trade..."
                 disabled={isLoading}
-                className="flex-1 rounded-full border border-white/20 bg-white/20 px-6 py-3 text-sm text-slate-900 placeholder-slate-500 shadow-inner transition focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-200/70 disabled:opacity-60 dark:border-white/10 dark:bg-slate-900/50 dark:text-white dark:placeholder-slate-400 dark:focus:border-blue-400 dark:focus:ring-blue-500/40"
+                className="flex-1 rounded-full border border-white/30 bg-white/50 px-6 py-3 text-sm text-slate-900 placeholder-slate-500 shadow-inner transition focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-200/70 disabled:opacity-60"
               />
               <button
                 onClick={sendMessage}
                 disabled={isLoading || !input.trim()}
-                className="rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 px-6 py-3 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(79,70,229,0.45)] transition hover:scale-[1.02] hover:shadow-[0_16px_36px_rgba(79,70,229,0.55)] disabled:cursor-not-allowed disabled:opacity-60"
+                className="rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 px-6 py-3 text-sm font-semibold text-white shadow-lg transition hover:scale-[1.02] hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60"
               >
                 Send
               </button>
