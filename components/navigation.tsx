@@ -49,7 +49,7 @@ export default function Navigation({ userEmail }: { userEmail?: string }) {
       label: 'Find Trades',
       dropdownItems: [
         { href: '/scanner', label: 'Options Scanner' },
-        { href: '/scanner/bearish-signals', label: 'Bearish Signals' },
+        { href: '/scanner/signals', label: 'Options by Signal' },
       ],
     },
     {
