@@ -50,6 +50,7 @@ export default function Navigation({ userEmail }: { userEmail?: string }) {
       dropdownItems: [
         { href: '/scanner', label: 'Options Scanner' },
         { href: '/scanner/signals', label: 'Options by Signal' },
+        { href: '/scanner/fundamentals', label: 'Stock Fundamentals' },
       ],
     },
     {
