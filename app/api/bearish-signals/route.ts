@@ -153,6 +153,12 @@ export async function GET(request: NextRequest) {
     // Convert to camelCase
     const signals = (data as BearishSignalRow[]).map(convertToCamelCase)
 
+    // Get total count of all symbols scanned (not filtered by minScore)
+    const { count: totalScanned } = await supabase
+      .from('bearish_signals')
+      .select('symbol', { count: 'exact', head: true })
+      .gt('expires_at', new Date().toISOString())
+
     // Calculate next scan time (15 minutes from most recent)
     const mostRecent = signals[0]?.generatedAt
     const nextScanAt = mostRecent
@@ -163,6 +169,7 @@ export async function GET(request: NextRequest) {
       success: true,
       data: signals,
       count: signals.length,
+      totalScanned: totalScanned ?? 0,
       generatedAt: mostRecent || new Date().toISOString(),
       nextScanAt,
     })

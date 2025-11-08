@@ -8,6 +8,7 @@ interface ApiResponse {
   success: boolean
   data?: BearishSignal[]
   count?: number
+  totalScanned?: number
   generatedAt?: string
   nextScanAt?: string
   error?: string
@@ -83,6 +84,7 @@ export function BearishSignalScanner({
   const [error, setError] = useState<string | null>(null)
   const [lastUpdated, setLastUpdated] = useState<string | null>(null)
   const [nextScan, setNextScan] = useState<string | null>(null)
+  const [totalScanned, setTotalScanned] = useState<number | null>(null)
   const [expandedSignals, setExpandedSignals] = useState<Set<string>>(new Set())
 
   const requestSignals = useCallback(async () => fetchBearishSignals(minScore, limit), [minScore, limit])
@@ -101,6 +103,7 @@ export function BearishSignalScanner({
         setSignals(filteredData)
         setLastUpdated(payload.generatedAt ?? new Date().toISOString())
         setNextScan(payload.nextScanAt ?? null)
+        setTotalScanned(payload.totalScanned ?? null)
         setError(null)
       } else {
         setError(payload.error ?? 'Unable to load bearish signals')
@@ -168,11 +171,16 @@ export function BearishSignalScanner({
   }, [signals])
 
   const headerSubtitle = useMemo(() => {
-    if (loading) return 'Analyzing unusual options activity across 120+ symbols...'
+    if (loading) return 'Analyzing unusual options activity across symbols...'
     if (error) return 'Unable to refresh bearish signals. Try again shortly.'
-    if (!signals.length) return 'No high-confidence bearish signals detected right now.'
-    return 'Institutional put buying, elevated P/C ratios, and bearish gamma detected.'
-  }, [loading, error, signals.length])
+    if (!signals.length) {
+      if (totalScanned !== null && totalScanned > 0) {
+        return `Scanned ${totalScanned} symbol${totalScanned === 1 ? '' : 's'} — no high-confidence bearish signals detected.`
+      }
+      return 'No high-confidence bearish signals detected right now.'
+    }
+    return `${signals.length} bearish signal${signals.length === 1 ? '' : 's'} detected across ${totalScanned ?? '120+'} symbols.`
+  }, [loading, error, signals.length, totalScanned])
 
   return (
     <div className="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-gradient-to-br from-white via-slate-50/70 to-white p-6 shadow-xl dark:border-white/10 dark:from-slate-950 dark:via-slate-900/70 dark:to-slate-950">
@@ -227,7 +235,13 @@ export function BearishSignalScanner({
 
         {!loading && !error && signals.length === 0 && (
           <div className="rounded-2xl border border-emerald-300 bg-emerald-50 p-4 text-sm text-emerald-800 dark:border-emerald-400/30 dark:bg-emerald-500/10 dark:text-emerald-100">
-            ✅ All clear — no high-confidence bearish signals detected across tracked symbols.
+            {totalScanned !== null && totalScanned > 0 ? (
+              <>
+                ✅ All clear — scanned {totalScanned} symbol{totalScanned === 1 ? '' : 's'}, no high-confidence bearish signals detected.
+              </>
+            ) : (
+              <>✅ All clear — no high-confidence bearish signals detected across tracked symbols.</>
+            )}
           </div>
         )}
 
