@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   description: "Real-time options analysis and trading recommendations",
   generator: "v0.app",
   icons: {
-    icon: '/Monty_logo.png',
+    icon: '/monty-avatar.png',
   },
   openGraph: {
     title: "Monty",
