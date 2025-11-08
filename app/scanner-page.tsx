@@ -1311,8 +1311,8 @@ Liquidity: ${((opp as Record<string, unknown>).liquidityScore as number | undefi
         {isExpanded && (
           <div className="mt-6 space-y-6">
             {!enhancedBacktest && (
-              <section className="rounded-2xl border-2 border-dashed border-purple-300 bg-purple-50/40 p-5 text-center dark:border-purple-700 dark:bg-purple-900/10">
-                <h4 className="text-base font-semibold text-purple-900 dark:text-purple-100">🎯 365-Day Backtest Available</h4>
+              <section className="rounded-2xl border border-purple-200 bg-gradient-to-br from-purple-50 via-white to-purple-50/60 p-5 text-center shadow-sm dark:border-purple-800 dark:from-purple-950/40 dark:via-slate-900 dark:to-purple-950/20">
+                <h4 className="text-base font-semibold text-purple-900 dark:text-purple-100">365-Day Backtest Available</h4>
                 <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
                   See how similar trades performed over the past year. Get win rate, average return, and confidence metrics.
                 </p>
@@ -1322,7 +1322,7 @@ Liquidity: ${((opp as Record<string, unknown>).liquidityScore as number | undefi
                   disabled={loadingBacktest}
                   className="mt-4 inline-flex items-center justify-center gap-2 rounded-full bg-purple-600 px-5 py-2 text-sm font-semibold text-white shadow-md transition-colors hover:bg-purple-700 disabled:cursor-not-allowed disabled:bg-slate-400"
                 >
-                  {loadingBacktest ? 'Running backtest…' : '🔍 Run 365-Day Backtest'}
+                  {loadingBacktest ? 'Running backtest…' : 'Run 365-Day Backtest'}
                 </button>
                 <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">Takes about 5–10 seconds</p>
               </section>
@@ -1332,7 +1332,7 @@ Liquidity: ${((opp as Record<string, unknown>).liquidityScore as number | undefi
               <section className="rounded-2xl border border-purple-200 bg-gradient-to-br from-purple-50 via-white to-purple-50/60 p-5 dark:border-purple-800 dark:from-purple-950/40 dark:via-slate-900 dark:to-purple-950/20">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div>
-                    <h4 className="text-base font-semibold text-purple-900 dark:text-purple-100">🎯 365-Day Backtest Results</h4>
+                    <h4 className="text-base font-semibold text-purple-900 dark:text-purple-100">365-Day Backtest Results</h4>
                     <p className="mt-2 text-sm text-purple-800 dark:text-purple-200 leading-relaxed">{enhancedBacktest.summary}</p>
                   </div>
                   <span
@@ -1384,8 +1384,8 @@ Liquidity: ${((opp as Record<string, unknown>).liquidityScore as number | undefi
             )}
 
             {!enhancedHistorical && (
-              <section className="rounded-2xl border-2 border-dashed border-blue-300 bg-blue-50/40 p-5 text-center dark:border-blue-700 dark:bg-blue-950/10">
-                <h4 className="text-base font-semibold text-blue-900 dark:text-blue-100">📊 Historical Price Patterns Available</h4>
+              <section className="rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 via-white to-blue-50/60 p-5 text-center shadow-sm dark:border-blue-800 dark:from-blue-950/40 dark:via-slate-900 dark:to-blue-950/20">
+                <h4 className="text-base font-semibold text-blue-900 dark:text-blue-100">Historical Price Patterns Available</h4>
                 <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
                   Analyze how often similar price moves have occurred historically and review the most recent examples.
                 </p>
@@ -1395,7 +1395,7 @@ Liquidity: ${((opp as Record<string, unknown>).liquidityScore as number | undefi
                   disabled={loadingHistorical}
                   className="mt-4 inline-flex items-center justify-center gap-2 rounded-full bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-md transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400"
                 >
-                  {loadingHistorical ? 'Analyzing history…' : '📈 Analyze Historical Patterns'}
+                  {loadingHistorical ? 'Analyzing history…' : 'Analyze Historical Patterns'}
                 </button>
                 <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">Takes about 3–5 seconds</p>
               </section>
@@ -1405,7 +1405,7 @@ Liquidity: ${((opp as Record<string, unknown>).liquidityScore as number | undefi
               <section className="rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 via-white to-blue-50/60 p-5 dark:border-blue-800 dark:from-blue-950/40 dark:via-slate-900 dark:to-blue-950/20">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div>
-                    <h4 className="text-base font-semibold text-blue-900 dark:text-blue-100">📊 Historical Pattern Analysis</h4>
+                    <h4 className="text-base font-semibold text-blue-900 dark:text-blue-100">Historical Pattern Analysis</h4>
                     <p className="mt-2 text-sm text-blue-800 dark:text-blue-200 leading-relaxed">{enhancedHistorical.summary}</p>
                   </div>
                   <span

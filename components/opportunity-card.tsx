@@ -2093,10 +2093,10 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
 
           {/* Enhancement Button: Backtest - Always show (users can refresh analysis) */}
           {!enhancedBacktest && (
-            <section className="border-2 border-dashed border-purple-300 dark:border-purple-700 rounded-3xl p-6 bg-purple-50/30 dark:bg-purple-950/10">
+            <section className="border border-purple-200 dark:border-purple-800 rounded-3xl p-6 bg-gradient-to-br from-purple-50 via-white to-purple-50/60 dark:from-purple-950/40 dark:via-slate-900 dark:to-purple-950/20 shadow-sm">
               <div className="text-center">
                 <h5 className="text-lg font-semibold text-purple-900 dark:text-purple-100 mb-2">
-                  🎯 365-Day Backtest Available
+                  365-Day Backtest Available
                 </h5>
                 <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
                   See how similar trades performed over the past year. Get win rate, average return, and confidence metrics.
@@ -2115,7 +2115,7 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
                       Running 365-Day Backtest...
                     </span>
                   ) : (
-                    '🔍 Run 365-Day Backtest'
+                    'Run 365-Day Backtest'
                   )}
                 </button>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
@@ -2130,7 +2130,7 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
             <section className="bg-gradient-to-br from-purple-50 via-purple-50/50 to-white dark:from-purple-950/30 dark:via-purple-900/20 dark:to-slate-900 rounded-3xl p-6 border-2 border-purple-200 dark:border-purple-800">
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-2">
-                  <h5 className="text-lg font-bold text-purple-900 dark:text-purple-100">🎯 365-Day Backtest Results</h5>
+                  <h5 className="text-lg font-bold text-purple-900 dark:text-purple-100">365-Day Backtest Results</h5>
                   <span className={`px-3 py-1 rounded-lg text-xs font-bold ${
                     enhancedBacktest.confidence === 'high'
                       ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
@@ -2190,10 +2190,10 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
 
           {/* Enhancement Button: Historical Patterns - Always show (users can refresh analysis) */}
           {!enhancedHistorical && (
-            <section className="border-2 border-dashed border-blue-300 dark:border-blue-700 rounded-3xl p-6 bg-blue-50/30 dark:bg-blue-950/10">
+            <section className="border border-blue-200 dark:border-blue-800 rounded-3xl p-6 bg-gradient-to-br from-blue-50 via-white to-blue-50/60 dark:from-blue-950/40 dark:via-slate-900 dark:to-blue-950/20 shadow-sm">
               <div className="text-center">
                 <h5 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-2">
-                  📊 Historical Price Patterns Available
+                  Historical Price Patterns Available
                 </h5>
                 <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
                   Analyze how often similar price moves have occurred historically. See frequency and recent examples.
@@ -2212,7 +2212,7 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
                       Analyzing Historical Patterns...
                     </span>
                   ) : (
-                    '📈 Analyze Historical Patterns'
+                    'Analyze Historical Patterns'
                   )}
                 </button>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
@@ -2227,7 +2227,7 @@ const OpportunityCard = ({ opportunity, investmentAmount }: OpportunityCardProps
             <section className="bg-gradient-to-br from-blue-50 via-blue-50/50 to-white dark:from-blue-950/30 dark:via-blue-900/20 dark:to-slate-900 rounded-3xl p-6 border-2 border-blue-200 dark:border-blue-800">
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-2">
-                  <h5 className="text-lg font-bold text-blue-900 dark:text-blue-100">📊 Historical Pattern Analysis</h5>
+                  <h5 className="text-lg font-bold text-blue-900 dark:text-blue-100">Historical Pattern Analysis</h5>
                   <span className={`px-3 py-1 rounded-lg text-xs font-bold ${
                     enhancedHistorical.confidence === 'high'
                       ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
