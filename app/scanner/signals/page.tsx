@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { redirect, useRouter } from 'next/navigation'
 import Navigation from '@/components/navigation'
 import { BearishSignalScanner } from '@/components/bearish-signal-scanner'
-import { Info, TrendingDown, TrendingUp } from 'lucide-react'
+import { Info, TrendingDown, TrendingUp, X } from 'lucide-react'
 import { useEffect } from 'react'
 
 type SignalType = 'bearish' | 'bullish'
@@ -13,6 +13,7 @@ type SignalType = 'bearish' | 'bullish'
 export default function SignalsPage() {
   const [selectedSignal, setSelectedSignal] = useState<SignalType>('bearish')
   const [userEmail, setUserEmail] = useState<string | undefined>(undefined)
+  const [showTooltip, setShowTooltip] = useState(true)
   const router = useRouter()
 
   useEffect(() => {
@@ -32,6 +33,19 @@ export default function SignalsPage() {
 
     checkAuth()
   }, [router])
+
+  useEffect(() => {
+    // Load tooltip dismissed state from localStorage
+    const dismissed = localStorage.getItem('signals-scanner-tooltip-dismissed')
+    if (dismissed === 'true') {
+      setShowTooltip(false)
+    }
+  }, [])
+
+  const dismissTooltip = () => {
+    setShowTooltip(false)
+    localStorage.setItem('signals-scanner-tooltip-dismissed', 'true')
+  }
 
   return (
     <>
@@ -70,7 +84,7 @@ export default function SignalsPage() {
           </div>
 
           {/* Info Tooltip */}
-          {selectedSignal === 'bearish' && (
+          {selectedSignal === 'bearish' && showTooltip && (
             <div className="mb-6 rounded-2xl border border-red-200/30 bg-gradient-to-br from-red-900/30 via-slate-900/50 to-red-950/30 p-5 shadow-lg backdrop-blur-sm">
               <div className="flex items-start gap-4">
                 <div className="rounded-lg bg-red-500/10 p-2">
@@ -95,6 +109,13 @@ export default function SignalsPage() {
                     </p>
                   </div>
                 </div>
+                <button
+                  onClick={dismissTooltip}
+                  className="rounded-lg p-1 text-red-300 hover:bg-red-500/10 hover:text-red-200 transition-colors"
+                  aria-label="Dismiss tooltip"
+                >
+                  <X className="h-5 w-5" />
+                </button>
               </div>
             </div>
           )}
