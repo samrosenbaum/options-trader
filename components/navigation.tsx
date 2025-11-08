@@ -45,7 +45,13 @@ export default function Navigation({ userEmail }: { userEmail?: string }) {
 
   const navItems: NavItem[] = [
     { href: '/', label: 'Desk' },
-    { href: '/scanner', label: 'Find Trades' },
+    {
+      label: 'Find Trades',
+      dropdownItems: [
+        { href: '/scanner', label: 'Options Scanner' },
+        { href: '/scanner/bearish-signals', label: 'Bearish Signals' },
+      ],
+    },
     {
       label: 'Market Movers',
       dropdownItems: [

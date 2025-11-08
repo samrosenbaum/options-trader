@@ -3384,6 +3384,38 @@ export default function ScannerPage({ user }: ScannerPageProps) {
         <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(15,23,42,0.75),transparent_60%)]" />
       </div>
 
+      {/* Info Tooltip */}
+      <div className="max-w-7xl mx-auto px-6 pt-6">
+        <div className="rounded-2xl border border-emerald-200/30 bg-gradient-to-br from-emerald-900/30 via-slate-900/50 to-emerald-950/30 p-5 shadow-lg backdrop-blur-sm">
+          <div className="flex items-start gap-4">
+            <div className="rounded-lg bg-emerald-500/10 p-2">
+              <svg className="h-5 w-5 text-emerald-400" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+                <path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+            </div>
+            <div className="flex-1">
+              <h3 className="mb-2 text-lg font-semibold text-emerald-100">
+                Options Scanner
+              </h3>
+              <div className="space-y-2 text-sm text-slate-300">
+                <p>
+                  <span className="font-semibold text-emerald-300">Purpose:</span> Find tradeable options opportunities based on market conditions
+                </p>
+                <p>
+                  <span className="font-semibold text-emerald-300">Methods:</span> Volume spikes, earnings events, momentum plays, and unusual activity
+                </p>
+                <p>
+                  <span className="font-semibold text-emerald-300">Output:</span> Options contracts that meet technical criteria (liquidity, spreads, open interest)
+                </p>
+                <p>
+                  <span className="font-semibold text-emerald-300">Best For:</span> Finding specific options to trade right now
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Scanner Controls - redesigned glass header */}
       <div className="border-b border-white/10 bg-white/5 shadow-[0_30px_120px_-60px_rgba(16,185,129,0.55)] backdrop-blur-2xl">
         <div className="max-w-7xl mx-auto px-6 py-6">
