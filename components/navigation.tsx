@@ -48,6 +48,7 @@ export default function Navigation({ userEmail }: { userEmail?: string }) {
     {
       label: 'Find Trades',
       dropdownItems: [
+        { href: '/scanner/chat', label: '💬 Chat Scanner' },
         { href: '/scanner', label: 'Options Scanner' },
         { href: '/scanner/signals', label: 'Options by Signal' },
         { href: '/scanner/fundamentals', label: 'Stock Fundamentals' },
