@@ -6,7 +6,7 @@ export default function ChatScannerPage() {
       <div className="mb-6 space-y-2">
         <h1 className="text-3xl font-bold text-white">Chat with Monty</h1>
         <p className="text-slate-400">
-          Discover stocks by chatting with your AI investing buddy 💬
+          Discover stocks by chatting with your AI investing buddy
         </p>
       </div>
 
