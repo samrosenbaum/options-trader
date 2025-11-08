@@ -5,10 +5,11 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Navigation from '@/components/navigation'
 import { FundamentalsScanner } from '@/components/fundamentals-scanner'
-import { Info, BarChart3 } from 'lucide-react'
+import { Info, BarChart3, X } from 'lucide-react'
 
 export default function FundamentalsPage() {
   const [userEmail, setUserEmail] = useState<string | undefined>(undefined)
+  const [showTooltip, setShowTooltip] = useState(true)
   const router = useRouter()
 
   useEffect(() => {
@@ -28,6 +29,19 @@ export default function FundamentalsPage() {
 
     checkAuth()
   }, [router])
+
+  useEffect(() => {
+    // Load tooltip dismissed state from localStorage
+    const dismissed = localStorage.getItem('fundamentals-scanner-tooltip-dismissed')
+    if (dismissed === 'true') {
+      setShowTooltip(false)
+    }
+  }, [])
+
+  const dismissTooltip = () => {
+    setShowTooltip(false)
+    localStorage.setItem('fundamentals-scanner-tooltip-dismissed', 'true')
+  }
 
   return (
     <>
@@ -55,39 +69,48 @@ export default function FundamentalsPage() {
           </div>
 
           {/* Info Tooltip */}
-          <div className="mb-6 rounded-2xl border border-emerald-200/30 bg-gradient-to-br from-emerald-900/30 via-slate-900/50 to-emerald-950/30 p-5 shadow-lg backdrop-blur-sm">
-            <div className="flex items-start gap-4">
-              <div className="rounded-lg bg-emerald-500/10 p-2">
-                <Info className="h-5 w-5 text-emerald-400" />
-              </div>
-              <div className="flex-1">
-                <h3 className="mb-2 text-lg font-semibold text-emerald-100">
-                  How the Fundamentals Scanner Works
-                </h3>
-                <div className="space-y-2 text-sm text-slate-300">
-                  <p>
-                    <span className="font-semibold text-emerald-300">Purpose:</span> Identify stocks with strong fundamentals that represent high-quality buying opportunities
-                  </p>
-                  <p>
-                    <span className="font-semibold text-emerald-300">Analysis:</span> Multi-factor evaluation across 5 dimensions:
-                  </p>
-                  <ul className="ml-6 mt-1 space-y-1 list-disc text-slate-400">
-                    <li><strong className="text-slate-300">Financial Health (25%):</strong> Debt levels, cash flow, liquidity</li>
-                    <li><strong className="text-slate-300">Profitability (25%):</strong> Margins, ROE, capital efficiency</li>
-                    <li><strong className="text-slate-300">Growth (20%):</strong> Revenue and earnings growth trends</li>
-                    <li><strong className="text-slate-300">Valuation (15%):</strong> P/E, PEG, price-to-sales ratios</li>
-                    <li><strong className="text-slate-300">Leverage (15%):</strong> Debt management and financial stability</li>
-                  </ul>
-                  <p className="mt-2">
-                    <span className="font-semibold text-emerald-300">Output:</span> Quality-rated stocks (Excellent/Good/Fair) with detailed breakdowns of strengths, weaknesses, and risk factors
-                  </p>
-                  <p>
-                    <span className="font-semibold text-emerald-300">Best For:</span> Long-term investors seeking fundamentally sound companies with growth potential and reasonable valuations
-                  </p>
+          {showTooltip && (
+            <div className="mb-6 rounded-2xl border border-emerald-200/30 bg-gradient-to-br from-emerald-900/30 via-slate-900/50 to-emerald-950/30 p-5 shadow-lg backdrop-blur-sm">
+              <div className="flex items-start gap-4">
+                <div className="rounded-lg bg-emerald-500/10 p-2">
+                  <Info className="h-5 w-5 text-emerald-400" />
                 </div>
+                <div className="flex-1">
+                  <h3 className="mb-2 text-lg font-semibold text-emerald-100">
+                    How the Fundamentals Scanner Works
+                  </h3>
+                  <div className="space-y-2 text-sm text-slate-300">
+                    <p>
+                      <span className="font-semibold text-emerald-300">Purpose:</span> Identify stocks with strong fundamentals that represent high-quality buying opportunities
+                    </p>
+                    <p>
+                      <span className="font-semibold text-emerald-300">Analysis:</span> Multi-factor evaluation across 5 dimensions:
+                    </p>
+                    <ul className="ml-6 mt-1 space-y-1 list-disc text-slate-400">
+                      <li><strong className="text-slate-300">Financial Health (25%):</strong> Debt levels, cash flow, liquidity</li>
+                      <li><strong className="text-slate-300">Profitability (25%):</strong> Margins, ROE, capital efficiency</li>
+                      <li><strong className="text-slate-300">Growth (20%):</strong> Revenue and earnings growth trends</li>
+                      <li><strong className="text-slate-300">Valuation (15%):</strong> P/E, PEG, price-to-sales ratios</li>
+                      <li><strong className="text-slate-300">Leverage (15%):</strong> Debt management and financial stability</li>
+                    </ul>
+                    <p className="mt-2">
+                      <span className="font-semibold text-emerald-300">Output:</span> Quality-rated stocks (Excellent/Good/Fair) with detailed breakdowns of strengths, weaknesses, and risk factors
+                    </p>
+                    <p>
+                      <span className="font-semibold text-emerald-300">Best For:</span> Long-term investors seeking fundamentally sound companies with growth potential and reasonable valuations
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={dismissTooltip}
+                  className="rounded-lg p-1 text-emerald-300 hover:bg-emerald-500/10 hover:text-emerald-200 transition-colors"
+                  aria-label="Dismiss tooltip"
+                >
+                  <X className="h-5 w-5" />
+                </button>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Quality Tiers Explanation */}
           <div className="mb-6 grid grid-cols-1 md:grid-cols-4 gap-3">
