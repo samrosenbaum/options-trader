@@ -18,11 +18,22 @@ const spaceGrotesk = Space_Grotesk({
 })
 
 export const metadata: Metadata = {
-  title: "Money Printer",
+  title: "Monty",
   description: "Real-time options analysis and trading recommendations",
   generator: "v0.app",
   icons: {
-    icon: '/logo.svg',
+    icon: '/Monty_logo.png',
+  },
+  openGraph: {
+    title: "Monty",
+    description: "Real-time options analysis and trading recommendations",
+    images: ['/Monty_logo.png'],
+  },
+  twitter: {
+    card: 'summary',
+    title: "Monty",
+    description: "Real-time options analysis and trading recommendations",
+    images: ['/Monty_logo.png'],
   },
 }
 
