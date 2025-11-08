@@ -74,10 +74,10 @@ export function ChatStockScanner() {
     const greeting: StockMessage = {
       id: '0',
       type: 'monty',
-      content: "Hey! 👋 I've been analyzing the market for you. Want to see what's looking interesting today?",
+      content: "Hey! I've been analyzing the market for you. Want to see what's looking interesting today?",
       timestamp: new Date(),
       quickReplies: [
-        { id: 'show-me', label: 'Show me! 🔥', action: 'start-scan' },
+        { id: 'show-me', label: 'Show me', action: 'start-scan' },
         { id: 'best-only', label: 'Just the best ones', action: 'scan-excellent' },
         { id: 'all-stocks', label: 'Show me everything', action: 'scan-all' },
       ],
@@ -128,10 +128,7 @@ export function ChatStockScanner() {
   }
 
   const getScoreEmoji = (score: number) => {
-    if (score >= 80) return '🔥'
-    if (score >= 70) return '⭐'
-    if (score >= 60) return '✨'
-    return '📊'
+    return ''
   }
 
   const getSentiment = (score: number): 'bullish' | 'bearish' | 'neutral' => {
@@ -152,7 +149,7 @@ export function ChatStockScanner() {
   }
 
   const getScoreComment = (score: number) => {
-    if (score >= 85) return "This is one of the best I've seen! 🚀"
+    if (score >= 85) return "This is one of the best I've seen"
     if (score >= 80) return "Really strong fundamentals here"
     if (score >= 70) return "Looking pretty solid"
     if (score >= 60) return "Decent opportunity"
@@ -163,7 +160,7 @@ export function ChatStockScanner() {
     const highlights = []
 
     if (stock.profitMargin && stock.profitMargin > 0.2) {
-      highlights.push(`Crushing it with ${(stock.profitMargin * 100).toFixed(1)}% profit margin 💪`)
+      highlights.push(`Crushing it with ${(stock.profitMargin * 100).toFixed(1)}% profit margin`)
     }
     if (stock.revenueGrowth && stock.revenueGrowth > 0.15) {
       highlights.push(`Revenue growing ${(stock.revenueGrowth * 100).toFixed(1)}% - strong momentum`)
@@ -190,10 +187,9 @@ export function ChatStockScanner() {
     await simulateTyping(600)
 
     // Score and quick summary
-    const scoreEmoji = getScoreEmoji(stock.overallScore)
     addMessage({
       type: 'monty',
-      content: `Score: ${stock.overallScore}/100 ${scoreEmoji}\n${getScoreComment(stock.overallScore)}`,
+      content: `Score: ${stock.overallScore}/100\n${getScoreComment(stock.overallScore)}`,
       stockData: {
         symbol: stock.symbol,
         score: stock.overallScore,
@@ -228,10 +224,10 @@ export function ChatStockScanner() {
       type: 'monty',
       content: hasMoreStocks ? "Want to know more, or should I show you the next one?" : "Want more details on this one?",
       quickReplies: [
-        { id: 'more-details', label: 'Tell me more 📊', action: `details-${stock.symbol}` },
-        { id: 'risks', label: "What's the risk? ⚠️", action: `risks-${stock.symbol}` },
+        { id: 'more-details', label: 'Tell me more', action: `details-${stock.symbol}` },
+        { id: 'risks', label: "What's the risk?", action: `risks-${stock.symbol}` },
         ...(hasMoreStocks
-          ? [{ id: 'next', label: 'Next stock →', action: 'next-stock' }]
+          ? [{ id: 'next', label: 'Next stock', action: 'next-stock' }]
           : [{ id: 'restart', label: 'Start over', action: 'start-scan' }]),
       ],
     })
@@ -261,7 +257,7 @@ export function ChatStockScanner() {
     if (metrics.length > 0) {
       addMessage({
         type: 'monty',
-        content: `📈 Key Metrics:\n${metrics.join('\n')}`,
+        content: `Key Metrics:\n${metrics.join('\n')}`,
       })
 
       await simulateTyping(500)
@@ -269,10 +265,10 @@ export function ChatStockScanner() {
 
     // Strengths
     if (stock.strengths.length > 0) {
-      const strengthsList = stock.strengths.slice(0, 3).map(s => `✓ ${s}`).join('\n')
+      const strengthsList = stock.strengths.slice(0, 3).map(s => `${s}`).join('\n')
       addMessage({
         type: 'monty',
-        content: `💪 What's working:\n${strengthsList}`,
+        content: `What's working:\n${strengthsList}`,
       })
 
       await simulateTyping(500)
@@ -284,9 +280,9 @@ export function ChatStockScanner() {
       type: 'monty',
       content: hasMoreStocks ? "Want to see the risks, or move to the next stock?" : "Need anything else?",
       quickReplies: [
-        { id: 'risks', label: 'Show risks ⚠️', action: `risks-${stock.symbol}` },
+        { id: 'risks', label: 'Show risks', action: `risks-${stock.symbol}` },
         ...(hasMoreStocks
-          ? [{ id: 'next', label: 'Next stock →', action: 'next-stock' }]
+          ? [{ id: 'next', label: 'Next stock', action: 'next-stock' }]
           : [{ id: 'restart', label: 'Find more stocks', action: 'start-scan' }]),
       ],
     })
@@ -298,10 +294,9 @@ export function ChatStockScanner() {
 
     await simulateTyping(600)
 
-    const riskEmoji = stock.riskLevel === 'low' ? '✅' : stock.riskLevel === 'moderate' ? '⚠️' : '🚨'
     addMessage({
       type: 'monty',
-      content: `Risk level: ${stock.riskLevel} ${riskEmoji}`,
+      content: `Risk level: ${stock.riskLevel}`,
     })
 
     await simulateTyping(500)
@@ -309,7 +304,7 @@ export function ChatStockScanner() {
     // Weaknesses and risks
     const concerns = [...stock.weaknesses, ...stock.riskFactors].slice(0, 3)
     if (concerns.length > 0) {
-      const concernsList = concerns.map(c => `⚠️ ${c}`).join('\n')
+      const concernsList = concerns.map(c => `${c}`).join('\n')
       addMessage({
         type: 'monty',
         content: `Here's what to watch out for:\n${concernsList}`,
@@ -323,7 +318,7 @@ export function ChatStockScanner() {
       type: 'monty',
       content: hasMoreStocks ? "Ready for the next one?" : "Anything else you want to know?",
       quickReplies: hasMoreStocks
-        ? [{ id: 'next', label: 'Next stock →', action: 'next-stock' }]
+        ? [{ id: 'next', label: 'Next stock', action: 'next-stock' }]
         : [{ id: 'restart', label: 'Find more stocks', action: 'start-scan' }],
     })
   }
@@ -331,22 +326,22 @@ export function ChatStockScanner() {
   const handleQuickReply = async (action: string) => {
     // Add user message
     const replyLabels: Record<string, string> = {
-      'start-scan': 'Show me! 🔥',
+      'start-scan': 'Show me',
       'scan-excellent': 'Just the best ones',
       'scan-all': 'Show me everything',
-      'next-stock': 'Next stock →',
+      'next-stock': 'Next stock',
     }
 
     if (action.startsWith('details-')) {
       const symbol = action.replace('details-', '')
-      addMessage({ type: 'user', content: 'Tell me more 📊' })
+      addMessage({ type: 'user', content: 'Tell me more' })
       await showStockDetails(symbol)
       return
     }
 
     if (action.startsWith('risks-')) {
       const symbol = action.replace('risks-', '')
-      addMessage({ type: 'user', content: "What's the risk? ⚠️" })
+      addMessage({ type: 'user', content: "What's the risk?" })
       await showStockRisks(symbol)
       return
     }
@@ -358,7 +353,7 @@ export function ChatStockScanner() {
       await simulateTyping(1000)
       addMessage({
         type: 'monty',
-        content: "Let me scan the market real quick... 🔍",
+        content: "Let me scan the market real quick...",
       })
 
       const minScore = action === 'scan-excellent' ? 80 : 65
@@ -389,7 +384,7 @@ export function ChatStockScanner() {
       await simulateTyping(1000)
       addMessage({
         type: 'monty',
-        content: "On it! Scanning everything... 🔍",
+        content: "On it! Scanning everything...",
       })
 
       const stocks = await fetchStocks(50)
