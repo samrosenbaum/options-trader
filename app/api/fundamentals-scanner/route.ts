@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-interface FundamentalSignalRow {
+interface FundamentalsSignalRow {
   id: string
   symbol: string
   overall_score: number
@@ -17,11 +17,11 @@ interface FundamentalSignalRow {
   week_52_low: number | null
   percent_from_52w_high: number | null
   percent_from_52w_low: number | null
-  health_score: number
-  growth_score: number
-  profitability_score: number
-  leverage_score: number
-  valuation_score: number
+  health_score: number | null
+  growth_score: number | null
+  profitability_score: number | null
+  leverage_score: number | null
+  valuation_score: number | null
   pe_ratio: number | null
   forward_pe: number | null
   peg_ratio: number | null
@@ -65,7 +65,7 @@ interface FundamentalSignalRow {
   signal_details: Record<string, unknown> | null
 }
 
-export interface FundamentalSignal {
+export interface FundamentalsSignal {
   id: string
   symbol: string
   overallScore: number
@@ -78,11 +78,11 @@ export interface FundamentalSignal {
   week52Low: number | null
   percentFrom52wHigh: number | null
   percentFrom52wLow: number | null
-  healthScore: number
-  growthScore: number
-  profitabilityScore: number
-  leverageScore: number
-  valuationScore: number
+  healthScore: number | null
+  growthScore: number | null
+  profitabilityScore: number | null
+  leverageScore: number | null
+  valuationScore: number | null
   peRatio: number | null
   forwardPe: number | null
   pegRatio: number | null
@@ -125,7 +125,7 @@ export interface FundamentalSignal {
   expiresAt: string
 }
 
-function convertToCamelCase(row: FundamentalSignalRow): FundamentalSignal {
+function convertToCamelCase(row: FundamentalsSignalRow): FundamentalsSignal {
   return {
     id: row.id,
     symbol: row.symbol,
@@ -193,7 +193,7 @@ export async function GET(request: NextRequest) {
 
     // Parse query parameters
     const minScore = parseInt(searchParams.get('minScore') ?? '50', 10)
-    const limit = Math.min(parseInt(searchParams.get('limit') ?? '50', 10), 100)
+    const limit = Math.min(parseInt(searchParams.get('limit') ?? '50', 10), 200)
     const symbols = searchParams.get('symbols')?.split(',').map(s => s.trim().toUpperCase())
     const qualityLevel = searchParams.get('qualityLevel') as 'excellent' | 'good' | 'fair' | 'poor' | null
     const sector = searchParams.get('sector')
@@ -239,7 +239,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Failed to fetch fundamental signals',
+          error: 'Failed to fetch fundamentals signals',
           details: error.message,
         },
         { status: 500 }
@@ -247,7 +247,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Convert to camelCase
-    const signals = (data as FundamentalSignalRow[]).map(convertToCamelCase)
+    const signals = (data as FundamentalsSignalRow[]).map(convertToCamelCase)
 
     // Get total count of all symbols scanned (not filtered by minScore)
     const { count: totalScanned } = await supabase
@@ -255,23 +255,22 @@ export async function GET(request: NextRequest) {
       .select('symbol', { count: 'exact', head: true })
       .gt('expires_at', new Date().toISOString())
 
-    // Get counts by quality level
-    const { data: qualityStats } = await supabase
+    // Get count by quality level
+    const { data: qualityCounts } = await supabase
       .from('fundamentals_signals')
       .select('quality_level')
       .gt('expires_at', new Date().toISOString())
 
-    const qualityCounts = {
+    const qualityBreakdown = {
       excellent: 0,
       good: 0,
       fair: 0,
       poor: 0,
     }
 
-    qualityStats?.forEach(row => {
-      const level = row.quality_level as keyof typeof qualityCounts
-      if (level in qualityCounts) {
-        qualityCounts[level]++
+    qualityCounts?.forEach((row: { quality_level: string }) => {
+      if (row.quality_level in qualityBreakdown) {
+        qualityBreakdown[row.quality_level as keyof typeof qualityBreakdown]++
       }
     })
 
@@ -286,7 +285,7 @@ export async function GET(request: NextRequest) {
       data: signals,
       count: signals.length,
       totalScanned: totalScanned ?? 0,
-      qualityCounts,
+      qualityBreakdown,
       generatedAt: mostRecent || new Date().toISOString(),
       nextScanAt,
     })

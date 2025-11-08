@@ -94,6 +94,11 @@ class FundamentalSignal:
 class FundamentalsScanner:
     """Scans stocks for fundamental buy opportunities"""
 
+    # Quality filters
+    MIN_MARKET_CAP = 1_000_000_000  # $1B minimum
+    MIN_AVG_VOLUME = 500_000  # 500K shares/day minimum
+    MIN_DATA_COMPLETENESS = 0.6  # Must have 60% of key metrics
+
     def __init__(self):
         self.health_calculator = FundamentalHealthCalculator()
 
@@ -108,6 +113,9 @@ class FundamentalsScanner:
         Returns:
             FundamentalSignal if stock meets criteria, None otherwise
         """
+        # Quality filter: Check minimum requirements
+        if not self._meets_quality_filters(ticker_info):
+            return None
         # Extract metrics
         metrics = self._extract_metrics(symbol, ticker_info)
 
@@ -136,7 +144,19 @@ class FundamentalsScanner:
         strengths = self._identify_strengths(metrics, health_result)
         weaknesses = self._identify_weaknesses(metrics, health_result)
         catalysts = self._identify_catalysts(ticker_info)
+
+        # Comprehensive risk assessment with validation
         risk_factors = self._identify_risk_factors(metrics, health_result)
+
+        # Add validation warnings
+        analyst_warnings = self._validate_against_analysts(overall_score, metrics)
+        value_trap_warnings = self._check_value_trap_indicators(metrics)
+        growth_trap_warnings = self._check_growth_trap_indicators(metrics)
+
+        # Combine all risk factors
+        risk_factors.extend(analyst_warnings)
+        risk_factors.extend(value_trap_warnings)
+        risk_factors.extend(growth_trap_warnings)
 
         # Generate recommendation
         recommendation = self._generate_recommendation(
@@ -608,3 +628,146 @@ class FundamentalsScanner:
             return f"Analyst support: {top_strength}"
         else:
             return top_strength
+
+    def _meets_quality_filters(self, info: Dict[str, Any]) -> bool:
+        """
+        Check if stock meets minimum quality requirements.
+
+        Quality filters prevent:
+        - Penny stocks / micro-caps (manipulation risk)
+        - Illiquid stocks (hard to exit)
+        - Stocks with insufficient data (unreliable analysis)
+        """
+        # Filter 1: Market cap minimum ($1B+)
+        market_cap = info.get('marketCap')
+        if not market_cap or market_cap < self.MIN_MARKET_CAP:
+            return False
+
+        # Filter 2: Volume minimum (500K+ shares/day)
+        avg_volume = info.get('averageVolume')
+        if not avg_volume or avg_volume < self.MIN_AVG_VOLUME:
+            return False
+
+        # Filter 3: Data completeness check
+        data_completeness = self._calculate_data_completeness(info)
+        if data_completeness < self.MIN_DATA_COMPLETENESS:
+            return False
+
+        return True
+
+    def _calculate_data_completeness(self, info: Dict[str, Any]) -> float:
+        """
+        Calculate what percentage of key metrics are available.
+
+        Returns: 0.0 to 1.0 representing data completeness
+        """
+        key_metrics = [
+            'currentPrice',
+            'marketCap',
+            'trailingPE',
+            'forwardPE',
+            'priceToBook',
+            'profitMargins',
+            'revenueGrowth',
+            'debtToEquity',
+            'returnOnEquity',
+            'freeCashflow',
+            'operatingCashflow',
+            'currentRatio',
+            'fiftyTwoWeekHigh',
+            'fiftyTwoWeekLow',
+        ]
+
+        available = sum(1 for metric in key_metrics if info.get(metric) is not None)
+        return available / len(key_metrics)
+
+    def _validate_against_analysts(
+        self,
+        overall_score: int,
+        metrics: FundamentalMetrics
+    ) -> List[str]:
+        """
+        Validate our score against analyst consensus.
+
+        Returns: List of validation warnings (empty if aligned)
+        """
+        warnings = []
+
+        if not metrics.recommendation_mean:
+            return warnings  # No analyst data to validate against
+
+        # Check for major disagreement
+        # Analyst scale: 1.0=Strong Buy, 2.0=Buy, 3.0=Hold, 4.0=Sell, 5.0=Strong Sell
+        # Our score: 80+=Excellent, 65+=Good, 50+=Fair, <50=Poor
+
+        if overall_score >= 80 and metrics.recommendation_mean >= 4.0:
+            warnings.append(
+                f"WARNING: Our score is Excellent but analysts rate this 'Sell' (avg: {metrics.recommendation_mean:.1f})"
+            )
+        elif overall_score >= 65 and metrics.recommendation_mean >= 4.5:
+            warnings.append(
+                f"CAUTION: Our score is Good but analysts are very bearish (avg: {metrics.recommendation_mean:.1f})"
+            )
+        elif overall_score < 50 and metrics.recommendation_mean <= 2.0:
+            warnings.append(
+                f"NOTE: Our score is low but analysts are bullish (avg: {metrics.recommendation_mean:.1f}) - potential value trap or recovery play"
+            )
+
+        # Check if very few analysts cover (less institutional attention)
+        if metrics.num_analysts and metrics.num_analysts < 3:
+            warnings.append(
+                f"Limited analyst coverage ({metrics.num_analysts} analysts) - less institutional validation"
+            )
+
+        return warnings
+
+    def _check_value_trap_indicators(self, metrics: FundamentalMetrics) -> List[str]:
+        """
+        Check for value trap indicators (cheap but deteriorating).
+
+        Returns: List of value trap warnings
+        """
+        warnings = []
+
+        # Value trap pattern: Low valuation + declining fundamentals
+        is_cheap = metrics.pe_ratio and metrics.pe_ratio < 12
+
+        if is_cheap:
+            # Check for deterioration
+            if metrics.revenue_growth and metrics.revenue_growth < -0.05:
+                warnings.append("Value trap risk: Cheap valuation but revenue declining >5%")
+
+            if metrics.profit_margin and metrics.profit_margin < 0:
+                warnings.append("Value trap risk: Unprofitable despite low valuation")
+
+            if metrics.debt_to_equity and metrics.debt_to_equity > 200:
+                warnings.append("Value trap risk: High debt burden despite cheap valuation")
+
+        return warnings
+
+    def _check_growth_trap_indicators(self, metrics: FundamentalMetrics) -> List[str]:
+        """
+        Check for growth trap indicators (high growth but unsustainable).
+
+        Returns: List of growth trap warnings
+        """
+        warnings = []
+
+        # Growth trap pattern: High valuation + negative cash flow
+        is_expensive = (
+            (metrics.pe_ratio and metrics.pe_ratio > 40) or
+            (metrics.peg_ratio and metrics.peg_ratio > 3.0)
+        )
+
+        if is_expensive:
+            # Check for sustainability issues
+            if metrics.free_cash_flow and metrics.free_cash_flow < 0:
+                warnings.append("Growth trap risk: High valuation but burning cash")
+
+            if metrics.profit_margin and metrics.profit_margin < 0.05:
+                warnings.append("Growth trap risk: Expensive valuation with thin/negative margins")
+
+            if metrics.debt_to_equity and metrics.debt_to_equity > 150:
+                warnings.append("Growth trap risk: High valuation paired with high debt")
+
+        return warnings
