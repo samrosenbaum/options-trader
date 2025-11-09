@@ -21,9 +21,6 @@ export const metadata: Metadata = {
   title: "Monty",
   description: "Real-time options analysis and trading recommendations",
   generator: "v0.app",
-  icons: {
-    icon: '/monty-avatar.png',
-  },
   openGraph: {
     title: "Monty",
     description: "Real-time options analysis and trading recommendations",
