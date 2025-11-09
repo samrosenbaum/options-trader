@@ -9,8 +9,6 @@ import { TradingDeskBanner } from '@/components/trading-desk-banner'
 import { motion } from 'framer-motion'
 import { MontyDashboardBrief } from '@/components/monty-dashboard-brief'
 import {
-  Trophy,
-  TrendingDown,
   ArrowUpRight,
   Scan,
   Briefcase,
@@ -552,7 +550,7 @@ export default function DashboardPage() {
           </motion.div>
         </div>
 
-        {/* Wall of Gains & Wall of Shame */}
+        {/* Wall of Gains & Lessons Learned */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
           {/* Wall of Gains - Biggest Winners */}
           <motion.div
@@ -574,14 +572,9 @@ export default function DashboardPage() {
             <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-3xl"></div>
             <div className="absolute inset-0 bg-gradient-to-br from-amber-400/5 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300"></div>
             <div className="relative">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-3 rounded-xl bg-amber-500/20">
-                  <Trophy className="h-6 w-6 text-amber-400" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold text-white">Wall of Gains</h2>
-                  <p className="text-sm text-slate-400">Your greatest victories</p>
-                </div>
+              <div className="mb-6">
+                <h2 className="text-xl font-bold text-white">Wall of Gains</h2>
+                <p className="text-sm text-slate-400">Your greatest victories</p>
               </div>
 
               {biggestWinners.length > 0 ? (
@@ -632,7 +625,7 @@ export default function DashboardPage() {
             </div>
           </motion.div>
 
-          {/* Wall of Shame - Biggest Losers */}
+          {/* Lessons Learned - Biggest Losers */}
           <motion.div
             initial={{ opacity: 0, y: 20, rotateX: 10 }}
             animate={{ opacity: 1, y: 0, rotateX: 0 }}
@@ -652,14 +645,9 @@ export default function DashboardPage() {
             <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/10 rounded-full blur-3xl"></div>
             <div className="absolute inset-0 bg-gradient-to-br from-red-400/5 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300"></div>
             <div className="relative">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-3 rounded-xl bg-red-500/20">
-                  <TrendingDown className="h-6 w-6 text-red-400" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold text-white">Wall of Shame</h2>
-                  <p className="text-sm text-slate-400">Learn from these lessons</p>
-                </div>
+              <div className="mb-6">
+                <h2 className="text-xl font-bold text-white">Lessons Learned</h2>
+                <p className="text-sm text-slate-400">Learn from these lessons</p>
               </div>
 
               {biggestLosers.length > 0 ? (
