@@ -236,6 +236,20 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error('Supabase error:', error)
+
+      // Check if error is due to missing table
+      if (error.message?.includes('relation') && error.message?.includes('does not exist')) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Database not initialized',
+            details: 'The fundamentals_signals table does not exist. Please run database migrations first.',
+            hint: 'Run: npx supabase db push',
+          },
+          { status: 500 }
+        )
+      }
+
       return NextResponse.json(
         {
           success: false,
@@ -248,6 +262,26 @@ export async function GET(request: NextRequest) {
 
     // Convert to camelCase
     const signals = (data as FundamentalsSignalRow[]).map(convertToCamelCase)
+
+    // If no signals found, return helpful message
+    if (signals.length === 0) {
+      return NextResponse.json({
+        success: true,
+        data: [],
+        count: 0,
+        totalScanned: 0,
+        qualityBreakdown: {
+          excellent: 0,
+          good: 0,
+          fair: 0,
+          poor: 0,
+        },
+        generatedAt: new Date().toISOString(),
+        nextScanAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        message: 'No fundamentals data available. Run the scanner to populate data.',
+        hint: 'python src/scanner/fundamentals_runner.py --all',
+      })
+    }
 
     // Get total count of all symbols scanned (not filtered by minScore)
     const { count: totalScanned } = await supabase
