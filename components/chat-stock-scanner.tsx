@@ -71,18 +71,29 @@ export function ChatStockScanner() {
 
   // Initialize with greeting
   useEffect(() => {
-    const greeting: StockMessage = {
+    const intro: StockMessage = {
       id: '0',
       type: 'monty',
-      content: "Hey! I've been analyzing the market for you. Want to see what's looking interesting today?",
+      content: "Hey! I'm your Stock Fundamentals Scanner. I analyze companies based on:\n\n• Financial Health (25%) - debt levels, cash flow, liquidity\n• Profitability (25%) - margins, ROE, capital efficiency  \n• Growth (20%) - revenue and earnings trends\n• Valuation (15%) - P/E, PEG, price ratios\n• Leverage (15%) - debt management",
       timestamp: new Date(),
-      quickReplies: [
-        { id: 'show-me', label: 'Show me', action: 'start-scan' },
-        { id: 'best-only', label: 'Just the best ones', action: 'scan-excellent' },
-        { id: 'all-stocks', label: 'Show me everything', action: 'scan-all' },
-      ],
     }
-    setMessages([greeting])
+
+    setTimeout(() => {
+      const greeting: StockMessage = {
+        id: '1',
+        type: 'monty',
+        content: "I find fundamentally strong companies with solid growth potential and reasonable valuations - perfect for long-term investing.\n\nWant to see what's looking good today?",
+        timestamp: new Date(),
+        quickReplies: [
+          { id: 'show-me', label: 'Show me', action: 'start-scan' },
+          { id: 'best-only', label: 'Just the best ones', action: 'scan-excellent' },
+          { id: 'all-stocks', label: 'Show me everything', action: 'scan-all' },
+        ],
+      }
+      setMessages((prev) => [...prev, greeting])
+    }, 1500)
+
+    setMessages([intro])
   }, [])
 
   const addMessage = (message: Omit<StockMessage, 'id' | 'timestamp'>) => {
@@ -104,11 +115,28 @@ export function ChatStockScanner() {
     setIsLoading(true)
     try {
       const response = await fetch(`/api/fundamentals-scanner?minScore=${minScore}`)
+
+      if (!response.ok) {
+        throw new Error(`API request failed with status ${response.status}`)
+      }
+
       const data = await response.json()
-      setStocksData(data.signals || [])
-      return data.signals || []
+
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to fetch stock data')
+      }
+
+      setStocksData(data.data || [])
+      return data.data || []
     } catch (error) {
       console.error('Error fetching stocks:', error)
+
+      // Show user-friendly error message
+      addMessage({
+        type: 'monty',
+        content: "Oops! Having trouble connecting to the market data right now. This might be because:\n\n• The fundamentals database hasn't been populated yet\n• There's a connection issue\n\nTry again in a bit, or contact support if this keeps happening.",
+      })
+
       return []
     } finally {
       setIsLoading(false)
@@ -429,8 +457,8 @@ export function ChatStockScanner() {
           <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-slate-900 bg-emerald-500" />
         </div>
         <div className="flex-1">
-          <h3 className="font-semibold text-white">Monty</h3>
-          <p className="text-xs text-slate-400">Your investing buddy</p>
+          <h3 className="font-semibold text-white">Monty - Stock Fundamentals Scanner</h3>
+          <p className="text-xs text-slate-400">Finding quality companies with strong fundamentals</p>
         </div>
       </div>
 
