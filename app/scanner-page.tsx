@@ -210,7 +210,7 @@ const extractStringArray = (record: Record<string, unknown> | null | undefined, 
 
   return value
     .map((item) => (typeof item === 'string' ? item : null))
-    .filter((item): item is string => Boolean(item))
+    .filter((item: string | null): item is string => Boolean(item))
 }
 
 const normalizeSymbolList = (symbols: string[]) => {
@@ -2166,7 +2166,7 @@ export default function ScannerPage({ user }: ScannerPageProps) {
       const normalizedOrder = normalizeSymbolList(
         orderRaw
           .map(item => (typeof item === 'string' ? item : null))
-          .filter((item): item is string => Boolean(item)),
+          .filter((item: string | null): item is string => Boolean(item)),
       )
 
       if (normalizedOrder.length > 0) {
@@ -2232,7 +2232,7 @@ export default function ScannerPage({ user }: ScannerPageProps) {
         const normalizedOrder = normalizeSymbolList(
           orderRaw
             .map(item => (typeof item === 'string' ? item : null))
-            .filter((item): item is string => Boolean(item)),
+            .filter((item: string | null): item is string => Boolean(item)),
         )
         if (normalizedOrder.length > 0) {
           return normalizedOrder.length

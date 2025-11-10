@@ -116,7 +116,7 @@ const parseStoredItems = (rawValue: string | null): WatchlistItem[] => {
 
         return normalized
       })
-      .filter((item): item is WatchlistItem => Boolean(item))
+      .filter((item: WatchlistItem | null): item is WatchlistItem => Boolean(item))
   } catch (error) {
     console.warn('Failed to parse watchlist from storage', error)
     return []
