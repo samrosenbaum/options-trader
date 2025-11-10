@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Navigation from '@/components/navigation'
 import { FundamentalsScanner } from '@/components/fundamentals-scanner'
 import { ChatStockScanner } from '@/components/chat-stock-scanner'
@@ -12,7 +12,9 @@ type ViewMode = 'cards' | 'chat'
 export default function UnifiedFundamentalsPage() {
   const [userEmail, setUserEmail] = useState<string | undefined>(undefined)
   const [showTooltip, setShowTooltip] = useState(true)
-  const [viewMode, setViewMode] = useState<ViewMode>('chat')
+  const searchParams = useSearchParams()
+  const initialView = (searchParams.get('view') as ViewMode) || 'cards'
+  const [viewMode, setViewMode] = useState<ViewMode>(initialView)
   const router = useRouter()
 
   useEffect(() => {
@@ -46,6 +48,14 @@ export default function UnifiedFundamentalsPage() {
     localStorage.setItem('fundamentals-scanner-tooltip-dismissed', 'true')
   }
 
+  const changeViewMode = (mode: ViewMode) => {
+    setViewMode(mode)
+    // Update URL without triggering navigation
+    const url = new URL(window.location.href)
+    url.searchParams.set('view', mode)
+    window.history.pushState({}, '', url.toString())
+  }
+
   return (
     <>
       <Navigation userEmail={userEmail} />
@@ -72,7 +82,7 @@ export default function UnifiedFundamentalsPage() {
           <div className="mb-6 flex justify-center">
             <div className="inline-flex rounded-xl border border-white/10 bg-white/5 p-1 backdrop-blur-sm">
               <button
-                onClick={() => setViewMode('chat')}
+                onClick={() => changeViewMode('chat')}
                 className={`rounded-lg px-6 py-3 text-sm font-medium transition-all ${
                   viewMode === 'chat'
                     ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
@@ -82,7 +92,7 @@ export default function UnifiedFundamentalsPage() {
                 Chat Scanner
               </button>
               <button
-                onClick={() => setViewMode('cards')}
+                onClick={() => changeViewMode('cards')}
                 className={`rounded-lg px-6 py-3 text-sm font-medium transition-all ${
                   viewMode === 'cards'
                     ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
