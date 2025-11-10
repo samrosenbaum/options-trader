@@ -265,7 +265,7 @@ async function fetchLatestNews(tickers: string[], limit = 4): Promise<MarketNews
           relatedTickers,
         } satisfies MarketNewsItem
       })
-      .filter((item): item is MarketNewsItem => item !== null)
+      .filter((item: MarketNewsItem | null): item is MarketNewsItem => item !== null)
   } catch (error) {
     console.warn('News fetch failed', error)
     return []
