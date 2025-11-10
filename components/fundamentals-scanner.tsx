@@ -1,7 +1,6 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { TrendingUp, LineChart, RefreshCcw, ChevronDown, ChevronUp, AlertCircle, Info } from 'lucide-react'
 import type { FundamentalsSignal } from '@/app/api/fundamentals-scanner/route'
 
 interface ApiResponse {
@@ -20,42 +19,38 @@ interface ApiResponse {
   error?: string
 }
 
-const qualityStyles: Record<FundamentalsSignal['qualityLevel'], { badge: string; border: string; glow: string; text: string; icon: string }> = {
+const qualityStyles: Record<FundamentalsSignal['qualityLevel'], { badge: string; border: string; glow: string; text: string }> = {
   excellent: {
     badge: 'bg-emerald-500/15 text-emerald-200 border-emerald-400/40',
     border: 'border-emerald-400/40',
     glow: 'shadow-[0_18px_55px_rgba(16,185,129,0.28)]',
     text: 'text-emerald-100',
-    icon: '⭐',
   },
   good: {
-    badge: 'bg-blue-500/15 text-blue-200 border-blue-400/40',
-    border: 'border-blue-400/40',
-    glow: 'shadow-[0_15px_45px_rgba(59,130,246,0.25)]',
-    text: 'text-blue-100',
-    icon: '💎',
+    badge: 'bg-emerald-500/10 text-emerald-300 border-emerald-400/30',
+    border: 'border-emerald-400/30',
+    glow: 'shadow-[0_15px_45px_rgba(16,185,129,0.20)]',
+    text: 'text-emerald-200',
   },
   fair: {
-    badge: 'bg-amber-500/15 text-amber-200 border-amber-400/40',
-    border: 'border-amber-400/40',
-    glow: 'shadow-[0_15px_45px_rgba(217,119,6,0.2)]',
-    text: 'text-amber-100',
-    icon: '📊',
+    badge: 'bg-slate-500/15 text-slate-200 border-slate-400/40',
+    border: 'border-slate-400/40',
+    glow: 'shadow-[0_15px_45px_rgba(148,163,184,0.2)]',
+    text: 'text-slate-100',
   },
   poor: {
-    badge: 'bg-slate-500/15 text-slate-200 border-slate-400/40',
+    badge: 'bg-slate-500/10 text-slate-300 border-slate-400/30',
     border: 'border-slate-400/30',
     glow: 'shadow-[0_10px_30px_rgba(148,163,184,0.15)]',
     text: 'text-slate-200',
-    icon: '⚠️',
   },
 }
 
 const scoreGradient = (score: number) => {
   if (score >= 80) return 'from-emerald-500/90 via-emerald-400/70 to-emerald-500/40'
-  if (score >= 65) return 'from-blue-500/90 via-blue-400/70 to-blue-500/40'
-  if (score >= 50) return 'from-amber-500/90 via-amber-400/70 to-amber-500/40'
-  return 'from-slate-500/80 via-slate-400/60 to-slate-500/40'
+  if (score >= 65) return 'from-emerald-500/70 via-emerald-400/50 to-emerald-500/30'
+  if (score >= 50) return 'from-slate-500/70 via-slate-400/50 to-slate-500/30'
+  return 'from-slate-500/50 via-slate-400/40 to-slate-500/20'
 }
 
 const fetchFundamentalsSignals = async (minScore: number, limit: number): Promise<ApiResponse> => {
@@ -211,8 +206,8 @@ export function FundamentalsScanner({
 
       <div className="relative flex items-start justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-sm uppercase tracking-[0.3em] text-emerald-600/70 dark:text-emerald-400/70">
-            <TrendingUp size={16} /> Stock Fundamentals Scanner
+          <div className="text-sm uppercase tracking-[0.3em] text-emerald-600/70 dark:text-emerald-400/70">
+            Stock Fundamentals Scanner
           </div>
           <h2 className="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">Buy Opportunities</h2>
           <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{headerSubtitle}</p>
@@ -221,23 +216,21 @@ export function FundamentalsScanner({
           type="button"
           onClick={() => refreshSignals().catch(() => {})}
           disabled={loading}
-          className="rounded-full bg-white/80 p-3 text-slate-700 shadow-md transition-all hover:bg-white hover:shadow-lg disabled:opacity-50 dark:bg-white/10 dark:text-slate-200 dark:hover:bg-white/20"
+          className="rounded-lg bg-white/80 px-4 py-2 text-sm text-slate-700 shadow-md transition-all hover:bg-white hover:shadow-lg disabled:opacity-50 dark:bg-white/10 dark:text-slate-200 dark:hover:bg-white/20"
           aria-label="Refresh signals"
         >
-          <RefreshCcw size={20} className={loading ? 'animate-spin' : ''} />
+          {loading ? 'Refreshing...' : 'Refresh'}
         </button>
       </div>
 
       {error && (
         <div className="relative mt-6 flex items-center gap-3 rounded-xl border border-red-400/30 bg-red-500/10 p-4 text-sm text-red-200">
-          <AlertCircle size={20} className="flex-shrink-0" />
           <p>{error}</p>
         </div>
       )}
 
       {!loading && signals.length === 0 && !error && (
         <div className="relative mt-6 flex flex-col items-center justify-center rounded-xl border border-slate-200/50 bg-slate-50/50 p-12 dark:border-white/5 dark:bg-white/5">
-          <LineChart size={48} className="mb-4 text-slate-400 dark:text-slate-600" />
           <p className="text-center text-slate-600 dark:text-slate-400">
             {filterSymbols && filterSymbols.length > 0
               ? 'None of your portfolio/watchlist stocks meet the current filter criteria.'
@@ -365,15 +358,17 @@ function SignalGroup({
       <button
         type="button"
         onClick={() => setCollapsed(!collapsed)}
-        className="flex w-full items-center justify-between text-left"
+        className="flex w-full items-center justify-between text-left group"
       >
         <div>
           <h3 className={`text-lg font-semibold ${styles.text}`}>
-            {styles.icon} {title} ({signals.length})
+            {title} ({signals.length})
           </h3>
           <p className="text-sm text-slate-600 dark:text-slate-400">{description}</p>
         </div>
-        {collapsed ? <ChevronDown size={20} className="text-slate-400" /> : <ChevronUp size={20} className="text-slate-400" />}
+        <span className="text-sm text-slate-500 group-hover:text-slate-300 transition-colors">
+          {collapsed ? 'Show' : 'Hide'}
+        </span>
       </button>
 
       {!collapsed && (
@@ -418,8 +413,8 @@ function SignalCard({ signal, expanded, onToggle, tag, formatCurrency, formatPer
         <div className="flex items-center gap-2">
           <h4 className="text-2xl font-bold text-slate-900 dark:text-white">{signal.symbol}</h4>
           {tag && (
-            <span className="rounded-md bg-blue-500/20 px-2 py-0.5 text-xs font-medium text-blue-300">
-              {tag === 'portfolio' ? '📂 Portfolio' : '👁️ Watchlist'}
+            <span className="rounded-md bg-emerald-500/20 px-2 py-0.5 text-xs font-medium text-emerald-300 border border-emerald-500/30">
+              {tag === 'portfolio' ? 'Portfolio' : 'Watchlist'}
             </span>
           )}
         </div>
@@ -445,7 +440,7 @@ function SignalCard({ signal, expanded, onToggle, tag, formatCurrency, formatPer
       {/* Buy Reason */}
       {signal.buyReason && (
         <div className="mt-3 rounded-lg bg-emerald-500/10 p-3 text-sm text-emerald-200 dark:bg-emerald-500/10">
-          <span className="font-semibold">💡 Why Buy: </span>
+          <span className="font-semibold">Why Buy: </span>
           {signal.buyReason}
         </div>
       )}
@@ -470,17 +465,9 @@ function SignalCard({ signal, expanded, onToggle, tag, formatCurrency, formatPer
       <button
         type="button"
         onClick={onToggle}
-        className="mt-4 flex w-full items-center justify-center gap-2 text-sm font-medium text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
+        className="mt-4 w-full text-center text-sm font-medium text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
       >
-        {expanded ? (
-          <>
-            <ChevronUp size={16} /> Hide Details
-          </>
-        ) : (
-          <>
-            <ChevronDown size={16} /> Show Details
-          </>
-        )}
+        {expanded ? 'Hide Details' : 'Show Details'}
       </button>
 
       {expanded && (
@@ -500,7 +487,7 @@ function SignalCard({ signal, expanded, onToggle, tag, formatCurrency, formatPer
           {/* Strengths */}
           {signal.strengths && signal.strengths.length > 0 && (
             <div>
-              <h5 className="mb-2 text-sm font-semibold text-emerald-700 dark:text-emerald-300">✓ Strengths</h5>
+              <h5 className="mb-2 text-sm font-semibold text-emerald-700 dark:text-emerald-300">Strengths</h5>
               <ul className="space-y-1.5">
                 {signal.strengths.map((strength, idx) => (
                   <li key={idx} className="text-xs text-slate-700 dark:text-slate-300">
@@ -514,7 +501,7 @@ function SignalCard({ signal, expanded, onToggle, tag, formatCurrency, formatPer
           {/* Weaknesses */}
           {signal.weaknesses && signal.weaknesses.length > 0 && (
             <div>
-              <h5 className="mb-2 text-sm font-semibold text-amber-700 dark:text-amber-300">⚠ Weaknesses</h5>
+              <h5 className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-300">Weaknesses</h5>
               <ul className="space-y-1.5">
                 {signal.weaknesses.map((weakness, idx) => (
                   <li key={idx} className="text-xs text-slate-700 dark:text-slate-300">
@@ -528,7 +515,7 @@ function SignalCard({ signal, expanded, onToggle, tag, formatCurrency, formatPer
           {/* Risk Factors */}
           {signal.riskFactors && signal.riskFactors.length > 0 && (
             <div>
-              <h5 className="mb-2 text-sm font-semibold text-red-700 dark:text-red-300">🚨 Risk Factors</h5>
+              <h5 className="mb-2 text-sm font-semibold text-red-700 dark:text-red-300">Risk Factors</h5>
               <ul className="space-y-1.5">
                 {signal.riskFactors.map((risk, idx) => (
                   <li key={idx} className="text-xs text-slate-700 dark:text-slate-300">

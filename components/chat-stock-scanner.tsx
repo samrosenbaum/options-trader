@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { TrendingUp, TrendingDown, Sparkles, AlertCircle, CheckCircle } from 'lucide-react'
 
 interface StockMessage {
   id: string
@@ -448,16 +447,8 @@ export function ChatStockScanner() {
     <div className="flex h-[calc(100vh-200px)] flex-col overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 shadow-2xl">
       {/* Header */}
       <div className="flex items-center gap-3 border-b border-white/10 bg-white/5 p-4 backdrop-blur-xl">
-        <div className="relative">
-          <div className="h-10 w-10 overflow-hidden rounded-full bg-gradient-to-br from-blue-500 to-purple-500 p-0.5">
-            <div className="flex h-full w-full items-center justify-center rounded-full bg-slate-900">
-              <Sparkles className="h-5 w-5 text-blue-400" />
-            </div>
-          </div>
-          <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-slate-900 bg-emerald-500" />
-        </div>
         <div className="flex-1">
-          <h3 className="font-semibold text-white">Monty - Stock Fundamentals Scanner</h3>
+          <h3 className="font-semibold text-white">Stock Fundamentals Scanner</h3>
           <p className="text-xs text-slate-400">Finding quality companies with strong fundamentals</p>
         </div>
       </div>
@@ -474,19 +465,11 @@ export function ChatStockScanner() {
               className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               <div className={`flex max-w-[85%] gap-2 ${message.type === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
-                {message.type === 'monty' && (
-                  <div className="h-8 w-8 flex-shrink-0 overflow-hidden rounded-full bg-gradient-to-br from-blue-500 to-purple-500 p-0.5">
-                    <div className="flex h-full w-full items-center justify-center rounded-full bg-slate-900">
-                      <Sparkles className="h-4 w-4 text-blue-400" />
-                    </div>
-                  </div>
-                )}
-
-                <div className="space-y-1">
+                <div className="space-y-1 w-full">
                   <div
-                    className={`rounded-3xl px-5 py-3 ${
+                    className={`rounded-2xl px-5 py-3 ${
                       message.type === 'user'
-                        ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white'
+                        ? 'bg-emerald-500/20 text-white border border-emerald-500/30'
                         : 'border border-white/10 bg-white/5 text-white backdrop-blur-sm'
                     }`}
                   >
@@ -494,25 +477,25 @@ export function ChatStockScanner() {
 
                     {message.stockData && (
                       <div className="mt-3 flex items-center gap-2 border-t border-white/10 pt-3">
+                        <span className="text-xs font-medium text-emerald-300">{message.stockData.symbol}</span>
                         {message.stockData.sentiment === 'bullish' && (
-                          <TrendingUp className="h-4 w-4 text-emerald-400" />
+                          <span className="text-xs text-emerald-400">Strong</span>
                         )}
                         {message.stockData.sentiment === 'bearish' && (
-                          <TrendingDown className="h-4 w-4 text-red-400" />
+                          <span className="text-xs text-red-400">Weak</span>
                         )}
-                        <span className="text-xs font-medium text-slate-300">{message.stockData.symbol}</span>
                       </div>
                     )}
                   </div>
 
                   {message.quickReplies && message.quickReplies.length > 0 && index === messages.length - 1 && (
-                    <div className="flex flex-wrap gap-2 pl-10">
+                    <div className="flex flex-wrap gap-2">
                       {message.quickReplies.map((reply) => (
                         <button
                           key={reply.id}
                           onClick={() => handleQuickReply(reply.action)}
                           disabled={isTyping || isLoading}
-                          className="rounded-full border border-blue-500/30 bg-blue-500/10 px-4 py-2 text-xs font-medium text-blue-300 transition-all hover:border-blue-500/50 hover:bg-blue-500/20 disabled:opacity-50"
+                          className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-xs font-medium text-emerald-300 transition-all hover:border-emerald-500/50 hover:bg-emerald-500/20 disabled:opacity-50"
                         >
                           {reply.label}
                         </button>
@@ -539,12 +522,7 @@ export function ChatStockScanner() {
             animate={{ opacity: 1, y: 0 }}
             className="flex items-center gap-2"
           >
-            <div className="h-8 w-8 flex-shrink-0 overflow-hidden rounded-full bg-gradient-to-br from-blue-500 to-purple-500 p-0.5">
-              <div className="flex h-full w-full items-center justify-center rounded-full bg-slate-900">
-                <Sparkles className="h-4 w-4 text-blue-400" />
-              </div>
-            </div>
-            <div className="flex items-center gap-1 rounded-3xl border border-white/10 bg-white/5 px-5 py-3 backdrop-blur-sm">
+            <div className="flex items-center gap-1 rounded-2xl border border-white/10 bg-white/5 px-5 py-3 backdrop-blur-sm">
               <div className="h-2 w-2 animate-bounce rounded-full bg-slate-400 [animation-delay:-0.3s]" />
               <div className="h-2 w-2 animate-bounce rounded-full bg-slate-400 [animation-delay:-0.15s]" />
               <div className="h-2 w-2 animate-bounce rounded-full bg-slate-400" />
