@@ -444,17 +444,9 @@ export function ChatStockScanner() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-200px)] flex-col overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 shadow-2xl">
-      {/* Header */}
-      <div className="flex items-center gap-3 border-b border-white/10 bg-white/5 p-4 backdrop-blur-xl">
-        <div className="flex-1">
-          <h3 className="font-semibold text-white">Stock Fundamentals Scanner</h3>
-          <p className="text-xs text-slate-400">Finding quality companies with strong fundamentals</p>
-        </div>
-      </div>
-
+    <div className="flex h-[calc(100vh-200px)] flex-col overflow-hidden rounded-2xl bg-slate-900 shadow-xl">
       {/* Messages */}
-      <div className="flex-1 space-y-4 overflow-y-auto p-4">
+      <div className="flex-1 space-y-2 overflow-y-auto p-4 bg-slate-900">
         <AnimatePresence>
           {messages.map((message, index) => (
             <motion.div
@@ -464,25 +456,25 @@ export function ChatStockScanner() {
               transition={{ duration: 0.3 }}
               className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
             >
-              <div className={`flex max-w-[85%] gap-2 ${message.type === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
-                <div className="space-y-1 w-full">
+              <div className={`flex w-full ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div className="max-w-[75%] space-y-2">
                   <div
-                    className={`rounded-2xl px-5 py-3 ${
+                    className={`rounded-[18px] px-4 py-2.5 ${
                       message.type === 'user'
-                        ? 'bg-emerald-500/20 text-white border border-emerald-500/30'
-                        : 'border border-white/10 bg-white/5 text-white backdrop-blur-sm'
+                        ? 'bg-[#007AFF] text-white'
+                        : 'bg-slate-700 text-white'
                     }`}
                   >
-                    <p className="whitespace-pre-line text-sm leading-relaxed">{message.content}</p>
+                    <p className="whitespace-pre-line text-[15px] leading-relaxed">{message.content}</p>
 
                     {message.stockData && (
-                      <div className="mt-3 flex items-center gap-2 border-t border-white/10 pt-3">
-                        <span className="text-xs font-medium text-emerald-300">{message.stockData.symbol}</span>
+                      <div className="mt-2 flex items-center gap-2 pt-2 border-t border-white/20">
+                        <span className="text-xs font-medium">{message.stockData.symbol}</span>
                         {message.stockData.sentiment === 'bullish' && (
-                          <span className="text-xs text-emerald-400">Strong</span>
+                          <span className="text-xs opacity-90">Strong</span>
                         )}
                         {message.stockData.sentiment === 'bearish' && (
-                          <span className="text-xs text-red-400">Weak</span>
+                          <span className="text-xs opacity-90">Weak</span>
                         )}
                       </div>
                     )}
@@ -495,20 +487,13 @@ export function ChatStockScanner() {
                           key={reply.id}
                           onClick={() => handleQuickReply(reply.action)}
                           disabled={isTyping || isLoading}
-                          className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-xs font-medium text-emerald-300 transition-all hover:border-emerald-500/50 hover:bg-emerald-500/20 disabled:opacity-50"
+                          className="rounded-full bg-slate-700 px-3 py-1.5 text-xs font-medium text-white transition-all hover:bg-slate-600 disabled:opacity-50"
                         >
                           {reply.label}
                         </button>
                       ))}
                     </div>
                   )}
-
-                  <p className="px-2 text-[10px] text-slate-500">
-                    {message.timestamp.toLocaleTimeString('en-US', {
-                      hour: 'numeric',
-                      minute: '2-digit',
-                    })}
-                  </p>
                 </div>
               </div>
             </motion.div>
@@ -520,12 +505,14 @@ export function ChatStockScanner() {
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex items-center gap-2"
+            className="flex justify-start"
           >
-            <div className="flex items-center gap-1 rounded-2xl border border-white/10 bg-white/5 px-5 py-3 backdrop-blur-sm">
-              <div className="h-2 w-2 animate-bounce rounded-full bg-slate-400 [animation-delay:-0.3s]" />
-              <div className="h-2 w-2 animate-bounce rounded-full bg-slate-400 [animation-delay:-0.15s]" />
-              <div className="h-2 w-2 animate-bounce rounded-full bg-slate-400" />
+            <div className="rounded-[18px] bg-slate-700 px-4 py-3">
+              <div className="flex items-center gap-1">
+                <div className="h-2 w-2 animate-bounce rounded-full bg-slate-400 [animation-delay:-0.3s]" />
+                <div className="h-2 w-2 animate-bounce rounded-full bg-slate-400 [animation-delay:-0.15s]" />
+                <div className="h-2 w-2 animate-bounce rounded-full bg-slate-400" />
+              </div>
             </div>
           </motion.div>
         )}
