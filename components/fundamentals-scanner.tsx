@@ -66,7 +66,15 @@ const fetchFundamentalsSignals = async (minScore: number, limit: number): Promis
 
   const response = await fetch(`/api/fundamentals-scanner?${params.toString()}`, { cache: 'no-store' })
   if (!response.ok) {
-    throw new Error(`Request failed with status ${response.status}`)
+    // Try to parse error details from response
+    try {
+      const errorData = await response.json()
+      const errorMessage = errorData.details || errorData.error || `API request failed with status ${response.status}`
+      throw new Error(errorMessage)
+    } catch (parseError) {
+      // If we can't parse the error, fall back to generic message
+      throw new Error(`API request failed with status ${response.status}`)
+    }
   }
   return response.json()
 }

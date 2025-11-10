@@ -117,7 +117,15 @@ export function ChatStockScanner() {
       const response = await fetch(`/api/fundamentals-scanner?minScore=${minScore}`)
 
       if (!response.ok) {
-        throw new Error(`API request failed with status ${response.status}`)
+        // Try to parse error details from response
+        try {
+          const errorData = await response.json()
+          const errorMessage = errorData.details || errorData.error || `API request failed with status ${response.status}`
+          throw new Error(errorMessage)
+        } catch (parseError) {
+          // If we can't parse the error, fall back to generic message
+          throw new Error(`API request failed with status ${response.status}`)
+        }
       }
 
       const data = await response.json()

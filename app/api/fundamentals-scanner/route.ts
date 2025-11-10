@@ -189,6 +189,20 @@ function convertToCamelCase(row: FundamentalsSignalRow): FundamentalsSignal {
 
 export async function GET(request: NextRequest) {
   try {
+    // Validate environment variables first
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      console.error('Missing Supabase environment variables')
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Database configuration error',
+          details: 'Supabase environment variables are not configured. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.',
+          hint: 'Check your .env.local file or deployment environment variables',
+        },
+        { status: 500 }
+      )
+    }
+
     const { searchParams } = new URL(request.url)
 
     // Parse query parameters
