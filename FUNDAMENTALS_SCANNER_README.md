@@ -52,25 +52,16 @@ python src/scanner/fundamentals_runner.py --all
 ### 3. View Results
 
 Visit the scanner page:
-- **Unified Interface**: `/scanner/stock-fundamentals` (RECOMMENDED - combines both views)
-- Chat Interface Only: `/scanner/chat`
-- Card View Only: `/scanner/fundamentals`
+- **Find Stocks**: `/scanner/stock-fundamentals` (lightweight redirect lives at `/scanner/fundamentals`)
 
 ## Features
 
-### Two Viewing Modes
+### Find Stocks Experience
 
-#### 1. Chat Scanner
-- Conversational AI guide (Monty) walks you through stocks
-- One-by-one analysis with interactive Q&A
-- Perfect for exploring new opportunities
-- Shows key highlights in a friendly format
-
-#### 2. Card View
-- See all stocks at once in organized cards
-- Grouped by quality level (Excellent/Good/Fair/Watch)
-- Expandable details for each stock
-- Great for quick comparison and screening
+- Clean light-mode layout aligned with the public landing page
+- Grouped insights for Excellent, Good, Fair, and Watch quality tiers
+- Rich cards with expandable fundamentals, analyst commentary, and risk callouts
+- Demo dataset automatically loads when Supabase credentials are missing so the UI keeps working
 
 ### Quality Levels
 
@@ -83,8 +74,7 @@ Visit the scanner page:
 
 ### Frontend Components
 
-- `app/scanner/stock-fundamentals/page.tsx` - Unified scanner page (recommended)
-- `components/chat-stock-scanner.tsx` - Conversational chat interface
+- `app/scanner/stock-fundamentals/page.tsx` - Find Stocks experience with light theme
 - `components/fundamentals-scanner.tsx` - Traditional card grid view
 
 ### Backend

@@ -416,14 +416,12 @@ import { TrendingUp, Info, ChevronDown } from 'lucide-react'
 ```
 /components
   /ui              - Base Shadcn/ui components
-  /chat-stock-scanner.tsx
   /fundamentals-scanner.tsx
   /navigation.tsx
 
 /app
   /scanner
-    /stock-fundamentals  - Unified scanner page
-    /chat                - Redirects to unified page
+    /stock-fundamentals  - Find Stocks experience
 ```
 
 ---
@@ -458,12 +456,15 @@ When building new features, verify:
 ### ✅ Good Scanner Header
 
 ```tsx
-<div className="mb-8 text-center">
-  <h1 className="text-4xl font-bold text-white mb-3">
-    Stock Fundamentals Scanner
+<div className="text-center">
+  <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-emerald-600">
+    Find Stocks
+  </span>
+  <h1 className="mt-6 text-4xl font-semibold text-slate-900">
+    Discover fundamentally strong companies
   </h1>
-  <p className="text-slate-400 text-lg">
-    Discover high-quality stock buying opportunities
+  <p className="mt-4 text-lg text-slate-600">
+    Ranked by Monty’s multi-factor scoring engine.
   </p>
 </div>
 ```
@@ -471,24 +472,9 @@ When building new features, verify:
 ### ✅ Good Quality Badge
 
 ```tsx
-<span className="bg-emerald-500/15 text-emerald-200 border-emerald-400/40 rounded-lg border px-3 py-1 text-xs font-semibold">
+<span className="rounded-full border border-emerald-200 bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
   EXCELLENT
 </span>
-```
-
-### ✅ Good Interactive Toggle
-
-```tsx
-<button
-  onClick={() => setViewMode('chat')}
-  className={`rounded-lg px-6 py-3 text-sm font-medium transition-all ${
-    viewMode === 'chat'
-      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-      : 'text-slate-400 hover:text-slate-200'
-  }`}
->
-  Chat Scanner
-</button>
 ```
 
 ---
@@ -512,4 +498,4 @@ When in doubt:
 3. **Emerald over rainbow** - Stick to brand colors
 4. **Professional over playful** - This is a trading platform
 
-Refer to existing components in `/components/fundamentals-scanner.tsx` and `/components/chat-stock-scanner.tsx` for reference implementations.
+Refer to existing components in `/components/fundamentals-scanner.tsx` for reference implementations.
