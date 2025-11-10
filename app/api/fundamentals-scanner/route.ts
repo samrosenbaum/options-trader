@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { sampleFundamentalsSignals } from '@/data/sample-fundamentals-signals'
+import type { FundamentalsSignal } from '@/types/fundamentals'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -65,66 +67,6 @@ interface FundamentalsSignalRow {
   signal_details: Record<string, unknown> | null
 }
 
-export interface FundamentalsSignal {
-  id: string
-  symbol: string
-  overallScore: number
-  qualityLevel: 'excellent' | 'good' | 'fair' | 'poor'
-  recommendation: string
-  buyReason: string | null
-  currentPrice: number | null
-  priceChangePct: number | null
-  week52High: number | null
-  week52Low: number | null
-  percentFrom52wHigh: number | null
-  percentFrom52wLow: number | null
-  healthScore: number | null
-  growthScore: number | null
-  profitabilityScore: number | null
-  leverageScore: number | null
-  valuationScore: number | null
-  peRatio: number | null
-  forwardPe: number | null
-  pegRatio: number | null
-  psRatio: number | null
-  pbRatio: number | null
-  priceToFcf: number | null
-  revenueGrowth: number | null
-  earningsGrowth: number | null
-  revenuePerShareGrowth: number | null
-  profitMargin: number | null
-  operatingMargin: number | null
-  roe: number | null
-  roa: number | null
-  roic: number | null
-  debtToEquity: number | null
-  currentRatio: number | null
-  quickRatio: number | null
-  freeCashFlow: number | null
-  operatingCashFlow: number | null
-  analystRating: string | null
-  analystTargetPrice: number | null
-  targetUpsidePct: number | null
-  numAnalysts: number | null
-  recommendationMean: number | null
-  nextEarningsDate: string | null
-  daysToEarnings: number | null
-  earningsSurprisePct: number | null
-  marketCap: number | null
-  sector: string | null
-  industry: string | null
-  avgVolume: number | null
-  currentVolume: number | null
-  volumeSurge: boolean
-  strengths: string[]
-  weaknesses: string[]
-  catalysts: string[]
-  riskLevel: 'low' | 'moderate' | 'high'
-  riskFactors: string[]
-  generatedAt: string
-  expiresAt: string
-}
-
 function convertToCamelCase(row: FundamentalsSignalRow): FundamentalsSignal {
   return {
     id: row.id,
@@ -187,10 +129,125 @@ function convertToCamelCase(row: FundamentalsSignalRow): FundamentalsSignal {
   }
 }
 
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url)
+function isSupabaseConfigured() {
+  return Boolean(
+    process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  )
+}
 
+interface QueryOptions {
+  minScore: number
+  limit: number
+  symbols: string[] | undefined
+  qualityLevel: FundamentalsSignal['qualityLevel'] | null
+  sector: string | null
+  includeExpired: boolean
+}
+
+function buildResponseFromSignals(signals: FundamentalsSignal[], options: QueryOptions) {
+  const nowIso = new Date().toISOString()
+  const {
+    minScore,
+    limit,
+    symbols,
+    qualityLevel,
+    sector,
+    includeExpired,
+  } = options
+
+  const applyCommonFilters = (items: FundamentalsSignal[]) => {
+    let result = items.filter(signal => signal.overallScore >= minScore)
+
+    if (!includeExpired) {
+      result = result.filter(signal => signal.expiresAt > nowIso)
+    }
+
+    if (symbols && symbols.length > 0) {
+      const normalized = new Set(symbols.map(symbol => symbol.toUpperCase()))
+      result = result.filter(signal => normalized.has(signal.symbol.toUpperCase()))
+    }
+
+    if (qualityLevel) {
+      result = result.filter(signal => signal.qualityLevel === qualityLevel)
+    }
+
+    if (sector) {
+      result = result.filter(signal => signal.sector?.toLowerCase() === sector.toLowerCase())
+    }
+
+    return result
+  }
+
+  const filtered = applyCommonFilters(signals)
+    .sort((a, b) => {
+      if (b.overallScore === a.overallScore) {
+        return new Date(b.generatedAt).getTime() - new Date(a.generatedAt).getTime()
+      }
+      return b.overallScore - a.overallScore
+    })
+    .slice(0, limit)
+
+  if (filtered.length === 0) {
+    return {
+      success: true,
+      data: [],
+      count: 0,
+      totalScanned: 0,
+      qualityBreakdown: {
+        excellent: 0,
+        good: 0,
+        fair: 0,
+        poor: 0,
+      },
+      generatedAt: new Date().toISOString(),
+      nextScanAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      message: 'No fundamentals data available. Run the scanner to populate data.',
+      hint: 'python src/scanner/fundamentals_runner.py --all',
+    }
+  }
+
+  const activeSignals = includeExpired
+    ? signals
+    : signals.filter(signal => signal.expiresAt > nowIso)
+
+  const qualityBreakdown = activeSignals.reduce(
+    (acc, signal) => {
+      acc[signal.qualityLevel] += 1
+      return acc
+    },
+    {
+      excellent: 0,
+      good: 0,
+      fair: 0,
+      poor: 0,
+    } as Record<FundamentalsSignal['qualityLevel'], number>
+  )
+
+  const mostRecent = filtered[0]?.generatedAt
+  const nextScanAt = mostRecent
+    ? new Date(new Date(mostRecent).getTime() + 24 * 60 * 60 * 1000).toISOString()
+    : new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+
+  return {
+    success: true,
+    data: filtered,
+    count: filtered.length,
+    totalScanned: activeSignals.length,
+    qualityBreakdown,
+    generatedAt: mostRecent || new Date().toISOString(),
+    nextScanAt,
+  }
+}
+
+function buildSampleResponse(options: QueryOptions) {
+  return NextResponse.json(buildResponseFromSignals(sampleFundamentalsSignals, options))
+}
+
+export async function GET(request: NextRequest) {
+  const url = new URL(request.url)
+  const { searchParams } = url
+
+  try {
     // Parse query parameters
     const minScore = parseInt(searchParams.get('minScore') ?? '50', 10)
     const limit = Math.min(parseInt(searchParams.get('limit') ?? '50', 10), 200)
@@ -198,6 +255,19 @@ export async function GET(request: NextRequest) {
     const qualityLevel = searchParams.get('qualityLevel') as 'excellent' | 'good' | 'fair' | 'poor' | null
     const sector = searchParams.get('sector')
     const includeExpired = searchParams.get('includeExpired') === 'true'
+
+    const queryOptions: QueryOptions = {
+      minScore,
+      limit,
+      symbols,
+      qualityLevel,
+      sector,
+      includeExpired,
+    }
+
+    if (!isSupabaseConfigured()) {
+      return buildSampleResponse(queryOptions)
+    }
 
     // Create Supabase client
     const supabase = await createClient()
@@ -260,85 +330,32 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Convert to camelCase
+    // Convert to camelCase and return Supabase data
     const signals = (data as FundamentalsSignalRow[]).map(convertToCamelCase)
-
-    // If no signals found, return helpful message
-    if (signals.length === 0) {
-      return NextResponse.json({
-        success: true,
-        data: [],
-        count: 0,
-        totalScanned: 0,
-        qualityBreakdown: {
-          excellent: 0,
-          good: 0,
-          fair: 0,
-          poor: 0,
-        },
-        generatedAt: new Date().toISOString(),
-        nextScanAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-        message: 'No fundamentals data available. Run the scanner to populate data.',
-        hint: 'python src/scanner/fundamentals_runner.py --all',
-      })
-    }
-
-    // Get total count of all symbols scanned (not filtered by minScore)
-    const { count: totalScanned } = await supabase
-      .from('fundamentals_signals')
-      .select('symbol', { count: 'exact', head: true })
-      .gt('expires_at', new Date().toISOString())
-
-    // Get count by quality level
-    const { data: qualityCounts } = await supabase
-      .from('fundamentals_signals')
-      .select('quality_level')
-      .gt('expires_at', new Date().toISOString())
-
-    const qualityBreakdown = {
-      excellent: 0,
-      good: 0,
-      fair: 0,
-      poor: 0,
-    }
-
-    qualityCounts?.forEach((row: { quality_level: string }) => {
-      if (row.quality_level in qualityBreakdown) {
-        qualityBreakdown[row.quality_level as keyof typeof qualityBreakdown]++
-      }
-    })
-
-    // Calculate next scan time (24 hours from most recent)
-    const mostRecent = signals[0]?.generatedAt
-    const nextScanAt = mostRecent
-      ? new Date(new Date(mostRecent).getTime() + 24 * 60 * 60 * 1000).toISOString()
-      : new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
-
-    return NextResponse.json({
-      success: true,
-      data: signals,
-      count: signals.length,
-      totalScanned: totalScanned ?? 0,
-      qualityBreakdown,
-      generatedAt: mostRecent || new Date().toISOString(),
-      nextScanAt,
-    })
+    return NextResponse.json(buildResponseFromSignals(signals, queryOptions))
   } catch (err) {
     console.error('Unexpected error:', err)
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Internal server error',
-        details: err instanceof Error ? err.message : 'Unknown error',
-      },
-      { status: 500 }
-    )
+    return buildSampleResponse({
+      minScore: parseInt(searchParams.get('minScore') ?? '50', 10),
+      limit: Math.min(parseInt(searchParams.get('limit') ?? '50', 10), 200),
+      symbols: searchParams.get('symbols')?.split(',').map(s => s.trim().toUpperCase()),
+      qualityLevel: searchParams.get('qualityLevel') as FundamentalsSignal['qualityLevel'] | null,
+      sector: searchParams.get('sector'),
+      includeExpired: searchParams.get('includeExpired') === 'true',
+    })
   }
 }
 
 // POST endpoint to trigger a rescan
 export async function POST(request: NextRequest) {
   try {
+    if (!isSupabaseConfigured()) {
+      return NextResponse.json({
+        success: true,
+        message: 'Fundamentals scan queued (demo mode). Configure Supabase to enable live rescans.',
+      })
+    }
+
     const supabase = await createClient()
 
     // Check authentication

@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import type { FundamentalsSignal } from '@/app/api/fundamentals-scanner/route'
+import type { FundamentalsSignal } from '@/types/fundamentals'
 
 interface ApiResponse {
   success: boolean
@@ -21,36 +21,36 @@ interface ApiResponse {
 
 const qualityStyles: Record<FundamentalsSignal['qualityLevel'], { badge: string; border: string; glow: string; text: string }> = {
   excellent: {
-    badge: 'bg-emerald-500/15 text-emerald-200 border-emerald-400/40',
-    border: 'border-emerald-400/40',
-    glow: 'shadow-[0_18px_55px_rgba(16,185,129,0.28)]',
-    text: 'text-emerald-100',
+    badge: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+    border: 'border-emerald-200',
+    glow: 'shadow-[0_18px_55px_rgba(16,185,129,0.18)]',
+    text: 'text-emerald-700',
   },
   good: {
-    badge: 'bg-emerald-500/10 text-emerald-300 border-emerald-400/30',
-    border: 'border-emerald-400/30',
-    glow: 'shadow-[0_15px_45px_rgba(16,185,129,0.20)]',
-    text: 'text-emerald-200',
+    badge: 'bg-emerald-50 text-emerald-600 border-emerald-200/80',
+    border: 'border-emerald-200/80',
+    glow: 'shadow-[0_16px_45px_rgba(45,212,191,0.18)]',
+    text: 'text-emerald-600',
   },
   fair: {
-    badge: 'bg-slate-500/15 text-slate-200 border-slate-400/40',
-    border: 'border-slate-400/40',
-    glow: 'shadow-[0_15px_45px_rgba(148,163,184,0.2)]',
-    text: 'text-slate-100',
+    badge: 'bg-sky-50 text-sky-700 border-sky-200',
+    border: 'border-sky-200',
+    glow: 'shadow-[0_14px_35px_rgba(14,165,233,0.15)]',
+    text: 'text-sky-700',
   },
   poor: {
-    badge: 'bg-slate-500/10 text-slate-300 border-slate-400/30',
-    border: 'border-slate-400/30',
-    glow: 'shadow-[0_10px_30px_rgba(148,163,184,0.15)]',
-    text: 'text-slate-200',
+    badge: 'bg-slate-100 text-slate-700 border-slate-200',
+    border: 'border-slate-200',
+    glow: 'shadow-[0_12px_30px_rgba(148,163,184,0.18)]',
+    text: 'text-slate-700',
   },
 }
 
 const scoreGradient = (score: number) => {
-  if (score >= 80) return 'from-emerald-500/90 via-emerald-400/70 to-emerald-500/40'
-  if (score >= 65) return 'from-emerald-500/70 via-emerald-400/50 to-emerald-500/30'
-  if (score >= 50) return 'from-slate-500/70 via-slate-400/50 to-slate-500/30'
-  return 'from-slate-500/50 via-slate-400/40 to-slate-500/20'
+  if (score >= 80) return 'from-emerald-400 via-emerald-300 to-emerald-200'
+  if (score >= 65) return 'from-emerald-300 via-emerald-200 to-emerald-100'
+  if (score >= 50) return 'from-sky-300 via-sky-200 to-sky-100'
+  return 'from-slate-300 via-slate-200 to-slate-100'
 }
 
 const fetchFundamentalsSignals = async (minScore: number, limit: number): Promise<ApiResponse> => {
@@ -200,38 +200,38 @@ export function FundamentalsScanner({
   }
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-gradient-to-br from-white via-slate-50/70 to-white p-6 shadow-xl dark:border-white/10 dark:from-slate-950 dark:via-slate-900/70 dark:to-slate-950">
-      <div className="absolute -right-32 -top-32 h-64 w-64 rounded-full bg-emerald-500/10 blur-3xl" />
-      <div className="absolute -bottom-24 -left-16 h-72 w-72 rounded-full bg-blue-500/10 blur-3xl" />
+    <div className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-xl">
+      <div className="absolute -right-32 -top-32 h-64 w-64 rounded-full bg-emerald-200/50 blur-3xl" />
+      <div className="absolute -bottom-24 -left-16 h-72 w-72 rounded-full bg-sky-200/50 blur-3xl" />
 
-      <div className="relative flex items-start justify-between gap-4">
+      <div className="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <div className="text-sm uppercase tracking-[0.3em] text-emerald-600/70 dark:text-emerald-400/70">
-            Stock Fundamentals Scanner
+          <div className="text-xs uppercase tracking-[0.3em] text-emerald-600">
+            Monty Find Stocks
           </div>
-          <h2 className="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">Buy Opportunities</h2>
-          <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{headerSubtitle}</p>
+          <h2 className="mt-2 text-2xl font-semibold text-slate-900">Buy Opportunities</h2>
+          <p className="mt-1 text-sm text-slate-600">{headerSubtitle}</p>
         </div>
         <button
           type="button"
           onClick={() => refreshSignals().catch(() => {})}
           disabled={loading}
-          className="rounded-lg bg-white/80 px-4 py-2 text-sm text-slate-700 shadow-md transition-all hover:bg-white hover:shadow-lg disabled:opacity-50 dark:bg-white/10 dark:text-slate-200 dark:hover:bg-white/20"
+          className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:border-emerald-300 hover:text-emerald-600 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50"
           aria-label="Refresh signals"
         >
-          {loading ? 'Refreshing...' : 'Refresh'}
+          {loading ? 'Refreshing…' : 'Refresh'}
         </button>
       </div>
 
       {error && (
-        <div className="relative mt-6 flex items-center gap-3 rounded-xl border border-red-400/30 bg-red-500/10 p-4 text-sm text-red-200">
+        <div className="relative mt-6 flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
           <p>{error}</p>
         </div>
       )}
 
       {!loading && signals.length === 0 && !error && (
-        <div className="relative mt-6 flex flex-col items-center justify-center rounded-xl border border-slate-200/50 bg-slate-50/50 p-12 dark:border-white/5 dark:bg-white/5">
-          <p className="text-center text-slate-600 dark:text-slate-400">
+        <div className="relative mt-6 flex flex-col items-center justify-center rounded-xl border border-slate-200 bg-slate-50 p-12">
+          <p className="text-center text-slate-600">
             {filterSymbols && filterSymbols.length > 0
               ? 'None of your portfolio/watchlist stocks meet the current filter criteria.'
               : 'No stocks meet the current scoring criteria. Try adjusting filters.'}
@@ -314,7 +314,7 @@ export function FundamentalsScanner({
           {[...Array(3)].map((_, i) => (
             <div
               key={i}
-              className="h-48 animate-pulse rounded-xl border border-slate-200/50 bg-gradient-to-br from-slate-100/50 to-slate-50/30 dark:border-white/5 dark:from-white/5 dark:to-transparent"
+              className="h-48 animate-pulse rounded-xl border border-slate-200 bg-slate-50"
             />
           ))}
         </div>
@@ -358,15 +358,15 @@ function SignalGroup({
       <button
         type="button"
         onClick={() => setCollapsed(!collapsed)}
-        className="flex w-full items-center justify-between text-left group"
+        className="flex w-full items-center justify-between text-left rounded-2xl border border-transparent bg-white px-4 py-3 transition-colors hover:border-emerald-200"
       >
         <div>
           <h3 className={`text-lg font-semibold ${styles.text}`}>
             {title} ({signals.length})
           </h3>
-          <p className="text-sm text-slate-600 dark:text-slate-400">{description}</p>
+          <p className="text-sm text-slate-600">{description}</p>
         </div>
-        <span className="text-sm text-slate-500 group-hover:text-slate-300 transition-colors">
+        <span className="text-sm text-slate-500 transition-colors hover:text-emerald-600">
           {collapsed ? 'Show' : 'Hide'}
         </span>
       </button>
@@ -406,19 +406,19 @@ function SignalCard({ signal, expanded, onToggle, tag, formatCurrency, formatPer
 
   return (
     <div
-      className={`group relative overflow-hidden rounded-xl border bg-gradient-to-br from-white/90 via-white/60 to-white/90 p-5 transition-all hover:scale-[1.01] dark:from-slate-900/90 dark:via-slate-900/60 dark:to-slate-900/90 ${styles.border} ${styles.glow}`}
+      className={`group relative overflow-hidden rounded-2xl border bg-white p-5 transition-all hover:-translate-y-0.5 hover:shadow-xl ${styles.border} ${styles.glow}`}
     >
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2">
-          <h4 className="text-2xl font-bold text-slate-900 dark:text-white">{signal.symbol}</h4>
+          <h4 className="text-2xl font-bold text-slate-900">{signal.symbol}</h4>
           {tag && (
-            <span className="rounded-md bg-emerald-500/20 px-2 py-0.5 text-xs font-medium text-emerald-300 border border-emerald-500/30">
+            <span className="rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">
               {tag === 'portfolio' ? 'Portfolio' : 'Watchlist'}
             </span>
           )}
         </div>
-        <span className={`rounded-lg border px-3 py-1 text-xs font-semibold ${styles.badge}`}>
+        <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${styles.badge}`}>
           {signal.qualityLevel.toUpperCase()}
         </span>
       </div>
@@ -426,10 +426,10 @@ function SignalCard({ signal, expanded, onToggle, tag, formatCurrency, formatPer
       {/* Score */}
       <div className="mt-3">
         <div className="flex items-end justify-between">
-          <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Overall Score</span>
+          <span className="text-sm font-medium text-slate-600">Overall Score</span>
           <span className={`text-2xl font-bold ${styles.text}`}>{signal.overallScore}/100</span>
         </div>
-        <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
+        <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-200">
           <div
             className={`h-full rounded-full bg-gradient-to-r ${scoreGradient(signal.overallScore)}`}
             style={{ width: `${signal.overallScore}%` }}
@@ -439,9 +439,8 @@ function SignalCard({ signal, expanded, onToggle, tag, formatCurrency, formatPer
 
       {/* Buy Reason */}
       {signal.buyReason && (
-        <div className="mt-3 rounded-lg bg-emerald-500/10 p-3 text-sm text-emerald-200 dark:bg-emerald-500/10">
-          <span className="font-semibold">Why Buy: </span>
-          {signal.buyReason}
+        <div className="mt-3 rounded-xl border border-emerald-100 bg-emerald-50 p-3 text-sm text-emerald-700">
+          <span className="font-semibold">Why Buy:</span> {signal.buyReason}
         </div>
       )}
 
@@ -465,16 +464,16 @@ function SignalCard({ signal, expanded, onToggle, tag, formatCurrency, formatPer
       <button
         type="button"
         onClick={onToggle}
-        className="mt-4 w-full text-center text-sm font-medium text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
+        className="mt-4 w-full rounded-full bg-slate-100 py-2 text-center text-sm font-semibold text-slate-600 transition-colors hover:bg-emerald-100 hover:text-emerald-700"
       >
         {expanded ? 'Hide Details' : 'Show Details'}
       </button>
 
       {expanded && (
-        <div className="mt-4 space-y-4 border-t border-slate-200/50 pt-4 dark:border-white/5">
+        <div className="mt-4 space-y-4 border-t border-slate-200 pt-4">
           {/* Component Scores */}
           <div>
-            <h5 className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-300">Component Scores</h5>
+            <h5 className="mb-2 text-sm font-semibold text-slate-700">Component Scores</h5>
             <div className="space-y-2">
               <ScoreBar label="Financial Health" score={signal.healthScore} />
               <ScoreBar label="Profitability" score={signal.profitabilityScore} />
@@ -487,10 +486,10 @@ function SignalCard({ signal, expanded, onToggle, tag, formatCurrency, formatPer
           {/* Strengths */}
           {signal.strengths && signal.strengths.length > 0 && (
             <div>
-              <h5 className="mb-2 text-sm font-semibold text-emerald-700 dark:text-emerald-300">Strengths</h5>
+              <h5 className="mb-2 text-sm font-semibold text-emerald-700">Strengths</h5>
               <ul className="space-y-1.5">
                 {signal.strengths.map((strength, idx) => (
-                  <li key={idx} className="text-xs text-slate-700 dark:text-slate-300">
+                  <li key={idx} className="text-xs text-slate-600">
                     • {strength}
                   </li>
                 ))}
@@ -501,10 +500,10 @@ function SignalCard({ signal, expanded, onToggle, tag, formatCurrency, formatPer
           {/* Weaknesses */}
           {signal.weaknesses && signal.weaknesses.length > 0 && (
             <div>
-              <h5 className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-300">Weaknesses</h5>
+              <h5 className="mb-2 text-sm font-semibold text-slate-700">Weaknesses</h5>
               <ul className="space-y-1.5">
                 {signal.weaknesses.map((weakness, idx) => (
-                  <li key={idx} className="text-xs text-slate-700 dark:text-slate-300">
+                  <li key={idx} className="text-xs text-slate-600">
                     • {weakness}
                   </li>
                 ))}
@@ -515,10 +514,10 @@ function SignalCard({ signal, expanded, onToggle, tag, formatCurrency, formatPer
           {/* Risk Factors */}
           {signal.riskFactors && signal.riskFactors.length > 0 && (
             <div>
-              <h5 className="mb-2 text-sm font-semibold text-red-700 dark:text-red-300">Risk Factors</h5>
+              <h5 className="mb-2 text-sm font-semibold text-red-600">Risk Factors</h5>
               <ul className="space-y-1.5">
                 {signal.riskFactors.map((risk, idx) => (
-                  <li key={idx} className="text-xs text-slate-700 dark:text-slate-300">
+                  <li key={idx} className="text-xs text-slate-600">
                     • {risk}
                   </li>
                 ))}
@@ -528,7 +527,7 @@ function SignalCard({ signal, expanded, onToggle, tag, formatCurrency, formatPer
 
           {/* Detailed Metrics */}
           <div>
-            <h5 className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-300">Detailed Metrics</h5>
+            <h5 className="mb-2 text-sm font-semibold text-slate-700">Detailed Metrics</h5>
             <div className="grid grid-cols-2 gap-2 text-xs">
               <MetricDetail label="Revenue Growth" value={formatPercent(signal.revenueGrowth)} />
               <MetricDetail label="Earnings Growth" value={formatPercent(signal.earningsGrowth)} />
@@ -542,11 +541,20 @@ function SignalCard({ signal, expanded, onToggle, tag, formatCurrency, formatPer
           </div>
 
           {/* Recommendation */}
-          <div className="rounded-lg bg-slate-100/50 p-3 dark:bg-slate-800/50">
-            <h5 className="mb-1 text-sm font-semibold text-slate-700 dark:text-slate-300">Recommendation</h5>
-            <p className="text-xs text-slate-600 dark:text-slate-400">{signal.recommendation}</p>
-            <p className="mt-2 text-xs text-slate-500 dark:text-slate-500">
-              Risk Level: <span className={`font-semibold ${signal.riskLevel === 'low' ? 'text-emerald-400' : signal.riskLevel === 'moderate' ? 'text-amber-400' : 'text-red-400'}`}>
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+            <h5 className="mb-1 text-sm font-semibold text-slate-700">Recommendation</h5>
+            <p className="text-xs text-slate-600">{signal.recommendation}</p>
+            <p className="mt-2 text-xs text-slate-500">
+              Risk Level:{' '}
+              <span
+                className={`font-semibold ${
+                  signal.riskLevel === 'low'
+                    ? 'text-emerald-600'
+                    : signal.riskLevel === 'moderate'
+                    ? 'text-amber-600'
+                    : 'text-red-600'
+                }`}
+              >
                 {signal.riskLevel.toUpperCase()}
               </span>
             </p>
@@ -566,8 +574,8 @@ interface MetricItemProps {
 function MetricItem({ label, value, highlight }: MetricItemProps) {
   return (
     <div>
-      <div className="text-xs text-slate-500 dark:text-slate-500">{label}</div>
-      <div className={`text-sm font-semibold ${highlight ? 'text-emerald-400' : 'text-slate-900 dark:text-white'}`}>{value}</div>
+      <div className="text-xs text-slate-500">{label}</div>
+      <div className={`text-sm font-semibold ${highlight ? 'text-emerald-600' : 'text-slate-900'}`}>{value}</div>
     </div>
   )
 }
@@ -580,8 +588,8 @@ interface MetricDetailProps {
 function MetricDetail({ label, value }: MetricDetailProps) {
   return (
     <div className="flex justify-between">
-      <span className="text-slate-500 dark:text-slate-500">{label}:</span>
-      <span className="font-medium text-slate-700 dark:text-slate-300">{value}</span>
+      <span className="text-slate-500">{label}:</span>
+      <span className="font-medium text-slate-700">{value}</span>
     </div>
   )
 }
@@ -598,10 +606,10 @@ function ScoreBar({ label, score }: ScoreBarProps) {
   return (
     <div>
       <div className="mb-1 flex justify-between text-xs">
-        <span className="text-slate-600 dark:text-slate-400">{label}</span>
-        <span className="font-medium text-slate-700 dark:text-slate-300">{score !== null && score !== undefined ? (score * 100).toFixed(0) : 'N/A'}</span>
+        <span className="text-slate-600">{label}</span>
+        <span className="font-medium text-slate-700">{score !== null && score !== undefined ? (score * 100).toFixed(0) : 'N/A'}</span>
       </div>
-      <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
         <div className={`h-full rounded-full ${color}`} style={{ width: `${pct}%` }} />
       </div>
     </div>
