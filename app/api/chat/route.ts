@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
+import { buildLiveMarketContext, extractTickersFromText } from '@/lib/chat/live-market-data'
 
 export const runtime = 'edge'
 export const maxDuration = 60
@@ -126,6 +127,48 @@ export async function POST(request: Request) {
         { error: 'Last message must be a user message' },
         { status: 400, headers: corsHeaders }
       )
+    }
+
+    const extractTextFromContent = (content: MessageContent): string => {
+      if (typeof content === 'string') {
+        return content.trim()
+      }
+
+      return content
+        .map((item) => (item.type === 'text' ? item.text : ''))
+        .filter(Boolean)
+        .join(' ')
+        .trim()
+    }
+
+    const lastUserText = extractTextFromContent(lastMessage.content)
+
+    let marketContextMessage: { role: 'assistant'; content: MessageContent } | null = null
+
+    if (lastUserText) {
+      const tickers = extractTickersFromText(lastUserText)
+
+      if (tickers.length) {
+        try {
+          const marketContext = await buildLiveMarketContext(tickers)
+          if (marketContext?.summary) {
+            marketContextMessage = {
+              role: 'assistant',
+              content: `Live market data context (auto-generated):\n${marketContext.summary}`,
+            }
+          }
+        } catch (error) {
+          console.error('Failed to fetch live market context', error)
+        }
+      }
+    }
+
+    if (marketContextMessage) {
+      const lastUserMessage = normalizedMessages.pop()
+      if (lastUserMessage) {
+        normalizedMessages.push(marketContextMessage)
+        normalizedMessages.push(lastUserMessage)
+      }
     }
 
     if (!process.env.ANTHROPIC_API_KEY) {
