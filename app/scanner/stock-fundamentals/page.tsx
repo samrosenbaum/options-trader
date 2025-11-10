@@ -2,19 +2,14 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import Navigation from '@/components/navigation'
 import { FundamentalsScanner } from '@/components/fundamentals-scanner'
 import { ChatStockScanner } from '@/components/chat-stock-scanner'
 
-type ViewMode = 'cards' | 'chat'
-
 export default function UnifiedFundamentalsPage() {
   const [userEmail, setUserEmail] = useState<string | undefined>(undefined)
   const [showTooltip, setShowTooltip] = useState(true)
-  const searchParams = useSearchParams()
-  const initialView = (searchParams.get('view') as ViewMode) || 'cards'
-  const [viewMode, setViewMode] = useState<ViewMode>(initialView)
   const router = useRouter()
 
   useEffect(() => {
@@ -48,14 +43,6 @@ export default function UnifiedFundamentalsPage() {
     localStorage.setItem('fundamentals-scanner-tooltip-dismissed', 'true')
   }
 
-  const changeViewMode = (mode: ViewMode) => {
-    setViewMode(mode)
-    // Update URL without triggering navigation
-    const url = new URL(window.location.href)
-    url.searchParams.set('view', mode)
-    window.history.pushState({}, '', url.toString())
-  }
-
   return (
     <>
       <Navigation userEmail={userEmail} />
@@ -76,32 +63,6 @@ export default function UnifiedFundamentalsPage() {
             <p className="text-slate-400 text-lg">
               Discover high-quality stock buying opportunities based on fundamental analysis
             </p>
-          </div>
-
-          {/* View Mode Toggle */}
-          <div className="mb-6 flex justify-center">
-            <div className="inline-flex rounded-xl border border-white/10 bg-white/5 p-1 backdrop-blur-sm">
-              <button
-                onClick={() => changeViewMode('chat')}
-                className={`rounded-lg px-6 py-3 text-sm font-medium transition-all ${
-                  viewMode === 'chat'
-                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                Chat Scanner
-              </button>
-              <button
-                onClick={() => changeViewMode('cards')}
-                className={`rounded-lg px-6 py-3 text-sm font-medium transition-all ${
-                  viewMode === 'cards'
-                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                Card View
-              </button>
-            </div>
           </div>
 
           {/* Info Tooltip */}
@@ -147,50 +108,56 @@ export default function UnifiedFundamentalsPage() {
             </div>
           )}
 
-          {/* Quality Tiers Explanation - Only show in card view */}
-          {viewMode === 'cards' && (
-            <div className="mb-6 grid grid-cols-1 md:grid-cols-4 gap-3">
-              <div className="rounded-xl border border-emerald-400/30 bg-emerald-900/20 p-4">
-                <div className="text-emerald-400 font-semibold mb-1">
-                  Excellent (80+)
-                </div>
-                <p className="text-xs text-slate-400">
-                  Outstanding fundamentals across all metrics. Strong buy candidates with minimal concerns.
-                </p>
+          {/* Quality Tiers Explanation */}
+          <div className="mb-6 grid grid-cols-1 md:grid-cols-4 gap-3">
+            <div className="rounded-xl border border-emerald-400/30 bg-emerald-900/20 p-4">
+              <div className="text-emerald-400 font-semibold mb-1">
+                Excellent (80+)
               </div>
-              <div className="rounded-xl border border-emerald-400/20 bg-emerald-900/10 p-4">
-                <div className="text-emerald-300 font-semibold mb-1">
-                  Good (65-79)
-                </div>
-                <p className="text-xs text-slate-400">
-                  Solid fundamentals with minor weaknesses. Quality buy opportunities for most investors.
-                </p>
-              </div>
-              <div className="rounded-xl border border-slate-400/30 bg-slate-900/20 p-4">
-                <div className="text-slate-300 font-semibold mb-1">
-                  Fair (50-64)
-                </div>
-                <p className="text-xs text-slate-400">
-                  Mixed fundamentals. Suitable for selective positioning with careful consideration.
-                </p>
-              </div>
-              <div className="rounded-xl border border-slate-400/20 bg-slate-900/10 p-4">
-                <div className="text-slate-400 font-semibold mb-1">
-                  Watch (&lt;50)
-                </div>
-                <p className="text-xs text-slate-400">
-                  Weak fundamentals. Monitor for improvement before considering investment.
-                </p>
-              </div>
+              <p className="text-xs text-slate-400">
+                Outstanding fundamentals across all metrics. Strong buy candidates with minimal concerns.
+              </p>
             </div>
-          )}
+            <div className="rounded-xl border border-emerald-400/20 bg-emerald-900/10 p-4">
+              <div className="text-emerald-300 font-semibold mb-1">
+                Good (65-79)
+              </div>
+              <p className="text-xs text-slate-400">
+                Solid fundamentals with minor weaknesses. Quality buy opportunities for most investors.
+              </p>
+            </div>
+            <div className="rounded-xl border border-slate-400/30 bg-slate-900/20 p-4">
+              <div className="text-slate-300 font-semibold mb-1">
+                Fair (50-64)
+              </div>
+              <p className="text-xs text-slate-400">
+                Mixed fundamentals. Suitable for selective positioning with careful consideration.
+              </p>
+            </div>
+            <div className="rounded-xl border border-slate-400/20 bg-slate-900/10 p-4">
+              <div className="text-slate-400 font-semibold mb-1">
+                Watch (&lt;50)
+              </div>
+              <p className="text-xs text-slate-400">
+                Weak fundamentals. Monitor for improvement before considering investment.
+              </p>
+            </div>
+          </div>
 
-          {/* Scanner Components */}
-          {viewMode === 'chat' ? (
-            <ChatStockScanner />
-          ) : (
-            <FundamentalsScanner limit={50} minScore={50} />
-          )}
+          {/* Side-by-Side Layout: Chat Scanner and Card View */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            {/* Chat Scanner */}
+            <div>
+              <h2 className="text-xl font-semibold text-white mb-4">Chat Scanner</h2>
+              <ChatStockScanner />
+            </div>
+
+            {/* Card View Scanner */}
+            <div>
+              <h2 className="text-xl font-semibold text-white mb-4">All Signals</h2>
+              <FundamentalsScanner limit={50} minScore={50} />
+            </div>
+          </div>
 
           {/* Methodology Note */}
           <div className="mt-8 rounded-xl border border-slate-700/50 bg-slate-900/30 p-6">
