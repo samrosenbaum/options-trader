@@ -16,6 +16,7 @@ import yfinance as yf
 
 from scripts.bulk_options_fetcher import BulkOptionsFetcher
 from src.analysis import SwingSignal, SwingSignalAnalyzer
+from src.catalysts import CatalystTracker
 from src.analysis.rejection_tracker import RejectionTracker
 from src.config import AppSettings, get_settings
 from src.monitoring import QuoteIntegrityMonitor
@@ -110,6 +111,7 @@ class SmartOptionsScanner:
         self.data_freshness: Dict[str, Any] | None = None
         self.cache_ttl_seconds: int = max(int(getattr(settings.cache, "ttl_seconds", 900) or 0), 0)
         self.validator = OptionsDataValidator()
+        self.catalyst_tracker = CatalystTracker()
         # Relaxed fallbacks are only safe when we are certain the snapshot is live.
         # Limit their activation window to the most recent few minutes of market data.
         self._fallback_max_age_minutes: float = 5.0
@@ -1353,6 +1355,38 @@ class SmartOptionsScanner:
             if enhanced_bias and abs(enhanced_bias.get("score", 0)) > 30:
                 patterns.append("Strong Directional Signal")
 
+            catalyst_summary_payload: Optional[Dict[str, Any]] = None
+            try:
+                catalyst_summary = self.catalyst_tracker.build_summary(option["symbol"])
+            except Exception as exc:  # pragma: no cover - defensive guard
+                print(
+                    f"Warning: catalyst summary failed for {option['symbol']}: {exc}",
+                    file=sys.stderr,
+                )
+                catalyst_summary = None
+
+            if catalyst_summary is not None:
+                catalyst_summary_payload = catalyst_summary.model_dump(
+                    mode="json", exclude_none=True
+                )
+                for event in catalyst_summary.events[:3]:
+                    label = event.name
+                    if event.type and event.type not in label.lower():
+                        label = f"{label} ({event.type})"
+                    if event.days_until is not None:
+                        days = int(round(event.days_until))
+                        if event.days_until >= 0:
+                            label = f"{label} in {days}d"
+                        else:
+                            label = f"{label} {abs(days)}d ago"
+                    if getattr(event, "approximate", False):
+                        label = f"{label} (est.)"
+                    catalysts.append(label)
+
+                technical = catalyst_summary.technical
+                if technical and technical.commentary:
+                    catalysts.extend(technical.commentary[:2])
+
             # Validate data quality before creating opportunity
             quality_report = self.validator.validate_option(option.to_dict())
 
@@ -1376,6 +1410,14 @@ class SmartOptionsScanner:
                 contract_cost=contract_cost,
             )
 
+            if catalysts:
+                seen_catalysts: Set[str] = set()
+                catalysts = [
+                    item
+                    for item in catalysts
+                    if not (item in seen_catalysts or seen_catalysts.add(item))
+                ]
+
             opportunity = {
                 "symbol": option["symbol"],
                 "optionType": option["type"],
@@ -1394,6 +1436,7 @@ class SmartOptionsScanner:
                 "confidence": round(min(95, (score * 0.35) + (probability_percent * 0.65)), 1),
                 "reasoning": reasoning,
                 "catalysts": catalysts,
+                "catalystSummary": catalyst_summary_payload,
                 "patterns": patterns,
                 "riskLevel": self.assess_risk_level(option, metrics, probability_score),
                 "potentialReturn": round(metrics["tenMoveRoiPercent"], 1),

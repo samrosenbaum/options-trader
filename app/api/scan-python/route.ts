@@ -4,6 +4,37 @@ import { resolvePythonExecutable } from "@/lib/server/python"
 import { ensureOptionGreeks } from "@/lib/math/greeks"
 import { determineScannerExecutionPolicy } from "@/lib/server/scanner-runtime"
 
+interface CatalystEventSummary {
+  type?: string
+  name: string
+  date?: string | null
+  days_until?: number | null
+  description?: string | null
+  impact?: string | null
+  confidence?: number | null
+  source?: string | null
+  tags?: string[]
+  approximate?: boolean
+}
+
+interface CatalystTechnicalSummary {
+  trend?: string | null
+  support?: number | null
+  resistance?: number | null
+  last_price?: number | null
+  support_distance_pct?: number | null
+  resistance_distance_pct?: number | null
+  moving_averages?: Record<string, number | null> | null
+  commentary?: string[]
+}
+
+interface CatalystSummaryPayload {
+  symbol?: string
+  generated_at?: string
+  events?: CatalystEventSummary[]
+  technical?: CatalystTechnicalSummary | null
+}
+
 interface ScannerOpportunity {
   symbol: string
   optionType: "call" | "put" | string
@@ -21,6 +52,7 @@ interface ScannerOpportunity {
   tradeSummary?: string
   reasoning: string[]
   catalysts: string[]
+  catalystSummary?: CatalystSummaryPayload | null
   patterns: string[]
   riskLevel: string
   potentialReturn: number

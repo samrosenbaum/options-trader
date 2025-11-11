@@ -299,6 +299,37 @@ const getRiskBudgetMeta = (tier?: PositionSizingRecommendation['riskBudgetTier']
   }
 }
 
+interface CatalystEventSummary {
+  type?: string
+  name: string
+  date?: string | null
+  days_until?: number | null
+  description?: string | null
+  impact?: string | null
+  confidence?: number | null
+  source?: string | null
+  tags?: string[]
+  approximate?: boolean
+}
+
+interface CatalystTechnicalSummary {
+  trend?: string | null
+  support?: number | null
+  resistance?: number | null
+  last_price?: number | null
+  support_distance_pct?: number | null
+  resistance_distance_pct?: number | null
+  moving_averages?: Record<string, number | null> | null
+  commentary?: string[]
+}
+
+interface CatalystSummaryPayload {
+  symbol?: string
+  generated_at?: string
+  events?: CatalystEventSummary[]
+  technical?: CatalystTechnicalSummary | null
+}
+
 interface Opportunity {
   symbol: string
   optionType: string
@@ -317,6 +348,7 @@ interface Opportunity {
   reasoning: string[]
   patterns: string[]
   catalysts: string[]
+  catalystSummary?: CatalystSummaryPayload | null
   riskLevel: string
   potentialReturn: number
   potentialReturnAmount: number
@@ -728,6 +760,24 @@ const renderOpportunityCard = (
   const normalizedRiskLabel = opp.riskLevel
     ? opp.riskLevel.charAt(0).toUpperCase() + opp.riskLevel.slice(1)
     : null
+
+  const catalystSummary = opp.catalystSummary ?? null
+  const upcomingCatalysts = (catalystSummary?.events ?? [])
+    .filter((event) => {
+      if (typeof event?.days_until === 'number' && Number.isFinite(event.days_until)) {
+        return event.days_until >= -2 && event.days_until <= 60
+      }
+      return Boolean(event?.name)
+    })
+    .slice(0, 3)
+  const technicalSummary = catalystSummary?.technical ?? null
+  const hasTechnicalHighlights = Boolean(
+    technicalSummary &&
+      ((technicalSummary.commentary && technicalSummary.commentary.length > 0) ||
+        technicalSummary.support ||
+        technicalSummary.resistance),
+  )
+  const showCatalystCard = upcomingCatalysts.length > 0 || hasTechnicalHighlights
 
   return (
     <div
@@ -2741,6 +2791,39 @@ export default function ScannerPage({ user }: ScannerPageProps) {
     return `${value.toFixed(digits)}%`
   }
 
+  const formatCatalystDate = (value?: string | null) => {
+    if (!value) {
+      return null
+    }
+
+    const parsed = new Date(value)
+    if (Number.isNaN(parsed.getTime())) {
+      return null
+    }
+
+    return parsed.toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric',
+    })
+  }
+
+  const formatCatalystTiming = (value?: number | null) => {
+    if (typeof value !== 'number' || Number.isNaN(value)) {
+      return null
+    }
+
+    const rounded = Math.round(value)
+    if (value >= 0) {
+      if (rounded === 0) return 'Today'
+      if (rounded === 1) return 'Tomorrow'
+      return `In ${rounded} days`
+    }
+
+    const absRounded = Math.abs(rounded)
+    if (absRounded === 1) return '1 day ago'
+    return `${absRounded} days ago`
+  }
+
   const safeToFixed = (value: number | null | undefined, digits = 1) => {
     if (value === null || value === undefined || Number.isNaN(value)) {
       return null
@@ -3218,6 +3301,103 @@ export default function ScannerPage({ user }: ScannerPageProps) {
                 ))}
               </div>
             ) : null}
+          </div>
+        )}
+
+        {showCatalystCard && (
+          <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4 space-y-3">
+            <h5 className="font-medium text-slate-900 dark:text-white">Catalyst Outlook</h5>
+            {upcomingCatalysts.length > 0 ? (
+              <div className="space-y-2">
+                {upcomingCatalysts.map((event, index) => (
+                  <div
+                    key={`${opp.symbol}-catalyst-${index}`}
+                    className="flex items-start justify-between gap-3 rounded-xl bg-white/70 dark:bg-slate-900/60 px-3 py-2"
+                  >
+                    <div className="space-y-1">
+                      <div className="text-sm font-semibold text-slate-900 dark:text-white">
+                        {event.name}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+                        {event.type && (
+                          <span className="px-2 py-0.5 rounded-full bg-indigo-100/80 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-200">
+                            {event.type}
+                          </span>
+                        )}
+                        {event.approximate && (
+                          <span className="px-2 py-0.5 rounded-full bg-amber-100/80 dark:bg-amber-900/40 text-amber-700 dark:text-amber-200">
+                            Estimated timing
+                          </span>
+                        )}
+                        {event.impact && <span>Impact: {event.impact}</span>}
+                        {typeof event.confidence === 'number' && (
+                          <span>Confidence: {(event.confidence * 100).toFixed(0)}%</span>
+                        )}
+                      </div>
+                      {event.description && (
+                        <div className="text-xs text-slate-600 dark:text-slate-400 leading-snug">
+                          {event.description}
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-right text-xs text-slate-500 dark:text-slate-400 space-y-1">
+                      {formatCatalystTiming(event.days_until) && (
+                        <div className="text-sm font-semibold text-slate-900 dark:text-white">
+                          {formatCatalystTiming(event.days_until)}
+                        </div>
+                      )}
+                      {formatCatalystDate(event.date) && <div>{formatCatalystDate(event.date)}</div>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-slate-600 dark:text-slate-400">
+                No scheduled catalysts on our calendar yet. Monitor headlines for fresh developments.
+              </p>
+            )}
+
+            {hasTechnicalHighlights && (
+              <div className="pt-3 border-t border-slate-200/60 dark:border-slate-700/60 space-y-3">
+                <div className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 font-semibold">
+                  Key technical levels
+                </div>
+                {technicalSummary?.commentary && technicalSummary.commentary.length > 0 && (
+                  <ul className="space-y-1 text-sm text-slate-700 dark:text-slate-300">
+                    {technicalSummary.commentary.map((note, index) => (
+                      <li key={`tech-note-${index}`} className="flex gap-2">
+                        <span className="text-slate-400 dark:text-slate-600">•</span>
+                        <span>{note}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-slate-500 dark:text-slate-400">
+                  <div>
+                    <div className="uppercase tracking-wide text-[11px]">Support</div>
+                    <div className="text-sm font-semibold text-slate-900 dark:text-white">
+                      {typeof technicalSummary?.support === 'number'
+                        ? `$${technicalSummary.support.toFixed(2)}`
+                        : '—'}
+                    </div>
+                    {typeof technicalSummary?.support_distance_pct === 'number' && (
+                      <div>{technicalSummary.support_distance_pct.toFixed(1)}% from price</div>
+                    )}
+                  </div>
+                  <div>
+                    <div className="uppercase tracking-wide text-[11px]">Resistance</div>
+                    <div className="text-sm font-semibold text-slate-900 dark:text-white">
+                      {typeof technicalSummary?.resistance === 'number'
+                        ? `$${technicalSummary.resistance.toFixed(2)}`
+                        : '—'}
+                    </div>
+                    {typeof technicalSummary?.resistance_distance_pct === 'number' && (
+                      <div>{technicalSummary.resistance_distance_pct.toFixed(1)}% from price</div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

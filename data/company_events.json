@@ -1,0 +1,96 @@
+{
+  "META": [
+    {
+      "date": "2024-11-21T17:00:00Z",
+      "name": "Reality Labs roadmap update",
+      "type": "product",
+      "description": "Meta Connect follow-up on AI and VR initiatives",
+      "impact": "medium",
+      "confidence": 0.6,
+      "tags": ["ai", "metaverse"]
+    },
+    {
+      "date": "2024-12-10T15:00:00Z",
+      "name": "Advertising innovation summit",
+      "type": "conference",
+      "description": "Major advertisers summit highlighting new AI ad tools",
+      "impact": "medium",
+      "confidence": 0.5,
+      "tags": ["ads", "growth"]
+    },
+    {
+      "name": "Meta Connect keynote",
+      "type": "product",
+      "description": "Annual developer conference highlighting AR/VR roadmap",
+      "impact": "high",
+      "confidence": 0.5,
+      "tags": ["metaverse", "hardware"],
+      "recurrence": {
+        "month": 9,
+        "day": 25,
+        "window_days": 14
+      }
+    }
+  ],
+  "NVDA": [
+    {
+      "date": "2024-11-26T18:00:00Z",
+      "name": "GPU Technology Conference Spotlight",
+      "type": "product",
+      "description": "AI infrastructure roadmap and product refresh",
+      "impact": "high",
+      "confidence": 0.7,
+      "tags": ["ai", "datacenter"]
+    },
+    {
+      "name": "GTC keynote",
+      "type": "conference",
+      "description": "CEO Jensen Huang outlines GPU roadmap and AI partnerships",
+      "impact": "high",
+      "confidence": 0.6,
+      "tags": ["ai", "enterprise"],
+      "recurrence": {
+        "month": 3,
+        "day": 18,
+        "window_days": 10
+      }
+    }
+  ],
+  "AAPL": [
+    {
+      "date": "2024-12-02T18:00:00Z",
+      "name": "Holiday product event",
+      "type": "product",
+      "description": "Expected Vision Pro and AI feature updates",
+      "impact": "medium",
+      "confidence": 0.5,
+      "tags": ["hardware", "ai"]
+    },
+    {
+      "name": "WWDC keynote",
+      "type": "conference",
+      "description": "Annual developer conference with major software platform announcements",
+      "impact": "medium",
+      "confidence": 0.6,
+      "tags": ["software", "developers"],
+      "recurrence": {
+        "month": 6,
+        "day": 5,
+        "window_days": 7
+      }
+    },
+    {
+      "name": "Flagship iPhone launch",
+      "type": "product",
+      "description": "Annual fall hardware refresh focused on iPhone and wearables",
+      "impact": "high",
+      "confidence": 0.5,
+      "tags": ["hardware", "mobile"],
+      "recurrence": {
+        "month": 9,
+        "day": 12,
+        "window_days": 14
+      }
+    }
+  ]
+}

@@ -8,6 +8,38 @@ export interface Message {
   screenshot?: string; // Base64 data URL for screenshots
 }
 
+export interface CatalystEventSummary {
+  type?: string;
+  name: string;
+  date?: string | null;
+  days_until?: number | null;
+  description?: string | null;
+  impact?: string | null;
+  confidence?: number | null;
+  source?: string | null;
+  tags?: string[];
+  approximate?: boolean;
+}
+
+export interface CatalystTechnicalSummary {
+  trend?: string | null;
+  support?: number | null;
+  resistance?: number | null;
+  last_price?: number | null;
+  support_distance_pct?: number | null;
+  resistance_distance_pct?: number | null;
+  moving_averages?: Record<string, number | null> | null;
+  commentary?: string[];
+}
+
+export interface CatalystSummaryPayload {
+  symbol?: string;
+  generated_at?: string;
+  events?: CatalystEventSummary[];
+  technical?: CatalystTechnicalSummary | null;
+  error?: string;
+}
+
 export interface RobinhoodContext {
   ticker?: string;
   currentPrice?: number;
