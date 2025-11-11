@@ -9,6 +9,7 @@ import {
   BarChart3,
   Bookmark,
   Briefcase,
+  Brain,
   LayoutDashboard,
   Menu,
   Radar,
@@ -57,6 +58,12 @@ const NAV_SECTIONS: NavSection[] = [
         label: 'Portfolio',
         description: 'Positions, sizing, and open risk',
         icon: Briefcase,
+      },
+      {
+        href: '/rejection-learning',
+        label: 'Anti-Portfolio',
+        description: 'Review missed trades and sharpen instincts',
+        icon: Brain,
       },
       {
         href: '/watchlist',
