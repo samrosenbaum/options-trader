@@ -8,6 +8,7 @@ import { usePathname } from 'next/navigation'
 import {
   BarChart3,
   Bookmark,
+  Brain,
   Briefcase,
   ChevronLeft,
   ChevronRight,
@@ -60,6 +61,12 @@ const NAV_SECTIONS: NavSection[] = [
         label: 'Portfolio',
         description: 'Positions, sizing, and open risk',
         icon: Briefcase,
+      },
+      {
+        href: '/rejection-learning',
+        label: 'Anti-Portfolio',
+        description: 'Review missed trades and sharpen instincts',
+        icon: Brain,
       },
       {
         href: '/watchlist',
