@@ -811,7 +811,14 @@ export default function PortfolioClient({
 
   const portfolioInsights = useMemo<PortfolioInsight[]>(() => {
     if (openPositions.length === 0) {
-      return []
+      return [
+        {
+          tone: 'positive',
+          title: 'Build your playbook',
+          description:
+            'Add active positions to unlock portfolio mix diagnostics and balancing cues.',
+        },
+      ]
     }
 
     const insights: PortfolioInsight[] = []
@@ -1749,8 +1756,7 @@ export default function PortfolioClient({
           </div>
         )}
 
-        {openPositions.length > 0 && (
-          <motion.section
+        <motion.section
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, duration: 0.6, ease: 'easeOut' }}
@@ -1768,10 +1774,14 @@ export default function PortfolioClient({
               <div className="relative overflow-hidden rounded-2xl border border-white/20 bg-white/60 px-5 py-3 text-sm text-slate-700 shadow-[0_10px_30px_-12px_rgba(15,23,42,0.35)] backdrop-blur-sm dark:border-white/10 dark:bg-slate-900/60 dark:text-slate-200">
                 <div className="absolute inset-0 -z-10 bg-gradient-to-br from-emerald-400/40 via-white/40 to-transparent opacity-80 dark:from-emerald-500/30" />
                 <div className="font-semibold text-slate-900 dark:text-white">
-                  {currencyFormatter.format(totalExposure)} premium at risk
+                  {totalExposure > 0
+                    ? `${currencyFormatter.format(totalExposure)} premium at risk`
+                    : 'No live premium at risk'}
                 </div>
                 <div className="text-xs uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">
-                  {totalContracts} {totalContracts === 1 ? 'contract' : 'contracts'}
+                  {totalContracts > 0
+                    ? `${totalContracts} ${totalContracts === 1 ? 'contract' : 'contracts'}`
+                    : 'Add trades to populate mix'}
                 </div>
               </div>
             </div>
@@ -1885,72 +1895,78 @@ export default function PortfolioClient({
                   </p>
                 </div>
 
-                <div className="relative space-y-4">
-                  {mixGap.map((item) => {
-                    const deltaMagnitude = Math.abs(Math.round(item.delta))
-                    const statusLabel =
-                      deltaMagnitude < 2
-                        ? 'On target'
-                        : item.delta > 0
-                          ? `+${deltaMagnitude}% over`
-                          : `${deltaMagnitude}% under`
+                {totalExposure <= 0 ? (
+                  <div className="relative rounded-2xl border border-white/40 bg-white/40 py-10 px-6 text-center text-sm text-slate-500 shadow-inner backdrop-blur-sm dark:border-white/10 dark:bg-slate-900/40 dark:text-slate-400">
+                    Once you add active positions with entry prices, you will see how each sleeve compares to the target mix.
+                  </div>
+                ) : (
+                  <div className="relative space-y-4">
+                    {mixGap.map((item) => {
+                      const deltaMagnitude = Math.abs(Math.round(item.delta))
+                      const statusLabel =
+                        deltaMagnitude < 2
+                          ? 'On target'
+                          : item.delta > 0
+                            ? `+${deltaMagnitude}% over`
+                            : `${deltaMagnitude}% under`
 
-                    return (
-                      <div
-                        key={item.key}
-                        className="relative overflow-hidden rounded-2xl border border-white/30 bg-white/40 p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg dark:border-white/10 dark:bg-slate-900/40"
-                      >
-                        <div className="absolute inset-0 -z-10 bg-gradient-to-br from-white/20 via-transparent to-transparent" />
-                        <div className="flex items-center justify-between text-sm">
-                          <div className="flex items-center gap-2">
-                            <span
-                              className="h-2.5 w-2.5 rounded-full"
-                              style={{
-                                backgroundColor: POSITION_MIX_CONFIG[item.key].color,
-                              }}
-                            />
-                            <span className="font-semibold text-slate-900 dark:text-white">
-                              {POSITION_MIX_CONFIG[item.key].label}
+                      return (
+                        <div
+                          key={item.key}
+                          className="relative overflow-hidden rounded-2xl border border-white/30 bg-white/40 p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg dark:border-white/10 dark:bg-slate-900/40"
+                        >
+                          <div className="absolute inset-0 -z-10 bg-gradient-to-br from-white/20 via-transparent to-transparent" />
+                          <div className="flex items-center justify-between text-sm">
+                            <div className="flex items-center gap-2">
+                              <span
+                                className="h-2.5 w-2.5 rounded-full"
+                                style={{
+                                  backgroundColor: POSITION_MIX_CONFIG[item.key].color,
+                                }}
+                              />
+                              <span className="font-semibold text-slate-900 dark:text-white">
+                                {POSITION_MIX_CONFIG[item.key].label}
+                              </span>
+                            </div>
+                            <span className="text-slate-500 dark:text-slate-400">
+                              Target {item.percentage}%
                             </span>
                           </div>
-                          <span className="text-slate-500 dark:text-slate-400">
-                            Target {item.percentage}%
-                          </span>
-                        </div>
-                        <div className="mt-3 flex items-center gap-3">
-                          <div className="relative h-2 flex-1 overflow-hidden rounded-full bg-slate-100/70 dark:bg-slate-800/70">
-                            <div
-                              className="absolute inset-y-0 rounded-full"
-                              style={{
-                                width: `${Math.min(100, item.actual)}%`,
-                                backgroundColor: POSITION_MIX_CONFIG[item.key].color,
-                                opacity: 0.8,
-                              }}
-                            />
+                          <div className="mt-3 flex items-center gap-3">
+                            <div className="relative h-2 flex-1 overflow-hidden rounded-full bg-slate-100/70 dark:bg-slate-800/70">
+                              <div
+                                className="absolute inset-y-0 rounded-full"
+                                style={{
+                                  width: `${Math.min(100, item.actual)}%`,
+                                  backgroundColor: POSITION_MIX_CONFIG[item.key].color,
+                                  opacity: 0.8,
+                                }}
+                              />
+                              <span
+                                className="absolute inset-y-0 w-[2px] bg-slate-400/50 dark:bg-slate-500/50"
+                                style={{ left: `${item.percentage}%` }}
+                              />
+                            </div>
                             <span
-                              className="absolute inset-y-0 w-[2px] bg-slate-400/50 dark:bg-slate-500/50"
-                              style={{ left: `${item.percentage}%` }}
-                            />
+                              className={`text-sm font-medium ${
+                                deltaMagnitude < 2
+                                  ? 'text-slate-600 dark:text-slate-400'
+                                  : item.delta > 0
+                                    ? 'text-emerald-600 dark:text-emerald-400'
+                                    : 'text-amber-600 dark:text-amber-400'
+                              }`}
+                            >
+                              {formatPercentage(item.actual)}
+                            </span>
                           </div>
-                          <span
-                            className={`text-sm font-medium ${
-                              deltaMagnitude < 2
-                                ? 'text-slate-600 dark:text-slate-400'
-                                : item.delta > 0
-                                  ? 'text-emerald-600 dark:text-emerald-400'
-                                  : 'text-amber-600 dark:text-amber-400'
-                            }`}
-                          >
-                            {formatPercentage(item.actual)}
-                          </span>
+                          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                            {statusLabel} · {item.description}
+                          </p>
                         </div>
-                        <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                          {statusLabel} · {item.description}
-                        </p>
-                      </div>
-                    )
-                  })}
-                </div>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
 
               <div className="group relative flex flex-col overflow-hidden rounded-3xl border border-white/30 bg-white/40 p-6 shadow-[0_25px_80px_-35px_rgba(15,23,42,0.65)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_34px_120px_-42px_rgba(109,40,217,0.55)] dark:border-white/10 dark:bg-slate-900/50">
@@ -2017,7 +2033,7 @@ export default function PortfolioClient({
 
               {expirationProfile.totalExposure <= 0 ? (
                 <div className="relative rounded-2xl border border-white/40 bg-white/40 py-12 text-center text-sm text-slate-500 shadow-inner backdrop-blur-sm dark:border-white/10 dark:bg-slate-900/40 dark:text-slate-400">
-                  We need premium values to build this ladder.
+                  Log a few live trades to visualize how your expirations ladder across time.
                 </div>
               ) : (
                 <div className="relative h-64 overflow-hidden rounded-2xl border border-white/30 bg-white/40 backdrop-blur-sm dark:border-white/10 dark:bg-slate-900/40">
@@ -2069,7 +2085,6 @@ export default function PortfolioClient({
               </div>
             </div>
           </motion.section>
-        )}
 
         {/* Empty State */}
         {positions.length === 0 && (
