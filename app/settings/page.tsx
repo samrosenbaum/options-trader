@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Save, Loader2, LogOut } from "lucide-react"
-import Navigation from "@/components/navigation"
+import AppShell from '@/components/app-shell'
 import { createClient } from "@/lib/supabase/client"
 import EmailSubscriptionCard from '@/components/email-subscription-card'
 
@@ -114,8 +114,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <>
-      <Navigation />
+    <AppShell mainClassName="bg-background">
       <div className="container max-w-4xl mx-auto py-8 px-4">
         <div className="mb-8">
           <h1 className="text-3xl font-bold">
@@ -279,7 +278,7 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
-    </div>
-    </>
+      </div>
+    </AppShell>
   )
 }

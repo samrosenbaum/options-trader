@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import PortfolioClient from './portfolio-client'
-import Navigation from '@/components/navigation'
+import AppShell from '@/components/app-shell'
 
 export default async function PortfolioPage() {
   const supabase = await createClient()
@@ -22,12 +22,11 @@ export default async function PortfolioPage() {
     .order('created_at', { ascending: false })
 
   return (
-    <>
-      <Navigation userEmail={user.email} />
+    <AppShell userEmail={user.email}>
       <PortfolioClient
         initialPositions={positions || []}
         user={user}
       />
-    </>
+    </AppShell>
   )
 }

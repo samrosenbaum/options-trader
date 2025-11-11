@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import Navigation from '@/components/navigation'
+import AppShell from '@/components/app-shell'
 import ScannerPage from '../scanner-page'
 
 export default async function ScannerRoute() {
@@ -14,9 +14,8 @@ export default async function ScannerRoute() {
   }
 
   return (
-    <>
-      <Navigation userEmail={user.email} />
+    <AppShell userEmail={user.email}>
       <ScannerPage user={user} />
-    </>
+    </AppShell>
   )
 }
