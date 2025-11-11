@@ -8,6 +8,7 @@ import { usePathname } from 'next/navigation'
 import {
   BarChart3,
   Bookmark,
+  Brain,
   Briefcase,
   ChevronLeft,
   ChevronRight,
