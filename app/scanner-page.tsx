@@ -761,24 +761,6 @@ const renderOpportunityCard = (
     ? opp.riskLevel.charAt(0).toUpperCase() + opp.riskLevel.slice(1)
     : null
 
-  const catalystSummary = opp.catalystSummary ?? null
-  const upcomingCatalysts = (catalystSummary?.events ?? [])
-    .filter((event) => {
-      if (typeof event?.days_until === 'number' && Number.isFinite(event.days_until)) {
-        return event.days_until >= -2 && event.days_until <= 60
-      }
-      return Boolean(event?.name)
-    })
-    .slice(0, 3)
-  const technicalSummary = catalystSummary?.technical ?? null
-  const hasTechnicalHighlights = Boolean(
-    technicalSummary &&
-      ((technicalSummary.commentary && technicalSummary.commentary.length > 0) ||
-        technicalSummary.support ||
-        technicalSummary.resistance),
-  )
-  const showCatalystCard = upcomingCatalysts.length > 0 || hasTechnicalHighlights
-
   return (
     <div
       key={`${opp.symbol}-${opp.strike}-${opp.expiration}-${opp.optionType}`}
@@ -3061,6 +3043,24 @@ export default function ScannerPage({ user }: ScannerPageProps) {
 
     const swingSignal = opp.swingSignal
     const swingSignalError = opp.swingSignalError
+
+    const catalystSummary = opp.catalystSummary ?? null
+    const upcomingCatalysts = (catalystSummary?.events ?? [])
+      .filter((event) => {
+        if (typeof event?.days_until === 'number' && Number.isFinite(event.days_until)) {
+          return event.days_until >= -2 && event.days_until <= 60
+        }
+        return Boolean(event?.name)
+      })
+      .slice(0, 3)
+    const technicalSummary = catalystSummary?.technical ?? null
+    const hasTechnicalHighlights = Boolean(
+      technicalSummary &&
+        ((technicalSummary.commentary && technicalSummary.commentary.length > 0) ||
+          technicalSummary.support ||
+          technicalSummary.resistance),
+    )
+    const showCatalystCard = upcomingCatalysts.length > 0 || hasTechnicalHighlights
 
     const swingInsights = (() => {
       if (!swingSignal && !swingSignalError) {
