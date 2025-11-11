@@ -9,7 +9,8 @@ import {
   BarChart3,
   Bookmark,
   Briefcase,
-  Brain,
+  ChevronLeft,
+  ChevronRight,
   LayoutDashboard,
   Menu,
   Radar,
@@ -17,6 +18,7 @@ import {
   Settings,
   TrendingUp,
 } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 const FUN_GREETINGS = [
   'Looking sharp today!',
@@ -121,7 +123,44 @@ const NAV_SECTIONS: NavSection[] = [
   },
 ]
 
-function NavigationList({ pathname }: { pathname: string }) {
+function NavigationList({ pathname, isCollapsed = false }: { pathname: string; isCollapsed?: boolean }) {
+  if (isCollapsed) {
+    return (
+      <nav className="flex flex-col gap-4">
+        {NAV_SECTIONS.map((section, sectionIndex) => (
+          <div key={section.title} className="flex flex-col gap-2">
+            {section.links.map((link) => {
+              const isActive = pathname === link.href
+              const Icon = link.icon
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={cn(
+                    'group relative flex h-12 items-center justify-center rounded-2xl border text-slate-600 transition-all duration-200',
+                    isActive
+                      ? 'border-emerald-400/60 bg-emerald-50 text-emerald-700 shadow-sm'
+                      : 'border-transparent bg-transparent hover:border-emerald-200 hover:bg-emerald-50/60 hover:text-emerald-600'
+                  )}
+                  aria-label={link.label}
+                >
+                  <Icon className="h-5 w-5" />
+                  <span className="pointer-events-none absolute left-full top-1/2 ml-3 w-48 -translate-y-1/2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-left text-sm font-medium text-slate-700 opacity-0 shadow-lg transition-opacity duration-200 group-hover:opacity-100">
+                    <span className="block font-semibold">{link.label}</span>
+                    <span className="mt-1 block text-xs text-slate-500">{link.description}</span>
+                  </span>
+                </Link>
+              )
+            })}
+            {sectionIndex < NAV_SECTIONS.length - 1 && (
+              <div className="mx-auto h-px w-8 bg-slate-200" aria-hidden />
+            )}
+          </div>
+        ))}
+      </nav>
+    )
+  }
+
   return (
     <nav className="space-y-8">
       {NAV_SECTIONS.map((section) => (
@@ -194,6 +233,7 @@ export default function Navigation({ userEmail }: { userEmail?: string }) {
   const pathname = usePathname()
   const [greeting, setGreeting] = useState('')
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [isCollapsed, setIsCollapsed] = useState(false)
 
   useEffect(() => {
     const randomGreeting = FUN_GREETINGS[Math.floor(Math.random() * FUN_GREETINGS.length)]
@@ -246,21 +286,58 @@ export default function Navigation({ userEmail }: { userEmail?: string }) {
       )}
 
       {/* Desktop left rail */}
-      <aside className="hidden w-80 shrink-0 border-r border-slate-200 bg-white/80 px-8 py-10 backdrop-blur xl:w-96 lg:flex lg:flex-col">
-        <div className="flex items-center gap-3">
-          <Image src="/Monty_logo.png" alt="Monty" width={56} height={56} className="rounded-2xl" />
-          <div>
-            <p className="text-lg font-semibold tracking-tight text-slate-900">Monty</p>
-            <p className="text-xs uppercase tracking-[0.2em] text-emerald-500">Trading Desk</p>
+      <aside
+        className={cn(
+          'hidden shrink-0 border-r border-slate-200 bg-white/80 px-4 py-6 backdrop-blur transition-[width] duration-300 lg:flex lg:flex-col',
+          isCollapsed ? 'w-24' : 'w-80 xl:w-96'
+        )}
+      >
+        <div className={cn('flex items-center', isCollapsed ? 'justify-center' : 'justify-between')}>
+          <div className={cn('flex items-center gap-3', isCollapsed && 'gap-0')}>
+            <Image
+              src="/Monty_logo.png"
+              alt="Monty"
+              width={isCollapsed ? 44 : 56}
+              height={isCollapsed ? 44 : 56}
+              className="rounded-2xl"
+            />
+            {!isCollapsed && (
+              <div>
+                <p className="text-lg font-semibold tracking-tight text-slate-900">Monty</p>
+                <p className="text-xs uppercase tracking-[0.2em] text-emerald-500">Trading Desk</p>
+              </div>
+            )}
           </div>
+          <button
+            type="button"
+            onClick={() => setIsCollapsed((prev) => !prev)}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition-colors hover:border-emerald-200 hover:text-emerald-600"
+            aria-label={isCollapsed ? 'Expand navigation' : 'Collapse navigation'}
+          >
+            {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+          </button>
         </div>
 
-        <div className="mt-10 flex-1 overflow-y-auto pr-2">
-          <NavigationList pathname={pathname} />
+        <div className={cn('mt-8 flex-1 overflow-y-auto', isCollapsed ? 'px-0' : 'pr-2')}>
+          <NavigationList pathname={pathname} isCollapsed={isCollapsed} />
         </div>
 
         <div className="mt-6">
-          <UserPanel userEmail={userEmail} greeting={greeting} />
+          {isCollapsed ? (
+            <Link
+              href="/settings"
+              className="group relative flex h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 transition-all duration-200 hover:border-emerald-200 hover:bg-emerald-50/60 hover:text-emerald-600"
+              aria-label="Manage account"
+            >
+              <Settings className="h-5 w-5" />
+              <span className="pointer-events-none absolute left-full top-1/2 ml-3 w-48 -translate-y-1/2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-left text-sm font-medium text-slate-700 opacity-0 shadow-lg transition-opacity duration-200 group-hover:opacity-100">
+                <span className="block font-semibold">Manage account</span>
+                <span className="mt-1 block text-xs text-slate-500">Account settings & preferences</span>
+              </span>
+            </Link>
+          ) : (
+            <UserPanel userEmail={userEmail} greeting={greeting} />
+          )}
         </div>
       </aside>
     </>
