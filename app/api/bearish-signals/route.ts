@@ -78,12 +78,12 @@ function convertToCamelCase(row: BearishSignalRow): BearishSignal {
     putCallZscore: row.put_call_zscore,
     confidence: row.confidence,
     alertLevel: row.alert_level,
-    recommendedStrikes: row.recommended_strikes || [],
+    recommendedStrikes: row.recommended_strikes ?? [],
     expectedRoi: row.expected_roi,
     darkPoolBearish: row.dark_pool_bearish,
     gammaExposure: row.gamma_exposure,
     shortInterestPct: row.short_interest_pct,
-    signals: row.signals.map(s => ({
+    signals: (row.signals ?? []).map(s => ({
       signalType: s.signal_type,
       severity: s.severity,
       points: s.points,
@@ -91,7 +91,7 @@ function convertToCamelCase(row: BearishSignalRow): BearishSignal {
       value: s.value,
       percentile: s.percentile,
     })),
-    drivers: row.drivers,
+    drivers: row.drivers ?? [],
     generatedAt: row.generated_at,
     expiresAt: row.expires_at,
   }
