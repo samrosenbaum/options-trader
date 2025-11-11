@@ -1,5 +1,6 @@
 'use client'
 
+import type { ComponentType } from 'react'
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
@@ -8,13 +9,7 @@ import { TickerTape } from '@/components/ticker-tape'
 import { TradingDeskBanner } from '@/components/trading-desk-banner'
 import { motion } from 'framer-motion'
 import { MontyDashboardBrief } from '@/components/monty-dashboard-brief'
-import {
-  ArrowUpRight,
-  Scan,
-  Briefcase,
-  BarChart3,
-  Radar
-} from 'lucide-react'
+import { ArrowUpRight, BarChart3, Briefcase, Radar, Scan } from 'lucide-react'
 
 interface PortfolioSnapshot {
   id: string
@@ -50,6 +45,16 @@ interface Position {
   exit_date?: string | null
 }
 
+type QuickActionAccent = 'emerald' | 'sky' | 'violet' | 'amber'
+
+type QuickAction = {
+  title: string
+  description: string
+  href: string
+  icon: ComponentType<{ className?: string }>
+  accent: QuickActionAccent
+}
+
 export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [snapshots, setSnapshots] = useState<PortfolioSnapshot[]>([])
@@ -60,61 +65,64 @@ export default function DashboardPage() {
   const [tradingDeskName, setTradingDeskName] = useState<string>('')
   const supabase = createClient()
 
-  const quickActions = [
+  const quickActions: QuickAction[] = [
     {
       title: 'Run Scanner',
       description: 'Deploy the AI radar to surface asymmetric trade ideas in seconds.',
       href: '/scanner',
       icon: Scan,
-      accent: {
-        ring: 'ring-emerald-500/20 group-hover:ring-emerald-400/60',
-        glow: 'from-emerald-500/30 via-emerald-500/0 to-transparent',
-        icon: 'bg-emerald-500/10 text-emerald-300',
-        chip: 'from-emerald-400/20 via-emerald-500/10 to-transparent'
-      }
+      accent: 'emerald'
     },
     {
       title: 'Manage Portfolio',
       description: 'Rebalance, size positions, and monitor risk in one streamlined workspace.',
       href: '/portfolio',
       icon: Briefcase,
-      accent: {
-        ring: 'ring-sky-500/20 group-hover:ring-sky-400/50',
-        glow: 'from-sky-500/20 via-sky-500/0 to-transparent',
-        icon: 'bg-sky-500/10 text-sky-300',
-        chip: 'from-sky-400/20 via-sky-500/10 to-transparent'
-      }
+      accent: 'sky'
     },
     {
       title: 'Market Intelligence',
       description: 'Digest macro signals, flow data, and volatility regimes at a glance.',
       href: '/market-info',
       icon: BarChart3,
-      accent: {
-        ring: 'ring-purple-500/20 group-hover:ring-purple-400/50',
-        glow: 'from-purple-500/20 via-purple-500/0 to-transparent',
-        icon: 'bg-purple-500/10 text-purple-300',
-        chip: 'from-purple-400/20 via-purple-500/10 to-transparent'
-      }
+      accent: 'violet'
     },
     {
       title: 'Macro Indicators',
       description: 'Track leading indicators and regime shifts to anticipate the next move.',
       href: '/macro',
       icon: Radar,
-      accent: {
-        ring: 'ring-amber-500/20 group-hover:ring-amber-400/50',
-        glow: 'from-amber-500/20 via-amber-500/0 to-transparent',
-        icon: 'bg-amber-500/10 text-amber-300',
-        chip: 'from-amber-400/20 via-amber-500/10 to-transparent'
-      }
+      accent: 'amber'
     }
   ]
 
+  const quickActionStyles: Record<QuickActionAccent, { icon: string; border: string; badge: string }> = {
+    emerald: {
+      icon: 'bg-emerald-100 text-emerald-600',
+      border: 'hover:border-emerald-200 hover:bg-emerald-50',
+      badge: 'text-emerald-600'
+    },
+    sky: {
+      icon: 'bg-sky-100 text-sky-600',
+      border: 'hover:border-sky-200 hover:bg-sky-50',
+      badge: 'text-sky-600'
+    },
+    violet: {
+      icon: 'bg-violet-100 text-violet-600',
+      border: 'hover:border-violet-200 hover:bg-violet-50',
+      badge: 'text-violet-600'
+    },
+    amber: {
+      icon: 'bg-amber-100 text-amber-600',
+      border: 'hover:border-amber-200 hover:bg-amber-50',
+      badge: 'text-amber-600'
+    }
+  }
+
   const signalStyles: Record<Position['exit_signal'], string> = {
-    hold: 'border-emerald-400/40 text-emerald-300 bg-emerald-500/10',
-    consider: 'border-amber-400/40 text-amber-200 bg-amber-500/10',
-    exit_now: 'border-red-400/40 text-red-200 bg-red-500/10'
+    hold: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    consider: 'border-amber-200 bg-amber-50 text-amber-700',
+    exit_now: 'border-red-200 bg-red-50 text-red-700'
   }
 
   const signalLabels: Record<Position['exit_signal'], string> = {
@@ -128,22 +136,16 @@ export default function DashboardPage() {
       try {
         setLoading(true)
 
-        // Run all queries in parallel for much faster loading
         const [snapshotsData, positionsResult, winnersResult, losersResult, settingsResponse] = await Promise.all([
-          // Create snapshot and fetch historical data
           fetch('/api/portfolio-snapshot', { method: 'POST' })
             .then(() => fetch('/api/portfolio-snapshot?days=30'))
             .then(res => res.json()),
-
-          // Fetch top performing open positions
           supabase
             .from('positions')
             .select('id, symbol, strike, option_type, unrealized_pl, unrealized_pl_percent, exit_signal')
             .eq('status', 'open')
             .order('unrealized_pl', { ascending: false })
             .limit(5),
-
-          // Fetch biggest winners
           supabase
             .from('positions')
             .select('id, symbol, strike, option_type, realized_pl, realized_pl_percent, exit_date')
@@ -151,8 +153,6 @@ export default function DashboardPage() {
             .gt('realized_pl', 0)
             .order('realized_pl', { ascending: false })
             .limit(3),
-
-          // Fetch biggest losers
           supabase
             .from('positions')
             .select('id, symbol, strike, option_type, realized_pl, realized_pl_percent, exit_date')
@@ -160,12 +160,9 @@ export default function DashboardPage() {
             .lt('realized_pl', 0)
             .order('realized_pl', { ascending: true })
             .limit(3),
-
-          // Fetch user settings for trading desk name
           fetch('/api/user-settings').then(res => res.json())
         ])
 
-        // Update state with results
         if (snapshotsData.success && snapshotsData.snapshots) {
           setSnapshots(snapshotsData.snapshots)
           if (snapshotsData.snapshots.length > 0) {
@@ -202,7 +199,7 @@ export default function DashboardPage() {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
-      minimumFractionDigits: 2,
+      minimumFractionDigits: 2
     }).format(value)
   }
 
@@ -213,10 +210,10 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#05070E]">
+      <div className="flex min-h-screen items-center justify-center bg-slate-50">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-lg text-emerald-100/70">Preparing your trading desk...</p>
+          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-emerald-500 border-t-transparent" />
+          <p className="text-sm font-medium text-slate-500">Preparing your trading desk…</p>
         </div>
       </div>
     )
@@ -224,192 +221,121 @@ export default function DashboardPage() {
 
   const chartData = snapshots.map(s => ({
     date: formatDate(s.snapshot_date),
-    value: s.total_value,
+    value: s.total_value
   }))
 
   const totalPL = (currentSnapshot?.unrealized_pl || 0) + (currentSnapshot?.realized_pl || 0)
-  // Calculate percentage based on initial investment (total value minus total P&L)
   const initialInvestment = currentSnapshot ? currentSnapshot.total_value - totalPL : 0
-  const totalPLPercent = initialInvestment > 0
-    ? (totalPL / initialInvestment) * 100
-    : 0
+  const totalPLPercent = initialInvestment > 0 ? (totalPL / initialInvestment) * 100 : 0
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#05070E] text-slate-100">
-      {/* Live Ticker Tape */}
+    <div className="flex min-h-screen flex-col bg-slate-50">
       <TickerTape />
-
-      {/* Trading Desk Banner */}
       <TradingDeskBanner deskName={tradingDeskName || 'Trading Desk'} />
-
-      {/* Background */}
-      <div className="pointer-events-none absolute inset-0 -z-10">
-        {/* Gradient overlays */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(16,185,129,0.12),_transparent_60%)]" />
-        <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(15,23,42,0.75),transparent_60%)]" />
-
-        {/* Blur orbs - subtle accents */}
-        <div className="absolute -top-32 left-1/2 h-[28rem] w-[28rem] -translate-x-1/2 rounded-full bg-emerald-500/20 blur-3xl" />
-        <div className="absolute bottom-[-18rem] left-[-10rem] h-[32rem] w-[32rem] rounded-full bg-sky-500/10 blur-3xl" />
-        <div className="absolute top-1/3 -right-40 h-[26rem] w-[26rem] rounded-full bg-purple-500/10 blur-3xl" />
-      </div>
-
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="mb-8 space-y-6">
+      <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-6 pb-16 pt-10">
+        <div className="flex flex-col gap-10">
           <MontyDashboardBrief />
-
-          {/* Header */}
-          <div>
-            <h1 className="text-3xl font-bold text-white mb-2">Welcome back to your trade desk</h1>
-            <p className="text-emerald-100/70">Here&apos;s your portfolio at a glance</p>
-          </div>
-        </div>
-
-        {/* Portfolio Value Card */}
-        <div className="relative bg-gradient-to-br from-slate-900/80 via-emerald-900/30 to-slate-900/80 backdrop-blur-xl rounded-2xl border border-emerald-500/40 p-8 shadow-[0_8px_32px_rgba(16,185,129,0.2),0_0_0_1px_rgba(16,185,129,0.1)_inset] mb-6 overflow-hidden transition-all duration-300 hover:shadow-[0_12px_48px_rgba(16,185,129,0.25),0_0_0_1px_rgba(16,185,129,0.15)_inset] hover:scale-[1.01] hover:border-emerald-500/50">
-          {/* Vintage trading desk background */}
-          <div
-            className="absolute inset-0 opacity-[0.03]"
-            style={{
-              backgroundImage: 'url(/trade_desk.png)',
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              backgroundRepeat: 'no-repeat',
-              filter: 'brightness(1.1) saturate(0.8)',
-            }}
-          ></div>
-
-          {/* Glass reflection effect */}
-          <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent opacity-40"></div>
-          <div className="absolute inset-0 bg-gradient-to-tl from-emerald-400/5 via-transparent to-transparent"></div>
-
-          {/* Gradient accent glow */}
-          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-emerald-400/60 to-transparent"></div>
-          <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-emerald-500/30 to-transparent"></div>
-          <div className="absolute -top-24 -right-24 w-48 h-48 bg-emerald-500/15 rounded-full blur-3xl"></div>
-          <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-emerald-500/15 rounded-full blur-3xl"></div>
-
-          <div className="relative z-10">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            {/* Total Value */}
-            <div>
-              <div className="text-sm text-slate-400 mb-1">Total Value</div>
-              <div className="text-3xl font-bold text-white">
-                {formatCurrency(currentSnapshot?.total_value || 0)}
-              </div>
-            </div>
-
-            {/* Daily Change */}
-            <div>
-              <div className="text-sm text-slate-400 mb-1">Today</div>
-              <div className={`text-2xl font-bold ${
-                (currentSnapshot?.daily_change || 0) >= 0 ? 'text-emerald-400' : 'text-red-400'
-              }`}>
-                {(currentSnapshot?.daily_change || 0) >= 0 ? '+' : ''}
-                {formatCurrency(currentSnapshot?.daily_change || 0)}
-              </div>
-              <div className={`text-sm ${
-                (currentSnapshot?.daily_change_percent || 0) >= 0 ? 'text-emerald-400' : 'text-red-400'
-              }`}>
-                {(currentSnapshot?.daily_change_percent || 0) >= 0 ? '+' : ''}
-                {(currentSnapshot?.daily_change_percent || 0).toFixed(2)}%
-              </div>
-            </div>
-
-            {/* Total P&L */}
-            <div>
-              <div className="text-sm text-slate-400 mb-1">Total P&L</div>
-              <div className={`text-2xl font-bold ${
-                totalPL >= 0 ? 'text-emerald-400' : 'text-red-400'
-              }`}>
-                {totalPL >= 0 ? '+' : ''}{formatCurrency(totalPL)}
-              </div>
-              <div className={`text-sm ${
-                totalPLPercent >= 0 ? 'text-emerald-400' : 'text-red-400'
-              }`}>
-                {totalPLPercent >= 0 ? '+' : ''}{totalPLPercent.toFixed(2)}%
-              </div>
-            </div>
-
-            {/* Open Positions */}
-            <div>
-              <div className="text-sm text-slate-400 mb-1">Open Positions</div>
-              <div className="text-2xl font-bold text-white">
-                {currentSnapshot?.open_positions_count || 0}
-              </div>
-            </div>
+          <div className="space-y-2">
+            <h1 className="text-3xl font-semibold text-slate-900">Welcome back to your trade desk</h1>
+            <p className="text-sm text-slate-500">Here&apos;s your portfolio at a glance</p>
           </div>
 
-          {/* Portfolio Chart */}
-          {chartData.length > 0 && (
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.3} />
-                  <XAxis
-                    dataKey="date"
-                    stroke="#94a3b8"
-                    style={{ fontSize: '12px' }}
-                  />
-                  <YAxis
-                    stroke="#94a3b8"
-                    style={{ fontSize: '12px' }}
-                    tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#1e293b',
-                      border: '1px solid #334155',
-                      borderRadius: '8px',
-                      color: '#f1f5f9',
-                    }}
-                    formatter={(value: number) => [formatCurrency(value), 'Portfolio Value']}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="value"
-                    stroke="#10b981"
-                    strokeWidth={2}
-                    dot={false}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+          <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+              <div>
+                <p className="text-sm font-medium text-slate-500">Total Value</p>
+                <p className="mt-2 text-3xl font-semibold text-slate-900">
+                  {formatCurrency(currentSnapshot?.total_value || 0)}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-slate-500">Today</p>
+                <p
+                  className={`mt-2 text-2xl font-semibold ${
+                    (currentSnapshot?.daily_change || 0) >= 0 ? 'text-emerald-600' : 'text-red-500'
+                  }`}
+                >
+                  {(currentSnapshot?.daily_change || 0) >= 0 ? '+' : ''}
+                  {formatCurrency(currentSnapshot?.daily_change || 0)}
+                </p>
+                <p
+                  className={`text-sm ${
+                    (currentSnapshot?.daily_change_percent || 0) >= 0 ? 'text-emerald-600' : 'text-red-500'
+                  }`}
+                >
+                  {(currentSnapshot?.daily_change_percent || 0) >= 0 ? '+' : ''}
+                  {(currentSnapshot?.daily_change_percent || 0).toFixed(2)}%
+                </p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-slate-500">Total P&amp;L</p>
+                <p className={`mt-2 text-2xl font-semibold ${totalPL >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                  {totalPL >= 0 ? '+' : ''}
+                  {formatCurrency(totalPL)}
+                </p>
+                <p className={`text-sm ${totalPLPercent >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                  {totalPLPercent >= 0 ? '+' : ''}
+                  {totalPLPercent.toFixed(2)}%
+                </p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-slate-500">Open Positions</p>
+                <p className="mt-2 text-2xl font-semibold text-slate-900">{currentSnapshot?.open_positions_count || 0}</p>
+              </div>
             </div>
-          )}
 
-          {chartData.length === 0 && (
-            <div className="h-64 flex items-center justify-center text-slate-400">
-              <p>No portfolio history yet. Start trading to see your progress!</p>
+            <div className="mt-10">
+              {chartData.length > 0 ? (
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={chartData}>
+                      <CartesianGrid stroke="#e2e8f0" strokeDasharray="4 4" />
+                      <XAxis dataKey="date" stroke="#94a3b8" style={{ fontSize: '12px' }} />
+                      <YAxis
+                        stroke="#94a3b8"
+                        style={{ fontSize: '12px' }}
+                        tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: '#ffffff',
+                          border: '1px solid #e2e8f0',
+                          borderRadius: '12px',
+                          color: '#0f172a'
+                        }}
+                        labelStyle={{ color: '#475569', fontWeight: 600 }}
+                        formatter={(value: number) => [formatCurrency(value), 'Portfolio Value']}
+                      />
+                      <Line type="monotone" dataKey="value" stroke="#059669" strokeWidth={2} dot={false} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <div className="flex h-64 items-center justify-center rounded-2xl bg-slate-50 text-sm text-slate-500">
+                  No portfolio history yet. Start trading to see your progress!
+                </div>
+              )}
             </div>
-          )}
           </div>
-        </div>
 
-        {/* Top Positions & Quick Actions */}
-        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] gap-6">
-          {/* Top Positions */}
-          <motion.div
-            initial={{ opacity: 0, y: 32 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.15, type: 'spring', stiffness: 120 }}
-            className="relative overflow-hidden rounded-3xl border border-emerald-500/20 bg-slate-950/70 shadow-[0_25px_70px_rgba(16,185,129,0.15)] backdrop-blur-xl"
-          >
-            <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/20 via-slate-950/60 to-slate-950/90" />
-            <div className="absolute -top-32 -right-28 h-64 w-64 rounded-full bg-emerald-500/20 blur-3xl opacity-60" />
-            <div className="absolute -bottom-24 -left-24 h-48 w-48 rounded-full bg-emerald-400/10 blur-3xl" />
-
-            <div className="relative p-6 sm:p-8">
+          <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.1, type: 'spring', stiffness: 120 }}
+              className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
+            >
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <span className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.38em] text-emerald-300/70">
+                  <span className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.35em] text-emerald-500">
                     Active Alpha
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-300 shadow-[0_0_12px_rgba(110,231,183,0.7)] animate-pulse" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                     Live Feed
                   </span>
-                  <h2 className="mt-3 text-2xl font-semibold text-white sm:text-3xl">Top Positions</h2>
+                  <h2 className="mt-3 text-2xl font-semibold text-slate-900 sm:text-3xl">Top Positions</h2>
                 </div>
-                <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-500/10 px-4 py-2 text-sm font-medium text-emerald-100 shadow-inner shadow-emerald-500/20">
-                  <span className="h-2 w-2 rounded-full bg-emerald-300 animate-ping" />
+                <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-600">
+                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
                   {topPositions.length} Active
                 </div>
               </div>
@@ -418,50 +344,44 @@ export default function DashboardPage() {
                 <div className="mt-6 space-y-3">
                   {topPositions.map((pos, idx) => {
                     const isPositive = (pos.unrealized_pl || 0) >= 0
-                    const gradient = isPositive
-                      ? 'from-emerald-500/25 via-emerald-500/0 to-transparent'
-                      : 'from-red-500/25 via-red-500/0 to-transparent'
-
                     return (
                       <motion.div
                         key={pos.id}
-                        initial={{ opacity: 0, y: 24 }}
+                        initial={{ opacity: 0, y: 16 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.4, delay: 0.2 + idx * 0.08 }}
-                        whileHover={{ y: -3, scale: 1.01 }}
-                        className="group relative overflow-hidden rounded-2xl border border-slate-800/60 bg-slate-900/70 px-5 py-4 backdrop-blur"
+                        transition={{ duration: 0.3, delay: 0.15 + idx * 0.05 }}
+                        whileHover={{ y: -4 }}
+                        className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 transition-all duration-200 hover:border-emerald-200 hover:bg-emerald-50/70"
                       >
-                        <div className={`absolute inset-0 bg-gradient-to-r ${gradient} opacity-0 transition-opacity duration-500 group-hover:opacity-100`} />
                         <div className="relative flex flex-wrap items-center justify-between gap-4">
                           <div className="flex items-center gap-4">
-                            <div className="relative flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-slate-950/60 text-lg font-semibold text-white">
-                              <span>#{idx + 1}</span>
-                              <span className="absolute inset-x-2 -bottom-5 h-10 rounded-full bg-emerald-500/30 blur-xl opacity-60" />
+                            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-200 bg-white text-base font-semibold text-slate-900">
+                              #{idx + 1}
                             </div>
                             <div>
-                              <div className="flex items-center gap-3 text-base font-semibold text-white">
+                              <div className="flex items-center gap-3 text-base font-semibold text-slate-900">
                                 <span>{pos.symbol}</span>
-                                <span className="rounded-full border border-slate-700/60 bg-slate-800/60 px-2 py-0.5 text-[11px] tracking-wide text-slate-300">
+                                <span className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[11px] tracking-wide text-slate-500">
                                   {pos.option_type.toUpperCase()} ${pos.strike}
                                 </span>
                               </div>
-                              <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-slate-400">
+                              <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-slate-500">
                                 <span
-                                  className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 font-medium uppercase tracking-[0.25em] text-[10px] sm:text-[11px] transition-colors duration-300 ${signalStyles[pos.exit_signal]}`}
+                                  className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 font-medium uppercase tracking-[0.25em] text-[10px] sm:text-[11px] ${signalStyles[pos.exit_signal]}`}
                                 >
                                   {signalLabels[pos.exit_signal]}
                                 </span>
-                                <span className="text-slate-500/80">Last mark updated moments ago</span>
+                                <span className="text-slate-400">Last mark moments ago</span>
                               </div>
                             </div>
                           </div>
 
                           <div className="text-right">
-                            <p className={`text-base font-semibold ${isPositive ? 'text-emerald-300' : 'text-red-300'}`}>
+                            <p className={`text-base font-semibold ${isPositive ? 'text-emerald-600' : 'text-red-500'}`}>
                               {isPositive ? '+' : ''}
                               {formatCurrency(pos.unrealized_pl || 0)}
                             </p>
-                            <p className={`mt-1 text-xs font-medium ${isPositive ? 'text-emerald-400/80' : 'text-red-400/80'}`}>
+                            <p className={`mt-1 text-xs font-medium ${isPositive ? 'text-emerald-500' : 'text-red-500'}`}>
                               {isPositive ? '+' : ''}
                               {(pos.unrealized_pl_percent || 0).toFixed(1)}%
                             </p>
@@ -472,9 +392,9 @@ export default function DashboardPage() {
                   })}
                 </div>
               ) : (
-                <div className="mt-8 flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-700/60 bg-slate-900/50 px-6 py-12 text-center">
-                  <span className="text-[10px] uppercase tracking-[0.4em] text-slate-500">No Signals Yet</span>
-                  <p className="mt-3 max-w-xs text-sm text-slate-400">
+                <div className="mt-10 flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-6 py-12 text-center">
+                  <span className="text-[10px] uppercase tracking-[0.4em] text-slate-400">No signals yet</span>
+                  <p className="mt-3 max-w-xs text-sm text-slate-500">
                     As soon as positions go live, they will populate this interactive leaderboard.
                   </p>
                 </div>
@@ -482,99 +402,68 @@ export default function DashboardPage() {
 
               <Link
                 href="/portfolio"
-                className="group/link relative mt-8 inline-flex items-center gap-2 text-sm font-semibold text-emerald-200 transition-colors duration-300 hover:text-emerald-50"
+                className="group relative mt-8 inline-flex items-center gap-2 text-sm font-semibold text-emerald-600 transition-colors hover:text-emerald-700"
               >
                 View full portfolio intelligence
-                <ArrowUpRight className="h-4 w-4 transition-transform duration-300 group-hover/link:-translate-y-0.5 group-hover/link:translate-x-1" />
+                <ArrowUpRight className="h-4 w-4 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-1" />
               </Link>
-            </div>
-          </motion.div>
+            </motion.div>
 
-          {/* Quick Actions */}
-          <motion.div
-            initial={{ opacity: 0, y: 32 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.25, type: 'spring', stiffness: 120 }}
-            className="relative overflow-hidden rounded-3xl border border-slate-800/60 bg-slate-950/70 shadow-[0_25px_60px_rgba(14,116,144,0.12)] backdrop-blur-xl"
-          >
-            <div className="absolute inset-0 bg-gradient-to-br from-slate-800/80 via-slate-950/70 to-slate-950/90" />
-            <div className="absolute -top-24 right-0 h-40 w-40 rounded-full bg-sky-500/10 blur-3xl opacity-70" />
-
-            <div className="relative p-6 sm:p-8">
-              <div className="mb-6 space-y-3">
-                <span className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.4em] text-slate-500">
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.18, type: 'spring', stiffness: 120 }}
+              className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
+            >
+              <div className="mb-6 space-y-2">
+                <span className="text-[11px] font-semibold uppercase tracking-[0.35em] text-slate-400">
                   Command Center
-                  <span className="h-1 w-1 rounded-full bg-slate-500/60" />
-                  Instant Access
                 </span>
-                <h2 className="text-2xl font-semibold text-white sm:text-3xl">Quick Actions</h2>
+                <h2 className="text-2xl font-semibold text-slate-900 sm:text-3xl">Quick Actions</h2>
               </div>
 
               <div className="space-y-4">
-                {quickActions.map((action, idx) => {
+                {quickActions.map((action) => {
                   const Icon = action.icon
+                  const accent = quickActionStyles[action.accent]
                   return (
                     <Link
                       key={action.title}
                       href={action.href}
-                      className="group block rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+                      className={`group block rounded-2xl border border-slate-200 bg-white/90 p-5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-lg ${accent.border}`}
                     >
-                      <motion.div
-                        initial={{ opacity: 0, y: 24 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.4, delay: 0.2 + idx * 0.05 }}
-                        whileHover={{ y: -4, scale: 1.01 }}
-                        whileTap={{ scale: 0.99 }}
-                        className={`relative overflow-hidden rounded-2xl border border-slate-800/80 bg-slate-900/70 p-5 sm:p-6 transition-all duration-300 backdrop-blur ring-1 ring-inset ${action.accent.ring}`}
-                      >
-                        <div className={`absolute inset-0 bg-gradient-to-r ${action.accent.glow} opacity-0 transition-opacity duration-500 group-hover:opacity-100`} />
-                        <div className="relative flex items-center justify-between gap-4">
-                          <div className="flex items-center gap-4">
-                            <div className={`relative flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl border border-white/10 ${action.accent.icon}`}>
-                              <Icon className="h-6 w-6" />
-                              <span className={`pointer-events-none absolute inset-x-2 -bottom-6 h-10 bg-gradient-to-r ${action.accent.chip} blur-xl opacity-60`} />
-                            </div>
-                            <div>
-                              <h3 className="text-base font-semibold text-white sm:text-lg">{action.title}</h3>
-                              <p className="mt-1 text-xs text-slate-400 sm:text-sm">{action.description}</p>
-                            </div>
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-4">
+                          <span className={`flex h-12 w-12 items-center justify-center rounded-2xl ${accent.icon}`}>
+                            <Icon className="h-6 w-6" />
+                          </span>
+                          <div>
+                            <h3 className="text-base font-semibold text-slate-900 sm:text-lg">{action.title}</h3>
+                            <p className="mt-1 text-sm text-slate-500">{action.description}</p>
                           </div>
-                          <ArrowUpRight className="h-5 w-5 text-slate-500 transition-transform duration-300 group-hover:-translate-y-1 group-hover:translate-x-1 group-hover:text-white" />
                         </div>
-                      </motion.div>
+                        <ArrowUpRight className="h-5 w-5 text-slate-400 transition-transform duration-300 group-hover:-translate-y-1 group-hover:translate-x-1 group-hover:text-slate-600" />
+                      </div>
+                      <span className={`mt-4 inline-block text-xs font-semibold uppercase tracking-[0.3em] ${accent.badge}`}>
+                        Jump in
+                      </span>
                     </Link>
                   )
                 })}
               </div>
-            </div>
-          </motion.div>
-        </div>
+            </motion.div>
+          </div>
 
-        {/* Wall of Gains & Lessons Learned */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-          {/* Wall of Gains - Biggest Winners */}
-          <motion.div
-            initial={{ opacity: 0, y: 20, rotateX: 10 }}
-            animate={{ opacity: 1, y: 0, rotateX: 0 }}
-            transition={{ duration: 0.6, delay: 0.2, type: "spring" }}
-            whileHover={{
-              rotateY: 2,
-              rotateX: -2,
-              scale: 1.02,
-              transition: { duration: 0.3 }
-            }}
-            style={{
-              transformStyle: "preserve-3d",
-              perspective: "1000px"
-            }}
-            className="bg-gradient-to-br from-amber-500/10 via-slate-900/80 to-slate-900/80 backdrop-blur-sm rounded-2xl border border-amber-500/20 p-6 shadow-[0_20px_50px_rgba(217,119,6,0.3)] hover:shadow-[0_30px_60px_rgba(217,119,6,0.4)] relative overflow-hidden transition-shadow duration-300"
-          >
-            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-3xl"></div>
-            <div className="absolute inset-0 bg-gradient-to-br from-amber-400/5 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300"></div>
-            <div className="relative">
+          <div className="grid gap-6 lg:grid-cols-2">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="rounded-3xl border border-emerald-100 bg-white p-6 shadow-sm"
+            >
               <div className="mb-6">
-                <h2 className="text-xl font-bold text-white">Wall of Gains</h2>
-                <p className="text-sm text-slate-400">Your greatest victories</p>
+                <h2 className="text-xl font-semibold text-slate-900">Wall of Gains</h2>
+                <p className="text-sm text-slate-500">Your greatest victories</p>
               </div>
 
               {biggestWinners.length > 0 ? (
@@ -582,34 +471,38 @@ export default function DashboardPage() {
                   {biggestWinners.map((position, idx) => (
                     <motion.div
                       key={position.id}
-                      initial={{ opacity: 0, x: -20 }}
+                      initial={{ opacity: 0, x: -16 }}
                       animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.3, delay: idx * 0.1 }}
-                      className="relative group"
+                      transition={{ duration: 0.3, delay: idx * 0.08 }}
+                      className="rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4"
                     >
-                      <div className="flex items-center justify-between p-4 rounded-xl bg-slate-800/60 border border-slate-700/50 hover:border-amber-500/50 transition-all">
+                      <div className="flex items-center justify-between gap-4">
                         <div className="flex items-center gap-4">
-                          <div className={`flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm ${
-                            idx === 0 ? 'bg-amber-500/20 text-amber-300' :
-                            idx === 1 ? 'bg-slate-400/20 text-slate-300' :
-                            'bg-orange-500/20 text-orange-300'
-                          }`}>
+                          <div
+                            className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold ${
+                              idx === 0
+                                ? 'bg-emerald-200 text-emerald-700'
+                                : idx === 1
+                                ? 'bg-emerald-100 text-emerald-600'
+                                : 'bg-emerald-50 text-emerald-600'
+                            }`}
+                          >
                             #{idx + 1}
                           </div>
                           <div>
-                            <div className="font-semibold text-white">
+                            <div className="font-semibold text-slate-900">
                               {position.symbol} ${position.strike} {position.option_type.toUpperCase()}
                             </div>
-                            <div className="text-xs text-slate-400">
+                            <div className="text-xs text-slate-500">
                               {position.exit_date && new Date(position.exit_date).toLocaleDateString()}
                             </div>
                           </div>
                         </div>
                         <div className="text-right">
-                          <div className="text-lg font-bold text-emerald-400">
+                          <div className="text-lg font-semibold text-emerald-600">
                             +{formatCurrency(position.realized_pl || 0)}
                           </div>
-                          <div className="text-sm text-emerald-400">
+                          <div className="text-sm font-medium text-emerald-500">
                             +{(position.realized_pl_percent || 0).toFixed(1)}%
                           </div>
                         </div>
@@ -618,36 +511,21 @@ export default function DashboardPage() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8 text-slate-400">
-                  <p>No closed winners yet. Keep trading!</p>
+                <div className="flex items-center justify-center rounded-2xl border border-dashed border-emerald-200 bg-emerald-50/60 py-10 text-sm text-emerald-600">
+                  No closed winners yet. Keep trading!
                 </div>
               )}
-            </div>
-          </motion.div>
+            </motion.div>
 
-          {/* Lessons Learned - Biggest Losers */}
-          <motion.div
-            initial={{ opacity: 0, y: 20, rotateX: 10 }}
-            animate={{ opacity: 1, y: 0, rotateX: 0 }}
-            transition={{ duration: 0.6, delay: 0.3, type: "spring" }}
-            whileHover={{
-              rotateY: -2,
-              rotateX: -2,
-              scale: 1.02,
-              transition: { duration: 0.3 }
-            }}
-            style={{
-              transformStyle: "preserve-3d",
-              perspective: "1000px"
-            }}
-            className="bg-gradient-to-br from-red-500/10 via-slate-900/80 to-slate-900/80 backdrop-blur-sm rounded-2xl border border-red-500/20 p-6 shadow-[0_20px_50px_rgba(239,68,68,0.3)] hover:shadow-[0_30px_60px_rgba(239,68,68,0.4)] relative overflow-hidden transition-shadow duration-300"
-          >
-            <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/10 rounded-full blur-3xl"></div>
-            <div className="absolute inset-0 bg-gradient-to-br from-red-400/5 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300"></div>
-            <div className="relative">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.26 }}
+              className="rounded-3xl border border-red-100 bg-white p-6 shadow-sm"
+            >
               <div className="mb-6">
-                <h2 className="text-xl font-bold text-white">Lessons Learned</h2>
-                <p className="text-sm text-slate-400">Learn from these lessons</p>
+                <h2 className="text-xl font-semibold text-slate-900">Lessons Learned</h2>
+                <p className="text-sm text-slate-500">Use losses to sharpen the playbook</p>
               </div>
 
               {biggestLosers.length > 0 ? (
@@ -655,30 +533,30 @@ export default function DashboardPage() {
                   {biggestLosers.map((position, idx) => (
                     <motion.div
                       key={position.id}
-                      initial={{ opacity: 0, x: -20 }}
+                      initial={{ opacity: 0, x: -16 }}
                       animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.3, delay: idx * 0.1 }}
-                      className="relative group"
+                      transition={{ duration: 0.3, delay: idx * 0.08 }}
+                      className="rounded-2xl border border-red-100 bg-red-50/70 p-4"
                     >
-                      <div className="flex items-center justify-between p-4 rounded-xl bg-slate-800/60 border border-slate-700/50 hover:border-red-500/50 transition-all">
+                      <div className="flex items-center justify-between gap-4">
                         <div className="flex items-center gap-4">
-                          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-red-500/20 text-red-300 font-bold text-sm">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-red-200 text-sm font-bold text-red-700">
                             #{idx + 1}
                           </div>
                           <div>
-                            <div className="font-semibold text-white">
+                            <div className="font-semibold text-slate-900">
                               {position.symbol} ${position.strike} {position.option_type.toUpperCase()}
                             </div>
-                            <div className="text-xs text-slate-400">
+                            <div className="text-xs text-slate-500">
                               {position.exit_date && new Date(position.exit_date).toLocaleDateString()}
                             </div>
                           </div>
                         </div>
                         <div className="text-right">
-                          <div className="text-lg font-bold text-red-400">
+                          <div className="text-lg font-semibold text-red-600">
                             {formatCurrency(position.realized_pl || 0)}
                           </div>
-                          <div className="text-sm text-red-400">
+                          <div className="text-sm font-medium text-red-500">
                             {(position.realized_pl_percent || 0).toFixed(1)}%
                           </div>
                         </div>
@@ -687,12 +565,12 @@ export default function DashboardPage() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8 text-slate-400">
-                  <p>No losses to show. Perfect track record!</p>
+                <div className="flex items-center justify-center rounded-2xl border border-dashed border-red-200 bg-red-50/70 py-10 text-sm text-red-500">
+                  No losses to show. Perfect track record!
                 </div>
               )}
-            </div>
-          </motion.div>
+            </motion.div>
+          </div>
         </div>
       </div>
     </div>

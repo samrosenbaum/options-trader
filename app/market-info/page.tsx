@@ -4,7 +4,7 @@ import { User } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Navigation from '@/components/navigation'
+import AppShell from '@/components/app-shell'
 import LiveTicker from '@/components/live-ticker'
 import { PoliticianTradesFeed } from '@/components/politician-trades-feed'
 import { LiveNewsFeed } from '@/components/live-news-feed'
@@ -48,7 +48,10 @@ export default function MarketInfoPage() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#05070E] text-slate-100">
+    <AppShell
+      userEmail={user.email}
+      mainClassName="relative min-h-screen overflow-hidden bg-[#05070E] text-slate-100"
+    >
       {/* Immersive Background */}
       <div className="pointer-events-none absolute inset-0 -z-10">
         <div className="absolute -top-32 left-1/2 h-[28rem] w-[28rem] -translate-x-1/2 rounded-full bg-emerald-500/20 blur-3xl" />
@@ -58,9 +61,7 @@ export default function MarketInfoPage() {
         <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(15,23,42,0.75),transparent_60%)]" />
       </div>
 
-      <Navigation userEmail={user.email} />
-
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="mx-auto max-w-7xl px-6 py-8">
         {/* Page Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">
@@ -87,6 +88,6 @@ export default function MarketInfoPage() {
           <LiveNewsFeed />
         </div>
       </div>
-    </div>
+    </AppShell>
   )
 }

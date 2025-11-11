@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { User } from '@supabase/supabase-js'
-import Navigation from '@/components/navigation'
+import AppShell from '@/components/app-shell'
 import { TrendingUp, TrendingDown, Activity, Wallet, DollarSign, BarChart3, AlertCircle, RefreshCw } from 'lucide-react'
 
 interface AssetData {
@@ -288,9 +288,10 @@ export default function CryptoPage({ user }: { user: User }) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-emerald-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
-      <Navigation userEmail={user.email} />
-
+    <AppShell
+      userEmail={user.email}
+      mainClassName="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-emerald-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950"
+    >
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
@@ -427,6 +428,6 @@ export default function CryptoPage({ user }: { user: User }) {
           </div>
         )}
       </div>
-    </div>
+    </AppShell>
   )
 }

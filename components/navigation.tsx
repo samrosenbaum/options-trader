@@ -1,301 +1,262 @@
 'use client'
 
+import type { ComponentType } from 'react'
+import { useEffect, useState } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import Image from 'next/image'
-import { useState, useEffect } from 'react'
-import { ChevronDown } from 'lucide-react'
+import {
+  BarChart3,
+  Bookmark,
+  Briefcase,
+  LayoutDashboard,
+  Menu,
+  Radar,
+  Scan,
+  Settings,
+  TrendingUp,
+} from 'lucide-react'
 
 const FUN_GREETINGS = [
-  "Looking sharp today!",
-  "Ready to print money?",
+  'Looking sharp today!',
+  'Ready to print money?',
   "Let's get those gains!",
-  "Time to make it rain!",
-  "Future millionaire spotted!",
-  "Money moves only!",
-  "Wealth builder in the house!",
+  'Time to make it rain!',
+  'Future millionaire spotted!',
+  'Money moves only!',
+  'Wealth builder in the house!',
   "You're crushing it!",
-  "Born to trade!",
-  "Opportunity seeker online!",
+  'Born to trade!',
+  'Opportunity seeker online!',
 ]
 
-type NavItem = {
-  href?: string
+type NavLink = {
+  href: string
   label: string
-  dropdownItems?: Array<{ href: string; label: string }>
+  description: string
+  icon: ComponentType<{ className?: string }>
+}
+
+type NavSection = {
+  title: string
+  links: NavLink[]
+}
+
+const NAV_SECTIONS: NavSection[] = [
+  {
+    title: 'Your Desk',
+    links: [
+      {
+        href: '/',
+        label: 'Overview',
+        description: 'Portfolio health, winners, and risk alerts',
+        icon: LayoutDashboard,
+      },
+      {
+        href: '/portfolio',
+        label: 'Portfolio',
+        description: 'Positions, sizing, and open risk',
+        icon: Briefcase,
+      },
+      {
+        href: '/watchlist',
+        label: 'Watchlist',
+        description: 'Names you are tracking closely',
+        icon: Bookmark,
+      },
+    ],
+  },
+  {
+    title: 'Find Trades',
+    links: [
+      {
+        href: '/scanner',
+        label: 'Options Scanner',
+        description: 'Deploy Monty to surface asymmetric trades',
+        icon: Scan,
+      },
+      {
+        href: '/scanner/signals',
+        label: 'By Signal',
+        description: 'Ideas grouped by Monty’s conviction',
+        icon: Radar,
+      },
+      {
+        href: '/scanner/fundamentals',
+        label: 'Find Stocks',
+        description: 'Equity screeners tuned for options traders',
+        icon: BarChart3,
+      },
+    ],
+  },
+  {
+    title: 'Market Lens',
+    links: [
+      {
+        href: '/macro',
+        label: 'Macro Dashboard',
+        description: 'Leading indicators and volatility regimes',
+        icon: BarChart3,
+      },
+      {
+        href: '/sentiments',
+        label: 'Sentiment',
+        description: 'Positioning, flow, and risk appetite',
+        icon: Radar,
+      },
+      {
+        href: '/crypto',
+        label: 'Crypto (Alpha)',
+        description: 'Momentum scans for digital assets',
+        icon: TrendingUp,
+      },
+    ],
+  },
+]
+
+function NavigationList({ pathname }: { pathname: string }) {
+  return (
+    <nav className="space-y-8">
+      {NAV_SECTIONS.map((section) => (
+        <div key={section.title}>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+            {section.title}
+          </p>
+          <div className="mt-4 space-y-2">
+            {section.links.map((link) => {
+              const isActive = pathname === link.href
+              const Icon = link.icon
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`group flex flex-col gap-1 rounded-2xl border px-4 py-3 transition-all duration-200 ${
+                    isActive
+                      ? 'border-emerald-400/60 bg-emerald-50 text-emerald-700 shadow-sm'
+                      : 'border-slate-200 bg-white text-slate-700 hover:border-emerald-200 hover:bg-emerald-50/60 hover:shadow-sm'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span
+                      className={`flex h-9 w-9 items-center justify-center rounded-xl border text-sm font-semibold ${
+                        isActive
+                          ? 'border-emerald-300 bg-white text-emerald-600'
+                          : 'border-slate-200 bg-slate-50 text-slate-500 group-hover:border-emerald-200 group-hover:text-emerald-600'
+                      }`}
+                    >
+                      <Icon className="h-4 w-4" />
+                    </span>
+                    <span className="font-semibold tracking-tight">{link.label}</span>
+                  </div>
+                  <span className="pl-12 text-xs text-slate-500">
+                    {link.description}
+                  </span>
+                </Link>
+              )
+            })}
+          </div>
+        </div>
+      ))}
+    </nav>
+  )
+}
+
+function UserPanel({ userEmail, greeting }: { userEmail?: string; greeting: string }) {
+  if (!userEmail) return null
+
+  return (
+    <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+      <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">
+        Logged in
+      </p>
+      <p className="mt-2 text-sm font-medium text-slate-600">{userEmail}</p>
+      <p className="mt-3 rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+        {greeting}
+      </p>
+      <Link
+        href="/settings"
+        className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-emerald-600 hover:text-emerald-700"
+      >
+        <Settings className="h-4 w-4" /> Manage account
+      </Link>
+    </div>
+  )
 }
 
 export default function Navigation({ userEmail }: { userEmail?: string }) {
   const pathname = usePathname()
   const [greeting, setGreeting] = useState('')
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const [expandedSection, setExpandedSection] = useState<string | null>(null)
+  const [mobileOpen, setMobileOpen] = useState(false)
 
   useEffect(() => {
-    // Pick a random greeting on mount
     const randomGreeting = FUN_GREETINGS[Math.floor(Math.random() * FUN_GREETINGS.length)]
     setGreeting(randomGreeting)
   }, [])
 
   useEffect(() => {
-    // Close the mobile nav when the route changes
-    setIsMenuOpen(false)
-    setExpandedSection(null)
+    setMobileOpen(false)
   }, [pathname])
 
-  const navItems: NavItem[] = [
-    { href: '/', label: 'Desk' },
-    {
-      label: 'Find Trades',
-      dropdownItems: [
-        { href: '/scanner', label: 'Options Scanner' },
-        { href: '/scanner/signals', label: 'Options by Signal' },
-        { href: '/scanner/fundamentals', label: 'Find Stocks' },
-      ],
-    },
-    {
-      label: 'Market Movers',
-      dropdownItems: [
-        { href: '/macro', label: 'Macro' },
-        { href: '/sentiments', label: 'Sentiments' },
-        { href: '/crypto', label: 'Crypto (Alpha)' },
-      ],
-    },
-    {
-      label: 'Your Positions',
-      dropdownItems: [
-        { href: '/portfolio', label: 'Portfolio' },
-        { href: '/watchlist', label: 'Watchlist' },
-        { href: '/rejection-learning', label: 'Anti-Portfolio' },
-      ],
-    },
-  ]
-
   return (
-    <nav className="sticky top-0 z-50 mx-4 mt-4 mb-6">
-      <div className="relative rounded-[2rem] border border-white/30 bg-gradient-to-br from-white/90 via-emerald-50/70 to-blue-50/70 shadow-[0_8px_40px_rgba(16,185,129,0.12)] backdrop-blur-2xl dark:border-white/10 dark:bg-gradient-to-br dark:from-slate-900/70 dark:via-emerald-950/40 dark:to-slate-900/70 dark:shadow-[0_12px_45px_rgba(15,118,110,0.35)] max-w-7xl mx-auto px-6 sm:px-8 lg:px-10">
-        <div className="pointer-events-none absolute inset-0 opacity-70">
-          <div className="absolute -left-24 top-0 h-40 w-40 rounded-full bg-emerald-300/20 blur-3xl" />
-          <div className="absolute -right-16 bottom-0 h-48 w-48 rounded-full bg-blue-300/20 blur-3xl" />
-        </div>
-        <div className="relative flex items-center justify-between h-16 gap-4">
-          {/* Logo/Brand - Clickable, links to dashboard */}
-          <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-            <Image
-              src="/Monty_logo.png"
-              alt="Money Printer - Your personal trading desk"
-              width={70}
-              height={70}
-              className="rounded-lg"
-            />
-          </Link>
+    <>
+      {/* Mobile top bar */}
+      <header className="flex items-center justify-between border-b border-slate-200 bg-white/80 px-4 py-3 backdrop-blur lg:hidden">
+        <button
+          type="button"
+          onClick={() => setMobileOpen(true)}
+          className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
+        <Link href="/" className="flex items-center gap-2">
+          <Image src="/Monty_logo.png" alt="Monty" width={40} height={40} className="rounded-lg" />
+          <span className="text-sm font-semibold tracking-tight text-slate-700">Monty Desk</span>
+        </Link>
+        <div className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">Desk</div>
+      </header>
 
-          <button
-            type="button"
-            className={`group relative inline-flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border border-white/20 bg-white/10 text-slate-700 shadow-[0_10px_40px_rgba(16,185,129,0.15)] transition-all duration-300 ease-out hover:border-emerald-300/60 hover:shadow-[0_12px_45px_rgba(16,185,129,0.35)] focus-visible:outline-none focus-visible:ring-0 after:pointer-events-none after:absolute after:inset-[-8px] after:rounded-full after:border after:border-emerald-400/40 after:opacity-0 after:transition-all after:duration-300 after:ease-out after:content-[''] focus-visible:after:opacity-100 focus-visible:after:animate-pulse dark:border-white/10 dark:bg-slate-900/30 dark:text-slate-200 dark:hover:border-emerald-400/70 ${
-              isMenuOpen ? 'scale-95 bg-emerald-200/20 dark:bg-emerald-500/10' : ''
-            } md:hidden`}
-            aria-label="Toggle navigation menu"
-            aria-expanded={isMenuOpen}
-            onClick={() => setIsMenuOpen((prev) => !prev)}
-          >
-            <span className="pointer-events-none absolute inset-0 bg-gradient-to-br from-emerald-400/10 via-blue-400/5 to-transparent opacity-0 transition-opacity duration-300 ease-out group-hover:opacity-100" />
-            <span
-              className={`relative block h-0.5 w-6 -translate-y-2 rounded-full bg-current transition-all duration-300 ease-out ${
-                isMenuOpen ? 'translate-y-0 rotate-45' : ''
-              }`}
-            />
-            <span
-              className={`relative block h-0.5 w-6 rounded-full bg-current transition-all duration-300 ease-out ${
-                isMenuOpen ? 'scale-x-0 opacity-0' : 'opacity-100'
-              }`}
-            />
-            <span
-              className={`relative block h-0.5 w-6 translate-y-2 rounded-full bg-current transition-all duration-300 ease-out ${
-                isMenuOpen ? 'translate-y-0 -rotate-45' : ''
-              }`}
-            />
-          </button>
-
-          {/* Navigation Links */}
-          <div className="hidden md:flex md:flex-1 md:items-center md:justify-center md:gap-1">
-            {navItems.map((item, index) => {
-              if (item.dropdownItems) {
-                // Dropdown menu item
-                const isActive = item.dropdownItems.some((dropItem) => pathname === dropItem.href)
-                return (
-                  <div key={index} className="group relative">
-                    <button
-                      className={`flex items-center gap-1 px-4 py-2 text-sm font-semibold tracking-wide transition-colors ${
-                        isActive
-                          ? 'text-emerald-600 dark:text-emerald-400'
-                          : 'text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
-                      }`}
-                    >
-                      {item.label}
-                      <ChevronDown className="h-4 w-4 transition-transform group-hover:rotate-180" />
-                    </button>
-                    {/* Dropdown menu - with padding bridge to prevent gap */}
-                    <div className="absolute left-0 top-full pt-2 hidden group-hover:block z-[100]">
-                      <div className="w-52 rounded-2xl border border-emerald-200/70 bg-gradient-to-br from-white via-emerald-50/70 to-blue-50/60 shadow-[0_25px_45px_-20px_rgba(16,185,129,0.45)] backdrop-blur-xl dark:border-emerald-500/30 dark:bg-gradient-to-br dark:from-slate-950 dark:via-emerald-900/30 dark:to-slate-900">
-                        <div className="py-2">
-                          {item.dropdownItems.map((dropItem) => {
-                            const isDropActive = pathname === dropItem.href
-                            return (
-                              <Link
-                                key={dropItem.href}
-                                href={dropItem.href}
-                                className={`block px-4 py-2 text-sm font-medium transition-colors ${
-                                  isDropActive
-                                    ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400'
-                                    : 'text-slate-600 hover:bg-white/70 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-emerald-900/30 dark:hover:text-white'
-                                }`}
-                              >
-                                {dropItem.label}
-                              </Link>
-                            )
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )
-              } else {
-                // Regular link item
-                const isActive = pathname === item.href
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href!}
-                    className={`px-4 py-2 text-sm font-semibold tracking-wide transition-colors ${
-                      isActive
-                        ? 'text-emerald-600 dark:text-emerald-400'
-                        : 'text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
-                    }`}
-                  >
-                    {item.label}
-                  </Link>
-                )
-              }
-            })}
-          </div>
-
-          {/* User Menu */}
-          <div className="hidden md:flex md:items-center md:gap-4">
-            {userEmail && greeting && (
-              <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
-                {greeting}
-              </span>
-            )}
-            <Link
-              href="/settings"
-              className={`text-sm px-3 py-2 rounded-lg font-semibold tracking-wide transition-colors ${
-                pathname === '/settings'
-                  ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20'
-                  : 'text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
-              }`}
-            >
-              Account
+      {mobileOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <div
+            className="absolute inset-0 bg-slate-900/40"
+            onClick={() => setMobileOpen(false)}
+            role="presentation"
+          />
+          <div className="absolute inset-y-0 left-0 w-72 bg-white px-6 py-8 shadow-xl">
+            <Link href="/" className="flex items-center gap-3">
+              <Image src="/Monty_logo.png" alt="Monty" width={48} height={48} className="rounded-xl" />
+              <div>
+                <p className="text-base font-semibold tracking-tight text-slate-800">Monty</p>
+                <p className="text-xs text-slate-500">Options Intelligence Desk</p>
+              </div>
             </Link>
+            <div className="mt-8 space-y-8 overflow-y-auto">
+              <NavigationList pathname={pathname} />
+              <UserPanel userEmail={userEmail} greeting={greeting} />
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Mobile navigation */}
-      <div
-        className={`md:hidden overflow-hidden border-t border-emerald-500/20 bg-gradient-to-br from-white via-emerald-50/70 to-blue-50/60 shadow-[0_30px_80px_-25px_rgba(16,185,129,0.55)] transition-all duration-300 ease-out dark:border-emerald-400/20 dark:bg-gradient-to-br dark:from-slate-950 dark:via-emerald-900/20 dark:to-slate-950 ${
-          isMenuOpen
-            ? 'pointer-events-auto max-h-[28rem] opacity-100 translate-y-0'
-            : 'pointer-events-none max-h-0 -translate-y-3 opacity-0'
-        }`}
-      >
-        <div className="relative px-4 pt-3 pb-5 space-y-4">
-          <span className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-400 via-blue-400 to-blue-500 opacity-80" />
-          <div className="flex flex-col space-y-2">
-            {navItems.map((item, index) => {
-              if (item.dropdownItems) {
-                // Dropdown section for mobile - collapsible
-                const isActive = item.dropdownItems.some((dropItem) => pathname === dropItem.href)
-                const isExpanded = expandedSection === item.label
-                return (
-                  <div key={index} className="space-y-1">
-                    <button
-                      onClick={() => setExpandedSection(isExpanded ? null : item.label)}
-                      className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-sm font-semibold transition-colors ${
-                        isActive
-                          ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300'
-                          : 'text-slate-700 hover:bg-white/70 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white dark:hover:bg-emerald-900/30'
-                      }`}
-                    >
-                      {item.label}
-                      <ChevronDown
-                        className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-                      />
-                    </button>
-                    <div
-                      className={`overflow-hidden transition-all duration-300 ${
-                        isExpanded ? 'max-h-48 opacity-100' : 'max-h-0 opacity-0'
-                      }`}
-                    >
-                      {item.dropdownItems.map((dropItem) => {
-                        const isDropActive = pathname === dropItem.href
-                        return (
-                          <Link
-                            key={dropItem.href}
-                            href={dropItem.href}
-                            className={`block rounded-lg px-3 py-2 pl-6 text-sm font-medium transition-colors ${
-                              isDropActive
-                                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300'
-                                : 'text-slate-700 hover:bg-white/70 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white dark:hover:bg-emerald-900/30'
-                            }`}
-                          >
-                            {dropItem.label}
-                          </Link>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )
-              } else {
-                // Regular link for mobile
-                const isActive = pathname === item.href
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href!}
-                    className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
-                      isActive
-                        ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300'
-                        : 'text-slate-700 hover:bg-white/70 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white dark:hover:bg-emerald-900/30'
-                    }`}
-                  >
-                    {item.label}
-                  </Link>
-                )
-              }
-            })}
-          </div>
-
-          <div className="relative overflow-hidden rounded-xl border border-emerald-200/40 bg-gradient-to-br from-white/70 via-emerald-50/50 to-blue-50/40 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.4)] backdrop-blur-xl dark:border-emerald-500/20 dark:bg-gradient-to-br dark:from-slate-950 dark:via-emerald-900/20 dark:to-slate-950">
-            <span className="pointer-events-none absolute -left-12 top-1/2 h-24 w-24 -translate-y-1/2 rounded-full bg-emerald-400/20 blur-3xl" />
-            <span className="pointer-events-none absolute -right-8 -top-8 h-20 w-20 rounded-full bg-blue-400/20 blur-3xl" />
-            {userEmail && greeting && (
-              <p className="text-sm font-medium text-emerald-600 dark:text-emerald-300">{greeting}</p>
-            )}
-            <Link
-              href="/settings"
-              className={`group relative mt-3 inline-flex w-full items-center justify-center overflow-hidden rounded-lg px-3 py-2 text-sm font-semibold transition-all duration-300 ${
-                pathname === '/settings'
-                  ? 'bg-gradient-to-r from-emerald-500 via-emerald-600 to-blue-500 text-white shadow-[0_10px_30px_-10px_rgba(16,185,129,0.7)]'
-                  : 'bg-white/80 text-slate-700 hover:bg-emerald-50/80 hover:text-emerald-700 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:bg-slate-800'
-              }`}
-            >
-              <span className="pointer-events-none absolute inset-0 bg-gradient-to-r from-emerald-400/10 via-blue-400/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-              Account
-            </Link>
+      {/* Desktop left rail */}
+      <aside className="hidden w-80 shrink-0 border-r border-slate-200 bg-white/80 px-8 py-10 backdrop-blur xl:w-96 lg:flex lg:flex-col">
+        <div className="flex items-center gap-3">
+          <Image src="/Monty_logo.png" alt="Monty" width={56} height={56} className="rounded-2xl" />
+          <div>
+            <p className="text-lg font-semibold tracking-tight text-slate-900">Monty</p>
+            <p className="text-xs uppercase tracking-[0.2em] text-emerald-500">Trading Desk</p>
           </div>
         </div>
-      </div>
-    </nav>
+
+        <div className="mt-10 flex-1 overflow-y-auto pr-2">
+          <NavigationList pathname={pathname} />
+        </div>
+
+        <div className="mt-6">
+          <UserPanel userEmail={userEmail} greeting={greeting} />
+        </div>
+      </aside>
+    </>
   )
 }
+

@@ -1,14 +1,12 @@
 'use client'
 
-import Navigation from '@/components/navigation'
+import AppShell from '@/components/app-shell'
 import Link from 'next/link'
 
 export default function ScannerGuidePage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
-      <Navigation />
-
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <AppShell mainClassName="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+      <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
           <Link
@@ -485,6 +483,6 @@ export default function ScannerGuidePage() {
           </Link>
         </div>
       </div>
-    </div>
+    </AppShell>
   )
 }

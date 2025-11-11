@@ -4,13 +4,12 @@ import { useEffect, useState } from 'react'
 import { User } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
-import Navigation from '@/components/navigation'
+import AppShell from '@/components/app-shell'
 import LiveTicker from '@/components/live-ticker'
 import { PoliticianTradesFeed } from '@/components/politician-trades-feed'
 import { LiveNewsFeed } from '@/components/live-news-feed'
 import { WSBTrending } from '@/components/wsb-trending'
 import { MontyMacroSummary } from '@/components/monty-macro-summary'
-import { SignalTape } from '@/components/signal-tape'
 
 interface MacroData {
   indices: Record<string, {
@@ -220,10 +219,11 @@ export default function MacroPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
-      <Navigation userEmail={user.email} />
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <AppShell
+      userEmail={user.email}
+      mainClassName="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900"
+    >
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
@@ -613,6 +613,6 @@ export default function MacroPage() {
           </div>
         )}
       </div>
-    </div>
+    </AppShell>
   )
 }

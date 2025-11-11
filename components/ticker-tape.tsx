@@ -69,22 +69,22 @@ export function TickerTape() {
   const duplicatedTickers = [...tickers, ...tickers, ...tickers]
 
   return (
-    <div className="relative w-full overflow-hidden bg-slate-950 border-b border-emerald-500/20">
+    <div className="relative w-full overflow-hidden border-b border-slate-200 bg-white text-slate-700">
       <div className="flex animate-ticker">
         {duplicatedTickers.map((ticker, idx) => (
           <div
             key={`${ticker.symbol}-${idx}`}
-            className="flex items-center gap-2 px-6 py-2 whitespace-nowrap"
+            className="flex items-center gap-2 whitespace-nowrap px-6 py-2"
           >
-            <span className="text-sm font-semibold text-white">
+            <span className="text-sm font-semibold text-slate-900">
               {ticker.symbol}
             </span>
-            <span className="text-sm text-slate-300">
+            <span className="text-sm text-slate-600">
               ${ticker.price.toFixed(2)}
             </span>
             <span
               className={`flex items-center gap-1 text-xs font-medium ${
-                ticker.change >= 0 ? 'text-emerald-400' : 'text-red-400'
+                ticker.change >= 0 ? 'text-emerald-600' : 'text-red-500'
               }`}
             >
               {ticker.change >= 0 ? (
@@ -95,7 +95,7 @@ export function TickerTape() {
               {ticker.change >= 0 ? '+' : ''}
               {ticker.changePercent.toFixed(2)}%
             </span>
-            <div className="w-px h-4 bg-slate-700 ml-2" />
+            <div className="ml-2 h-4 w-px bg-slate-200" />
           </div>
         ))}
       </div>

@@ -96,13 +96,13 @@ export function MontyDashboardBrief() {
 
   if (loading) {
     return (
-      <div className="relative overflow-hidden rounded-3xl border border-emerald-500/20 bg-emerald-900/10 p-6">
+      <div className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 animate-pulse rounded-full bg-emerald-500/30" />
-          <div>
-            <div className="h-3 w-36 animate-pulse rounded bg-emerald-500/30" />
-            <div className="mt-3 h-3 w-64 animate-pulse rounded bg-emerald-500/20" />
-            <div className="mt-2 h-3 w-48 animate-pulse rounded bg-emerald-500/20" />
+          <div className="h-10 w-10 animate-pulse rounded-full bg-emerald-100" />
+          <div className="space-y-2">
+            <div className="h-3 w-36 animate-pulse rounded bg-slate-200" />
+            <div className="h-3 w-64 animate-pulse rounded bg-slate-200" />
+            <div className="h-3 w-48 animate-pulse rounded bg-slate-200" />
           </div>
         </div>
       </div>
@@ -114,8 +114,8 @@ export function MontyDashboardBrief() {
   }
 
   return (
-    <div className="flex items-start gap-3 max-w-4xl">
-      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-white shadow-lg overflow-hidden">
+    <div className="flex max-w-4xl items-start gap-3">
+      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-white shadow-lg">
         <Image
           src="/monty-avatar.png"
           alt="Monty"
@@ -124,19 +124,19 @@ export function MontyDashboardBrief() {
           className="w-full h-full object-cover"
         />
       </div>
-      <div className="flex flex-col gap-1 flex-1">
-        <div className="rounded-[20px] bg-gradient-to-br from-emerald-500 to-emerald-600 px-5 py-4 shadow-lg">
-          <p className="text-[15px] leading-[1.5] text-white/95">
-            <strong className="font-semibold">{data.greeting}</strong>
+      <div className="flex flex-1 flex-col gap-2">
+        <div className="rounded-[20px] border border-emerald-100 bg-white px-5 py-4 shadow-sm">
+          <p className="text-[15px] leading-[1.6] text-slate-700">
+            <strong className="font-semibold text-slate-900">{data.greeting}</strong>
             <br />
             {data.marketSummary}
           </p>
 
           {insightGroups.length > 0 && (
-            <div className="mt-3 space-y-1.5">
+            <div className="mt-4 space-y-2">
               {insightGroups.map((insight) => (
-                <p key={insight.id} className="text-[15px] leading-[1.5] text-white/95">
-                  <strong className="font-semibold">{insight.label}</strong>
+                <p key={insight.id} className="text-[15px] leading-[1.6] text-slate-600">
+                  <strong className="font-semibold text-slate-900">{insight.label}</strong>
                   <br />
                   {insight.text}
                 </p>
@@ -145,12 +145,12 @@ export function MontyDashboardBrief() {
           )}
 
           {data.suggestedNextStep && (
-            <p className="mt-3 text-[15px] leading-[1.5] text-white/95">
+            <p className="mt-4 text-[15px] leading-[1.6] text-slate-600">
               {data.suggestedNextStep}
             </p>
           )}
         </div>
-        <span className="px-1 text-xs text-slate-500 dark:text-slate-400">
+        <span className="px-1 text-xs uppercase tracking-[0.25em] text-slate-400">
           Monty · Just now
         </span>
       </div>

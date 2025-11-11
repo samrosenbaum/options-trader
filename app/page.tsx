@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import LandingPage from './landing-page'
 import DashboardPage from './dashboard-page'
-import Navigation from '@/components/navigation'
+import AppShell from '@/components/app-shell'
 
 export default async function HomePage() {
   const supabase = await createClient()
@@ -16,9 +16,8 @@ export default async function HomePage() {
 
   // Show dashboard with navigation if logged in
   return (
-    <>
-      <Navigation userEmail={user.email} />
+    <AppShell userEmail={user.email}>
       <DashboardPage />
-    </>
+    </AppShell>
   )
 }

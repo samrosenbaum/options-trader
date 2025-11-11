@@ -14,7 +14,7 @@ import {
 } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 
-import Navigation from "@/components/navigation"
+import AppShell from '@/components/app-shell'
 import {
   fetchSentimentInsights,
   MarketSentimentSnapshot,
@@ -299,21 +299,19 @@ export default async function SentimentsPage() {
   }
 
   return (
-    <>
-      <Navigation />
-      <div className="relative isolate min-h-screen overflow-hidden bg-slate-50 pb-24 pt-16 dark:bg-slate-950">
-        <div className="pointer-events-none absolute inset-0 -z-10">
-          <div className="absolute -left-32 top-10 h-64 w-64 rounded-full bg-emerald-400/30 blur-3xl" />
-          <div className="absolute left-1/2 top-0 h-72 w-72 -translate-x-1/2 rounded-full bg-cyan-400/20 blur-3xl" />
-          <div className="absolute -right-24 bottom-10 h-64 w-64 rounded-full bg-rose-400/25 blur-3xl" />
-        </div>
+    <AppShell mainClassName="relative isolate min-h-screen overflow-hidden bg-slate-50 pb-24 pt-16 dark:bg-slate-950">
+      <div className="pointer-events-none absolute inset-0 -z-10">
+        <div className="absolute -left-32 top-10 h-64 w-64 rounded-full bg-emerald-400/30 blur-3xl" />
+        <div className="absolute left-1/2 top-0 h-72 w-72 -translate-x-1/2 rounded-full bg-cyan-400/20 blur-3xl" />
+        <div className="absolute -right-24 bottom-10 h-64 w-64 rounded-full bg-rose-400/25 blur-3xl" />
+      </div>
 
-        <div className="mx-auto flex w-full max-w-7xl flex-col gap-12 px-4 sm:px-6 lg:px-8">
-          {/* Page Header */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">
-                Your Sentiment Intelligence Hub
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-12 px-4 sm:px-6 lg:px-8">
+        {/* Page Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">
+              Your Sentiment Intelligence Hub
               </h1>
               <p className="text-slate-600 dark:text-slate-400">
                 What's lookinig bullish, and what's looking bearish today
@@ -407,8 +405,7 @@ export default async function SentimentsPage() {
               )}
             </div>
           </section>
-        </div>
       </div>
-    </>
+    </AppShell>
   )
 }

@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:full": "NODE_ENV=development ./scripts/dev-server.sh",
     "dev:clean": "./dev.sh",
     "build": "rm -rf .next && next build",
     "start": "next start",
