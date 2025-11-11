@@ -101,7 +101,7 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <div className="relative min-h-screen bg-white">
-        <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 pb-16 pt-10">
+        <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 pb-16 pt-10 sm:px-6 lg:px-12">
           <header className="flex items-center justify-between">
             <Link href="/" className="group flex items-center gap-3">
               <Image
@@ -131,9 +131,9 @@ export default function LandingPage() {
             </Link>
           </header>
 
-          <main className="flex flex-1 flex-col lg:flex-row items-center justify-between gap-12 py-20">
+          <main className="flex flex-1 flex-col items-center justify-between gap-12 py-14 sm:py-20 lg:flex-row">
             {/* Left: Hero Text */}
-            <div className="flex flex-col items-start gap-10 lg:w-1/2">
+            <div className="flex w-full max-w-2xl flex-col items-start gap-10 lg:max-w-none lg:w-1/2">
               <div className="inline-flex items-center gap-3 rounded-full border border-emerald-200/60 bg-white/70 px-5 py-2 text-xs uppercase tracking-[0.3em] text-emerald-600">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                 Your Options Assistant
@@ -174,7 +174,7 @@ export default function LandingPage() {
             </div>
 
             {/* Right: Hero Image */}
-            <div className="lg:w-[70%] relative -mr-12 lg:-mr-20">
+            <div className="relative w-full max-w-3xl sm:max-w-4xl lg:max-w-none lg:w-[55%] lg:-mr-16 xl:-mr-20">
               {/* Decorative background elements */}
               <div className="absolute -inset-8 bg-gradient-to-r from-emerald-400/20 via-blue-400/20 to-purple-400/20 blur-3xl opacity-70 rounded-full" />
               <div className="absolute -top-24 -right-24 w-96 h-96 bg-emerald-400/30 rounded-full blur-[120px]" />
@@ -224,7 +224,7 @@ export default function LandingPage() {
 
       <section
         id="features"
-        className="relative isolate overflow-hidden bg-white px-6 py-28"
+        className="relative isolate overflow-hidden bg-white px-4 py-20 sm:px-6 sm:py-24 lg:py-28"
       >
         <div className="mx-auto flex w-full max-w-5xl flex-col items-center text-center">
           <span className="text-sm font-semibold uppercase tracking-[0.4em] text-emerald-500/80">Your friend, who happens to be an options genius.</span>
@@ -245,7 +245,7 @@ export default function LandingPage() {
             <div className="absolute inset-0 bg-gradient-to-tr from-white/90 via-white/60 to-transparent" />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-8 md:p-12">
+          <div className="grid grid-cols-1 gap-6 p-4 sm:p-6 md:grid-cols-3 lg:p-12">
             {featureCards.map((card, index) => (
               <motion.div
                 key={card.title}
@@ -292,10 +292,10 @@ export default function LandingPage() {
 
       <section
         id="how-it-works"
-        className="relative overflow-hidden bg-slate-100 px-6 py-28"
+        className="relative overflow-hidden bg-slate-100 px-4 py-20 sm:px-6 sm:py-24 lg:py-28"
       >
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(16,185,129,0.18),transparent_60%)]" />
-        <div className="relative mx-auto grid w-full max-w-6xl gap-16 lg:grid-cols-[1.1fr_1fr]">
+        <div className="relative mx-auto grid w-full max-w-6xl gap-12 lg:grid-cols-[1.1fr_1fr] lg:gap-16">
           <div className="space-y-6">
             <span className="text-sm font-semibold uppercase tracking-[0.4em] text-emerald-500">Your trading workflow</span>
             <h2 className="text-3xl font-display font-semibold text-slate-900 sm:text-4xl">
@@ -354,8 +354,8 @@ export default function LandingPage() {
       </section>
 
       {/* Feature Showcase GIF Sections */}
-      <section className="bg-gradient-to-b from-slate-100 to-white px-6 py-28">
-        <div className="mx-auto w-full max-w-6xl space-y-24">
+      <section className="bg-gradient-to-b from-slate-100 to-white px-4 py-20 sm:px-6 sm:py-24 lg:py-28">
+        <div className="mx-auto w-full max-w-6xl space-y-20 sm:space-y-24">
           {/* Scanner Feature */}
           <div className="grid gap-12 lg:grid-cols-2 lg:gap-16 items-center">
             <div className="space-y-6">
@@ -478,8 +478,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section id="get-started" className="bg-white px-6 pb-24">
-        <div className="mx-auto w-full max-w-5xl rounded-[2.5rem] border border-slate-200 bg-gradient-to-br from-white via-emerald-50/60 to-white p-12 text-center shadow-[0_80px_120px_-60px_rgba(30,64,175,0.25)]">
+      <section id="get-started" className="bg-white px-4 pb-20 sm:px-6 sm:pb-24">
+        <div className="mx-auto w-full max-w-5xl rounded-[2.5rem] border border-slate-200 bg-gradient-to-br from-white via-emerald-50/60 to-white p-8 text-center shadow-[0_80px_120px_-60px_rgba(30,64,175,0.25)] sm:p-10 lg:p-12">
           <p className="text-sm font-semibold uppercase tracking-[0.4em] text-emerald-500/80">Start trading smarter</p>
           <h2 className="mt-4 text-3xl font-display font-semibold text-slate-900 sm:text-4xl">
             Ready to build your options empire?
