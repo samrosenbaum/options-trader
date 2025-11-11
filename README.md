@@ -24,17 +24,13 @@ pip install -r requirements.txt
 npm install
 \`\`\`
 
-### 3. Start the FastAPI Scoring Service
+### 3. Run the Combined Dev Server
 
 ```bash
-uvicorn src.api.main:app --reload --port 8000
+npm run dev:full
 ```
 
-### 4. Run Development Server
-
-```bash
-npm run dev
-```
+This command ensures the Python virtual environment exists, installs any missing dependencies, launches the FastAPI scoring service on port 8000, and starts the Next.js dev server on port 3000. If you prefer to manage the services manually, you can still run `uvicorn src.api.main:app --reload --port 8000` and `npm run dev` in separate terminals.
 
 ### 5. Test Python Scripts Directly
 
