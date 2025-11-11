@@ -1,7 +1,12 @@
 import React, { useState, useRef, useEffect, KeyboardEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Send, Minimize2, Maximize2, GripVertical, Camera, Trash2 } from 'lucide-react';
-import type { Message, RobinhoodContext, Position } from '../types';
+import type {
+  Message,
+  RobinhoodContext,
+  Position,
+  CatalystSummaryPayload,
+} from '../types';
 
 interface MontyOverlayProps {
   apiEndpoint: string; // e.g., 'http://localhost:3000' or your deployed URL
@@ -17,9 +22,32 @@ export function MontyOverlay({ apiEndpoint, robinhoodContext }: MontyOverlayProp
   const [hasNewMessage, setHasNewMessage] = useState(false);
   const [isCapturingPositions, setIsCapturingPositions] = useState(false);
   const [detectedPositions, setDetectedPositions] = useState<Position[]>([]);
+  const [catalystSummary, setCatalystSummary] = useState<CatalystSummaryPayload | null>(null);
+  const [isCatalystLoading, setIsCatalystLoading] = useState(false);
+  const [catalystError, setCatalystError] = useState<string | null>(null);
 
   // Get Monty avatar URL
   const montyAvatarUrl = chrome.runtime.getURL('monty-avatar.png');
+
+  const formatCatalystDate = (value?: string | null) => {
+    if (!value) return null;
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return null;
+    return parsed.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  };
+
+  const formatCatalystTiming = (value?: number | null) => {
+    if (typeof value !== 'number' || Number.isNaN(value)) return null;
+    const rounded = Math.round(value);
+    if (value >= 0) {
+      if (rounded === 0) return 'Today';
+      if (rounded === 1) return 'Tomorrow';
+      return `In ${rounded} days`;
+    }
+    const absRounded = Math.abs(rounded);
+    if (absRounded === 1) return '1 day ago';
+    return `${absRounded} days ago`;
+  };
 
   // Dragging state
   const [position, setPosition] = useState({ x: window.innerWidth - 450, y: 100 });
@@ -83,6 +111,68 @@ export function MontyOverlay({ apiEndpoint, robinhoodContext }: MontyOverlayProp
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Fetch catalyst summary when ticker changes
+  useEffect(() => {
+    const symbol = robinhoodContext?.ticker?.trim().toUpperCase();
+
+    if (!symbol) {
+      setCatalystSummary(null);
+      setCatalystError(null);
+      setIsCatalystLoading(false);
+      return undefined;
+    }
+
+    let cancelled = false;
+    const controller = new AbortController();
+
+    const loadSummary = async () => {
+      setIsCatalystLoading(true);
+      setCatalystError(null);
+
+      try {
+        const response = await fetch(
+          `${apiEndpoint}/api/catalyst-summary?symbol=${encodeURIComponent(symbol)}`,
+          { signal: controller.signal },
+        );
+
+        if (!response.ok) {
+          let errorMessage = `Request failed with ${response.status}`;
+          try {
+            const data = await response.json();
+            if (data?.error) {
+              errorMessage = data.error;
+            }
+          } catch {
+            // ignore JSON parse errors
+          }
+          throw new Error(errorMessage);
+        }
+
+        const payload = await response.json();
+        if (cancelled) return;
+
+        const summary: CatalystSummaryPayload | null = payload?.summaries?.[symbol] ?? null;
+        setCatalystSummary(summary);
+        setCatalystError(summary?.error ?? null);
+      } catch (error) {
+        if (cancelled) return;
+        setCatalystSummary(null);
+        setCatalystError(error instanceof Error ? error.message : String(error));
+      } finally {
+        if (!cancelled) {
+          setIsCatalystLoading(false);
+        }
+      }
+    };
+
+    void loadSummary();
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [apiEndpoint, robinhoodContext?.ticker]);
 
   // Handle dragging
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -638,6 +728,163 @@ export function MontyOverlay({ apiEndpoint, robinhoodContext }: MontyOverlayProp
               <>
                 {/* Messages */}
                 <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  {robinhoodContext?.ticker && (
+                    <div
+                      style={{
+                        borderRadius: '16px',
+                        border: '1px solid rgba(16, 185, 129, 0.25)',
+                        background: 'linear-gradient(135deg, rgba(16,185,129,0.12), rgba(16,185,129,0.05))',
+                        padding: '12px 16px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '8px',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '12px', fontWeight: 700, color: '#047857' }}>
+                          Catalysts for {robinhoodContext.ticker.toUpperCase()}
+                        </span>
+                        {isCatalystLoading && (
+                          <span style={{ fontSize: '11px', color: '#10b981' }}>Loading…</span>
+                        )}
+                      </div>
+                      {catalystError ? (
+                        <div style={{ fontSize: '12px', color: '#b91c1c' }}>{catalystError}</div>
+                      ) : (
+                        <>
+                          {catalystSummary?.events?.length ? (
+                            <ul
+                              style={{
+                                listStyle: 'none',
+                                margin: 0,
+                                padding: 0,
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '6px',
+                              }}
+                            >
+                              {catalystSummary.events.slice(0, 3).map((event, index) => (
+                                <li
+                                  key={`catalyst-${index}`}
+                                  style={{
+                                    fontSize: '12px',
+                                    color: '#065f46',
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    gap: '12px',
+                                  }}
+                                >
+                                  <div style={{ flex: 1 }}>
+                                    <div style={{ fontWeight: 600 }}>{event.name}</div>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', margin: '2px 0' }}>
+                                      {event.type && (
+                                        <span
+                                          style={{
+                                            padding: '2px 6px',
+                                            borderRadius: '9999px',
+                                            background: 'rgba(129, 140, 248, 0.12)',
+                                            color: '#3730a3',
+                                            fontSize: '10px',
+                                            fontWeight: 600,
+                                            textTransform: 'uppercase',
+                                            letterSpacing: '0.04em',
+                                          }}
+                                        >
+                                          {event.type}
+                                        </span>
+                                      )}
+                                      {event.approximate && (
+                                        <span
+                                          style={{
+                                            padding: '2px 6px',
+                                            borderRadius: '9999px',
+                                            background: 'rgba(251, 191, 36, 0.18)',
+                                            color: '#b45309',
+                                            fontSize: '10px',
+                                            fontWeight: 600,
+                                            textTransform: 'uppercase',
+                                            letterSpacing: '0.04em',
+                                          }}
+                                        >
+                                          Estimated
+                                        </span>
+                                      )}
+                                      {event.impact && (
+                                        <span style={{ fontSize: '10px', color: '#0f766e', fontWeight: 600 }}>
+                                          Impact: {event.impact}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div style={{ fontSize: '11px', color: '#0f766e' }}>
+                                      {formatCatalystTiming(event.days_until) ??
+                                        formatCatalystDate(event.date) ??
+                                        'Timing TBA'}
+                                    </div>
+                                    {event.description && (
+                                      <div style={{ fontSize: '11px', color: '#0f172a', marginTop: '2px' }}>
+                                        {event.description}
+                                      </div>
+                                    )}
+                                  </div>
+                                  {formatCatalystDate(event.date) && (
+                                    <span style={{ fontSize: '11px', color: '#047857' }}>
+                                      {formatCatalystDate(event.date)}
+                                    </span>
+                                  )}
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p style={{ fontSize: '12px', color: '#047857', margin: 0 }}>
+                              {isCatalystLoading
+                                ? 'Scanning event calendar...'
+                                : 'No scheduled catalysts detected yet. Watch for fresh headlines.'}
+                            </p>
+                          )}
+
+                          {catalystSummary?.technical &&
+                            catalystSummary.technical.commentary &&
+                            catalystSummary.technical.commentary.length > 0 && (
+                              <div
+                                style={{
+                                  marginTop: '4px',
+                                  padding: '10px',
+                                  borderRadius: '12px',
+                                  background: 'rgba(15, 23, 42, 0.08)',
+                                }}
+                              >
+                                <div style={{ fontSize: '11px', fontWeight: 600, color: '#0f172a', marginBottom: '4px' }}>
+                                  Technical notes
+                                </div>
+                                <ul style={{ margin: 0, paddingLeft: '16px', color: '#1f2937', fontSize: '12px' }}>
+                                  {catalystSummary.technical.commentary.slice(0, 2).map((note, idx) => (
+                                    <li key={`tech-note-${idx}`}>{note}</li>
+                                  ))}
+                                </ul>
+                                <div
+                                  style={{
+                                    marginTop: '6px',
+                                    fontSize: '11px',
+                                    color: '#1e293b',
+                                    display: 'flex',
+                                    gap: '12px',
+                                    flexWrap: 'wrap',
+                                  }}
+                                >
+                                  {typeof catalystSummary.technical.support === 'number' && (
+                                    <span>Support: ${catalystSummary.technical.support.toFixed(2)}</span>
+                                  )}
+                                  {typeof catalystSummary.technical.resistance === 'number' && (
+                                    <span>Resistance: ${catalystSummary.technical.resistance.toFixed(2)}</span>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                        </>
+                      )}
+                    </div>
+                  )}
+
                   {messages.length === 0 ? (
                     <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center' }}>
                       <div style={{ textAlign: 'center' }}>

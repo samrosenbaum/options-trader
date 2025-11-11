@@ -1,0 +1,23 @@
+[
+  {
+    "date": "2024-11-12T13:30:00Z",
+    "name": "CPI Release",
+    "description": "October Consumer Price Index report",
+    "impact": "high",
+    "tags": ["inflation", "macro"]
+  },
+  {
+    "date": "2024-11-20T19:00:00Z",
+    "name": "FOMC Minutes",
+    "description": "Federal Reserve policy minutes",
+    "impact": "high",
+    "tags": ["rates", "fomc"]
+  },
+  {
+    "date": "2024-12-06T13:30:00Z",
+    "name": "Non-Farm Payrolls",
+    "description": "Monthly jobs report",
+    "impact": "high",
+    "tags": ["employment"]
+  }
+]
