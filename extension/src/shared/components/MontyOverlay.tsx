@@ -8,6 +8,151 @@ import type {
   CatalystSummaryPayload,
 } from '../types';
 
+interface MontyFetchResponse<T = unknown> {
+  success: boolean;
+  status: number;
+  data?: T;
+  error?: string;
+}
+
+interface MontyStreamAck {
+  success: boolean;
+  status?: number;
+  error?: string;
+}
+
+function sendRuntimeMessage<TMessage, TResponse>(message: TMessage): Promise<TResponse> {
+  return new Promise((resolve, reject) => {
+    try {
+      chrome.runtime.sendMessage(message, (response) => {
+        const runtimeError = chrome.runtime.lastError;
+        if (runtimeError) {
+          reject(new Error(runtimeError.message));
+          return;
+        }
+        resolve(response as TResponse);
+      });
+    } catch (error) {
+      reject(error instanceof Error ? error : new Error(String(error)));
+    }
+  });
+}
+
+async function performBackgroundFetch<T = unknown>(
+  url: string,
+  options: RequestInit = {},
+  responseType: 'json' | 'text' = 'json',
+): Promise<MontyFetchResponse<T>> {
+  const response = await sendRuntimeMessage<
+    {
+      type: 'MONTY_FETCH';
+      url: string;
+      fetchOptions?: RequestInit;
+      responseType?: 'json' | 'text';
+    },
+    MontyFetchResponse<T>
+  >({
+    type: 'MONTY_FETCH',
+    url,
+    fetchOptions: options,
+    responseType,
+  });
+
+  if (!response?.success) {
+    throw new Error(response?.error || `Request failed with status ${response?.status ?? 'unknown'}`);
+  }
+
+  return response;
+}
+
+async function streamMontyApi({
+  url,
+  options,
+  onText,
+}: {
+  url: string;
+  options: RequestInit;
+  onText?: (textChunk: string) => void;
+}): Promise<string> {
+  const requestId = crypto.randomUUID();
+  let cleanupListener: () => void = () => {};
+  let aggregated = '';
+  let buffer = '';
+
+  const streamPromise = new Promise<string>((resolve, reject) => {
+    const handleMessage = (message: {
+      type: string;
+      requestId?: string;
+      chunk?: string;
+      error?: string;
+    }) => {
+      if (message?.requestId !== requestId) {
+        return;
+      }
+
+      if (message.type === 'MONTY_STREAM_CHUNK' && typeof message.chunk === 'string') {
+        buffer += message.chunk;
+        const segments = buffer.split('\n\n');
+        buffer = segments.pop() ?? '';
+
+        for (const segment of segments) {
+          const line = segment.trim();
+          if (!line.startsWith('data:')) continue;
+
+          const data = line.slice(5).trim();
+          if (!data || data === '[DONE]') continue;
+
+          try {
+            const parsed = JSON.parse(data) as { text?: string };
+            if (parsed.text) {
+              aggregated += parsed.text;
+              onText?.(parsed.text);
+            }
+          } catch (error) {
+            console.error('[Monty] Failed to parse stream chunk:', error);
+          }
+        }
+      } else if (message.type === 'MONTY_STREAM_COMPLETE') {
+        cleanupListener();
+        resolve(aggregated);
+      } else if (message.type === 'MONTY_STREAM_ERROR') {
+        cleanupListener();
+        reject(new Error(message.error || 'Stream failed'));
+      }
+    };
+
+    cleanupListener = () => chrome.runtime.onMessage.removeListener(handleMessage);
+    chrome.runtime.onMessage.addListener(handleMessage);
+  });
+
+  try {
+    const ack = await sendRuntimeMessage<
+      {
+        type: 'MONTY_STREAM_REQUEST';
+        requestId: string;
+        url: string;
+        fetchOptions?: RequestInit;
+      },
+      MontyStreamAck
+    >({
+      type: 'MONTY_STREAM_REQUEST',
+      requestId,
+      url,
+      fetchOptions: options,
+    });
+
+    if (!ack?.success) {
+      cleanupListener();
+      throw new Error(ack?.error || `Request failed with status ${ack?.status ?? 'unknown'}`);
+    }
+
+    return await streamPromise;
+  } catch (error) {
+    cleanupListener();
+    throw error instanceof Error ? error : new Error(String(error));
+  }
+}
+
 interface MontyOverlayProps {
   apiEndpoint: string; // e.g., 'http://localhost:3000' or your deployed URL
   robinhoodContext?: RobinhoodContext;
@@ -124,36 +269,25 @@ export function MontyOverlay({ apiEndpoint, robinhoodContext }: MontyOverlayProp
     }
 
     let cancelled = false;
-    const controller = new AbortController();
 
     const loadSummary = async () => {
       setIsCatalystLoading(true);
       setCatalystError(null);
 
       try {
-        const response = await fetch(
+        const response = await performBackgroundFetch<{
+          summaries?: Record<string, CatalystSummaryPayload | null>;
+        }>(
           `${apiEndpoint}/api/catalyst-summary?symbol=${encodeURIComponent(symbol)}`,
-          { signal: controller.signal },
+          { method: 'GET' },
+          'json',
         );
 
-        if (!response.ok) {
-          let errorMessage = `Request failed with ${response.status}`;
-          try {
-            const data = await response.json();
-            if (data?.error) {
-              errorMessage = data.error;
-            }
-          } catch {
-            // ignore JSON parse errors
-          }
-          throw new Error(errorMessage);
-        }
-
-        const payload = await response.json();
         if (cancelled) return;
 
+        const payload = response.data;
         const summary: CatalystSummaryPayload | null = payload?.summaries?.[symbol] ?? null;
-        setCatalystSummary(summary);
+        setCatalystSummary(summary ?? null);
         setCatalystError(summary?.error ?? null);
       } catch (error) {
         if (cancelled) return;
@@ -170,7 +304,6 @@ export function MontyOverlay({ apiEndpoint, robinhoodContext }: MontyOverlayProp
 
     return () => {
       cancelled = true;
-      controller.abort();
     };
   }, [apiEndpoint, robinhoodContext?.ticker]);
 
@@ -272,69 +405,29 @@ export function MontyOverlay({ apiEndpoint, robinhoodContext }: MontyOverlayProp
     setInput('');
     setIsLoading(true);
 
+    let assistantContent = '';
+
     try {
-      const response = await fetch(`${apiEndpoint}/api/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: conversation }),
+      const finalContent = await streamMontyApi({
+        url: `${apiEndpoint}/api/chat`,
+        options: {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messages: conversation }),
+        },
+        onText: (textChunk) => {
+          assistantContent += textChunk;
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === assistantId
+                ? { ...msg, content: assistantContent, timestamp: new Date() }
+                : msg
+            )
+          );
+        },
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to get response');
-      }
-
-      if (!response.body) {
-        throw new Error('No response body');
-      }
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let assistantContent = '';
-      let buffer = '';
-      let done = false;
-
-      while (!done) {
-        const { value, done: readerDone } = await reader.read();
-        done = readerDone;
-
-        if (value) {
-          buffer += decoder.decode(value, { stream: !readerDone });
-        }
-
-        const segments = buffer.split('\n\n');
-        buffer = segments.pop() ?? '';
-
-        for (const segment of segments) {
-          const line = segment.trim();
-          if (!line.startsWith('data:')) continue;
-
-          const data = line.slice(5).trim();
-          if (!data) continue;
-
-          if (data === '[DONE]') {
-            done = true;
-            break;
-          }
-
-          try {
-            const parsed = JSON.parse(data) as { text?: string };
-            if (parsed.text) {
-              assistantContent += parsed.text;
-              setMessages((prev) =>
-                prev.map((msg) =>
-                  msg.id === assistantId
-                    ? { ...msg, content: assistantContent, timestamp: new Date() }
-                    : msg
-                )
-              );
-            }
-          } catch (error) {
-            console.error('Failed to parse chunk:', error);
-          }
-        }
-      }
-
-      if (!assistantContent.trim()) {
+      if (!finalContent.trim()) {
         setMessages((prev) =>
           prev.map((msg) =>
             msg.id === assistantId
@@ -387,64 +480,24 @@ export function MontyOverlay({ apiEndpoint, robinhoodContext }: MontyOverlayProp
 
       const screenshot = response.screenshot;
 
-      // Send vision request to backend
-      const visionResponse = await fetch(`${apiEndpoint}/api/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: [
-            {
-              role: 'user',
-              content: 'Analyze this screenshot of my Robinhood portfolio and extract all positions. Return a JSON array of positions with ticker, type (stock/option), quantity, averageCost, currentPrice, marketValue, profitLoss, and profitLossPercent. For options, include optionType (call/put), strike, and expiration. Only return the JSON, no additional text.',
-            },
-          ],
-          screenshot,
-        }),
+      // Send vision request to backend through background proxy
+      const assistantContent = await streamMontyApi({
+        url: `${apiEndpoint}/api/chat`,
+        options: {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messages: [
+              {
+                role: 'user',
+                content:
+                  'Analyze this screenshot of my Robinhood portfolio and extract all positions. Return a JSON array of positions with ticker, type (stock/option), quantity, averageCost, currentPrice, marketValue, profitLoss, and profitLossPercent. For options, include optionType (call/put), strike, and expiration. Only return the JSON, no additional text.',
+              },
+            ],
+            screenshot,
+          }),
+        },
       });
-
-      if (!visionResponse.ok) {
-        throw new Error('Failed to analyze screenshot');
-      }
-
-      if (!visionResponse.body) {
-        throw new Error('No response body');
-      }
-
-      // Parse streaming response
-      const reader = visionResponse.body.getReader();
-      const decoder = new TextDecoder();
-      let assistantContent = '';
-      let buffer = '';
-      let done = false;
-
-      while (!done) {
-        const { value, done: readerDone } = await reader.read();
-        done = readerDone;
-
-        if (value) {
-          buffer += decoder.decode(value, { stream: !readerDone });
-        }
-
-        const segments = buffer.split('\n\n');
-        buffer = segments.pop() ?? '';
-
-        for (const segment of segments) {
-          const line = segment.trim();
-          if (!line.startsWith('data:')) continue;
-
-          const data = line.slice(5).trim();
-          if (!data || data === '[DONE]') continue;
-
-          try {
-            const parsed = JSON.parse(data) as { text?: string };
-            if (parsed.text) {
-              assistantContent += parsed.text;
-            }
-          } catch (error) {
-            console.error('Failed to parse chunk:', error);
-          }
-        }
-      }
 
       // Parse positions from response
       try {

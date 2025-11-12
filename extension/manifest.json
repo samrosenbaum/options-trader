@@ -10,7 +10,9 @@
   ],
   "host_permissions": [
     "https://robinhood.com/*",
-    "https://*.robinhood.com/*"
+    "https://*.robinhood.com/*",
+    "https://withmonty.com/*",
+    "https://*.withmonty.com/*"
   ],
   "content_scripts": [
     {
