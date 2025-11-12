@@ -1,5 +1,5 @@
-import { access } from "fs/promises"
 import { constants } from "fs"
+import { access } from "fs/promises"
 import path from "path"
 
 async function isExecutable(candidate: string | undefined | null) {

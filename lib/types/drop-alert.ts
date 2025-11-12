@@ -26,6 +26,7 @@ export interface DropRiskResponse {
   data: DropRiskSignal[]
   error?: string
   details?: string
+  note?: string
 }
 
 export interface SignalComponent {
