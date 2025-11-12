@@ -12,6 +12,7 @@ interface ApiResponse {
   generatedAt?: string
   nextScanAt?: string
   error?: string
+  note?: string
 }
 
 const alertStyles: Record<BearishSignal['alertLevel'], { badge: string; border: string; glow: string; text: string; icon: string }> = {
@@ -53,11 +54,23 @@ const scoreGradient = (score: number, maxScore: number) => {
   return 'from-slate-500/80 via-slate-400/60 to-slate-500/40'
 }
 
-const fetchBearishSignals = async (minScore: number, limit: number): Promise<ApiResponse> => {
+const fetchBearishSignals = async ({
+  minScore,
+  limit,
+  forceRescan = false,
+}: {
+  minScore: number
+  limit: number
+  forceRescan?: boolean
+}): Promise<ApiResponse> => {
   const params = new URLSearchParams({
     minScore: String(minScore),
     limit: String(limit),
   })
+
+  if (forceRescan) {
+    params.set('forceRescan', 'true')
+  }
 
   const response = await fetch(`/api/bearish-signals?${params.toString()}`, { cache: 'no-store' })
   if (!response.ok) {
@@ -87,7 +100,15 @@ export function BearishSignalScanner({
   const [totalScanned, setTotalScanned] = useState<number | null>(null)
   const [expandedSignals, setExpandedSignals] = useState<Set<string>>(new Set())
 
-  const requestSignals = useCallback(async () => fetchBearishSignals(minScore, limit), [minScore, limit])
+  const requestSignals = useCallback(
+    async (forceRescan = false) =>
+      fetchBearishSignals({
+        minScore,
+        limit,
+        forceRescan,
+      }),
+    [minScore, limit]
+  )
 
   const applyPayload = useCallback(
     (payload: ApiResponse) => {
@@ -115,9 +136,10 @@ export function BearishSignalScanner({
   const refreshSignals = useCallback(async () => {
     setLoading(true)
     try {
-      const payload = await requestSignals()
+      const payload = await requestSignals(true)
       applyPayload(payload)
     } catch (err) {
+      console.error('Failed to refresh bearish signals', err)
       setError(err instanceof Error ? err.message : 'Unable to load bearish signals')
     } finally {
       setLoading(false)
@@ -197,13 +219,15 @@ export function BearishSignalScanner({
         </div>
         <button
           type="button"
-          onClick={() => refreshSignals().catch(() => {})}
+          onClick={() => {
+            void refreshSignals()
+          }}
           className="group inline-flex h-10 items-center gap-2 rounded-full border border-slate-200 bg-slate-100 px-4 text-sm font-medium text-slate-700 transition-all hover:border-red-400/60 hover:bg-red-50 dark:border-white/10 dark:bg-white/10 dark:text-white/80 dark:hover:border-red-400/60 dark:hover:bg-red-500/10 dark:hover:text-white"
           disabled={loading}
           aria-label="Refresh bearish signals"
         >
           <RefreshCcw size={16} className={loading ? 'animate-spin' : 'transition-transform group-hover:rotate-180'} />
-          Refresh
+          Find bearish signals
         </button>
       </div>
 

@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { resolvePythonExecutable } from '@/lib/server/python'
+import { spawn } from 'child_process'
+import path from 'path'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -97,6 +100,72 @@ function convertToCamelCase(row: BearishSignalRow): BearishSignal {
   }
 }
 
+interface ApiResponse {
+  success: boolean
+  data?: BearishSignal[]
+  count?: number
+  totalScanned?: number
+  generatedAt?: string
+  nextScanAt?: string
+  error?: string
+  note?: string
+}
+
+async function runSyntheticBearishScan({
+  minScore,
+  limit,
+  symbols,
+}: {
+  minScore: number
+  limit: number
+  symbols?: string[]
+}): Promise<ApiResponse> {
+  const pythonPath = await resolvePythonExecutable()
+  const scriptPath = path.join(process.cwd(), 'scripts', 'manual_bearish_scan.py')
+
+  const args = [scriptPath, '--min-score', String(minScore), '--limit', String(limit)]
+  if (symbols && symbols.length > 0) {
+    args.push('--symbols', ...symbols)
+  }
+
+  return await new Promise<ApiResponse>((resolve, reject) => {
+    const child = spawn(pythonPath, args, {
+      env: { ...process.env, PYTHONPATH: process.cwd() },
+    })
+
+    let stdout = ''
+    let stderr = ''
+
+    child.stdout.on('data', data => {
+      stdout += data.toString()
+    })
+
+    child.stderr.on('data', data => {
+      stderr += data.toString()
+    })
+
+    child.on('error', error => {
+      reject(error)
+    })
+
+    child.on('close', code => {
+      if (code !== 0) {
+        reject(new Error(stderr || `Synthetic bearish scan failed with exit code ${code}`))
+        return
+      }
+
+      try {
+        const lines = stdout.trim().split('\n')
+        const jsonLine = lines[lines.length - 1]
+        const payload = JSON.parse(jsonLine) as ApiResponse
+        resolve(payload)
+      } catch (error) {
+        reject(new Error(`Failed to parse synthetic bearish scan output: ${error instanceof Error ? error.message : String(error)}`))
+      }
+    })
+  })
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
@@ -107,72 +176,97 @@ export async function GET(request: NextRequest) {
     const symbols = searchParams.get('symbols')?.split(',').map(s => s.trim().toUpperCase())
     const alertLevel = searchParams.get('alertLevel') as 'watch' | 'moderate' | 'high' | 'extreme' | null
     const includeExpired = searchParams.get('includeExpired') === 'true'
+    const forceRescan = searchParams.get('forceRescan') === 'true'
 
-    // Create Supabase client
-    const supabase = await createClient()
+    let supabasePayload: ApiResponse | null = null
+    if (!forceRescan) {
+      // Create Supabase client
+      const supabase = await createClient()
 
-    // Build query
-    let query = supabase
-      .from('bearish_signals')
-      .select('*')
-      .gte('total_score', minScore)
-      .order('total_score', { ascending: false })
-      .order('generated_at', { ascending: false })
-      .limit(limit)
+      // Build query
+      let query = supabase
+        .from('bearish_signals')
+        .select('*')
+        .gte('total_score', minScore)
+        .order('total_score', { ascending: false })
+        .order('generated_at', { ascending: false })
+        .limit(limit)
 
-    // Filter by expiration
-    if (!includeExpired) {
-      query = query.gt('expires_at', new Date().toISOString())
+      // Filter by expiration
+      if (!includeExpired) {
+        query = query.gt('expires_at', new Date().toISOString())
+      }
+
+      // Filter by symbols
+      if (symbols && symbols.length > 0) {
+        query = query.in('symbol', symbols)
+      }
+
+      // Filter by alert level
+      if (alertLevel) {
+        query = query.eq('alert_level', alertLevel)
+      }
+
+      // Execute query
+      const { data, error } = await query
+
+      if (error) {
+        console.error('Supabase error:', error)
+      } else {
+        // Convert to camelCase
+        const signals = (data as BearishSignalRow[]).map(convertToCamelCase)
+
+        // Get total count of all symbols scanned (not filtered by minScore)
+        const { count: totalScanned } = await supabase
+          .from('bearish_signals')
+          .select('symbol', { count: 'exact', head: true })
+          .gt('expires_at', new Date().toISOString())
+
+        // Calculate next scan time (15 minutes from most recent)
+        const mostRecent = signals[0]?.generatedAt
+        const nextScanAt = mostRecent
+          ? new Date(new Date(mostRecent).getTime() + 15 * 60 * 1000).toISOString()
+          : new Date(Date.now() + 15 * 60 * 1000).toISOString()
+
+        supabasePayload = {
+          success: true,
+          data: signals,
+          count: signals.length,
+          totalScanned: totalScanned ?? 0,
+          generatedAt: mostRecent || new Date().toISOString(),
+          nextScanAt,
+        }
+      }
     }
 
-    // Filter by symbols
-    if (symbols && symbols.length > 0) {
-      query = query.in('symbol', symbols)
+    const shouldRunSynthetic =
+      forceRescan || !supabasePayload || (supabasePayload.data?.length ?? 0) === 0
+
+    if (shouldRunSynthetic) {
+      try {
+        const synthetic = await runSyntheticBearishScan({
+          minScore,
+          limit,
+          symbols,
+        })
+        return NextResponse.json(synthetic)
+      } catch (error) {
+        console.error('Synthetic bearish scan failed:', error)
+        if (supabasePayload) {
+          return NextResponse.json(supabasePayload)
+        }
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Unable to generate bearish signals',
+            details: error instanceof Error ? error.message : 'Unknown error',
+          },
+          { status: 500 }
+        )
+      }
     }
 
-    // Filter by alert level
-    if (alertLevel) {
-      query = query.eq('alert_level', alertLevel)
-    }
-
-    // Execute query
-    const { data, error } = await query
-
-    if (error) {
-      console.error('Supabase error:', error)
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Failed to fetch bearish signals',
-          details: error.message,
-        },
-        { status: 500 }
-      )
-    }
-
-    // Convert to camelCase
-    const signals = (data as BearishSignalRow[]).map(convertToCamelCase)
-
-    // Get total count of all symbols scanned (not filtered by minScore)
-    const { count: totalScanned } = await supabase
-      .from('bearish_signals')
-      .select('symbol', { count: 'exact', head: true })
-      .gt('expires_at', new Date().toISOString())
-
-    // Calculate next scan time (15 minutes from most recent)
-    const mostRecent = signals[0]?.generatedAt
-    const nextScanAt = mostRecent
-      ? new Date(new Date(mostRecent).getTime() + 15 * 60 * 1000).toISOString()
-      : new Date(Date.now() + 15 * 60 * 1000).toISOString()
-
-    return NextResponse.json({
-      success: true,
-      data: signals,
-      count: signals.length,
-      totalScanned: totalScanned ?? 0,
-      generatedAt: mostRecent || new Date().toISOString(),
-      nextScanAt,
-    })
+    return NextResponse.json(supabasePayload)
   } catch (err) {
     console.error('Unexpected error:', err)
     return NextResponse.json(
