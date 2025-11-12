@@ -976,7 +976,7 @@ export function MontyOverlay({ apiEndpoint, robinhoodContext }: MontyOverlayProp
 
                 {/* Input */}
                 <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.2)', padding: '16px', background: 'rgba(255, 255, 255, 0.5)' }}>
-                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px', flexWrap: 'wrap' }}>
                     <input
                       ref={inputRef}
                       type="text"
@@ -996,6 +996,34 @@ export function MontyOverlay({ apiEndpoint, robinhoodContext }: MontyOverlayProp
                         outline: 'none',
                       }}
                     />
+                    <button
+                      onClick={handleDetectPositions}
+                      disabled={isCapturingPositions || isLoading}
+                      title="Capture a screenshot so Monty can detect your positions"
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                        padding: '0 16px',
+                        height: '44px',
+                        borderRadius: '16px',
+                        background: 'rgba(16, 185, 129, 0.12)',
+                        border: '1px solid rgba(16, 185, 129, 0.4)',
+                        color: '#047857',
+                        fontSize: '13px',
+                        fontWeight: 600,
+                        cursor: isCapturingPositions || isLoading ? 'not-allowed' : 'pointer',
+                        opacity: isCapturingPositions || isLoading ? 0.6 : 1,
+                        boxShadow: '0 1px 2px 0 rgb(16 185 129 / 0.15)',
+                        backgroundImage: isCapturingPositions
+                          ? 'linear-gradient(135deg, rgba(16,185,129,0.25) 0%, rgba(5,150,105,0.25) 100%)'
+                          : 'linear-gradient(135deg, rgba(16,185,129,0.18) 0%, rgba(5,150,105,0.12) 100%)',
+                      }}
+                    >
+                      <Camera size={18} />
+                      {isCapturingPositions ? 'Capturing…' : 'Capture Portfolio'}
+                    </button>
                     <button
                       onClick={handleSend}
                       disabled={!input.trim() || isLoading}
