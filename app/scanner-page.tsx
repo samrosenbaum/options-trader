@@ -1014,27 +1014,27 @@ Liquidity: ${((opp as Record<string, unknown>).liquidityScore as number | undefi
                 {/* Simplified Metric Grid */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                   <div className="rounded-md border border-border/60 bg-muted/40 p-3">
-                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Stock Price</p>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-900 dark:text-slate-100">Stock Price</p>
                     <p className="mt-1 text-sm font-semibold text-foreground">${opp.stockPrice.toFixed(2)}</p>
                   </div>
                   <div className="rounded-md border border-border/60 bg-muted/40 p-3">
-                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Premium/Share</p>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-900 dark:text-slate-100">Premium/Share</p>
                     <p className="mt-1 text-sm font-semibold text-foreground">${(opp.premium / 100).toFixed(2)}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">${premiumPerContract.toFixed(2)} per contract (100 shares)</p>
+                    <p className="mt-1 text-xs text-slate-700 dark:text-slate-300">${premiumPerContract.toFixed(2)} per contract (100 shares)</p>
                   </div>
                   <div className="rounded-md border border-border/60 bg-muted/40 p-3">
-                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Breakeven Move</p>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-900 dark:text-slate-100">Breakeven Move</p>
                     <p className="mt-1 text-sm font-semibold text-foreground">{Math.abs(breakevenMove).toFixed(1)}% {moveDirection}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">Needs ${opp.breakevenPrice?.toFixed(2) || 'N/A'}</p>
+                    <p className="mt-1 text-xs text-slate-700 dark:text-slate-300">Needs ${opp.breakevenPrice?.toFixed(2) || 'N/A'}</p>
                   </div>
                   <div className="rounded-md border border-border/60 bg-muted/40 p-3">
-                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Volume / Open Interest</p>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-900 dark:text-slate-100">Volume / Open Interest</p>
                     <p className="mt-1 text-sm font-semibold text-foreground">
                       {opp.volume ? new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format(opp.volume) : 'N/A'}
                       {' / '}
                       {opp.openInterest ? new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format(opp.openInterest) : 'N/A'}
                     </p>
-                    <p className="mt-1 text-xs text-muted-foreground">
+                    <p className="mt-1 text-xs text-slate-700 dark:text-slate-300">
                       {opp.openInterest ? (() => {
                         const ratio = opp.volume / opp.openInterest
                         const volume = opp.volume
@@ -1046,9 +1046,9 @@ Liquidity: ${((opp as Record<string, unknown>).liquidityScore as number | undefi
                     </p>
                   </div>
                   <div className="rounded-md border border-border/60 bg-muted/40 p-3">
-                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Risk per Contract</p>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-900 dark:text-slate-100">Risk per Contract</p>
                     <p className="mt-1 text-sm font-semibold text-foreground">${premiumPerContract.toFixed(2)}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">Max loss if trade fails</p>
+                    <p className="mt-1 text-xs text-slate-700 dark:text-slate-300">Max loss if trade fails</p>
                   </div>
                 </div>
               </>
@@ -1094,6 +1094,46 @@ Liquidity: ${((opp as Record<string, unknown>).liquidityScore as number | undefi
                 Add to Watchlist
               </>
             )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              if (!isExpanded) {
+                onToggle()
+              }
+              onRunBacktest()
+            }}
+            disabled={loadingBacktest}
+            className="inline-flex items-center justify-center gap-2 rounded-full border border-purple-500/60 bg-purple-500/10 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-purple-700 shadow-sm transition-colors hover:bg-purple-500/20 disabled:cursor-not-allowed disabled:opacity-60 dark:border-purple-500/40 dark:bg-purple-500/10 dark:text-purple-200"
+          >
+            {loadingBacktest
+              ? enhancedBacktest
+                ? 'Refreshing backtest…'
+                : 'Running backtest…'
+              : enhancedBacktest
+                ? 'Refresh 365-Day Backtest'
+                : 'Run 365-Day Backtest'}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              if (!isExpanded) {
+                onToggle()
+              }
+              onRunHistorical()
+            }}
+            disabled={loadingHistorical}
+            className="inline-flex items-center justify-center gap-2 rounded-full border border-sky-500/60 bg-sky-500/10 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-sky-700 shadow-sm transition-colors hover:bg-sky-500/20 disabled:cursor-not-allowed disabled:opacity-60 dark:border-sky-500/40 dark:bg-sky-500/10 dark:text-sky-200"
+          >
+            {loadingHistorical
+              ? enhancedHistorical
+                ? 'Refreshing historical study…'
+                : 'Analyzing history…'
+              : enhancedHistorical
+                ? 'Refresh Historical Analysis'
+                : 'Analyze Historical Patterns'}
           </button>
 
           <button
