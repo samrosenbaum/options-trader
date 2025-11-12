@@ -74,6 +74,7 @@ interface AnalysisResult {
 
 const USER_LOOKBACK_DAYS = 90
 const CLOSED_HISTORY_DAYS = 30
+const CARD_BASE_CLASS = "anti-portfolio-card"
 
 export default function RejectionLearningPage() {
   const [user, setUser] = useState<User | null>(null)
@@ -396,9 +397,9 @@ export default function RejectionLearningPage() {
         </div>
 
         {backfillResult && (
-          <Card className="modern-card mb-6 border-emerald-500/20 bg-emerald-500/5">
+          <Card className={`${CARD_BASE_CLASS} mb-6 border-emerald-200 bg-emerald-50`}>
             <CardHeader>
-              <CardTitle className="text-emerald-400">Backfill Complete</CardTitle>
+              <CardTitle className="text-emerald-600">Backfill Complete</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex gap-6 text-sm mb-4">
@@ -438,9 +439,9 @@ export default function RejectionLearningPage() {
         )}
 
         {syncResult && (
-          <Card className="modern-card mb-6 border-blue-500/20 bg-blue-500/5">
+          <Card className={`${CARD_BASE_CLASS} mb-6 border-blue-200 bg-blue-50`}>
             <CardHeader>
-              <CardTitle className="text-blue-400">P&L Sync Complete</CardTitle>
+              <CardTitle className="text-blue-600">P&L Sync Complete</CardTitle>
               <CardDescription>Anti-Portfolio P&L values synced with closed positions</CardDescription>
             </CardHeader>
             <CardContent>
@@ -481,7 +482,7 @@ export default function RejectionLearningPage() {
         )}
 
         {analysis && analysis.ai_summary && (
-          <Card className="modern-card mb-6">
+          <Card className={`${CARD_BASE_CLASS} mb-6`}>
             <CardHeader>
               <CardTitle>AI Debrief</CardTitle>
               <CardDescription>Key takeaways from profitable rejections</CardDescription>
@@ -496,7 +497,7 @@ export default function RejectionLearningPage() {
 
         {analysis && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <Card className="modern-card">
+            <Card className={CARD_BASE_CLASS}>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Total Rejected</CardTitle>
               </CardHeader>
@@ -506,7 +507,7 @@ export default function RejectionLearningPage() {
               </CardContent>
             </Card>
 
-            <Card className="modern-card">
+            <Card className={CARD_BASE_CLASS}>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Became Profitable</CardTitle>
               </CardHeader>
@@ -518,7 +519,7 @@ export default function RejectionLearningPage() {
               </CardContent>
             </Card>
 
-            <Card className="modern-card">
+            <Card className={CARD_BASE_CLASS}>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Avg Change</CardTitle>
               </CardHeader>
@@ -531,7 +532,7 @@ export default function RejectionLearningPage() {
               </CardContent>
             </Card>
 
-            <Card className="modern-card">
+            <Card className={CARD_BASE_CLASS}>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Top Miss Reason</CardTitle>
               </CardHeader>
@@ -547,7 +548,7 @@ export default function RejectionLearningPage() {
         )}
 
         {analysis && analysis.recommendations.length > 0 && (
-          <Card className="modern-card mb-6">
+          <Card className={`${CARD_BASE_CLASS} mb-6`}>
             <CardHeader>
               <CardTitle>Filter Tuning Ideas</CardTitle>
               <CardDescription>Suggestions based on recent rejection outcomes</CardDescription>
@@ -563,7 +564,7 @@ export default function RejectionLearningPage() {
         )}
 
         {analysis && analysis.missed_opportunities.length > 0 && (
-          <Card className="modern-card mb-6">
+          <Card className={`${CARD_BASE_CLASS} mb-6`}>
             <CardHeader>
               <CardTitle>Recent Missed Opportunities</CardTitle>
               <CardDescription>Top profitable rejections from the analysis window</CardDescription>
@@ -629,7 +630,7 @@ export default function RejectionLearningPage() {
         )}
 
         {/* Closed Positions Section */}
-        <Card className="modern-card border-amber-200 dark:border-amber-800 mb-6">
+        <Card className={`${CARD_BASE_CLASS} border-amber-200 bg-amber-50/60 mb-6`}>
           <CardHeader>
             <CardTitle>
               Closed Too Soon
@@ -810,7 +811,7 @@ export default function RejectionLearningPage() {
           </CardContent>
         </Card>
 
-        <Card className="modern-card">
+        <Card className={CARD_BASE_CLASS}>
           <CardHeader>
             <CardTitle>
               Rejected Opportunities
