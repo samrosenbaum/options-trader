@@ -182,6 +182,11 @@ function OptionIdea({ option, marketData }: { option: OptionContract; marketData
   const confidenceText = getConfidenceText(option.confidence)
   const volumeComment = getVolumeComment(option)
 
+  const rawRecommendation = (option as { recommendation?: string | null }).recommendation
+  const recommendationKey =
+    typeof rawRecommendation === "string" && rawRecommendation.trim().length > 0 ? rawRecommendation : null
+  const recommendationLabel = recommendationKey ? recommendationKey.replace(/_/g, " ") : "Not rated"
+
   const summaryLines = [
     `Stock is at $${currentPrice.toFixed(2)}. You’re looking for roughly a ${Math.abs(breakevenMove).toFixed(1)}% move ${moveDirection} by ${expirationLabel} to break even.`,
     option.maxProfit === Number.POSITIVE_INFINITY
@@ -263,7 +268,7 @@ function OptionIdea({ option, marketData }: { option: OptionContract; marketData
 
             {sentiment && sentimentInfo && (
               <div className="text-xs text-muted-foreground">
-            {sentimentInfo.tone}. Confidence {Math.round(sentiment.confidence * 100)}% with a
+                {sentimentInfo.tone}. Confidence {Math.round(sentiment.confidence * 100)}% with a
                 sentiment score of {formatPercent(sentiment.score * 100)}.
               </div>
             )}
@@ -279,12 +284,12 @@ function OptionIdea({ option, marketData }: { option: OptionContract; marketData
               variant="outline"
               className={cn(
                 "text-xs font-semibold uppercase",
-                (option.recommendation === "strong_buy" || option.recommendation === "buy") && "border-bull text-bull",
-                option.recommendation === "hold" && "border-muted-foreground text-muted-foreground",
-                (option.recommendation === "sell" || option.recommendation === "strong_sell") && "border-bear text-bear",
+                (recommendationKey === "strong_buy" || recommendationKey === "buy") && "border-bull text-bull",
+                recommendationKey === "hold" && "border-muted-foreground text-muted-foreground",
+                (recommendationKey === "sell" || recommendationKey === "strong_sell") && "border-bear text-bear",
               )}
             >
-              {option.recommendation.replace("_", " ")}
+              {recommendationLabel}
             </Badge>
           </div>
           <div>
