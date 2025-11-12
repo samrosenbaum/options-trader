@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { User } from '@supabase/supabase-js'
 import AppShell from '@/components/app-shell'
-import { TrendingUp, TrendingDown, Activity, Wallet, DollarSign, BarChart3, AlertCircle, RefreshCw } from 'lucide-react'
+import { TrendingUp, TrendingDown, Activity, Wallet, DollarSign, BarChart3, AlertCircle, RefreshCw, Flame, Brain, Target } from 'lucide-react'
 
 interface AssetData {
   symbol: string
@@ -31,6 +31,25 @@ interface AssetData {
     confidence_score: number
     direction: string
     institutional_participation: string
+  }
+  short_activity?: {
+    short_pressure_score: number
+    pressure_level: string
+    short_volume_ratio?: number | null
+    total_short_leverage_usd?: number
+    key_drivers: string[]
+    risk_of_squeeze: string
+    monty_view: {
+      stance: string
+      summary: string
+      confidence: number
+      supporting_metrics?: {
+        funding_rate?: number
+        basis?: number
+        open_interest_ratio?: number
+        open_interest_usd?: number
+      }
+    }
   }
 }
 
@@ -125,6 +144,52 @@ export default function CryptoPage({ user }: { user: User }) {
     if (sentiment.includes('bullish')) return 'bg-emerald-500/10 border-emerald-500/20'
     if (sentiment.includes('bearish')) return 'bg-red-500/10 border-red-500/20'
     return 'bg-slate-500/10 border-slate-500/20'
+  }
+
+  const getPressureBadgeStyles = (level?: string) => {
+    switch (level) {
+      case 'extreme':
+        return { label: 'Extreme Short Pressure', className: 'bg-red-500/15 text-red-600 dark:text-red-300 border border-red-500/20' }
+      case 'elevated':
+        return { label: 'Elevated Short Pressure', className: 'bg-orange-500/15 text-orange-600 dark:text-orange-300 border border-orange-500/20' }
+      case 'watching':
+        return { label: 'Building Pressure', className: 'bg-amber-500/15 text-amber-600 dark:text-amber-300 border border-amber-500/20' }
+      case 'muted':
+        return { label: 'Muted Shorts', className: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 border border-emerald-500/20' }
+      default:
+        return { label: 'Short Pressure', className: 'bg-slate-500/15 text-slate-600 dark:text-slate-300 border border-slate-500/20' }
+    }
+  }
+
+  const getRiskBadgeStyles = (risk?: string) => {
+    switch (risk) {
+      case 'very_high':
+        return { label: 'Short Squeeze Risk: Very High', className: 'bg-red-500/15 text-red-600 dark:text-red-300 border border-red-500/20' }
+      case 'high':
+        return { label: 'Short Squeeze Risk: High', className: 'bg-orange-500/15 text-orange-600 dark:text-orange-300 border border-orange-500/20' }
+      case 'moderate':
+        return { label: 'Short Squeeze Risk: Moderate', className: 'bg-amber-500/15 text-amber-600 dark:text-amber-300 border border-amber-500/20' }
+      case 'low':
+        return { label: 'Short Squeeze Risk: Low', className: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 border border-emerald-500/20' }
+      default:
+        return { label: 'Short Squeeze Risk', className: 'bg-slate-500/15 text-slate-600 dark:text-slate-300 border border-slate-500/20' }
+    }
+  }
+
+  const getStanceStyles = (stance?: string) => {
+    switch (stance) {
+      case 'buy':
+        return { label: 'Monty leans BUY', className: 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300' }
+      case 'sell':
+        return { label: 'Monty leans SELL', className: 'bg-red-500/20 text-red-700 dark:text-red-300' }
+      default:
+        return { label: 'Monty says HOLD', className: 'bg-blue-500/20 text-blue-700 dark:text-blue-300' }
+    }
+  }
+
+  const formatRatio = (value?: number | null): string => {
+    if (value === undefined || value === null || isNaN(value)) return 'N/A'
+    return `${value.toFixed(1)}x`
   }
 
   const renderErrorCard = (asset: 'bitcoin' | 'ethereum', errorMsg?: string) => {
@@ -283,6 +348,128 @@ export default function CryptoPage({ user }: { user: User }) {
             </div>
           </div>
         )}
+
+        {/* Short Pressure & Monty's Guidance */}
+        {assetData.short_activity && (() => {
+          const shortActivity = assetData.short_activity
+          const pressureBadge = getPressureBadgeStyles(shortActivity?.pressure_level)
+          const squeezeBadge = getRiskBadgeStyles(shortActivity?.risk_of_squeeze)
+          const stanceStyles = getStanceStyles(shortActivity?.monty_view?.stance)
+
+          return (
+            <div className="rounded-lg border border-emerald-200/60 bg-emerald-50/40 p-5 dark:border-emerald-800/60 dark:bg-emerald-950/20">
+            <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+              <div className="flex items-center gap-2">
+                <Flame className="h-5 w-5 text-emerald-600 dark:text-emerald-300" />
+                <div>
+                  <h4 className="font-semibold text-slate-900 dark:text-white">Short Pressure Monitor</h4>
+                  <p className="text-xs text-slate-600 dark:text-slate-400">Where leveraged shorts are leaning and how Monty translates it</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Short Pressure Score</div>
+                <div className="text-2xl font-bold text-slate-900 dark:text-white">{shortActivity?.short_pressure_score ?? 0}/100</div>
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-4">
+                <div className="flex flex-wrap gap-2">
+                  <span className={`rounded-full px-3 py-1 text-xs font-medium ${pressureBadge.className}`}>
+                    {pressureBadge.label}
+                  </span>
+                  <span className={`rounded-full px-3 py-1 text-xs font-medium ${squeezeBadge.className}`}>
+                    {squeezeBadge.label}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 rounded-lg border border-white/40 bg-white/60 p-3 text-sm shadow-sm dark:border-white/10 dark:bg-slate-900/40">
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Derivatives vs Spot</p>
+                    <p className="mt-1 text-base font-semibold text-slate-900 dark:text-white">{formatRatio(shortActivity?.short_volume_ratio)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Estimated Short Leverage</p>
+                    <p className="mt-1 text-base font-semibold text-slate-900 dark:text-white">
+                      {shortActivity?.total_short_leverage_usd
+                        ? formatCurrency(shortActivity.total_short_leverage_usd)
+                        : 'N/A'}
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Key Drivers</p>
+                  <div className="mt-2 space-y-1.5 text-sm text-slate-700 dark:text-slate-300">
+                    {(shortActivity?.key_drivers ?? ['Short positioning insights unavailable.']).map((driver, idx) => (
+                      <div key={idx} className="flex items-start gap-2">
+                        <span className="mt-1 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-emerald-500" />
+                        <span>{driver}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex h-full flex-col justify-between rounded-lg border border-emerald-200/60 bg-emerald-500/10 p-4 shadow-inner dark:border-emerald-800/60 dark:bg-emerald-900/20">
+                <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-300">
+                  <Brain className="h-5 w-5" />
+                  <span className="text-sm font-semibold">Monty's Read</span>
+                </div>
+                <p className="mt-3 text-sm text-slate-700 dark:text-slate-200">
+                  {shortActivity?.monty_view?.summary ?? 'Monty: Short pressure data unavailable.'}
+                </p>
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-xs">
+                  <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 font-semibold ${stanceStyles.className}`}>
+                    <Target className="h-3.5 w-3.5" />
+                    {stanceStyles.label}
+                  </span>
+                  <span className="rounded-full border border-emerald-500/30 px-3 py-1 font-medium text-emerald-700 dark:border-emerald-500/40 dark:text-emerald-300">
+                    Confidence {shortActivity?.monty_view?.confidence ?? 0}%
+                  </span>
+                </div>
+
+                {shortActivity?.monty_view?.supporting_metrics && (
+                  <div className="mt-4 grid grid-cols-2 gap-3 rounded-md border border-white/30 bg-white/50 p-3 text-xs shadow-sm dark:border-white/10 dark:bg-slate-900/40">
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wide text-slate-500 dark:text-slate-400">Funding</p>
+                      <p className={`mt-1 font-semibold ${((shortActivity?.monty_view?.supporting_metrics?.funding_rate ?? 0) < 0) ? 'text-red-600 dark:text-red-300' : 'text-emerald-600 dark:text-emerald-300'}`}>
+                        {shortActivity?.monty_view?.supporting_metrics?.funding_rate !== undefined
+                          ? `${((shortActivity?.monty_view?.supporting_metrics?.funding_rate ?? 0) * 100).toFixed(3)}%`
+                          : 'N/A'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wide text-slate-500 dark:text-slate-400">Basis</p>
+                      <p className={`mt-1 font-semibold ${(shortActivity?.monty_view?.supporting_metrics?.basis ?? 0) < 0 ? 'text-red-600 dark:text-red-300' : 'text-emerald-600 dark:text-emerald-300'}`}>
+                        {shortActivity?.monty_view?.supporting_metrics?.basis !== undefined
+                          ? `${(shortActivity?.monty_view?.supporting_metrics?.basis ?? 0).toFixed(2)}%`
+                          : 'N/A'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wide text-slate-500 dark:text-slate-400">OI / Market Cap</p>
+                      <p className="mt-1 font-semibold text-slate-800 dark:text-slate-200">
+                        {shortActivity?.monty_view?.supporting_metrics?.open_interest_ratio !== undefined
+                          ? `${(shortActivity?.monty_view?.supporting_metrics?.open_interest_ratio ?? 0).toFixed(1)}%`
+                          : 'N/A'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wide text-slate-500 dark:text-slate-400">Open Interest</p>
+                      <p className="mt-1 font-semibold text-slate-800 dark:text-slate-200">
+                        {shortActivity?.monty_view?.supporting_metrics?.open_interest_usd
+                          ? formatCurrency(shortActivity.monty_view.supporting_metrics.open_interest_usd)
+                          : 'N/A'}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+            </div>
+          )
+        })()}
       </div>
     )
   }
