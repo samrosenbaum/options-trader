@@ -147,6 +147,17 @@ body {
   left: 100%;
 }
 
+.anti-portfolio-card {
+  @apply relative overflow-hidden rounded-3xl border border-slate-200 bg-white text-slate-900 shadow-[0_30px_90px_-45px_rgba(15,23,42,0.25)] transition-all duration-500;
+  @apply hover:-translate-y-1 hover:shadow-emerald-500/20;
+  animation: float-in 0.5s ease-out;
+  background-image: none;
+}
+
+.dark .anti-portfolio-card {
+  @apply border-slate-700 bg-slate-900 text-slate-100 shadow-emerald-500/10;
+}
+
 .glass-card {
   @apply relative rounded-2xl border border-white/20 bg-white/10 backdrop-blur-2xl;
   @apply shadow-xl shadow-black/5 transition-all duration-300;

@@ -65,11 +65,38 @@ export async function POST(request: Request) {
       try {
         console.log(`\n=== Processing ${pos.symbol} ===`)
 
-        // Calculate actual expiration date from close date + days until expiration
-        // This is more reliable than the stored expiration field which may be incorrect
         const closedDate = new Date(pos.rejected_at)
-        const expirationDate = new Date(closedDate)
-        expirationDate.setDate(expirationDate.getDate() + (pos.days_until_expiration || 0))
+        if (Number.isNaN(closedDate.getTime())) {
+          console.error(`  ❌ Invalid close date for ${pos.symbol}`)
+          errors++
+          errorDetails.push({ symbol: pos.symbol, error: 'Invalid close date' })
+          continue
+        }
+
+        let expirationDate: Date | null = null
+
+        if (pos.expiration) {
+          const parsedExpiration = new Date(pos.expiration)
+          if (!Number.isNaN(parsedExpiration.getTime())) {
+            expirationDate = parsedExpiration
+          }
+        }
+
+        if (!expirationDate) {
+          const fallbackExpiration = new Date(closedDate)
+          const daysUntilExpiration = typeof pos.days_until_expiration === 'number'
+            ? pos.days_until_expiration
+            : 0
+          fallbackExpiration.setDate(fallbackExpiration.getDate() + daysUntilExpiration)
+          expirationDate = fallbackExpiration
+        }
+
+        if (!expirationDate || Number.isNaN(expirationDate.getTime())) {
+          console.warn(`  ⚠️  Unable to determine expiration for ${pos.symbol}, skipping`)
+          skipped++
+          continue
+        }
+
         expirationDate.setHours(23, 59, 59, 999) // End of expiration day
 
         const now = new Date()
@@ -163,9 +190,16 @@ except Exception as e:
 
         if (output.includes('PRICE:')) {
           const currentPrice = parseFloat(output.split('PRICE:')[1].trim())
-          const exitPrice = pos.option_price  // Price you sold at
-          const priceChange = ((currentPrice - exitPrice) / exitPrice) * 100
-          const wasProfitable = currentPrice > exitPrice
+          const rawExitPrice = Number(pos.option_price ?? 0)
+          const hasValidExitPrice = Number.isFinite(rawExitPrice) && rawExitPrice > 0
+          const priceChange = hasValidExitPrice
+            ? ((currentPrice - rawExitPrice) / rawExitPrice) * 100
+            : null
+          const wasProfitable = hasValidExitPrice ? currentPrice > rawExitPrice : null
+
+          if (!hasValidExitPrice) {
+            console.warn(`  ⚠️  ${pos.symbol} missing valid exit price, storing current price without percent change`)
+          }
 
           const { error: updateError } = await supabase
             .from('rejected_options')
@@ -184,9 +218,15 @@ except Exception as e:
             continue
           }
 
-          console.log(
-            `  ✅ Updated ${pos.symbol}: Sold at $${exitPrice.toFixed(2)}, now worth $${currentPrice.toFixed(2)} (${priceChange > 0 ? '+' : ''}${priceChange.toFixed(1)}%)`
-          )
+          if (hasValidExitPrice && priceChange !== null && wasProfitable !== null) {
+            console.log(
+              `  ✅ Updated ${pos.symbol}: Sold at $${rawExitPrice.toFixed(2)}, now worth $${currentPrice.toFixed(2)} (${priceChange > 0 ? '+' : ''}${priceChange.toFixed(1)}%)`
+            )
+          } else {
+            console.log(
+              `  ✅ Updated ${pos.symbol}: Current price $${currentPrice.toFixed(2)} (percent change unavailable)`
+            )
+          }
           updated++
         } else if (output.includes('NO_DATA')) {
           console.log(`  ⚠️  No data available for ${pos.symbol}, skipping`)
