@@ -204,7 +204,7 @@ export class RobinhoodReader {
       theta: /theta/i,
       gamma: /gamma/i,
       vega: /vega/i,
-      iv: /implied\s+volatility|iv/i,
+      iv: /(?:implied\s+volatility|iv)/i,
     };
 
     // Scan for Greek values in the DOM
