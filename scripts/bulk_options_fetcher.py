@@ -463,6 +463,7 @@ class BulkOptionsFetcher:
 
             cached_symbols = [str(sym).upper() for sym in cache_data.get('symbols', [])]
             symbol_mismatch = False
+            requested: list[str] | None = None
             if symbols is not None:
                 requested = [str(sym).upper() for sym in symbols if sym]
                 if sorted(requested) != sorted(cached_symbols):
@@ -471,6 +472,21 @@ class BulkOptionsFetcher:
                         print("📂 Cache symbols mismatch, refreshing data")
                         return None
                     print("⚠️  Cache symbols mismatch – using stale cache dataset")
+
+                if requested:
+                    # Filter cached dataset down to the requested rotation so we do not
+                    # repeatedly surface the exact same stale opportunities when a
+                    # fallback cache is used. This keeps the rotation behaviour
+                    # consistent even when live fetches fail.
+                    symbols_column = cache_frame.get("symbol")
+                    if symbols_column is not None:
+                        normalized_column = symbols_column.astype(str).str.upper()
+                        available_set = set(normalized_column.tolist())
+                        cache_frame = cache_frame[normalized_column.isin(requested)].copy()
+                        cache_frame.attrs["cache_filtered_symbols"] = list(requested)
+                        missing_symbols = [sym for sym in requested if sym not in available_set]
+                        if missing_symbols:
+                            cache_frame.attrs["cache_missing_symbols"] = missing_symbols
 
             if raw_age_minutes < 0:
                 print("⚠️  Cache timestamp is in the future; discarding fresh cache")
