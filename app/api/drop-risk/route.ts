@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import type { DropRiskSignal, DropRiskAlertLevel } from '@/lib/types/drop-alert'
-import rawFallbackSignals from '@/data/sample-drop-risk-signals.json' assert { type: 'json' }
+import rawFallbackSignals from '@/data/sample-drop-risk-signals.json' with { type: 'json' }
 
 export const revalidate = 0
 
