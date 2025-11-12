@@ -93,6 +93,13 @@ class CryptoWhaleMonitor:
                     market_data
                 )
 
+                # Evaluate short pressure and Monty's guidance
+                short_activity = self._evaluate_short_pressure(
+                    derivatives_data,
+                    market_data,
+                    institutional_signals
+                )
+
                 symbol = self.primary_symbols[asset]
                 results[asset] = {
                     'symbol': symbol,
@@ -103,7 +110,8 @@ class CryptoWhaleMonitor:
                     'derivatives': derivatives_data,
                     'funding': funding_data,
                     'long_short': long_short_analysis,
-                    'institutional_signals': institutional_signals
+                    'institutional_signals': institutional_signals,
+                    'short_activity': short_activity
                 }
 
                 # Rate limiting
@@ -414,6 +422,159 @@ class CryptoWhaleMonitor:
             'institutional_participation': 'high' if oi_ratio > 10 else ('medium' if oi_ratio > 5 else 'low')
         }
 
+    def _evaluate_short_pressure(
+        self,
+        derivatives_data: Dict,
+        market_data: Dict,
+        institutional_signals: Dict
+    ) -> Dict:
+        """Score short pressure intensity and craft Monty's guidance."""
+
+        try:
+            funding = float(derivatives_data.get('avg_funding_rate', 0) or 0)
+            basis = float(derivatives_data.get('avg_basis_percentage', 0) or 0)
+            oi_ratio = float(derivatives_data.get('open_interest_to_mcap_ratio', 0) or 0)
+            oi_usd = float(derivatives_data.get('total_open_interest_usd', 0) or 0)
+            futures_vol = float(derivatives_data.get('total_futures_volume_24h', 0) or 0)
+            perp_vol = float(derivatives_data.get('total_perpetual_volume_24h', 0) or 0)
+            spot_vol = float(market_data.get('total_volume', {}).get('usd', 0) or 0)
+            price_change = float(market_data.get('price_change_percentage_24h', 0) or 0)
+
+            score = 0
+            drivers = []
+
+            # Funding rate (negative funding implies shorts paying longs)
+            if funding < -0.015:
+                score += 35
+                drivers.append("Funding at deeply negative levels – shorts are paying a premium to stay positioned")
+            elif funding < -0.005:
+                score += 25
+                drivers.append("Negative funding indicates shorts dominating perpetual markets")
+            elif funding > 0.01:
+                score -= 15
+                drivers.append("Positive funding shows longs in control, short pressure is muted")
+
+            # Basis impact (discounted futures suggest hedging/shorts)
+            if basis < -0.5:
+                score += 30
+                drivers.append("Futures discount vs. spot highlights aggressive hedging/short demand")
+            elif basis < -0.15:
+                score += 18
+                drivers.append("Negative basis points to a meaningful short bias")
+            elif basis > 0.4:
+                score -= 10
+                drivers.append("Positive basis favors longs; shorts are less active")
+
+            # Open interest context
+            if oi_ratio > 12:
+                score += 20
+                drivers.append("Open interest is massive relative to market cap – institutions likely involved")
+            elif oi_ratio > 7:
+                score += 12
+                drivers.append("Elevated open interest suggests a crowded trade building")
+
+            # Volume skew towards derivatives
+            total_deriv_vol = futures_vol + perp_vol
+            volume_ratio = (total_deriv_vol / spot_vol) if spot_vol else None
+            if volume_ratio and volume_ratio >= 3:
+                score += 18
+                drivers.append("Derivatives volume is overwhelming spot – leverage is driving the tape")
+            elif volume_ratio and volume_ratio >= 1.5:
+                score += 10
+                drivers.append("Derivatives volume outpacing spot hints at leveraged positioning")
+
+            # Price action confirmation
+            if price_change <= -6:
+                score += 20
+                drivers.append("Sharp price drawdown alongside building shorts – liquidation risk rising")
+            elif price_change <= -3:
+                score += 12
+                drivers.append("Price slippage with shorts leaning in – squeeze fuel accumulating")
+            elif price_change >= 4:
+                score -= 8
+                drivers.append("Price rally despite shorts – squeeze likely already in motion")
+
+            # Institutional signals alignment can amplify conviction
+            if institutional_signals.get('direction') == 'bearish':
+                score += 8
+            elif institutional_signals.get('direction') == 'bullish':
+                score -= 6
+
+            score = max(0, min(int(round(score)), 100))
+
+            if score >= 75:
+                pressure_level = 'extreme'
+            elif score >= 55:
+                pressure_level = 'elevated'
+            elif score >= 35:
+                pressure_level = 'watching'
+            else:
+                pressure_level = 'muted'
+
+            if pressure_level in ['extreme', 'elevated']:
+                squeeze_risk = 'high' if price_change < 2 else 'very_high'
+            elif pressure_level == 'watching':
+                squeeze_risk = 'moderate'
+            else:
+                squeeze_risk = 'low'
+
+            if pressure_level in ['extreme', 'elevated']:
+                stance = 'buy'
+                guidance = (
+                    "Monty: Shorts are overcrowded and paying up. Consider building or holding long exposure for a potential "
+                    "snap-back rally, but size positions responsibly."
+                )
+                confidence = min(90, max(40, score))
+            elif pressure_level == 'watching':
+                stance = 'hold'
+                guidance = (
+                    "Monty: Shorts are leaning in, but signals are mixed. Maintain core exposure and wait for confirmation "
+                    "before adding risk."
+                )
+                confidence = 55
+            else:
+                stance = 'sell'
+                guidance = (
+                    "Monty: Short pressure is muted while longs control funding. Consider trimming or waiting for better "
+                    "risk/reward before deploying capital."
+                )
+                confidence = min(85, max(35, 100 - score))
+
+            return {
+                'short_pressure_score': score,
+                'pressure_level': pressure_level,
+                'short_volume_ratio': round(volume_ratio, 2) if volume_ratio else None,
+                'total_short_leverage_usd': total_deriv_vol if funding < 0 else 0,
+                'key_drivers': drivers[:5],
+                'risk_of_squeeze': squeeze_risk,
+                'monty_view': {
+                    'stance': stance,
+                    'summary': guidance,
+                    'confidence': confidence,
+                    'supporting_metrics': {
+                        'funding_rate': funding,
+                        'basis': basis,
+                        'open_interest_ratio': oi_ratio,
+                        'open_interest_usd': oi_usd
+                    }
+                }
+            }
+
+        except Exception as e:
+            print(f"      Error scoring short pressure: {e}")
+            return {
+                'short_pressure_score': 0,
+                'pressure_level': 'unknown',
+                'key_drivers': ['Short pressure analysis unavailable'],
+                'risk_of_squeeze': 'unknown',
+                'monty_view': {
+                    'stance': 'hold',
+                    'summary': 'Monty: Short positioning data unavailable – keep risk light until fresh data prints.',
+                    'confidence': 0,
+                    'supporting_metrics': {}
+                }
+            }
+
     def get_whale_transactions(self, symbol: str = 'BTC') -> Dict:
         """
         Get whale transaction data
@@ -524,6 +685,29 @@ class CryptoWhaleMonitor:
                     'direction': 'bullish',
                     'institutional_participation': 'high'
                 },
+                'short_activity': {
+                    'short_pressure_score': 62,
+                    'pressure_level': 'elevated',
+                    'short_volume_ratio': 1.9,
+                    'total_short_leverage_usd': 52000000000,
+                    'key_drivers': [
+                        'Funding near neutral keeps shorts engaged without overheating longs',
+                        'Derivatives volume outpacing spot indicates leveraged positioning',
+                        'Institutional participation remains high'
+                    ],
+                    'risk_of_squeeze': 'high',
+                    'monty_view': {
+                        'stance': 'hold',
+                        'summary': 'Monty: Shorts are leaning in but not extreme. Maintain a core position and look for confirmation before adding.',
+                        'confidence': 60,
+                        'supporting_metrics': {
+                            'funding_rate': 0.0008,
+                            'basis': 0.12,
+                            'open_interest_ratio': 1.16,
+                            'open_interest_usd': 15600000000
+                        }
+                    }
+                },
                 '_demo_data': True
             }
         else:  # ethereum
@@ -557,6 +741,29 @@ class CryptoWhaleMonitor:
                     'confidence_score': 58,
                     'direction': 'neutral',
                     'institutional_participation': 'medium'
+                },
+                'short_activity': {
+                    'short_pressure_score': 48,
+                    'pressure_level': 'watching',
+                    'short_volume_ratio': 1.4,
+                    'total_short_leverage_usd': 21000000000,
+                    'key_drivers': [
+                        'Funding slightly positive keeps short bias contained',
+                        'Derivatives flow elevated but not extreme',
+                        'Price action remains stable despite leverage'
+                    ],
+                    'risk_of_squeeze': 'moderate',
+                    'monty_view': {
+                        'stance': 'hold',
+                        'summary': 'Monty: Short pressure is building slowly. Stay patient and wait for stronger confirmation before acting.',
+                        'confidence': 55,
+                        'supporting_metrics': {
+                            'funding_rate': 0.0005,
+                            'basis': 0.08,
+                            'open_interest_ratio': 2.60,
+                            'open_interest_usd': 8200000000
+                        }
+                    }
                 },
                 '_demo_data': True
             }
@@ -625,6 +832,12 @@ class CryptoWhaleMonitor:
                 if sentiment:
                     key_insights.append(f"Bitcoin derivatives: {sentiment.get('overall', 'neutral').replace('_', ' ').title()}")
 
+            btc_short = btc.get('short_activity', {})
+            if btc_short and btc_short.get('pressure_level') in {'extreme', 'elevated'}:
+                key_insights.append(
+                    f"Bitcoin shorts {btc_short.get('pressure_level', 'elevated')} – Monty leans {btc_short.get('monty_view', {}).get('stance', 'hold').upper()}"
+                )
+
         # Ethereum insights
         if 'ethereum' in futures_data and not futures_data['ethereum'].get('error'):
             eth = futures_data['ethereum']
@@ -640,6 +853,12 @@ class CryptoWhaleMonitor:
                 sentiment = eth_deriv.get('sentiment', {})
                 if sentiment:
                     key_insights.append(f"Ethereum derivatives: {sentiment.get('overall', 'neutral').replace('_', ' ').title()}")
+
+            eth_short = eth.get('short_activity', {})
+            if eth_short and eth_short.get('pressure_level') in {'extreme', 'elevated'}:
+                key_insights.append(
+                    f"Ethereum shorts {eth_short.get('pressure_level', 'elevated')} – Monty leans {eth_short.get('monty_view', {}).get('stance', 'hold').upper()}"
+                )
 
         # Market sentiment
         if fear_greed:
