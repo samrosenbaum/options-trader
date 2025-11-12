@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import type { DropRiskSignal, DropRiskAlertLevel } from '@/lib/types/drop-alert'
+import rawFallbackSignals from '@/data/sample-drop-risk-signals.json' assert { type: 'json' }
 
 export const revalidate = 0
 
@@ -33,8 +34,35 @@ const toSignalDetails = (raw: unknown): Record<string, unknown> => {
   return {}
 }
 
+const FALLBACK_SIGNALS = rawFallbackSignals as DropRiskSignal[]
+
+const buildFallbackSignals = (limit: number, minScore: number): DropRiskSignal[] => {
+  const now = Date.now()
+
+  return FALLBACK_SIGNALS
+    .filter(signal => typeof signal.score === 'number' && signal.score >= minScore)
+    .slice(0, limit)
+    .map((signal, index) => ({
+      ...signal,
+      id: `${signal.symbol}-fallback-${now + index}`,
+      generatedAt: new Date(now - index * 60_000).toISOString(),
+      drivers: [...signal.drivers],
+      signalDetails: { ...signal.signalDetails },
+    }))
+}
+
+const buildFallbackResponse = (limit: number, minScore: number) => {
+  const fallback = buildFallbackSignals(limit, minScore)
+  return NextResponse.json({
+    success: true,
+    count: fallback.length,
+    generatedAt: fallback[0]?.generatedAt ?? new Date().toISOString(),
+    data: fallback,
+    note: 'fallback-sample',
+  })
+}
+
 export async function GET(request: Request) {
-  const supabase = await createClient()
   const { searchParams } = new URL(request.url)
 
   const limitParam = parseInt(searchParams.get('limit') ?? `${DEFAULT_LIMIT}`, 10)
@@ -44,6 +72,14 @@ export async function GET(request: Request) {
   const minScore = Number.isFinite(minScoreParam) ? minScoreParam : 0
 
   const fetchSize = Math.max(limit * 5, 25)
+
+  let supabase
+  try {
+    supabase = await createClient()
+  } catch (error) {
+    console.error('Failed to initialize Supabase client', error)
+    return buildFallbackResponse(limit, minScore)
+  }
 
   const { data, error } = await supabase
     .from('drop_risk_signals')
@@ -55,14 +91,7 @@ export async function GET(request: Request) {
 
   if (error) {
     console.error('Failed to load drop risk signals', error)
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Failed to load drop risk signals',
-        details: error.message,
-      },
-      { status: 500 },
-    )
+    return buildFallbackResponse(limit, minScore)
   }
 
   const seen = new Set<string>()
@@ -106,10 +135,33 @@ export async function GET(request: Request) {
     }
   }
 
+  if (transformed.length < limit) {
+    const needed = limit - transformed.length
+    if (needed > 0) {
+      const fallback = buildFallbackSignals(limit, minScore)
+      for (const signal of fallback) {
+        const key = signal.symbol.toUpperCase()
+        if (seen.has(key)) {
+          continue
+        }
+        transformed.push(signal)
+        seen.add(key)
+        if (transformed.length >= limit) {
+          break
+        }
+      }
+    }
+  }
+
+  if (transformed.length === 0) {
+    return buildFallbackResponse(limit, minScore)
+  }
+
   return NextResponse.json({
     success: true,
     count: transformed.length,
     generatedAt: new Date().toISOString(),
     data: transformed,
+    note: transformed.length < limit ? 'partial-fallback' : 'supabase',
   })
 }

@@ -1,0 +1,93 @@
+[
+  {
+    "id": "TSLA-1699992000",
+    "symbol": "TSLA",
+    "score": 78.6,
+    "biasScore": 62.4,
+    "confidence": 91,
+    "stockPrice": 224.38,
+    "priceChangePct": -2.45,
+    "alertLevel": "high",
+    "scoreChange": 4.7,
+    "generatedAt": "2024-01-15T21:30:00Z",
+    "drivers": [
+      "Put/call skew inverted at 1.4σ below 30-day mean",
+      "Dark pool flow showing 58% bearish imbalance vs prior week",
+      "IV rank spiking with weekly term structure sliding into backwardation"
+    ],
+    "signalDetails": {
+      "skewScore": 26.1,
+      "darkPoolScore": 24.4,
+      "momentumScore": 16.2,
+      "regimeScore": 11.9
+    }
+  },
+  {
+    "id": "NVDA-1699995600",
+    "symbol": "NVDA",
+    "score": 72.3,
+    "biasScore": 58.9,
+    "confidence": 88,
+    "stockPrice": 435.12,
+    "priceChangePct": -1.87,
+    "alertLevel": "elevated",
+    "scoreChange": 3.5,
+    "generatedAt": "2024-01-15T21:50:00Z",
+    "drivers": [
+      "Weekly put volume 2.6x normal with concentration at 3% OTM",
+      "Smart flow tracker shows institutions net short for third session",
+      "Gamma profile flipped negative below $420, increasing downside velocity"
+    ],
+    "signalDetails": {
+      "skewScore": 23.5,
+      "darkPoolScore": 21.3,
+      "momentumScore": 15.4,
+      "regimeScore": 12.1
+    }
+  },
+  {
+    "id": "AMZN-1699999200",
+    "symbol": "AMZN",
+    "score": 65.4,
+    "biasScore": 54.2,
+    "confidence": 84,
+    "stockPrice": 138.76,
+    "priceChangePct": -1.35,
+    "alertLevel": "elevated",
+    "scoreChange": 2.8,
+    "generatedAt": "2024-01-15T22:10:00Z",
+    "drivers": [
+      "Put/call ratio climbed to 1.6 with 89th percentile premium paid",
+      "Cross-asset regime monitor flashing risk-off for consumer discretionary",
+      "Sentiment composite dropped below -35 for first time in a month"
+    ],
+    "signalDetails": {
+      "skewScore": 21.4,
+      "darkPoolScore": 18.9,
+      "momentumScore": 14.8,
+      "regimeScore": 10.3
+    }
+  },
+  {
+    "id": "AAPL-1699999201",
+    "symbol": "AAPL",
+    "score": 58.2,
+    "biasScore": 49.6,
+    "confidence": 79,
+    "stockPrice": 185.34,
+    "priceChangePct": -0.95,
+    "alertLevel": "watch",
+    "scoreChange": 1.9,
+    "generatedAt": "2024-01-15T22:12:00Z",
+    "drivers": [
+      "Dealer gamma positioning negative below $182 strike",
+      "Skew steeper with puts pricing 1.8x calls on the weekly chain"
+    ],
+    "signalDetails": {
+      "skewScore": 18.6,
+      "darkPoolScore": 16.2,
+      "momentumScore": 12.5,
+      "regimeScore": 10.9
+    }
+  }
+]
