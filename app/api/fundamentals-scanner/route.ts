@@ -313,21 +313,21 @@ export async function GET(request: NextRequest) {
           {
             success: false,
             error: 'Database not initialized',
-            details: 'The fundamentals_signals table does not exist. Please run database migrations first.',
+            details:
+              'The fundamentals_signals table does not exist. Please run database migrations first.',
             hint: 'Run: npx supabase db push',
           },
           { status: 500 }
         )
       }
 
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Failed to fetch fundamentals signals',
-          details: error.message,
-        },
-        { status: 500 }
-      )
+      const fallback = buildResponseFromSignals(sampleFundamentalsSignals, queryOptions)
+      return NextResponse.json({
+        ...fallback,
+        usingSampleData: true,
+        warning: 'Falling back to cached fundamentals signals due to Supabase error.',
+        details: error.message,
+      })
     }
 
     // Convert to camelCase and return Supabase data
@@ -335,13 +335,21 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(buildResponseFromSignals(signals, queryOptions))
   } catch (err) {
     console.error('Unexpected error:', err)
-    return buildSampleResponse({
+
+    const fallback = buildResponseFromSignals(sampleFundamentalsSignals, {
       minScore: parseInt(searchParams.get('minScore') ?? '50', 10),
       limit: Math.min(parseInt(searchParams.get('limit') ?? '50', 10), 200),
       symbols: searchParams.get('symbols')?.split(',').map(s => s.trim().toUpperCase()),
       qualityLevel: searchParams.get('qualityLevel') as FundamentalsSignal['qualityLevel'] | null,
       sector: searchParams.get('sector'),
       includeExpired: searchParams.get('includeExpired') === 'true',
+    })
+
+    return NextResponse.json({
+      ...fallback,
+      usingSampleData: true,
+      warning: 'Falling back to cached fundamentals signals due to an unexpected error.',
+      details: err instanceof Error ? err.message : 'Unknown error',
     })
   }
 }
