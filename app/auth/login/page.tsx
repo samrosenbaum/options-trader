@@ -23,7 +23,7 @@ export default function LoginPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: 'https://withmonty.com/auth/callback',
         },
       })
       if (error) throw error
@@ -50,7 +50,7 @@ export default function LoginPage() {
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/auth/callback`,
+            emailRedirectTo: 'https://withmonty.com/auth/callback',
             data: {
               accepted_liability_waiver_at: new Date().toISOString(),
             },

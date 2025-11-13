@@ -8,6 +8,13 @@ Your Supabase project's authentication settings have the **Site URL** set to `ht
 
 ## Solution
 
+We've made **code changes** to fix this issue (see the commit), but you also need to check your **Supabase dashboard settings**.
+
+### Code Changes Made
+Updated `app/auth/login/page.tsx` to use hardcoded production URL (`https://withmonty.com/auth/callback`) instead of dynamic `window.location.origin`. This ensures consistent redirects regardless of where the signup occurs.
+
+### Supabase Dashboard Configuration
+
 ### Step 1: Access Supabase Dashboard
 1. Go to [https://supabase.com](https://supabase.com) and sign in
 2. Select your **options-trader-portfolio** project
@@ -22,25 +29,31 @@ https://withmonty.com
 **Important**: This is the PRIMARY URL that Supabase will use for all email confirmation links.
 
 ### Step 3: Update Redirect URLs
-In the **Redirect URLs** section, make sure you have BOTH of these URLs (one per line):
+In the **Redirect URLs** section, add:
 
 ```
-http://localhost:3000/auth/callback
 https://withmonty.com/auth/callback
 ```
 
-**Why both?**
-- `localhost:3000` - Allows you to test authentication during local development
-- `withmonty.com` - Allows production users to authenticate on the live site
+**Note:** We've hardcoded the production URL in the application code, so you only need the production URL here. If you need to test locally in the future, you can temporarily add `http://localhost:3000/auth/callback`.
 
-### Step 4: Save Changes
-Click **Save** at the bottom of the page.
+### Step 4: Check Email Templates (CRITICAL!)
+This is often the hidden culprit! Supabase email templates can have hardcoded URLs.
+
+1. Go to **Authentication** → **Email Templates** (left sidebar)
+2. Check the **Confirm signup** template
+3. Look for any instances of `localhost:3000` in the template
+4. If you see `{{ .ConfirmationURL }}` - that's good! It's using the dynamic URL
+5. If you see hardcoded URLs like `http://localhost:3000/...` - replace them with `{{ .SiteURL }}/auth/callback` or just use the template variables
+
+**Common issue:** Email templates that were customized during development often have localhost hardcoded.
 
 ### Step 5: Test
 1. Create a new test account by signing up at `https://withmonty.com/auth/login`
 2. Check your email for the confirmation link
-3. Click the confirmation link
-4. You should now be redirected to `https://withmonty.com/portfolio` (not localhost)
+3. **Before clicking:** Hover over the link and check the URL - it should start with `https://withmonty.com`
+4. Click the confirmation link
+5. You should now be redirected to `https://withmonty.com/portfolio` (not localhost)
 
 ## Additional OAuth Configuration (if using Google Sign-In)
 
