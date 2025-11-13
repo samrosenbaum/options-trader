@@ -36,26 +36,6 @@ const featureCards = [
   },
 ]
 
-const proofPoints = [
-  {
-    label: 'Options scanned daily',
-    value: '100K+',
-    backTitle: 'Smart Scanner',
-    backDescription: 'Our AI analyzes thousands of options contracts every day, filtering by unusual flow, gamma exposure, volume spikes, and technical patterns. Find the highest-probability setups before the crowd.',
-  },
-  {
-    label: 'Average win rate',
-    value: '68%',
-    backTitle: 'Proven Results',
-    backDescription: 'Data-driven exit signals and risk management tools help you lock in profits at the right time. Our AI learns from historical patterns to maximize your win rate and minimize losses.',
-  },
-  {
-    label: 'Time saved per trade',
-    value: '2 hrs',
-    backTitle: 'Instant Analysis',
-    backDescription: 'Skip the manual research. Monty instantly surfaces the best opportunities with full technical analysis, risk metrics, and profit projections. Spend less time researching, more time trading.',
-  },
-]
 
 const rotatingValueProps = [
   'is your options trading assistant',
@@ -195,28 +175,6 @@ export default function LandingPage() {
             </div>
           </main>
 
-          {/* Proof Points */}
-          <div className="pb-16">
-            <div className="mt-6 grid gap-6 sm:grid-cols-3 relative z-[3]">
-              {proofPoints.map((item) => (
-                <motion.div
-                  key={item.label}
-                  className="group relative flex flex-col justify-center rounded-2xl border border-slate-200 bg-white/80 p-6 shadow-[0_20px_50px_-20px_rgba(15,23,42,0.2)] backdrop-blur transition-all duration-300 hover:border-emerald-400/50 hover:shadow-[0_25px_70px_-20px_rgba(16,185,129,0.35)]"
-                  whileHover={{
-                    scale: 1.05,
-                    y: -5,
-                  }}
-                  transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-                >
-                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-emerald-400/0 via-emerald-400/0 to-emerald-400/0 opacity-0 transition-opacity duration-300 group-hover:from-emerald-400/5 group-hover:via-cyan-400/5 group-hover:to-transparent group-hover:opacity-100" />
-                  <div className="relative">
-                    <p className="text-xs uppercase tracking-[0.3em] text-slate-500 transition-colors group-hover:text-emerald-600/80">{item.label}</p>
-                    <p className="mt-3 text-3xl font-semibold text-slate-900 transition-colors group-hover:text-emerald-600">{item.value}</p>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </div>
         </div>
       </div>
 
@@ -494,12 +452,6 @@ export default function LandingPage() {
             >
               Try Monty
             </Link>
-            <a
-              href="mailto:sam@monty.trade"
-              className="text-sm font-semibold text-emerald-600 transition hover:text-emerald-700"
-            >
-              
-            </a>
           </div>
         </div>
         <footer className="mx-auto mt-16 flex w-full max-w-5xl flex-col items-center justify-between gap-4 text-xs text-slate-500 sm:flex-row">

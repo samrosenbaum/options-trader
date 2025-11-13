@@ -119,10 +119,7 @@ export default function TermsPage() {
           <section>
             <h2 className="mb-4 text-2xl font-semibold text-white">Contact</h2>
             <p className="text-sm">
-              If you have any questions about these Terms, please contact us at:{' '}
-              <a href="mailto:sam@monty.trade" className="text-emerald-400 hover:text-emerald-300">
-                sam@monty.trade
-              </a>
+              If you have any questions about these Terms, please contact us through the platform.
             </p>
           </section>
 

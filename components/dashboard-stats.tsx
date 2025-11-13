@@ -22,11 +22,11 @@ export function DashboardStats() {
       />
       <StatsCard
         title="Win Rate"
-        value="68%"
-        change="+5% vs last month"
-        changeType="positive"
+        value="N/A"
+        change="No completed trades yet"
+        changeType="neutral"
         icon={Target}
-        subtitle="Based on 45 trades"
+        subtitle="Start trading to track"
       />
       <StatsCard
         title="Opportunities"

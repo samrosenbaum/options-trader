@@ -244,8 +244,8 @@ export function TradeDeskDashboard({ user }: TradeDeskDashboardProps) {
             },
             {
               label: 'Win rate (30d)',
-              value: '68%',
-              change: '+12% vs. peers',
+              value: 'N/A',
+              change: 'Start trading',
               icon: Flame,
               gradient: 'from-amber-500/70 to-rose-500/60',
             },
