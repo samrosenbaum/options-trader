@@ -28,7 +28,7 @@ export default async function WatchlistPage() {
             </p>
           </div>
           <Link
-            href="/scanner-page"
+            href="/scanner"
             className="inline-flex items-center justify-center rounded-xl border border-emerald-500 px-5 py-2 text-sm font-semibold text-emerald-600 transition hover:bg-emerald-500 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500 dark:border-emerald-400 dark:text-emerald-300 dark:hover:bg-emerald-500/20"
           >
             ← Back to Scanner
