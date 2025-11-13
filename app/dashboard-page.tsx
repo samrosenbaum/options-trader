@@ -195,20 +195,25 @@ export default function DashboardPage() {
         }
 
         if (settingsResponse.settings) {
+          const settings = settingsResponse.settings
+
           setTradingDeskName(
-            settingsResponse.settings.trading_desk_name ||
-              settingsResponse.settings.user_name ||
-              'Trading Desk'
+            settings.trading_desk_name || settings.user_name || 'Trading Desk'
           )
-          setShowNextStepsGuide(Boolean(settingsResponse.settings.show_next_steps_guide))
 
           const needsSetup =
-            !settingsResponse.settings.user_name ||
-            settingsResponse.settings.user_name.trim() === '' ||
-            settingsResponse.settings.trading_desk_name === null ||
-            settingsResponse.settings.trading_desk_name === undefined ||
-            settingsResponse.settings.trading_desk_name.trim() === ''
+            !settings.user_name ||
+            settings.user_name.trim() === '' ||
+            settings.trading_desk_name === null ||
+            settings.trading_desk_name === undefined ||
+            settings.trading_desk_name.trim() === ''
 
+          const shouldShowNextStepsGuide =
+            typeof settings.show_next_steps_guide === 'boolean'
+              ? settings.show_next_steps_guide
+              : !needsSetup
+
+          setShowNextStepsGuide(shouldShowNextStepsGuide)
           setIsWelcomeSetupOpen(needsSetup)
         } else {
           setIsWelcomeSetupOpen(true)
