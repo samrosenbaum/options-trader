@@ -196,7 +196,8 @@ export default function DashboardPage() {
             !settingsResponse.settings.user_name ||
             settingsResponse.settings.user_name.trim() === '' ||
             settingsResponse.settings.trading_desk_name === null ||
-            settingsResponse.settings.trading_desk_name === undefined
+            settingsResponse.settings.trading_desk_name === undefined ||
+            settingsResponse.settings.trading_desk_name.trim() === ''
 
           setIsWelcomeSetupOpen(needsSetup)
         } else {
