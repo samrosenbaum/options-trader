@@ -9,7 +9,7 @@ import { TickerTape } from '@/components/ticker-tape'
 import { TradingDeskBanner } from '@/components/trading-desk-banner'
 import { motion } from 'framer-motion'
 import { MontyDashboardBrief } from '@/components/monty-dashboard-brief'
-import { ArrowUpRight, BarChart3, Briefcase, Radar, Scan } from 'lucide-react'
+import { ArrowUpRight, BarChart3, Briefcase, Compass, ListPlus, Radar, Scan } from 'lucide-react'
 import WelcomeSetup from '@/components/onboarding/WelcomeSetup'
 
 interface PortfolioSnapshot {
@@ -56,6 +56,14 @@ type QuickAction = {
   accent: QuickActionAccent
 }
 
+type OnboardingSuggestion = {
+  title: string
+  description: string
+  href: string
+  cta: string
+  icon: ComponentType<{ className?: string }>
+}
+
 export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [snapshots, setSnapshots] = useState<PortfolioSnapshot[]>([])
@@ -66,6 +74,7 @@ export default function DashboardPage() {
   const [tradingDeskName, setTradingDeskName] = useState<string>('')
   const [isWelcomeSetupOpen, setIsWelcomeSetupOpen] = useState(false)
   const [settingsLoaded, setSettingsLoaded] = useState(false)
+  const [showNextStepsGuide, setShowNextStepsGuide] = useState(false)
   const supabase = createClient()
 
   const quickActions: QuickAction[] = [
@@ -191,6 +200,7 @@ export default function DashboardPage() {
               settingsResponse.settings.user_name ||
               'Trading Desk'
           )
+          setShowNextStepsGuide(Boolean(settingsResponse.settings.show_next_steps_guide))
 
           const needsSetup =
             !settingsResponse.settings.user_name ||
@@ -228,10 +238,29 @@ export default function DashboardPage() {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
   }
 
+  const persistNextStepsGuideVisibility = useCallback(async (shouldShow: boolean) => {
+    try {
+      const response = await fetch('/api/user-settings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ show_next_steps_guide: shouldShow })
+      })
+
+      if (!response.ok) {
+        console.error('Failed to update next steps guide visibility')
+      }
+    } catch (error) {
+      console.error('Error updating next steps guide visibility:', error)
+    }
+  }, [])
+
   const handleWelcomeComplete = useCallback(
     async (data: { userName: string; portfolioSize: number; dailyBudget: number }) => {
       setIsWelcomeSetupOpen(false)
       setTradingDeskName(prev => prev || `${data.userName}'s Trading Desk`)
+      setShowNextStepsGuide(true)
 
       try {
         const response = await fetch('/api/user-settings', {
@@ -243,7 +272,8 @@ export default function DashboardPage() {
             user_name: data.userName,
             trading_desk_name: `${data.userName}'s Trading Desk`,
             portfolio_size: data.portfolioSize,
-            daily_contract_budget: data.dailyBudget
+            daily_contract_budget: data.dailyBudget,
+            show_next_steps_guide: true
           })
         })
 
@@ -256,6 +286,44 @@ export default function DashboardPage() {
     },
     []
   )
+
+  const handleWelcomeSkip = useCallback(() => {
+    setIsWelcomeSetupOpen(false)
+    setShowNextStepsGuide(true)
+    void persistNextStepsGuideVisibility(true)
+  }, [persistNextStepsGuideVisibility])
+
+  const handleDismissNextStepsGuide = useCallback(() => {
+    setShowNextStepsGuide(false)
+    void persistNextStepsGuideVisibility(false)
+  }, [persistNextStepsGuideVisibility])
+
+  const onboardingSuggestions: OnboardingSuggestion[] = [
+    {
+      title: 'Run a live scan',
+      description:
+        'Open the AI scanner to see asymmetric setups sized to your account. Ask Monty follow-up questions in real time.',
+      href: '/scanner',
+      cta: 'Launch Scanner',
+      icon: Scan,
+    },
+    {
+      title: 'Start a watchlist',
+      description:
+        'Save the tickers you keep circling back to. Monty tracks catalysts, IV crush risk, and greeks drift for each.',
+      href: '/watchlist',
+      cta: 'Open Watchlist',
+      icon: ListPlus,
+    },
+    {
+      title: 'Check market pulse',
+      description:
+        'Review macro sentiment, sector flow, and volatility regimes before you size risk for the day.',
+      href: '/market-info',
+      cta: 'View Market Intel',
+      icon: Compass,
+    },
+  ]
 
   if (loading) {
     return (
@@ -284,6 +352,49 @@ export default function DashboardPage() {
       <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-6 pb-16 pt-10">
         <div className="flex flex-col gap-10">
           <MontyDashboardBrief />
+          {showNextStepsGuide && (
+            <div className="rounded-3xl border border-emerald-200/60 bg-white/70 p-6 shadow-sm backdrop-blur">
+              <div className="flex flex-col gap-4 border-b border-emerald-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-500">Next steps</p>
+                  <h2 className="mt-2 text-2xl font-semibold text-slate-900">Dial in your workflow</h2>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Monty lined up a few suggestions so you can get value out of your new desk immediately.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleDismissNextStepsGuide}
+                  className="self-start rounded-full border border-transparent px-4 py-2 text-sm font-medium text-slate-500 transition hover:border-slate-200 hover:bg-white"
+                >
+                  Dismiss
+                </button>
+              </div>
+              <div className="mt-6 grid gap-4 md:grid-cols-3">
+                {onboardingSuggestions.map(suggestion => (
+                  <div
+                    key={suggestion.title}
+                    className="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-white/80 p-4"
+                  >
+                    <div className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
+                      <suggestion.icon className="h-5 w-5" />
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-base font-semibold text-slate-900">{suggestion.title}</p>
+                      <p className="text-sm text-slate-500">{suggestion.description}</p>
+                    </div>
+                    <Link
+                      href={suggestion.href}
+                      className="inline-flex items-center text-sm font-semibold text-emerald-600 hover:text-emerald-700"
+                    >
+                      {suggestion.cta}
+                      <ArrowUpRight className="ml-1 h-4 w-4" />
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           <div className="space-y-2">
             <h1 className="text-3xl font-semibold text-slate-900">Welcome back to your trade desk</h1>
             <p className="text-sm text-slate-500">Here&apos;s your portfolio at a glance</p>
@@ -625,7 +736,7 @@ export default function DashboardPage() {
       <WelcomeSetup
         open={isWelcomeSetupOpen && !loading && settingsLoaded}
         onComplete={handleWelcomeComplete}
-        onSkip={() => setIsWelcomeSetupOpen(false)}
+        onSkip={handleWelcomeSkip}
       />
     </div>
   )

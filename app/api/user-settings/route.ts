@@ -68,6 +68,7 @@ export async function POST(request: Request) {
       portfolio_size,
       daily_contract_budget,
       has_completed_first_scan,
+      show_next_steps_guide,
     } = body
 
     const payload: Database['public']['Tables']['user_settings']['Insert'] = {
@@ -83,6 +84,10 @@ export async function POST(request: Request) {
 
     if (typeof has_completed_first_scan === 'boolean') {
       payload.has_completed_first_scan = has_completed_first_scan
+    }
+
+    if (typeof show_next_steps_guide === 'boolean') {
+      payload.show_next_steps_guide = show_next_steps_guide
     }
 
     // Upsert user settings
