@@ -230,6 +230,14 @@ function UserPanel({ userEmail, greeting }: { userEmail?: string; greeting: stri
   )
 }
 
+/**
+ * Render the responsive Monty Desk navigation UI, including a mobile header and drawer plus a collapsible desktop left rail.
+ *
+ * Renders navigation sections, a user panel when an email is provided, and controls for opening the mobile drawer and collapsing the desktop rail. The component adapts layout at the large (lg) breakpoint.
+ *
+ * @param userEmail - Optional email address of the signed-in user; when provided, the UserPanel displays account info and a greeting.
+ * @returns The navigation UI tree for the application, combining mobile header/drawer and desktop left-rail variants.
+ */
 export default function Navigation({ userEmail }: { userEmail?: string }) {
   const pathname = usePathname()
   const [greeting, setGreeting] = useState('')
@@ -344,4 +352,3 @@ export default function Navigation({ userEmail }: { userEmail?: string }) {
     </>
   )
 }
-
