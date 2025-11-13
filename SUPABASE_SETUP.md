@@ -48,13 +48,22 @@ You should see a success message. This creates your `positions` and `alerts` tab
 1. In Supabase, go to **Authentication** → **Providers**
 2. Enable **Email** provider (should be enabled by default)
 3. Go to **Authentication** → **URL Configuration**
-4. Add your site URL:
-   - **Site URL**: `http://localhost:3000` (for local dev)
-   - **Redirect URLs**: Add `http://localhost:3000/auth/callback`
 
-For production (Render):
-   - **Site URL**: `https://your-app.onrender.com`
-   - **Redirect URLs**: Add `https://your-app.onrender.com/auth/callback`
+### IMPORTANT: Configure Both Development AND Production URLs
+
+**Site URL** (set to your PRIMARY production URL):
+   - **Production Site URL**: `https://withmonty.com`
+
+**Redirect URLs** (add BOTH development and production):
+   - `http://localhost:3000/auth/callback` (for local development)
+   - `https://withmonty.com/auth/callback` (for production)
+
+### Why Both?
+- The **Site URL** determines where email confirmation links redirect to by default
+- Set it to your production URL (`https://withmonty.com`) so new users signing up are redirected to the live site
+- Adding both URLs to **Redirect URLs** allows authentication to work in both environments
+- During local development, the code will use `window.location.origin` which will be localhost
+- For production users, Supabase will use the configured Site URL
 
 ## Step 6: Test It Out
 
