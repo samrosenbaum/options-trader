@@ -1691,6 +1691,7 @@ export default function ScannerPage({ user }: ScannerPageProps) {
 
   const handleWelcomeComplete = useCallback(async (data: {
     userName: string
+    tradingDeskName: string
     portfolioSize: number
     dailyBudget: number
   }) => {
@@ -1706,6 +1707,7 @@ export default function ScannerPage({ user }: ScannerPageProps) {
     userSettingsRef.current = {
       ...userSettingsRef.current,
       user_name: data.userName,
+      trading_desk_name: data.tradingDeskName,
       portfolio_size: data.portfolioSize,
       daily_contract_budget: data.dailyBudget,
     } as UserSettingsRow
@@ -1720,6 +1722,7 @@ export default function ScannerPage({ user }: ScannerPageProps) {
           },
           body: JSON.stringify({
             user_name: data.userName,
+            trading_desk_name: data.tradingDeskName,
             portfolio_size: data.portfolioSize,
             daily_contract_budget: data.dailyBudget,
           }),
