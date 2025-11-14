@@ -1,7 +1,7 @@
 'use client'
 
 import type { ComponentType } from 'react'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
@@ -10,6 +10,7 @@ import { TradingDeskBanner } from '@/components/trading-desk-banner'
 import { motion } from 'framer-motion'
 import { MontyDashboardBrief } from '@/components/monty-dashboard-brief'
 import { ArrowUpRight, BarChart3, Briefcase, Radar, Scan } from 'lucide-react'
+import WelcomeSetup from '@/components/onboarding/WelcomeSetup'
 
 interface PortfolioSnapshot {
   id: string
@@ -63,6 +64,8 @@ export default function DashboardPage() {
   const [biggestWinners, setBiggestWinners] = useState<ClosedPosition[]>([])
   const [biggestLosers, setBiggestLosers] = useState<ClosedPosition[]>([])
   const [tradingDeskName, setTradingDeskName] = useState<string>('')
+  const [isWelcomeSetupOpen, setIsWelcomeSetupOpen] = useState(false)
+  const [settingsLoaded, setSettingsLoaded] = useState(false)
   const supabase = createClient()
 
   const quickActions: QuickAction[] = [
@@ -183,12 +186,28 @@ export default function DashboardPage() {
         }
 
         if (settingsResponse.settings) {
-          setTradingDeskName(settingsResponse.settings.trading_desk_name || settingsResponse.settings.user_name || 'Trading Desk')
+          setTradingDeskName(
+            settingsResponse.settings.trading_desk_name ||
+              settingsResponse.settings.user_name ||
+              'Trading Desk'
+          )
+
+          const needsSetup =
+            !settingsResponse.settings.user_name ||
+            settingsResponse.settings.user_name.trim() === '' ||
+            settingsResponse.settings.trading_desk_name === null ||
+            settingsResponse.settings.trading_desk_name === undefined
+
+          setIsWelcomeSetupOpen(needsSetup)
+        } else {
+          setIsWelcomeSetupOpen(true)
         }
       } catch (err) {
         console.error('Error fetching dashboard data:', err)
+        setIsWelcomeSetupOpen(true)
       } finally {
         setLoading(false)
+        setSettingsLoaded(true)
       }
     }
 
@@ -207,6 +226,41 @@ export default function DashboardPage() {
     const date = new Date(dateStr)
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
   }
+
+  const handleWelcomeComplete = useCallback(
+    async (data: { userName: string; portfolioSize: number; dailyBudget: number }) => {
+      try {
+        const response = await fetch('/api/user-settings', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            user_name: data.userName,
+            trading_desk_name: `${data.userName}'s Trading Desk`,
+            portfolio_size: data.portfolioSize,
+            daily_contract_budget: data.dailyBudget
+          })
+        })
+
+        if (!response.ok) {
+          const errorText = await response.text().catch(() => '')
+          throw new Error(
+            `Failed to save welcome setup data (${response.status} ${response.statusText})${
+              errorText ? `: ${errorText}` : ''
+            }`
+          )
+        }
+
+        setTradingDeskName(prev => prev || `${data.userName}'s Trading Desk`)
+        setIsWelcomeSetupOpen(false)
+      } catch (error) {
+        console.error('Error saving welcome setup data from dashboard:', error)
+        throw error
+      }
+    },
+    []
+  )
 
   if (loading) {
     return (
@@ -573,6 +627,11 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+      <WelcomeSetup
+        open={isWelcomeSetupOpen && !loading && settingsLoaded}
+        onComplete={handleWelcomeComplete}
+        onSkip={() => setIsWelcomeSetupOpen(false)}
+      />
     </div>
   )
 }
