@@ -72,6 +72,9 @@ export default function DashboardPage() {
   const [biggestWinners, setBiggestWinners] = useState<ClosedPosition[]>([])
   const [biggestLosers, setBiggestLosers] = useState<ClosedPosition[]>([])
   const [tradingDeskName, setTradingDeskName] = useState<string>('')
+  // We keep the welcome setup modal wired into the dashboard in addition to the scanner
+  // so that brand-new accounts (who typically land on this page first) still have a
+  // chance to personalize their name and desk before touching other flows.
   const [isWelcomeSetupOpen, setIsWelcomeSetupOpen] = useState(false)
   const [settingsLoaded, setSettingsLoaded] = useState(false)
   const [showNextStepsGuide, setShowNextStepsGuide] = useState(false)
@@ -262,9 +265,9 @@ export default function DashboardPage() {
   }, [])
 
   const handleWelcomeComplete = useCallback(
-    async (data: { userName: string; portfolioSize: number; dailyBudget: number }) => {
+    async (data: { userName: string; tradingDeskName: string; portfolioSize: number; dailyBudget: number }) => {
       setIsWelcomeSetupOpen(false)
-      setTradingDeskName(prev => prev || `${data.userName}'s Trading Desk`)
+      setTradingDeskName(prev => prev || data.tradingDeskName)
       setShowNextStepsGuide(true)
 
       try {
@@ -275,7 +278,7 @@ export default function DashboardPage() {
           },
           body: JSON.stringify({
             user_name: data.userName,
-            trading_desk_name: `${data.userName}'s Trading Desk`,
+            trading_desk_name: data.tradingDeskName,
             portfolio_size: data.portfolioSize,
             daily_contract_budget: data.dailyBudget,
             show_next_steps_guide: true

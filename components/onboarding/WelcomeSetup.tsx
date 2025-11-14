@@ -6,6 +6,7 @@ export interface WelcomeSetupProps {
   open: boolean
   onComplete: (data: {
     userName: string
+    tradingDeskName: string
     portfolioSize: number
     dailyBudget: number
   }) => void
@@ -14,6 +15,7 @@ export interface WelcomeSetupProps {
 
 export default function WelcomeSetup({ open, onComplete, onSkip }: WelcomeSetupProps) {
   const [userName, setUserName] = useState('')
+  const [tradingDeskName, setTradingDeskName] = useState('')
   const [portfolioSize, setPortfolioSize] = useState('')
   const [dailyBudget, setDailyBudget] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -45,7 +47,12 @@ export default function WelcomeSetup({ open, onComplete, onSkip }: WelcomeSetupP
       return
     }
 
-    if (!userName.trim() || !portfolioSize.trim() || !dailyBudget.trim()) {
+    if (
+      !userName.trim() ||
+      !tradingDeskName.trim() ||
+      !portfolioSize.trim() ||
+      !dailyBudget.trim()
+    ) {
       setError('Please complete all fields before continuing.')
       return
     }
@@ -65,6 +72,7 @@ export default function WelcomeSetup({ open, onComplete, onSkip }: WelcomeSetupP
     try {
       await onComplete({
         userName: userName.trim(),
+        tradingDeskName: tradingDeskName.trim(),
         portfolioSize: parsedPortfolio,
         dailyBudget: parsedBudget,
       })
@@ -106,6 +114,22 @@ export default function WelcomeSetup({ open, onComplete, onSkip }: WelcomeSetupP
             Tell us a bit about yourself so Monty can personalize your experience and size positions for your account.
           </p>
 
+          <div className="mt-4 rounded-2xl border border-emerald-300/20 bg-gradient-to-br from-emerald-500/10 via-emerald-400/5 to-slate-900/60 p-4 text-sm text-emerald-50/90">
+            <p className="font-semibold text-emerald-100">Hi, I&apos;m Monty—your trading co-pilot.</p>
+            <p className="mt-2 text-emerald-100/80">
+              Now that you&apos;re inside I recommend checking out a few moves:
+            </p>
+            <ul className="mt-3 list-disc space-y-2 pl-5 text-emerald-100/80">
+              <li>Use the scanner to surface option contracts that pass our filters.</li>
+              <li>Add contracts you like to your watchlist to monitor their performance.</li>
+              <li>
+                If you purchase any, log them in your portfolio so we can track progress, discuss positions, and plan exits.
+              </li>
+              <li>Explore individual stocks and market sentiment briefs.</li>
+            </ul>
+            <p className="mt-3 font-semibold text-emerald-100">The market awaits!</p>
+          </div>
+
           <div className="mt-4 rounded-2xl border border-emerald-400/20 bg-emerald-400/5 p-4 text-xs text-emerald-50/90">
             <p className="font-semibold tracking-wide text-emerald-100">Why we ask for these numbers</p>
             <ul className="mt-2 list-disc space-y-1 pl-4 text-emerald-100/80">
@@ -138,6 +162,27 @@ export default function WelcomeSetup({ open, onComplete, onSkip }: WelcomeSetupP
                 autoFocus
                 className="w-full rounded-xl border-2 border-white/10 bg-white/5 px-4 py-3 text-white placeholder-slate-400 transition focus:border-emerald-400/50 focus:bg-white/10 focus:outline-none relative z-50 pointer-events-auto"
               />
+            </div>
+
+            <div>
+              <label htmlFor="tradingDeskName" className="block text-sm font-medium text-emerald-100/90 mb-2">
+                Name your trading desk
+              </label>
+              <input
+                id="tradingDeskName"
+                type="text"
+                value={tradingDeskName}
+                onChange={(e) => {
+                  setTradingDeskName(e.target.value)
+                  setError(null)
+                }}
+                placeholder="Phoenix Flow Lab"
+                required
+                className="w-full rounded-xl border-2 border-white/10 bg-white/5 px-4 py-3 text-white placeholder-slate-400 transition focus:border-emerald-400/50 focus:bg-white/10 focus:outline-none relative z-50 pointer-events-auto"
+              />
+              <p className="mt-1.5 text-xs text-slate-400">
+                We&apos;ll use this name across your dashboard, briefs, and notifications.
+              </p>
             </div>
 
             <div>
@@ -203,6 +248,7 @@ export default function WelcomeSetup({ open, onComplete, onSkip }: WelcomeSetupP
               disabled={
                 isSubmitting ||
                 !userName.trim() ||
+                !tradingDeskName.trim() ||
                 !portfolioSize.trim() ||
                 !dailyBudget.trim()
               }
