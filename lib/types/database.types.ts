@@ -242,6 +242,7 @@ export interface Database {
           broker: string | null
           trading_strategy: string | null
           has_completed_first_scan: boolean | null
+          show_next_steps_guide: boolean | null
           created_at: string
           updated_at: string
         }
@@ -254,6 +255,7 @@ export interface Database {
           broker?: string | null
           trading_strategy?: string | null
           has_completed_first_scan?: boolean | null
+          show_next_steps_guide?: boolean | null
           created_at?: string
           updated_at?: string
         }
@@ -266,6 +268,7 @@ export interface Database {
           broker?: string | null
           trading_strategy?: string | null
           has_completed_first_scan?: boolean | null
+          show_next_steps_guide?: boolean | null
           created_at?: string
           updated_at?: string
         }

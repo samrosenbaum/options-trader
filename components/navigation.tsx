@@ -305,7 +305,7 @@ export default function Navigation({ userEmail }: { userEmail?: string }) {
             {!isCollapsed && (
               <div>
                 <p className="text-lg font-semibold tracking-tight text-slate-900">Monty</p>
-                <p className="text-xs uppercase tracking-[0.2em] text-emerald-500">Trading Desk</p>
+                <p className="text-xs uppercase tracking-[0.2em] text-emerald-500">Trading Co-Pilot</p>
               </div>
             )}
           </div>
