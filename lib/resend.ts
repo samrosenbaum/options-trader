@@ -26,6 +26,12 @@ export const ANALYST_EMAIL_CONFIG = {
   replyTo: 'noreply@example.com'
 }
 
+export const ADMIN_EMAIL_CONFIG = {
+  from: 'Monty Admin <admin@resend.dev>',
+  to: process.env.ADMIN_EMAIL_RECIPIENT || process.env.ANALYST_EMAIL_RECIPIENT || 'admin@example.com',
+  replyTo: 'noreply@example.com'
+}
+
 /**
  * Convert plain text to simple HTML email with styling
  */
@@ -169,6 +175,106 @@ export async function sendWeeklyAnalysis(formattedText: string) {
 
   if (error) {
     console.error('Failed to send weekly analysis:', error)
+    throw error
+  }
+
+  return data
+}
+
+/**
+ * Send admin notification for new user signup
+ */
+export async function sendAdminSignupNotification(userEmail: string, userName?: string | null) {
+  const resend = getResendClient()
+  const timestamp = new Date().toLocaleString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'America/New_York',
+    timeZoneName: 'short'
+  })
+
+  const content = `
+New User Signup Alert!
+
+Email: ${userEmail}
+Name: ${userName || 'Not provided yet'}
+Signup Time: ${timestamp}
+
+The user has completed their onboarding and is now active in the system.
+  `.trim()
+
+  const { data, error } = await resend.emails.send({
+    from: ADMIN_EMAIL_CONFIG.from,
+    to: ADMIN_EMAIL_CONFIG.to,
+    replyTo: ADMIN_EMAIL_CONFIG.replyTo,
+    subject: `🎉 New User Signup: ${userEmail}`,
+    html: wrapInHTML(content, '🎉 New User Signup'),
+    text: content,
+  })
+
+  if (error) {
+    console.error('Failed to send admin signup notification:', error)
+    // Don't throw - we don't want to fail the signup flow if the admin email fails
+    return null
+  }
+
+  return data
+}
+
+/**
+ * Send daily usage summary to admin
+ */
+export async function sendDailyUsageSummary(summaryData: {
+  date: string
+  newSignups: number
+  newSignupEmails: string[]
+  activeUsers: number
+  scansRun: number
+  scansRunUniqueUsers: number
+  positionsCreated: number
+  positionsCreatedUniqueUsers: number
+  positionsClosed: number
+  totalUsers: number
+  totalOpenPositions: number
+}) {
+  const resend = getResendClient()
+
+  const content = `
+Daily Product Usage Summary - ${summaryData.date}
+
+📊 USER METRICS
+• New Signups: ${summaryData.newSignups}
+${summaryData.newSignupEmails.length > 0 ? `  → ${summaryData.newSignupEmails.join('\n  → ')}` : ''}
+• Active Users (24h): ${summaryData.activeUsers}
+• Total Users: ${summaryData.totalUsers}
+
+🔍 ACTIVITY METRICS
+• Scans Run: ${summaryData.scansRun} (by ${summaryData.scansRunUniqueUsers} users)
+• Positions Created: ${summaryData.positionsCreated} (by ${summaryData.positionsCreatedUniqueUsers} users)
+• Positions Closed: ${summaryData.positionsClosed}
+
+💼 CURRENT STATE
+• Total Open Positions: ${summaryData.totalOpenPositions}
+
+---
+Report generated at ${new Date().toLocaleString('en-US', { timeZone: 'America/New_York', timeZoneName: 'short' })}
+  `.trim()
+
+  const { data, error } = await resend.emails.send({
+    from: ADMIN_EMAIL_CONFIG.from,
+    to: ADMIN_EMAIL_CONFIG.to,
+    replyTo: ADMIN_EMAIL_CONFIG.replyTo,
+    subject: `📊 Daily Usage Summary - ${summaryData.date}`,
+    html: wrapInHTML(content, '📊 Daily Usage Summary'),
+    text: content,
+  })
+
+  if (error) {
+    console.error('Failed to send daily usage summary:', error)
     throw error
   }
 

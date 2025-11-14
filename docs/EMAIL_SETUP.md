@@ -17,11 +17,13 @@ Open `.env.local` and add your credentials:
 # Resend API (for email briefs)
 RESEND_API_KEY=re_your_actual_api_key_here
 ANALYST_EMAIL_RECIPIENT=your-email@example.com
+ADMIN_EMAIL_RECIPIENT=admin@example.com
 ```
 
 **Replace:**
 - `re_your_actual_api_key_here` with your actual Resend API key
-- `your-email@example.com` with the email where you want to receive briefs
+- `your-email@example.com` with the email where you want to receive analyst briefs
+- `admin@example.com` with the email where you want to receive admin notifications (new user signups, daily usage summaries)
 
 ## Step 3: Restart the Server
 
@@ -69,6 +71,24 @@ You should receive the emails within seconds!
 - UOA scanner accuracy
 - Key learnings from the week
 - Next week's action plan
+
+## Admin Notifications
+
+In addition to user-facing briefs, the system also sends admin notifications:
+
+### New User Signup Alert (Immediate)
+Sent to `ADMIN_EMAIL_RECIPIENT` whenever a new user completes onboarding:
+- User email address
+- User name (if provided)
+- Signup timestamp (Eastern Time)
+
+### Daily Usage Summary (9:00 AM ET)
+Sent to `ADMIN_EMAIL_RECIPIENT` every morning with the previous day's metrics:
+- **User Metrics**: New signups, active users, total users
+- **Activity Metrics**: Scans run, positions created, positions closed
+- **Current State**: Total open positions
+
+These notifications help you track product growth and user engagement.
 
 ## Setting Up Automatic Scheduling
 

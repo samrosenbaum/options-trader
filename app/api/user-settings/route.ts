@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import type { Database } from '@/lib/types/database.types'
+import { sendAdminSignupNotification } from '@/lib/resend'
 
 export async function GET() {
   try {
@@ -48,16 +50,25 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const supabase = await createClient()
-    
+
     // Get the current user
     const { data: { user }, error: userError } = await supabase.auth.getUser()
-    
+
     if (userError || !user) {
       return NextResponse.json(
         { error: 'Not authenticated' },
         { status: 401 }
       )
     }
+
+    // Check if this is a new user (first time creating settings)
+    const { data: existingSettings } = await supabase
+      .from('user_settings')
+      .select('user_id')
+      .eq('user_id', user.id)
+      .single()
+
+    const isNewUser = !existingSettings
 
     const body = await request.json()
     const {
@@ -105,6 +116,44 @@ export async function POST(request: Request) {
         { error: 'Failed to save settings' },
         { status: 500 }
       )
+    }
+
+    // If this is a new user, log the signup and send admin notification
+    if (isNewUser && user.email) {
+      try {
+        // Create service role client for admin operations
+        const serviceClient = createServiceClient<Database>(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.SUPABASE_SERVICE_ROLE_KEY!
+        )
+
+        // Log signup event to database
+        await serviceClient
+          .from('user_signup_events')
+          .insert({
+            user_id: user.id,
+            email: user.email,
+            signup_timestamp: new Date().toISOString(),
+            notification_sent: false,
+          })
+
+        // Send admin notification email (don't await - fire and forget)
+        sendAdminSignupNotification(user.email, user_name).then(result => {
+          if (result) {
+            // Update notification_sent flag
+            serviceClient
+              .from('user_signup_events')
+              .update({ notification_sent: true, notification_sent_at: new Date().toISOString() })
+              .eq('user_id', user.id)
+              .then(() => console.log('Signup notification sent successfully'))
+          }
+        }).catch(err => {
+          console.error('Failed to send signup notification:', err)
+        })
+      } catch (notificationError) {
+        // Log but don't fail the request
+        console.error('Error sending signup notification:', notificationError)
+      }
     }
 
     return NextResponse.json({ settings: data })
