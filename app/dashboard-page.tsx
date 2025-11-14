@@ -262,9 +262,9 @@ export default function DashboardPage() {
   }, [])
 
   const handleWelcomeComplete = useCallback(
-    async (data: { userName: string; portfolioSize: number; dailyBudget: number }) => {
+    async (data: { userName: string; tradingDeskName: string; portfolioSize: number; dailyBudget: number }) => {
       setIsWelcomeSetupOpen(false)
-      setTradingDeskName(prev => prev || `${data.userName}'s Trading Desk`)
+      setTradingDeskName(prev => prev || data.tradingDeskName)
       setShowNextStepsGuide(true)
 
       try {
@@ -275,7 +275,7 @@ export default function DashboardPage() {
           },
           body: JSON.stringify({
             user_name: data.userName,
-            trading_desk_name: `${data.userName}'s Trading Desk`,
+            trading_desk_name: data.tradingDeskName,
             portfolio_size: data.portfolioSize,
             daily_contract_budget: data.dailyBudget,
             show_next_steps_guide: true
