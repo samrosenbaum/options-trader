@@ -106,6 +106,20 @@ export default function WelcomeSetup({ open, onComplete, onSkip }: WelcomeSetupP
             Tell us a bit about yourself so Monty can personalize your experience and size positions for your account.
           </p>
 
+          <div className="mt-4 rounded-2xl border border-emerald-400/20 bg-emerald-400/5 p-4 text-xs text-emerald-50/90">
+            <p className="font-semibold tracking-wide text-emerald-100">Why we ask for these numbers</p>
+            <ul className="mt-2 list-disc space-y-1 pl-4 text-emerald-100/80">
+              <li>
+                Portfolio size pre-fills the scanner&apos;s investment amount and guides how many contracts Monty suggests for each
+                opportunity.
+              </li>
+              <li>
+                Daily contract budget becomes a hard filter so the scanner drops any plays whose premium would push you past
+                that cap.
+              </li>
+            </ul>
+          </div>
+
           <form onSubmit={handleSubmit} className="mt-8 space-y-5 pointer-events-auto">
             <div>
               <label htmlFor="userName" className="block text-sm font-medium text-emerald-100/90 mb-2">
@@ -148,7 +162,7 @@ export default function WelcomeSetup({ open, onComplete, onSkip }: WelcomeSetupP
                 />
               </div>
               <p className="mt-1.5 text-xs text-slate-400">
-                Your total account size for position sizing
+                Used to pre-fill the scanner investment amount and cap Monty&apos;s suggested contract counts.
               </p>
             </div>
 
@@ -174,7 +188,7 @@ export default function WelcomeSetup({ open, onComplete, onSkip }: WelcomeSetupP
                 />
               </div>
               <p className="mt-1.5 text-xs text-slate-400">
-                Maximum to spend per day on contracts
+                Used to filter out contracts whose premium would exceed your per-day spend limit.
               </p>
             </div>
 
