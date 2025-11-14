@@ -72,6 +72,9 @@ export default function DashboardPage() {
   const [biggestWinners, setBiggestWinners] = useState<ClosedPosition[]>([])
   const [biggestLosers, setBiggestLosers] = useState<ClosedPosition[]>([])
   const [tradingDeskName, setTradingDeskName] = useState<string>('')
+  // We keep the welcome setup modal wired into the dashboard in addition to the scanner
+  // so that brand-new accounts (who typically land on this page first) still have a
+  // chance to personalize their name and desk before touching other flows.
   const [isWelcomeSetupOpen, setIsWelcomeSetupOpen] = useState(false)
   const [settingsLoaded, setSettingsLoaded] = useState(false)
   const [showNextStepsGuide, setShowNextStepsGuide] = useState(false)
