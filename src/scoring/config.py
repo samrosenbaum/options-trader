@@ -10,6 +10,9 @@ DEFAULT_SCORER_CONFIG: Dict[str, object] = {
         "iv_rank",
         "liquidity",
         "risk_reward",
+        "event_catalyst",
+        "probability_of_profit",
+        "iv_mean_reversion",
     ],
     "weights": {
         "volume": 1.0,
@@ -18,6 +21,9 @@ DEFAULT_SCORER_CONFIG: Dict[str, object] = {
         "iv_rank": 1.2,
         "liquidity": 0.8,
         "risk_reward": 1.5,
+        "event_catalyst": 1.1,
+        "probability_of_profit": 1.3,  # Important for profitability prediction
+        "iv_mean_reversion": 1.2,  # Helps with IV edge detection
     },
     "score_bounds": {
         "min": 0.0,

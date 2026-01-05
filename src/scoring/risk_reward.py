@@ -44,23 +44,118 @@ class RiskRewardScorer:
             else:
                 score += 5
 
+        # Enhanced moneyness-based scoring with DTE awareness
         moneyness = context.market_data.get("moneyness")
         if moneyness is None:
             moneyness = abs(contract.stock_price - contract.strike) / max(contract.stock_price, 0.01)
-        if 0.01 < moneyness < 0.05:
-            score += 18
-            reasons.append("Optimal strike selection near ATM")
-            tags.append("sweet-spot")
-        elif moneyness < 0.01:
-            score += 12
-            reasons.append("At-the-money strike")
-        elif 0.05 < moneyness < 0.10:
-            score += 8
-        else:
-            score += 3
+
+        dte = contract.days_to_expiration
+        moneyness_score, moneyness_reason, moneyness_tag = self._score_moneyness(
+            moneyness, dte, contract.option_type
+        )
+        score += moneyness_score
+        if moneyness_reason:
+            reasons.append(moneyness_reason)
+        if moneyness_tag:
+            tags.append(moneyness_tag)
+
+        # Add leverage efficiency score
+        leverage_score, leverage_reason = self._score_leverage_efficiency(
+            contract, moneyness, dte
+        )
+        score += leverage_score
+        if leverage_reason:
+            reasons.append(leverage_reason)
 
         context.market_data.setdefault("projected_returns", projected_returns)
+        context.market_data.setdefault("moneyness", moneyness)
         return score, reasons, tags
+
+    def _score_moneyness(
+        self, moneyness: float, dte: int, option_type: str
+    ) -> Tuple[float, str, str]:
+        """
+        Score based on moneyness with DTE awareness.
+
+        Key insights:
+        - Deep OTM (>15%) needs big move, risky with short DTE
+        - Slightly OTM (5-10%) is sweet spot for directional plays
+        - ATM best for quick scalps and high probability
+        - ITM safer but lower leverage
+        """
+        # Deep OTM (>15% from ATM) - lottery ticket territory
+        if moneyness > 0.15:
+            if dte < 14:
+                # Deep OTM with short DTE = very risky
+                return -5, "Deep OTM with <14 DTE - low probability of profit", "lottery-risk"
+            elif dte < 30:
+                return 2, f"Deep OTM ({moneyness:.0%}) - needs significant move", "speculative"
+            else:
+                # More time = better chance
+                return 5, f"Deep OTM with {dte} DTE - time for thesis to play out", ""
+
+        # Moderately OTM (10-15%) - aggressive directional
+        elif moneyness > 0.10:
+            if dte < 7:
+                return 0, "Moderately OTM near expiration - elevated risk", "theta-risk"
+            elif dte < 21:
+                return 8, f"Moderately OTM ({moneyness:.0%}) - good leverage if move happens fast", ""
+            else:
+                return 12, f"Moderately OTM ({moneyness:.0%}) with time - balanced risk/reward", ""
+
+        # Sweet spot (5-10% OTM) - optimal for directional plays
+        elif moneyness > 0.05:
+            if dte < 7:
+                return 10, "Sweet spot strike but short DTE", ""
+            else:
+                return 18, f"Optimal strike selection ({moneyness:.0%} OTM) - best leverage/probability balance", "sweet-spot"
+
+        # Near ATM (1-5% OTM) - high probability zone
+        elif moneyness > 0.01:
+            if dte < 7:
+                return 14, "Near ATM for quick scalp", "scalp-candidate"
+            else:
+                return 16, "Near ATM - high delta exposure", "high-probability"
+
+        # ATM (<1%) - maximum delta, best for momentum plays
+        else:
+            return 12, "At-the-money strike - maximum delta", "atm"
+
+    def _score_leverage_efficiency(
+        self, contract, moneyness: float, dte: int
+    ) -> Tuple[float, str]:
+        """
+        Score the leverage efficiency - how much exposure per dollar risked.
+
+        Efficient options: Low premium relative to potential payoff
+        Inefficient: Paying too much for the exposure
+        """
+        # Calculate effective leverage (delta * stock_price / option_price)
+        delta = abs(contract.greeks.delta) if contract.greeks.delta else 0.5
+        option_price = contract.last_price if contract.last_price > 0 else contract.mid_price
+
+        if option_price <= 0:
+            return 0, ""
+
+        # Dollar delta = how much the option moves per $1 stock move
+        dollar_delta = delta * 100  # Per contract
+
+        # Cost basis
+        cost_per_contract = option_price * 100
+
+        # Leverage ratio = exposure / cost
+        leverage_ratio = (delta * contract.stock_price * 100) / cost_per_contract
+
+        # Score based on leverage efficiency
+        if leverage_ratio > 10:
+            return 8, f"High leverage efficiency ({leverage_ratio:.1f}x) - good bang for buck"
+        elif leverage_ratio > 5:
+            return 5, f"Solid leverage ({leverage_ratio:.1f}x)"
+        elif leverage_ratio > 2:
+            return 2, ""
+        else:
+            # Low leverage usually means ITM or very expensive premium
+            return 0, ""
 
     @staticmethod
     def _compute_returns(contract) -> dict:

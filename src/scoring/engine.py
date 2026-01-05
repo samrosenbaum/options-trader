@@ -13,6 +13,8 @@ from .iv_rank import IVRankScorer
 from .liquidity import LiquidityScorer
 from .risk_reward import RiskRewardScorer
 from .volume import VolumeScorer
+from .probability import PopScorer
+from .iv_mean_reversion import IVMeanReversionScorer
 
 SCORER_REGISTRY = {
     VolumeScorer.key: VolumeScorer,
@@ -22,6 +24,8 @@ SCORER_REGISTRY = {
     LiquidityScorer.key: LiquidityScorer,
     RiskRewardScorer.key: RiskRewardScorer,
     EventCatalystScorer.key: EventCatalystScorer,
+    PopScorer.key: PopScorer,
+    IVMeanReversionScorer.key: IVMeanReversionScorer,
 }
 
 
