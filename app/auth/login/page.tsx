@@ -64,7 +64,7 @@ export default function LoginPage() {
           password,
         })
         if (error) throw error
-        router.push('/portfolio')
+        router.push('/')
         router.refresh()
       }
     } catch (error) {
